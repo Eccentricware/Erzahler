@@ -1,0 +1,27 @@
+{
+  "name": "erzahler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server/server.js",
+  "scripts": {
+    "start:build": "tsc -w",
+    "start:run": "nodemon ./server/server.js",
+    "start": "concurrently npm:start:*",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc --project ./ -w"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^7.1.0",
+    "express": "^4.18.1",
+    "nodemon": "^2.0.16"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/node": "^17.0.33",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.4"
+  }
+}
