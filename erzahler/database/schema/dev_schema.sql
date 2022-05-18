@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/scripts/dev_schema.sql
+--sudo -u postgres psql < database/schema/dev_schema.sql
 
 DROP DATABASE IF EXISTS erzahler_dev;
 CREATE DATABASE erzahler_dev;
@@ -250,13 +250,15 @@ CREATE TABLE IF NOT EXISTS players(
   player_id SERIAL,
   firebase_id VARCHAR(32) NOT NULL,
   username VARCHAR(15) NOT NULL,
+  email VARCHAR(25) NOT NULL,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
   signup_date TIMESTAMP NOT NULL,
   last_login TIMESTAMP NOT NULL,
-  player_status VARCHAR(15) NOT NULL,
+  player_status VARCHAR(15) NOT NULL DEFAULT 'unverified',
   time_zone VARCHAR(25),
-  nmr_count INTEGER,
+  nmr_count INTEGER NOT NULL DEFAULT 0,
   wins INTEGER,
-  dropouts INTEGER,
+  dropouts INTEGER NOT NULL DEFAULT 0,
   saves INTEGER,
   color_theme VARCHAR(15),
   PRIMARY KEY(player_id)
