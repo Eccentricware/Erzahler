@@ -4,19 +4,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const accounts_1 = require("./services/accounts");
+const accountService_1 = require("./services/accountService");
 const erzhaler = (0, express_1.default)();
 const bodyParser = require('body-parser');
 const port = 8000;
 erzhaler.use(bodyParser.json());
+const accountService = new accountService_1.AccountService();
 erzhaler.get('/', (request, response) => {
     const testFeedBack = `Who is up for an interactive story?`;
     response.send(testFeedBack);
 });
 erzhaler.post('/signup', (request, response) => {
     let { email, password, username } = request.body;
-    const accounts = (0, accounts_1.createAccountWithUsernameAndEmail)(username, email, password);
-    accounts.then((results) => {
+    const existingAccounts = accountService.createAccountWithUsernameAndEmail(username, email, password);
+    existingAccounts.then((results) => {
         response.send(results);
     });
 });

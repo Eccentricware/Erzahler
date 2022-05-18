@@ -1,11 +1,12 @@
 import express from 'express';
-import { createAccountWithUsernameAndEmail } from './services/accounts';
+import { AccountService } from './services/accountService';
 
 const erzhaler = express();
 const bodyParser = require('body-parser');
 const port: number = 8000;
 
 erzhaler.use(bodyParser.json());
+const accountService = new AccountService();
 
 erzhaler.get('/', (request, response) => {
   const testFeedBack: string = `Who is up for an interactive story?`;
@@ -14,8 +15,8 @@ erzhaler.get('/', (request, response) => {
 
 erzhaler.post('/signup', (request, response) => {
   let { email, password, username } = request.body;
-  const accounts: any = createAccountWithUsernameAndEmail(username, email, password);
-  accounts.then((results: any) => {
+  const existingAccounts: any = accountService.createAccountWithUsernameAndEmail(username, email, password);
+  existingAccounts.then((results: any) => {
     response.send(results);
   });
 });
