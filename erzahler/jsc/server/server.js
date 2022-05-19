@@ -14,6 +14,14 @@ erzhaler.get('/', (request, response) => {
     const testFeedBack = `Who is up for an interactive story?`;
     response.send(testFeedBack);
 });
+erzhaler.get('/api/accounts/check-email/:email', (request, response) => {
+    const { email } = request.params;
+    const emailAvailabilityCheck = accountService.checkEmailAvailability(email);
+    emailAvailabilityCheck.then((emailAvailable) => {
+        response.send(emailAvailable);
+    })
+        .catch((e) => console.error(e.stack));
+});
 erzhaler.post('/signup', (request, response) => {
     let { email, password, username } = request.body;
     const existingAccounts = accountService.createAccountWithUsernameAndEmail(username, email, password);
