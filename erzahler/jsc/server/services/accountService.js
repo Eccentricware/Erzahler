@@ -22,11 +22,21 @@ class AccountService {
         };
     }
     createAccountWithUsernameAndEmail(username, email, password) {
-        const existingAccountResults = this.checkExistingAccountsInDB(username, email);
-        existingAccountResults.then((existingAccounts) => {
-            return existingAccounts;
+        const firebaseApp = (0, app_1.initializeApp)(firebase_1.firebaseConfig, 'Erzahler');
+        const auth = (0, auth_1.getAuth)(firebaseApp);
+        const newUser = (0, auth_1.createUserWithEmailAndPassword)(auth, email, password)
+            .then((newUser) => {
+            return newUser;
+        })
+            .catch((error) => {
+            return error.message;
         });
-        return existingAccountResults;
+        return newUser;
+        // const existingAccountResults = this.checkExistingAccountsInDB(username, email);
+        // existingAccountResults.then((existingAccounts) => {
+        //   return existingAccounts;
+        // });
+        // return existingAccountResults;
     }
     checkEmailAvailability(email) {
         const pool = new pg_1.Pool(dbCredentials_1.victorCredentials);
