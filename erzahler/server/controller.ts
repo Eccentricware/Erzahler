@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../secrets/firebase';
 import { getAuth } from 'firebase/auth';
+import { error } from 'console';
 
 const erzhaler = express();
 const port: number = 8000;
@@ -18,9 +19,15 @@ erzhaler.get('/', (request, response) => {
 
 erzhaler.post('/signup', (request, response) => {
   let { email, password, username } = request.body;
-  const existingAccounts: any = accountService.createAccountWithUsernameAndEmail(username, email, password);
+  const existingAccounts: any = accountService.createAccountWithUsernameAndEmail(
+    username,
+    email,
+    password
+  );
   existingAccounts.then((results: any) => {
     response.send(results);
+  }).catch((error: Error) => {
+    response.send(error.message);
   });
 });
 

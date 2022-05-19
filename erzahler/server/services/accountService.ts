@@ -3,7 +3,7 @@ import { checkExistingAccountsQuery } from '../../database/queries/accounts/chec
 import { checkEmailUnavailableQuery } from '../../database/queries/accounts/check-email-unavailable-query';
 import { checkUsernameUnavailableQuery } from '../../database/queries/accounts/check-username-unavailable-query';
 import { victorCredentials } from '../../secrets/dbCredentials';
-import { getAuth, fetchSignInMethodsForEmail, EmailAuthProvider } from 'firebase/auth';
+import { getAuth, fetchSignInMethodsForEmail, createUserWithEmailAndPassword, User } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../../secrets/firebase';
 
@@ -13,11 +13,24 @@ export class AccountService {
     email: string,
     password: string
   ): any {
-    const existingAccountResults = this.checkExistingAccountsInDB(username, email);
-    existingAccountResults.then((existingAccounts) => {
-      return existingAccounts;
-    });
-    return existingAccountResults;
+    const firebaseApp = initializeApp(firebaseConfig, 'Erzahler');
+    const auth = getAuth(firebaseApp);
+
+    const newUser: any = createUserWithEmailAndPassword(auth, email, password)
+      .then((newUser: any) => {
+        return newUser;
+      })
+      .catch((error: Error) => {
+        return error.message;
+      });
+
+    return newUser;
+
+    // const existingAccountResults = this.checkExistingAccountsInDB(username, email);
+    // existingAccountResults.then((existingAccounts) => {
+    //   return existingAccounts;
+    // });
+    // return existingAccountResults;
   }
 
   checkExistingAccountsInDB = (username: string, email: string) => {
