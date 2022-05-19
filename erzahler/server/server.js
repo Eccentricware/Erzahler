@@ -5,14 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const accountService_1 = require("./services/accountService");
-const body_parser_1 = __importDefault(require("body-parser"));
-const app_1 = require("firebase/app");
-const firebase_1 = require("../secrets/firebase");
 const erzhaler = (0, express_1.default)();
+const bodyParser = require('body-parser');
 const port = 8000;
-const firebaseApp = (0, app_1.initializeApp)(firebase_1.firebaseConfig);
-const auth = getAuth(firebaseApp);
-erzhaler.use(body_parser_1.default.json());
+erzhaler.use(bodyParser.json());
 const accountService = new accountService_1.AccountService();
 erzhaler.get('/', (request, response) => {
     const testFeedBack = `Who is up for an interactive story?`;

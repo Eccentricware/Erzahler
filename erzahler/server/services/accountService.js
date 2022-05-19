@@ -7,8 +7,6 @@ const check_email_unavailable_query_1 = require("../../database/queries/accounts
 const check_username_unavailable_query_1 = require("../../database/queries/accounts/check-username-unavailable-query");
 const dbCredentials_1 = require("../../secrets/dbCredentials");
 const auth_1 = require("firebase/auth");
-const app_1 = require("firebase/app");
-const firebase_1 = require("../../secrets/firebase");
 class AccountService {
     constructor() {
         this.checkExistingAccountsInDB = (username, email) => {
@@ -30,8 +28,7 @@ class AccountService {
     }
     checkEmailAvailability(email) {
         const pool = new pg_1.Pool(dbCredentials_1.victorCredentials);
-        const firebaseApp = (0, app_1.initializeApp)(firebase_1.firebaseConfig);
-        const auth = (0, auth_1.getAuth)(firebaseApp);
+        const auth = (0, auth_1.getAuth)();
         const emailAvailableInDB = pool.query(check_email_unavailable_query_1.checkEmailUnavailableQuery, [email])
             .then((emailCountResponse) => {
             const { email_unavailable } = emailCountResponse.rows[0];
@@ -43,28 +40,12 @@ class AccountService {
             }
         })
             .catch((e) => console.error(e.stack));
+        console.log('Just before FB stunt');
         const emailAvailableInFirebase = (0, auth_1.fetchSignInMethodsForEmail)(auth, email)
             .then((signInMethods) => {
-            if (signInMethods.length > 0) {
-                return false;
-            }
-            else {
-                return true;
-            }
-        })
-            .catch((error) => {
-            console.log(error);
+            console.log(signInMethods);
         });
-        return Promise.all([emailAvailableInDB, emailAvailableInFirebase])
-            .then((results) => {
-            if (results[0] === true && results[1] === true) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        });
-        // return emailAvailableInDB;
+        return emailAvailableInDB;
     }
     checkUsernameAvailability(username) {
         const pool = new pg_1.Pool(dbCredentials_1.victorCredentials);
