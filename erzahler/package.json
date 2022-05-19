@@ -2,10 +2,10 @@
   "name": "erzahler",
   "version": "1.0.0",
   "description": "",
-  "main": "jsc/server/server.js",
+  "main": "jsc/server/controller.js",
   "scripts": {
     "start:build": "tsc -w",
-    "start:run": "nodemon ./server/server.js",
+    "start:run": "nodemon ./server/controller.js",
     "start": "concurrently npm:start:*",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --project ./ -w"
