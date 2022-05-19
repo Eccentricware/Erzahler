@@ -13,6 +13,15 @@ erzhaler.get('/', (request, response) => {
   response.send(testFeedBack);
 });
 
+erzhaler.get('/api/accounts/check-email/:email', (request, response) => {
+  const { email } = request.params;
+  const emailAvailabilityCheck: any = accountService.checkEmailAvailability(email);
+  emailAvailabilityCheck.then((emailAvailable: any) => {
+    response.send(emailAvailable);
+  })
+  .catch((e: Error) => console.error(e.stack));
+});
+
 erzhaler.post('/signup', (request, response) => {
   let { email, password, username } = request.body;
   const existingAccounts: any = accountService.createAccountWithUsernameAndEmail(username, email, password);
