@@ -19,16 +19,14 @@ erzhaler.get('/', (request, response) => {
 
 erzhaler.post('/signup', (request, response) => {
   let { email, password, username } = request.body;
-  const existingAccounts: any = accountService.createAccountWithUsernameAndEmail(
-    username,
-    email,
-    password
-  );
-  existingAccounts.then((results: any) => {
+
+ accountService.createAccountWithUsernameAndEmail(username, email, password)
+  .then((results: any) => {
     response.send(results);
   }).catch((error: Error) => {
     response.send(error.message);
   });
+
 });
 
 erzhaler.get('/api/accounts/check-email/:email', (request, response) => {
@@ -42,7 +40,7 @@ erzhaler.get('/api/accounts/check-email/:email', (request, response) => {
 
 erzhaler.get('/api/accounts/check-username/:username', (request, response) => {
   const { username } = request.params;
-  const usernameAvailabilityCheck: any = accountService.checkUsernameAvailability(username);
+  const usernameAvailabilityCheck: any = accountService.checkUsernameInDB(username);
   usernameAvailabilityCheck.then((usernameAvailable: any) => {
     response.send(usernameAvailable);
   })
