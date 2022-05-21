@@ -34,11 +34,7 @@ CREATE TABLE IF NOT EXISTS rules(
   rule_id SERIAL,
   rule_name VARCHAR(50) NOT NULL,
   rule_description VARCHAR(1000),
-  signup_mod BOOLEAN,
-  order_mod BOOLEAN,
-  nuke_mod BOOLEAN,
-  adjustment_mod BOOLEAN,
-  vote_mod BOOLEAN,
+  rule_enabled BOOLEAN NOT NULL,
   PRIMARY KEY(rule_id)
 );
 
