@@ -29,17 +29,28 @@ CREATE TABLE IF NOT EXISTS games(
   PRIMARY KEY(game_id)
 );
 
-\echo 'Attempting to create rulesets table'
-CREATE TABLE IF NOT EXISTS rulesets(
-  ruleset_id SERIAL,
-  game_id INTEGER,
-  anonymous_play BOOLEAN,
-  dynamic_vote_start BOOLEAN,
-  fog_of_war BOOLEAN,
-  mad_orders BOOLEAN,
-  un_fast_force BOOLEAN,
-  PRIMARY KEY(ruleset_id),
-  FOREIGN key(game_id)
+\echo "Attempting to create rules table"
+CREATE TABLE IF NOT EXISTS rules(
+  rule_id SERIAL,
+  rule_name VARCHAR(50) NOT NULL,
+  rule_description VARCHAR(1000),
+  signup_mod BOOLEAN,
+  order_mod BOOLEAN,
+  nuke_mod BOOLEAN,
+  adjustment_mod BOOLEAN,
+  vote_mod BOOLEAN,
+  PRIMARY KEY(rule_id)
+);
+
+\echo "Attempting to create rules_in_games table"
+CREATE TABLE IF NOT EXISTS rules_in_games(
+  rule_in_game_id SERIAL,
+  rule_id INTEGER NOT NULL,
+  game_id INTEGER NOT NULL,
+  PRIMARY KEY(rule_in_game_id),
+  FOREIGN KEY(rule_id)
+    REFERENCES rules(rule_id),
+  FOREIGN KEY(game_id)
     REFERENCES games(game_id)
 );
 
