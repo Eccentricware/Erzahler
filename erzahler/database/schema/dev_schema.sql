@@ -252,56 +252,70 @@ CREATE TABLE IF NOT EXISTS unit_history(
     REFERENCES nodes(node_id)
 );
 
-\echo 'Attempting to create players table'
-CREATE TABLE IF NOT EXISTS players(
-  player_id SERIAL,
+\echo 'Attempting to create users table'
+CREATE TABLE IF NOT EXISTS users(
+  user_id SERIAL,
   firebase_id VARCHAR(32) NOT NULL,
   username VARCHAR(15) NOT NULL,
   email VARCHAR(25) NOT NULL,
   email_verified BOOLEAN NOT NULL DEFAULT false,
   signup_date TIMESTAMP NOT NULL,
   last_login TIMESTAMP NOT NULL,
-  player_status VARCHAR(15) NOT NULL DEFAULT 'unverified',
+  user_status VARCHAR(15) NOT NULL DEFAULT 'unverified',
   time_zone VARCHAR(25),
   nmr_count INTEGER NOT NULL DEFAULT 0,
   wins INTEGER,
   dropouts INTEGER NOT NULL DEFAULT 0,
   saves INTEGER,
   color_theme VARCHAR(15),
-  PRIMARY KEY(player_id)
+  PRIMARY KEY(user_id)
 );
 
-\echo 'Attempting to create player_ratings table'
-CREATE TABLE IF NOT EXISTS player_ratings(
-  player_rating_id SERIAL,
-  rated_player_id INTEGER NOT NULL,
-  rating_player_id INTEGER NOT NULL,
-  player_rating INTEGER NOT NULL,
+CREATE TABLE IF NOT EXISTS providers(
+  provider_id SERIAL,
+  user_id INTEGER NOT NULL,
+  provider_type VARCHAR NOT NULL,
+  uid VARCHAR NOT NULL,
+  email VARCHAR NOT NULL,
+  display_name VARCHAR,
+  phone_number VARCHAR,
+  photo_url VARCHAR,
+  PRIMARY KEY(provider_id),
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id)
+);
+
+\echo 'Attempting to create user_ratings table'
+CREATE TABLE IF NOT EXISTS user_ratings(
+  user_rating_id SERIAL,
+  rated_user_id INTEGER NOT NULL,
+  rating_user_id INTEGER NOT NULL,
+  user_rating INTEGER NOT NULL,
   rating_type VARCHAR(15) NOT NULL,
-  PRIMARY KEY(player_rating_id),
-  FOREIGN KEY(rated_player_id)
-    REFERENCES players(player_id),
-  FOREIGN KEY(rating_player_id)
-    REFERENCES players(player_id)
+  PRIMARY KEY(user_rating_id),
+  FOREIGN KEY(rated_user_id)
+    REFERENCES users(user_id),
+  FOREIGN KEY(rating_user_id)
+    REFERENCES users(user_id)
 );
 
-\echo 'Attempting to create player_relationships table'
-CREATE TABLE IF NOT EXISTS player_relationships(
-  player_relationship_id SERIAL,
-  player_id INTEGER NOT NULL,
-  related_player_id INTEGER NOT NULL,
+\echo 'Attempting to create user_relationships table'
+CREATE TABLE IF NOT EXISTS user_relationships(
+  user_relationship_id SERIAL,
+  user_id INTEGER NOT NULL,
+  related_user_id INTEGER NOT NULL,
   relationship_type VARCHAR(15) NOT NULL,
-  PRIMARY KEY(player_relationship_id),
-  FOREIGN KEY(player_id)
-    REFERENCES players(player_id),
-  FOREIGN KEY(related_player_id)
-    REFERENCES players(player_id)
+  PRIMARY KEY(user_relationship_id),
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id),
+  FOREIGN KEY(related_user_id)
+    REFERENCES users(user_id)
 );
 
 \echo 'Attempting to create assignments table'
 CREATE TABLE IF NOT EXISTS assignments(
   assignment_id SERIAL,
-  player_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
   game_id INTEGER NOT NULL,
   country_id INTEGER,
   assignment_type VARCHAR(15) NOT NULL,
@@ -309,8 +323,8 @@ CREATE TABLE IF NOT EXISTS assignments(
   assignment_end TIMESTAMP,
   nmr_count INTEGER,
   PRIMARY KEY(assignment_id),
-  FOREIGN KEY(player_id)
-    REFERENCES players(player_id),
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id),
   FOREIGN KEY(game_id)
     REFERENCES games(game_id),
   FOREIGN KEY(country_id)
@@ -339,8 +353,8 @@ CREATE TABLE IF NOT EXISTS message_group_members(
 \echo 'Attempting to create messages table'
 CREATE TABLE IF NOT EXISTS messages(
   message_id SERIAL,
-  sending_player_id INTEGER,
-  receiving_player_id INTEGER,
+  sending_user_id INTEGER,
+  receiving_user_id INTEGER,
   sending_country_id INTEGER,
   receiving_country_id INTEGER,
   message_group_id INTEGER,
@@ -348,10 +362,10 @@ CREATE TABLE IF NOT EXISTS messages(
   time_sent TIMESTAMP NOT NULL,
   message_type VARCHAR(15) NOT NULL,
   PRIMARY KEY(message_id),
-  FOREIGN KEY(sending_player_id)
-    REFERENCES players(player_id),
-  FOREIGN KEY(receiving_player_id)
-    REFERENCES players(player_id),
+  FOREIGN KEY(sending_user_id)
+    REFERENCES users(user_id),
+  FOREIGN KEY(receiving_user_id)
+    REFERENCES users(user_id),
   FOREIGN KEY(sending_country_id)
     REFERENCES countries(country_id),
   FOREIGN KEY(sending_country_id)
@@ -366,13 +380,13 @@ CREATE TABLE IF NOT EXISTS messages(
 CREATE TABLE IF NOT EXISTS message_read_receipts(
   message_read_receipt_id SERIAL,
   message_id INTEGER NOT NULL,
-  player_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
   message_read BOOLEAN NOT NULL,
   PRIMARY KEY(message_read_receipt_id),
   FOREIGN KEY(message_id)
     REFERENCES messages(message_id),
-  FOREIGN KEY(player_id)
-    REFERENCES players(player_id)
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id)
 );
 
 \echo 'Attempting to create order_options table'
