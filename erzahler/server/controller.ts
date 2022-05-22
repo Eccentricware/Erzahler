@@ -1,10 +1,6 @@
 import express from 'express';
 import { AccountService } from './services/accountService';
 import bodyParser from 'body-parser';
-import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from '../secrets/firebase';
-import { getAuth } from 'firebase/auth';
-import { error } from 'console';
 
 const erzhaler = express();
 const port: number = 8000;
@@ -17,7 +13,7 @@ erzhaler.get('/', (request, response) => {
   response.send(testFeedBack);
 });
 
-erzhaler.post('/signup', (request, response) => {
+erzhaler.post('/api/register-by-email', (request, response) => {
   let { email, password, username } = request.body;
 
  accountService.createAccountWithUsernameAndEmail(username, email, password)
@@ -29,7 +25,7 @@ erzhaler.post('/signup', (request, response) => {
 
 });
 
-erzhaler.get('/api/accounts/check-email/:email', (request, response) => {
+erzhaler.get('/api/email-available-check/:email', (request, response) => {
   const { email } = request.params;
   const emailAvailabilityCheck: any = accountService.checkEmailAvailability(email);
   emailAvailabilityCheck.then((emailAvailable: any) => {
@@ -38,7 +34,7 @@ erzhaler.get('/api/accounts/check-email/:email', (request, response) => {
     .catch((e: Error) => console.error(e.stack));
 });
 
-erzhaler.get('/api/accounts/check-username/:username', (request, response) => {
+erzhaler.get('/api/username-available-check/:username', (request, response) => {
   const { username } = request.params;
   const usernameAvailabilityCheck: any = accountService.checkUsernameInDB(username);
   usernameAvailabilityCheck.then((usernameAvailable: any) => {

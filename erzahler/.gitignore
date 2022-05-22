@@ -1,3 +1,5 @@
 jsc
+jsc/database
+jasc/server
 node_modules
 secrets
