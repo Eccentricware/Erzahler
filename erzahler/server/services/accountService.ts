@@ -2,7 +2,7 @@ import { Pool } from 'pg';
 import { getUserEmailQuery } from '../../database/queries/accounts/get-user-email-query';
 import { getUserUsernameQuery } from '../../database/queries/accounts/get-user-username-query';
 import { victorCredentials, victorAuthCredentials } from '../../secrets/dbCredentials';
-import { getAuth, fetchSignInMethodsForEmail, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
+import { getAuth, fetchSignInMethodsForEmail, createUserWithEmailAndPassword, UserCredential, signInWithPopup, GoogleAuthProvider, User, sendEmailVerification } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../../secrets/firebase';
 import { CredentialCheck } from '../../models/credential-check';
@@ -19,16 +19,18 @@ export class AccountService {
 
         if (checkResult.credentialsAvailable === true) {
           return createUserWithEmailAndPassword(auth, email, password)
-            .then((newUser: UserCredential) => {
+            .then((newUserCredentials: UserCredential) => {
+              if (!newUserCredentials.user.emailVerified) {
+                sendEmailVerification(newUserCredentials.user);
+              }
+
               const authPool = new Pool(victorAuthCredentials);
               const mainPool = new Pool(victorCredentials);
 
               return Promise.all([
-                this.addUserToDatabase(authPool, newUser, username),
-                this.addUserToDatabase(mainPool, newUser, username)
+                this.addUserToDatabase(authPool, newUserCredentials.user, username),
+                this.addUserToDatabase(mainPool, newUserCredentials.user, username)
               ]).then((creationResult: any) => {
-                console.log('Auth Creation Result:', creationResult[0]);
-                console.log('Main Creation Result:', creationResult[1]);
                 const creationDetails: any = {
                   auth: true,
                   main: true,
@@ -136,7 +138,6 @@ export class AccountService {
         }
       })
       .catch((error: Error) => {
-        console.log(error);
         return error.message;
       });
   }
@@ -165,15 +166,15 @@ export class AccountService {
       .catch((e: Error) => console.error(e.message));
   }
 
-  async addUserToDatabase(pool: Pool, newUser: UserCredential, username: string): Promise<any> {
+  async addUserToDatabase(pool: Pool, newUser: User, username: string): Promise<any> {
     return pool.query(
       createUserQuery,
       [
         username,
-        newUser.user.uid,
-        newUser.user.email,
-        newUser.user.emailVerified,
-        newUser.user.metadata.creationTime
+        newUser.uid,
+        newUser.email,
+        newUser.emailVerified,
+        newUser.metadata.creationTime
       ]
     ).then(() => {
       return this.getUserId(username).then((userId) => {
@@ -181,12 +182,12 @@ export class AccountService {
           createProviderQuery,
           [
             userId,
-            newUser.user.providerData[0].providerId,
-            newUser.user.providerData[0].uid,
-            newUser.user.providerData[0].displayName,
-            newUser.user.providerData[0].email,
-            newUser.user.providerData[0].phoneNumber,
-            newUser.user.providerData[0].photoURL
+            newUser.providerData[0].providerId,
+            newUser.providerData[0].uid,
+            newUser.providerData[0].displayName,
+            newUser.providerData[0].email,
+            newUser.providerData[0].phoneNumber,
+            newUser.providerData[0].photoURL
           ]
         ).then(() => {
           return true;
@@ -198,5 +199,34 @@ export class AccountService {
     }).catch((error: Error) => {
       return error.message;
     });
+  }
+
+  async signInWithGoogle() {
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(auth, provider)
+      .then((result) => {
+        // This gives you a Google Access Token. You can use it to access the Google API.
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential) {
+          const token = credential.accessToken;
+        }
+        // The signed-in user info.
+        const user = result.user;
+        return user;
+        // ...
+      }).catch((error) => {
+        // Handle Errors here.
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        // The email of the user's account used.
+        const email = error.customData.email;
+        // The AuthCredential type that was used.
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        return {
+          error: error.message
+        };
+        // ...
+      });
   }
 }

@@ -255,22 +255,13 @@ CREATE TABLE IF NOT EXISTS unit_history(
 \echo 'Attempting to create users table'
 CREATE TABLE IF NOT EXISTS users(
   user_id SERIAL,
-<<<<<<< HEAD
-=======
-  firebase_id VARCHAR(32) NOT NULL,
->>>>>>> main
   username VARCHAR(15) NOT NULL,
   firebase_uid VARCHAR(64) NOT NULL,
   email VARCHAR (100) NOT NULL,
   email_verified BOOLEAN,
   signup_date TIMESTAMP NOT NULL,
-<<<<<<< HEAD
-  last_login TIMESTAMP,
-  player_status VARCHAR(15) NOT NULL DEFAULT 'unverified',
-=======
   last_login TIMESTAMP NOT NULL,
   user_status VARCHAR(15) NOT NULL DEFAULT 'unverified',
->>>>>>> main
   time_zone VARCHAR(25),
   nmr_count INTEGER NOT NULL DEFAULT 0,
   wins INTEGER,
@@ -278,32 +269,6 @@ CREATE TABLE IF NOT EXISTS users(
   saves INTEGER,
   color_theme VARCHAR(15),
   PRIMARY KEY(user_id)
-<<<<<<< HEAD
-);
-
-CREATE TABLE IF NOT EXISTS providers(
-  provider_id SERIAL,
-  user_id INTEGER NOT NULL,
-  provider_type VARCHAR NOT NULL,
-  uid VARCHAR NOT NULL,
-  email VARCHAR NOT NULL,
-  display_name VARCHAR,
-  phone_number VARCHAR,
-  photo_url VARCHAR,
-  PRIMARY KEY(provider_id),
-  FOREIGN KEY(user_id)
-    REFERENCES users(user_id)
-);
-
-\echo 'Attempting to create player_ratings table'
-CREATE TABLE IF NOT EXISTS player_ratings(
-  player_rating_id SERIAL,
-  rated_user_id INTEGER NOT NULL,
-  rating_user_id INTEGER NOT NULL,
-  player_rating INTEGER NOT NULL,
-  rating_type VARCHAR(15) NOT NULL,
-  PRIMARY KEY(player_rating_id),
-=======
 );
 
 CREATE TABLE IF NOT EXISTS providers(
@@ -328,22 +293,12 @@ CREATE TABLE IF NOT EXISTS user_ratings(
   user_rating INTEGER NOT NULL,
   rating_type VARCHAR(15) NOT NULL,
   PRIMARY KEY(user_rating_id),
->>>>>>> main
   FOREIGN KEY(rated_user_id)
     REFERENCES users(user_id),
   FOREIGN KEY(rating_user_id)
     REFERENCES users(user_id)
 );
 
-<<<<<<< HEAD
-\echo 'Attempting to create player_relationships table'
-CREATE TABLE IF NOT EXISTS player_relationships(
-  player_relationship_id SERIAL,
-  user_id INTEGER NOT NULL,
-  related_user_id INTEGER NOT NULL,
-  relationship_type VARCHAR(15) NOT NULL,
-  PRIMARY KEY(player_relationship_id),
-=======
 \echo 'Attempting to create user_relationships table'
 CREATE TABLE IF NOT EXISTS user_relationships(
   user_relationship_id SERIAL,
@@ -351,7 +306,6 @@ CREATE TABLE IF NOT EXISTS user_relationships(
   related_user_id INTEGER NOT NULL,
   relationship_type VARCHAR(15) NOT NULL,
   PRIMARY KEY(user_relationship_id),
->>>>>>> main
   FOREIGN KEY(user_id)
     REFERENCES users(user_id),
   FOREIGN KEY(related_user_id)
