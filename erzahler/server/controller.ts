@@ -45,7 +45,7 @@ erzhaler.post('/api/sign-in-with-google', (request, response) => {
     .catch((error: Error) => {
       response.send(error.message);
     })
-})
+});
 
 erzhaler.get('/api/username-available-check/:username', (request, response) => {
   const { username } = request.params;

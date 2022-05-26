@@ -131,6 +131,7 @@ export class AccountService {
 
     return fetchSignInMethodsForEmail(auth, email)
       .then((signInMethods: any) => {
+        console.log('Sign in methods:', signInMethods);
         if (signInMethods.length === 0) {
           return true;
         } else {
