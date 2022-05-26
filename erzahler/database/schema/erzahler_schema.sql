@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/schema/dev_schema.sql
+--sudo -u postgres psql < database/schema/erzahler_schema.sql
 
 DROP DATABASE IF EXISTS erzahler_dev;
 CREATE DATABASE erzahler_dev;
@@ -255,12 +255,8 @@ CREATE TABLE IF NOT EXISTS unit_history(
 \echo 'Attempting to create users table'
 CREATE TABLE IF NOT EXISTS users(
   user_id SERIAL,
-  username VARCHAR(15) NOT NULL,
-  firebase_uid VARCHAR(64) NOT NULL,
-  email VARCHAR (100) NOT NULL,
-  email_verified BOOLEAN,
-  signup_date TIMESTAMP NOT NULL,
-  last_login TIMESTAMP NOT NULL,
+  auth_user_id INTEGER NOT NULL, --"Foreign Key" to the erzahler_auth.users
+  username VARCHAR(15) UNIQUE NOT NULL,
   user_status VARCHAR(15) NOT NULL DEFAULT 'unverified',
   time_zone VARCHAR(25),
   nmr_count INTEGER NOT NULL DEFAULT 0,
@@ -269,20 +265,6 @@ CREATE TABLE IF NOT EXISTS users(
   saves INTEGER,
   color_theme VARCHAR(15),
   PRIMARY KEY(user_id)
-);
-
-CREATE TABLE IF NOT EXISTS providers(
-  provider_id SERIAL,
-  user_id INTEGER NOT NULL,
-  provider_type VARCHAR NOT NULL,
-  uid VARCHAR NOT NULL,
-  email VARCHAR NOT NULL,
-  display_name VARCHAR,
-  phone_number VARCHAR,
-  photo_url VARCHAR,
-  PRIMARY KEY(provider_id),
-  FOREIGN KEY(user_id)
-    REFERENCES users(user_id)
 );
 
 \echo 'Attempting to create user_ratings table'
