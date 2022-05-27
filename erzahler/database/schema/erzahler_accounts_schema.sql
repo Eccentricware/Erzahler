@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users(
   creation_time_string VARCHAR(50) NOT NULL,
   last_login_stamp TIMESTAMP NOT NULL,
   last_login_time_string VARCHAR(50) NOT NULL,
+  user_status VARCHAR(100) NOT NULL,
   PRIMARY KEY(user_id)
 );
 

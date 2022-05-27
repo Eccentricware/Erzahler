@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS rules(
   rule_id SERIAL,
   rule_name VARCHAR(50) NOT NULL,
   rule_description VARCHAR(1000),
-  rule_enabled BOOLEAN NOT NULL,
   PRIMARY KEY(rule_id)
 );
 
@@ -43,6 +42,7 @@ CREATE TABLE IF NOT EXISTS rules_in_games(
   rule_in_game_id SERIAL,
   rule_id INTEGER NOT NULL,
   game_id INTEGER NOT NULL,
+  rule_enabled BOOLEAN NOT NULL DEFAULT false,
   PRIMARY KEY(rule_in_game_id),
   FOREIGN KEY(rule_id)
     REFERENCES rules(rule_id),
@@ -255,16 +255,50 @@ CREATE TABLE IF NOT EXISTS unit_history(
 \echo 'Attempting to create users table'
 CREATE TABLE IF NOT EXISTS users(
   user_id SERIAL,
-  auth_user_id INTEGER NOT NULL, --"Foreign Key" to the erzahler_auth.users
-  username VARCHAR(15) UNIQUE NOT NULL,
-  user_status VARCHAR(15) NOT NULL DEFAULT 'unverified',
+  username VARCHAR(100) UNIQUE NOT NULL,
+  user_status VARCHAR(100) NOT NULL,
+  verification_deadline TIMESTAMP,
   time_zone VARCHAR(25),
+  created_timestamp TIMESTAMP NOT NULL,
+  last_login_stamp TIMESTAMP NOT NULL,
+  classic_unit_render BOOLEAN NOT NULL DEFAULT false,
+  city_render_size INTEGER NOT NULL DEFAULT 2,
+  label_render_size INTEGER NOT NULL DEFAULT 2,
+  unit_render_size INTEGER NOT NULL DEFAULT 2,
   nmr_count INTEGER NOT NULL DEFAULT 0,
   wins INTEGER,
   dropouts INTEGER NOT NULL DEFAULT 0,
   saves INTEGER,
   color_theme VARCHAR(15),
   PRIMARY KEY(user_id)
+);
+
+\echo 'Attempting to create firebase_users table'
+CREATE TABLE IF NOT EXISTS firebase_users(
+  firebase_user_id SERIAL,
+  firebase_uid VARCHAR(150) NOT NULL,
+  user_id INTEGER NOT NULL,
+  username_linked BOOLEAN NOT NULL DEFAULT false,
+  email VARCHAR,
+  email_veriied BOOLEAN NOT NULL DEFAULT false,
+  PRIMARY KEY(firebase_user_id),
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id)
+);
+
+\echo 'Attempting to create providers table'
+CREATE TABLE IF NOT EXISTS providers(
+  provider_id SERIAL,
+  firebase_user_id INTEGER NOT NULL,
+  provider_type VARCHAR NOT NULL,
+  uid VARCHAR NOT NULL,
+  email VARCHAR NOT NULL,
+  display_name VARCHAR,
+  phone_number VARCHAR,
+  photo_url VARCHAR,
+  PRIMARY KEY(provider_id),
+  FOREIGN KEY(firebase_user_id)
+    REFERENCES firebase_users(firebase_user_id)
 );
 
 \echo 'Attempting to create user_ratings table'

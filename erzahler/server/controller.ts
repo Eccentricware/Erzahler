@@ -47,10 +47,11 @@ erzhaler.post('/api/sign-in-with-google', (request, response) => {
     })
 });
 
-erzhaler.get('/api/username-available-check/:username', (request, response) => {
+erzhaler.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
   accountService.checkUsernameInDB(username)
     .then((usernameAvailable: any) => {
+      console.log(usernameAvailable);
       response.send(usernameAvailable);
     })
     .catch((e: Error) => console.error(e.stack));

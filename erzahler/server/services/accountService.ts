@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { getUserEmailQuery } from '../../database/queries/accounts/get-user-email-query';
-import { getUserUsernameQuery } from '../../database/queries/accounts/get-user-username-query';
+import { getUsernameQuery } from '../../database/queries/accounts/get-username-query';
 import { victorCredentials, victorAuthCredentials } from '../../secrets/dbCredentials';
 import { getAuth, fetchSignInMethodsForEmail, createUserWithEmailAndPassword, UserCredential, signInWithPopup, GoogleAuthProvider, User, sendEmailVerification } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
@@ -146,7 +146,7 @@ export class AccountService {
   async checkUsernameInDB(username: string): Promise<any> {
     const pool = new Pool(victorCredentials);
 
-    return pool.query(getUserUsernameQuery, [username])
+    return pool.query(getUsernameQuery, [username])
     .then((usernameCountResponse: any) => {
       if (usernameCountResponse.rows.length === 0) {
         return true;
@@ -160,7 +160,7 @@ export class AccountService {
   async getUserId(username: string): Promise<any> {
     const pool = new Pool(victorCredentials);
 
-    return pool.query(getUserUsernameQuery, [username])
+    return pool.query(getUsernameQuery, [username])
       .then((userResult: any) => {
         return userResult.rows[0].user_id;
       })
