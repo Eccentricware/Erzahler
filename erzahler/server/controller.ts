@@ -1,6 +1,9 @@
 import express from 'express';
 import { AccountService } from './services/accountService';
 import bodyParser from 'body-parser';
+import { initializeApp, applicationDefault } from 'firebase-admin/app';
+import admin from 'firebase-admin';
+const serviceAccount = require('/home/ubox/personal/Blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-f93fded183.json');
 
 const erzhaler = express();
 const cors = require('cors');
@@ -8,6 +11,12 @@ const port: number = 8000;
 
 erzhaler.use(cors());
 erzhaler.use(bodyParser.json());
+console.log('Before Initialize')
+initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+console.log('After initialize');
+
 const accountService = new AccountService();
 
 erzhaler.get('/', (request, response) => {
@@ -15,16 +24,17 @@ erzhaler.get('/', (request, response) => {
   response.send(testFeedBack);
 });
 
-erzhaler.post('/api/register-by-email', (request, response) => {
-  let { username, email, password } = request.body;
+erzhaler.post('/register-user', (request, response) => {
+  let { idToken, username, email, password } = request.body;
 
-  accountService.createAccountWithUsernameAndEmail(username, email, password)
-    .then((results: any) => {
-      response.send(results);
-    }).catch((error: Error) => {
+  accountService.addUserWithEmail(idToken, username, email)
+    .then((result: any) => {
+      response.send(result);
+
+    })
+    .catch((error: Error) => {
       response.send(error.message);
     });
-
 });
 
 erzhaler.get('/api/email-available-check/:email', (request, response) => {
@@ -37,14 +47,14 @@ erzhaler.get('/api/email-available-check/:email', (request, response) => {
 });
 
 erzhaler.post('/api/sign-in-with-google', (request, response) => {
-  accountService.signInWithGoogle()
-    .then((user: any) => {
-      console.log('Final response user:', user);
-      response.send(user);
-    })
-    .catch((error: Error) => {
-      response.send(error.message);
-    })
+  // accountService.signInWithGoogle()
+  //   .then((user: any) => {
+  //     console.log('Final response user:', user);
+  //     response.send(user);
+  //   })
+  //   .catch((error: Error) => {
+  //     response.send(error.message);
+  //   })
 });
 
 erzhaler.get('/check-username/:username', (request, response) => {

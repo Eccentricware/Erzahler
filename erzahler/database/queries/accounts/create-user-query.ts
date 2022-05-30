@@ -1,11 +1,12 @@
 export const createUserQuery = `
   INSERT INTO users (
     username,
-    firebase_uid,
     email,
     email_verified,
-    signup_date
+    verification_deadline,
+    created_timestamp,
+    last_sign_in_time
   ) VALUES (
-    $1, $2, $3, $4, $5
+    $1, $2, $3, $4, $5, $6
   );
 `;
