@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS games(
   blind_administrator BOOLEAN,
   private_game BOOLEAN,
   hidden_game BOOLEAN,
+  weekly_deadline BOOLEAN,
   order_deadline TIMESTAMP,
   retreat_deadline TIMESTAMP,
   adjustment_deadline TIMESTAMP,
@@ -25,7 +26,11 @@ CREATE TABLE IF NOT EXISTS games(
   double_first_turn BOOLEAN,
   nmr_removal INTEGER,
   partial_roster_start INTEGER,
-  delay_lock INTEGER,
+  vote_delay_lock INTEGER, --Hours before the deadline before can't delay
+  vote_delay_percent INTEGER, --Precent of players required to pass vote
+  vote_delay_count INTEGER, --Number of players required to pass vote
+  vote_delay_display_percent INTEGER, --Percent of players voting yes before public
+  vote_delay_display_count INTEGER, --Count of players voting yes before public,
   PRIMARY KEY(game_id)
 );
 
@@ -48,6 +53,31 @@ CREATE TABLE IF NOT EXISTS rules_in_games(
     REFERENCES rules(rule_id),
   FOREIGN KEY(game_id)
     REFERENCES games(game_id)
+);
+
+\echo "Attempting to create alerts table"
+CREATE TABLE IF NOT EXISTS alerts(
+  alert_id SERIAL,
+  game_id INTEGER NOT NULL,
+  alert_type VARCHAR(15) NOT NULL,
+  alert_time TIMESTAMP NOT NULL,
+  alert_message VARCHAR(250),
+  PRIMARY KEY(alert_id),
+  FOREIGN KEY(game_id)
+    REFERENCES games(game_id)
+);
+
+\echo "Attempting to create alert_read_receipts table"
+CREATE TABLE IF NOT EXISTS alert_read_receipts(
+  alert_read_receipt_id SERIAL,
+  alert_id INTEGER NOT NULL,
+  country_id INTEGER NOT NULL,
+  alert_read BOOLEAN NOT NULL DEFAULT false,
+  PRIMARY KEY(alert_read_receipt_id),
+  FOREIGN KEY(alert_id)
+    REFERENCES alerts(alert_id),
+  FOREIGN KEY(county_id)
+    REFERENCES countries(country_id)
 );
 
 \echo 'Attempting to create turns table'
@@ -91,6 +121,19 @@ CREATE TABLE IF NOT EXISTS country_history(
     REFERENCES countries(country_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id)
+);
+
+\echo 'Attempting to create watched_countries table'
+CREATE IF NOT EXISTS watched_countries(
+  watched_country_id SERIAL,
+  user_id INTEGER NOT NULL,
+  country_id INTEGER NOT NULL,
+  watched BOOLEAN NOT NULL DEFAULT true,
+  PRIMARY KEY(watched_country_id),
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id),
+  FOREIGN KEY(country_id)
+    REFERENCES countries(country_id)
 );
 
 \echo 'Attempting to create provinces table'
@@ -196,9 +239,9 @@ CREATE TABLE IF NOT EXISTS nominations(
   turn_id INTEGER NOT NULL,
   nominator_id INTEGER NOT NULL,
   nomination_type VARCHAR(15) NOT NULL,
-  country_1_id INTEGER,
-  country_2_id INTEGER,
-  country_3_id INTEGER,
+  country_1 INTEGER,
+  country_2 INTEGER,
+  country_3 INTEGER,
   deadline TIMESTAMP NOT NULL,
   PRIMARY KEY(nomination_id),
   FOREIGN KEY(turn_id)
@@ -257,48 +300,44 @@ CREATE TABLE IF NOT EXISTS users(
   user_id SERIAL,
   username VARCHAR(100) UNIQUE NOT NULL,
   user_status VARCHAR(100) NOT NULL,
+  verified BOOLEAN NOT NULL DEFAULT false,
   verification_deadline TIMESTAMP,
   time_zone VARCHAR(25),
   created_timestamp TIMESTAMP NOT NULL,
-  last_login_stamp TIMESTAMP NOT NULL,
+  last_sign_in_time TIMESTAMP,
   classic_unit_render BOOLEAN NOT NULL DEFAULT false,
   city_render_size INTEGER NOT NULL DEFAULT 2,
   label_render_size INTEGER NOT NULL DEFAULT 2,
   unit_render_size INTEGER NOT NULL DEFAULT 2,
   nmr_count INTEGER NOT NULL DEFAULT 0,
-  wins INTEGER,
+  wins INTEGER DEFAULT 0,
   dropouts INTEGER NOT NULL DEFAULT 0,
-  saves INTEGER,
+  saves INTEGER DEFAULT 0,
   color_theme VARCHAR(15),
+  logged_in BOOLEAN,
+  display_presence BOOLEAN NOT NULL DEFAULT false,
+  site_admin BOOLEAN NOT NULL DEFAULT false,
+  real_name VARCHAR(32),
+  display_real_name BOOLEAN DEFAULT false,
   PRIMARY KEY(user_id)
 );
 
-\echo 'Attempting to create firebase_users table'
-CREATE TABLE IF NOT EXISTS firebase_users(
-  firebase_user_id SERIAL,
-  firebase_uid VARCHAR(150) NOT NULL,
+\echo 'Attempting to create firebase_providers table'
+CREATE TABLE IF NOT EXISTS firebase_providers(
+  firebase_provider_id SERIAL,
   user_id INTEGER NOT NULL,
-  username_linked BOOLEAN NOT NULL DEFAULT false,
-  email VARCHAR,
-  email_veriied BOOLEAN NOT NULL DEFAULT false,
-  PRIMARY KEY(firebase_user_id),
+  provider_id VARCHAR(15) NOT NULL,
+  uid VARCHAR(1024) NOT NULL,
+  email VARCHAR(50),
+  email_verified BOOLEAN,
+  photo_url VARCHAR(1024),
+  disabled BOOLEAN NOT NULL DEFAULT false,
+  display_name VARCHAR(64),
+  creation_time TIMESTAMP NOT NULL,
+  last_sign_in_time TIMESTAMP NOT NULL,
+  PRIMARY KEY(firebase_provider_id),
   FOREIGN KEY(user_id)
     REFERENCES users(user_id)
-);
-
-\echo 'Attempting to create providers table'
-CREATE TABLE IF NOT EXISTS providers(
-  provider_id SERIAL,
-  firebase_user_id INTEGER NOT NULL,
-  provider_type VARCHAR NOT NULL,
-  uid VARCHAR NOT NULL,
-  email VARCHAR NOT NULL,
-  display_name VARCHAR,
-  phone_number VARCHAR,
-  photo_url VARCHAR,
-  PRIMARY KEY(provider_id),
-  FOREIGN KEY(firebase_user_id)
-    REFERENCES firebase_users(firebase_user_id)
 );
 
 \echo 'Attempting to create user_ratings table'
@@ -325,6 +364,21 @@ CREATE TABLE IF NOT EXISTS user_relationships(
   FOREIGN KEY(user_id)
     REFERENCES users(user_id),
   FOREIGN KEY(related_user_id)
+    REFERENCES users(user_id)
+);
+
+\echo 'Attempting to create user_reports table'
+CREATE TABLE IF NOT EXISTS user_reports(
+  report_id SERIAL,
+  reporting_user_id INTEGER NOT NULL,
+  reported_user_id INTEGER,
+  incident_game_id INTEGER,
+  incident_type VARCHAR(50),
+  incident_description VARCHAR(MAX),
+  PRIMARY KEY(report_id),
+  FOREIGN KEY(reporting_user_id)
+    REFERENCES users(user_id),
+  FOREIGN KEY(reported_user_id)
     REFERENCES users(user_id)
 );
 
@@ -445,10 +499,11 @@ CREATE TABLE IF NOT EXISTS orders(
   order_id SERIAL,
   order_set_id INTEGER NOT NULL,
   order_type VARCHAR(15) NOT NULL,
-  order_status VARCHAR(15) NOT NULL,
   ordered_unit_id INTEGER NOT NULL,
   secondary_unit_id INTEGER,
   destination_id INTEGER,
+  order_status VARCHAR(15),
+  order_success BOOLEAN,
   PRIMARY KEY(order_id),
   FOREIGN KEY(order_set_id)
     REFERENCES order_sets(order_set_id),
