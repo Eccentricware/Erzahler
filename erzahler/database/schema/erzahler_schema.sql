@@ -55,31 +55,6 @@ CREATE TABLE IF NOT EXISTS rules_in_games(
     REFERENCES games(game_id)
 );
 
-\echo "Attempting to create alerts table"
-CREATE TABLE IF NOT EXISTS alerts(
-  alert_id SERIAL,
-  game_id INTEGER NOT NULL,
-  alert_type VARCHAR(15) NOT NULL,
-  alert_time TIMESTAMP NOT NULL,
-  alert_message VARCHAR(250),
-  PRIMARY KEY(alert_id),
-  FOREIGN KEY(game_id)
-    REFERENCES games(game_id)
-);
-
-\echo "Attempting to create alert_read_receipts table"
-CREATE TABLE IF NOT EXISTS alert_read_receipts(
-  alert_read_receipt_id SERIAL,
-  alert_id INTEGER NOT NULL,
-  country_id INTEGER NOT NULL,
-  alert_read BOOLEAN NOT NULL DEFAULT false,
-  PRIMARY KEY(alert_read_receipt_id),
-  FOREIGN KEY(alert_id)
-    REFERENCES alerts(alert_id),
-  FOREIGN KEY(county_id)
-    REFERENCES countries(country_id)
-);
-
 \echo 'Attempting to create turns table'
 CREATE TABLE IF NOT EXISTS turns(
   turn_id SERIAL,
@@ -123,15 +98,29 @@ CREATE TABLE IF NOT EXISTS country_history(
     REFERENCES turns(turn_id)
 );
 
-\echo 'Attempting to create watched_countries table'
-CREATE IF NOT EXISTS watched_countries(
-  watched_country_id SERIAL,
-  user_id INTEGER NOT NULL,
+
+
+\echo "Attempting to create alerts table"
+CREATE TABLE IF NOT EXISTS alerts(
+  alert_id SERIAL,
+  game_id INTEGER NOT NULL,
+  alert_type VARCHAR(15) NOT NULL,
+  alert_time TIMESTAMP NOT NULL,
+  alert_message VARCHAR(250),
+  PRIMARY KEY(alert_id),
+  FOREIGN KEY(game_id)
+    REFERENCES games(game_id)
+);
+
+\echo "Attempting to create alert_read_receipts table"
+CREATE TABLE IF NOT EXISTS alert_read_receipts(
+  alert_read_receipt_id SERIAL,
+  alert_id INTEGER NOT NULL,
   country_id INTEGER NOT NULL,
-  watched BOOLEAN NOT NULL DEFAULT true,
-  PRIMARY KEY(watched_country_id),
-  FOREIGN KEY(user_id)
-    REFERENCES users(user_id),
+  alert_read BOOLEAN NOT NULL DEFAULT false,
+  PRIMARY KEY(alert_read_receipt_id),
+  FOREIGN KEY(alert_id)
+    REFERENCES alerts(alert_id),
   FOREIGN KEY(country_id)
     REFERENCES countries(country_id)
 );
@@ -239,9 +228,9 @@ CREATE TABLE IF NOT EXISTS nominations(
   turn_id INTEGER NOT NULL,
   nominator_id INTEGER NOT NULL,
   nomination_type VARCHAR(15) NOT NULL,
-  country_1 INTEGER,
-  country_2 INTEGER,
-  country_3 INTEGER,
+  country_1_id INTEGER,
+  country_2_id INTEGER,
+  country_3_id INTEGER,
   deadline TIMESTAMP NOT NULL,
   PRIMARY KEY(nomination_id),
   FOREIGN KEY(turn_id)
@@ -367,6 +356,19 @@ CREATE TABLE IF NOT EXISTS user_relationships(
     REFERENCES users(user_id)
 );
 
+\echo 'Attempting to create watched_countries table'
+CREATE TABLE IF NOT EXISTS watched_countries(
+  watched_country_id SERIAL,
+  user_id INTEGER NOT NULL,
+  country_id INTEGER NOT NULL,
+  watched BOOLEAN NOT NULL DEFAULT true,
+  PRIMARY KEY(watched_country_id),
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id),
+  FOREIGN KEY(country_id)
+    REFERENCES countries(country_id)
+);
+
 \echo 'Attempting to create user_reports table'
 CREATE TABLE IF NOT EXISTS user_reports(
   report_id SERIAL,
@@ -374,7 +376,7 @@ CREATE TABLE IF NOT EXISTS user_reports(
   reported_user_id INTEGER,
   incident_game_id INTEGER,
   incident_type VARCHAR(50),
-  incident_description VARCHAR(MAX),
+  incident_description VARCHAR(1024),
   PRIMARY KEY(report_id),
   FOREIGN KEY(reporting_user_id)
     REFERENCES users(user_id),
@@ -476,6 +478,22 @@ CREATE TABLE IF NOT EXISTS order_options(
     REFERENCES units(unit_id)
 );
 
+\echo 'Attempting to create mad_conditions table'
+CREATE TABLE IF NOT EXISTS mad_conditions(
+  mad_condition_id SERIAL,
+  issuing_country_id INTEGER NOT NULL,
+  launching_country_id INTEGER NOT NULL,
+  targeted_country_id INTEGER NOT NULL,
+  condition_priority INTEGER NOT NULL,
+  PRIMARY KEY(mad_condition_id),
+  FOREIGN KEY(issuing_country_id)
+    REFERENCES countries(country_id),
+  FOREIGN KEY(launching_country_id)
+    REFERENCES countries(country_id),
+  FOREIGN KEY(targeted_country_id)
+    REFERENCES countries(country_id)
+);
+
 \echo 'Attempting to create order_sets table'
 CREATE TABLE IF NOT EXISTS order_sets(
   order_set_id SERIAL,
@@ -485,13 +503,16 @@ CREATE TABLE IF NOT EXISTS order_sets(
   submission_time TIMESTAMP NOT NULL,
   order_set_type VARCHAR(15) NOT NULL,
   order_set_name VARCHAR(25),
+  mad_condition_id INTEGER,
   PRIMARY KEY(order_set_id),
   FOREIGN KEY(country_id)
     REFERENCES countries(country_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
   FOREIGN KEY(message_id)
-    REFERENCES messages(message_id)
+    REFERENCES messages(message_id),
+  FOREIGN KEY(mad_condition_id)
+    REFERENCES mad_conditions(mad_condition_id)
 );
 
 \echo 'Attempting to create orders table'

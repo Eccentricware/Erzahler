@@ -1,8 +1,8 @@
 export const createProviderQuery = `
   INSERT INTO firebase_providers(
     user_id,
-    provider_type,
     uid,
+    provider_id,
     display_name,
     email,
     photo_url,
