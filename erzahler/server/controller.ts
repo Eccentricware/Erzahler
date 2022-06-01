@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { response } from 'express';
 import { AccountService } from './services/accountService';
 import bodyParser from 'body-parser';
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
@@ -42,6 +42,18 @@ erzhaler.get('/check-username/:username', (request, response) => {
       response.send(usernameAvailable);
     })
     .catch((error: Error) => response.send(error.message));
+});
+
+erzhaler.get('/get-profile/:idToken', (request, response) => {
+  const { idToken } = request.params;
+
+  accountService.getUserProfile(idToken)
+    .then((userProfile: any) => {
+      response.send(userProfile);
+    })
+    .catch((error: Error) => {
+      response.send(error.message);
+    })
 });
 
 erzhaler.listen(port, () => {

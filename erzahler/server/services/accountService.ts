@@ -21,29 +21,28 @@ export class AccountService {
       .catch((error: Error) => console.error(error.message));
   }
 
-  async verifyFirebaseUser(idToken: string): Promise<any> {
+  async validateUser(idToken: string): Promise<any> {
     return getAuth()
       .verifyIdToken(idToken, true)
       .then((user: any) => {
-        console.log(user.uid);
         return {
           uid: user.uid,
           valid: true
         };
       })
       .catch((error: Error) => {
-        return false;
+        return { valid: false };
       });
   }
 
   async attemptAddUserToDatabase(idToken: string, username: string): Promise<any> {
-    const token = await this.verifyFirebaseUser(idToken);
+    const token = await this.validateUser(idToken);
     const usernameAvailable = await this.checkUsernameAvailable(username);
 
     if (token.valid && usernameAvailable) {
       const firebaseUser = await this.getFirebaseUser(token.uid);
-      this.addUserToDatabase(firebaseUser, username);
-      return firebaseUser;
+      const addUserResult: any = await this.addUserToDatabase(firebaseUser, username);
+      return addUserResult;
     }
   }
 
@@ -52,17 +51,6 @@ export class AccountService {
     username: string,
   ): Promise<any> {
     if (firebaseUser.providerData[0].providerId === 'password') {
-      await getAuth()
-        .updateUser(firebaseUser.uid, {
-          displayName: username
-        })
-        .then((user: UserRecord) => {
-          console.log('Updated User', user);
-        })
-        .catch((error: Error) => {
-          return error.message;
-        });
-
       let verificationDeadline: number = Date.now();
       verificationDeadline += 86400000;
 
@@ -75,58 +63,73 @@ export class AccountService {
         'unverified'
       ];
 
-      return this.runAddUserQuery(firebaseUser, username, emailUserArgs);
+      await getAuth()
+        .updateUser(firebaseUser.uid, {
+          displayName: username
+        })
+        .then((user: UserRecord) => {
+          return { success: true };
+        })
+        .catch((error: Error) => {
+          return {
+            success: false,
+            error: error.message
+          };
+        });
+
+      return await this.runAddUserQuery(firebaseUser, username, emailUserArgs);
+
 
     } else {
       const oAuthUserArgs = [
         username,
         true,
-        // verificationDeadline,
         null,
         firebaseUser.metadata.creationTime,
         firebaseUser.metadata.lastSignInTime,
         'active'
       ];
 
-      return this.runAddUserQuery(firebaseUser, username, oAuthUserArgs);
+      return await this.runAddUserQuery(firebaseUser, username, oAuthUserArgs);
     }
   }
 
-  async runAddUserQuery(firebaseUser: UserRecord, username: string, userArgs: any[]) {
+  async runAddUserQuery(firebaseUser: UserRecord, username: string, userArgs: any[]): Promise<any> {
     const pool = new Pool(victorCredentials);
 
-    return pool.query(createUserQuery, userArgs).then((response: any) => {
-      console.log('add user response', response);
-
-      return this.getUserId(username)
-        .then((userId) => {
-          console.log('New user_id', userId);
-          return pool.query(
-            createProviderQuery,
-            [
-              userId,
-              firebaseUser.uid,
-              firebaseUser.providerData[0].providerId,
-              firebaseUser.providerData[0].displayName,
-              firebaseUser.providerData[0].email,
-              firebaseUser.providerData[0].photoURL,
-              firebaseUser.metadata.creationTime,
-              firebaseUser.metadata.lastSignInTime
-            ]
-          ).then(() => {
-            return true;
-          }).catch((error: Error) => {
-            console.log('add provider error', error.message);
-            return error.message;
+    const addUserQueryResultInternal: any = await pool.query(createUserQuery, userArgs)
+      .then((response: any) => {
+        return this.getUserId(username)
+          .then((userId) => {
+            return pool.query(
+              createProviderQuery,
+              [
+                userId,
+                firebaseUser.uid,
+                firebaseUser.providerData[0].providerId,
+                firebaseUser.providerData[0].displayName,
+                firebaseUser.providerData[0].email,
+                firebaseUser.providerData[0].photoURL,
+                firebaseUser.metadata.creationTime,
+                firebaseUser.metadata.lastSignInTime
+              ]
+            ).then(() => {
+              return { success: true };
+            }).catch((error: Error) => {
+              console.log('add provider error', error.message);
+              return { error: error.message};
+            });
+          })
+          .catch((error: Error) => {
+            console.log('Get userId error:', error.message);
+            return { error: error.message }
           });
-        })
-        .catch((error: Error) => {
-          console.log('Get userId error:', error.message);
-        })
     }).catch((error: Error) => {
       console.log('Add user db error:', error.message);
       return error.message;
     });
+
+    return addUserQueryResultInternal;
   }
 
   async getUserId(username: string): Promise<any> {
@@ -148,5 +151,28 @@ export class AccountService {
       .catch((error: Error) => {
         return error.message;
       });
+  }
+
+  async getAuthenticatedUser(idToken: string) {
+    return this.validateUser(idToken)
+      .then((uid: string) => {
+        return this.getFirebaseUser(uid);
+      })
+      .catch((error: Error) => {
+        return {
+          error: error.message
+        }
+      });
+  }
+
+  async getUserProfile(idToken: string): Promise<any> {
+    const user = await this.validateUser(idToken);
+    console.log('user', user);
+
+    if (user.valid === true) {
+      return { success: true }
+    } else {
+      return { success: false }
+    }
   }
 }
