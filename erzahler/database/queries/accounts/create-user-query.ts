@@ -1,12 +1,13 @@
 export const createUserQuery = `
   INSERT INTO users (
     username,
-    verified,
+    user_status,
+    email,
+    email_verified,
     verification_deadline,
-    created_timestamp,
-    last_sign_in_time,
-    user_status
+    signup_time,
+    last_sign_in_time
   ) VALUES (
-    $1, $2, $3, $4, $5, $6
+    $1, $2, $3, $4, $5, $6, $7
   );
 `;

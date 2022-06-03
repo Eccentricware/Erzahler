@@ -44,12 +44,12 @@ erzhaler.get('/check-username/:username', (request, response) => {
     .catch((error: Error) => response.send(error.message));
 });
 
-erzhaler.get('/get-profile/:idToken', (request, response) => {
+erzhaler.get('/get-user-settings/:idToken', (request, response) => {
   const { idToken } = request.params;
 
-  accountService.getUserProfile(idToken)
-    .then((userProfile: any) => {
-      response.send(userProfile);
+  accountService.getUserSettings(idToken)
+    .then((userSettings: any) => {
+      response.send(userSettings);
     })
     .catch((error: Error) => {
       response.send(error.message);

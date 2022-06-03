@@ -5,6 +5,7 @@ import { victorCredentials } from '../../secrets/dbCredentials';
 import { getAuth, UserRecord } from 'firebase-admin/auth'
 import { createUserQuery } from '../../database/queries/accounts/create-user-query';
 import { createProviderQuery } from '../../database/queries/accounts/create-provider-query';
+import { getUserSettingsQuery } from '../../database/queries/dashboard/get-user-settings-query';
 
 export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
@@ -35,6 +36,22 @@ export class AccountService {
       });
   }
 
+  async validateToken(idToken: string): Promise<any> {
+    return getAuth()
+      .verifyIdToken(idToken, true)
+      .then((user: any) => {
+        return {
+          uid: user.uid,
+          valid: true
+        };
+      })
+      .catch((error: Error) => {
+        return {
+          error: error.message
+        }
+      });
+  }
+
   async attemptAddUserToDatabase(idToken: string, username: string): Promise<any> {
     const token = await this.validateUser(idToken);
     const usernameAvailable = await this.checkUsernameAvailable(username);
@@ -56,11 +73,12 @@ export class AccountService {
 
       const emailUserArgs = [
         username,
-        false,
+        'unverified',
+        firebaseUser.email,
+        firebaseUser.emailVerified,
         new Date(verificationDeadline),
         firebaseUser.metadata.creationTime,
         firebaseUser.metadata.lastSignInTime,
-        'unverified'
       ];
 
       await getAuth()
@@ -83,11 +101,12 @@ export class AccountService {
     } else {
       const oAuthUserArgs = [
         username,
-        true,
+        'active',
+        null,
+        null,
         null,
         firebaseUser.metadata.creationTime,
         firebaseUser.metadata.lastSignInTime,
-        'active'
       ];
 
       return await this.runAddUserQuery(firebaseUser, username, oAuthUserArgs);
@@ -165,14 +184,21 @@ export class AccountService {
       });
   }
 
-  async getUserProfile(idToken: string): Promise<any> {
-    const user = await this.validateUser(idToken);
-    console.log('user', user);
+  async getUserSettings(idToken: string): Promise<any> {
+    const token: any = await this.validateToken(idToken);
+    console.log('user', token);
 
-    if (user.valid === true) {
-      return { success: true }
+    if (token.valid) {
+      const pool = new Pool(victorCredentials);
+      const userSettings: Promise<any> = pool.query(getUserSettingsQuery, [token.uid]);
+
+      return userSettings.then((settings: any) => {
+        return settings.rows[0];
+      }).catch((error: Error) => {
+        return { error: error.message }
+      });
     } else {
-      return { success: false }
+      return { error: 'idToken is not valid' };
     }
   }
 }
