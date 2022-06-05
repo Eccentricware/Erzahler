@@ -5,7 +5,7 @@ import { victorCredentials } from '../../secrets/dbCredentials';
 import { getAuth, UserRecord } from 'firebase-admin/auth'
 import { createUserQuery } from '../../database/queries/accounts/create-user-query';
 import { createProviderQuery } from '../../database/queries/accounts/create-provider-query';
-import { getUserSettingsQuery } from '../../database/queries/dashboard/get-user-settings-query';
+import { getUserProfileQuery } from '../../database/queries/dashboard/get-user-profile-query';
 
 export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
@@ -184,21 +184,38 @@ export class AccountService {
       });
   }
 
-  async getUserSettings(idToken: string): Promise<any> {
+  async getUserProfile(idToken: string): Promise<any> {
     const token: any = await this.validateToken(idToken);
-    console.log('user', token);
 
     if (token.valid) {
       const pool = new Pool(victorCredentials);
-      const userSettings: Promise<any> = pool.query(getUserSettingsQuery, [token.uid]);
+      const userProfile: Promise<any> = pool.query(getUserProfileQuery, [token.uid]);
 
-      return userSettings.then((settings: any) => {
-        return settings.rows[0];
-      }).catch((error: Error) => {
-        return { error: error.message }
+      return userProfile
+      .then((profiles: any) => {
+        console.log('profiles', profiles.rows);
+        return profiles.rows;
+      })
+      .catch((error: Error) => {
+        return { error: error.message };
       });
     } else {
       return { error: 'idToken is not valid' };
+    }
+  }
+
+  async checkProfileAssociated(idToken: string): Promise<any> {
+    const token: any = await this.validateToken(idToken);
+
+    if (token.valid) {
+      const pool = new Pool(victorCredentials);
+      const userProfile: Promise<any> = pool.query(getUserProfileQuery, [token.uid]);
+
+      return userProfile.then((profile: any) => {
+        return profile.rows.length;
+      }).catch((error: Error) => {
+        return error.message;
+      });
     }
   }
 }

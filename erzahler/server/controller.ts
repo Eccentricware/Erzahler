@@ -38,23 +38,24 @@ erzhaler.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
   accountService.checkUsernameAvailable(username)
     .then((usernameAvailable: any) => {
-      console.log(usernameAvailable);
       response.send(usernameAvailable);
     })
     .catch((error: Error) => response.send(error.message));
 });
 
-erzhaler.get('/get-user-settings/:idToken', (request, response) => {
+erzhaler.get('/get-user-profile/:idToken', (request, response) => {
   const { idToken } = request.params;
 
-  accountService.getUserSettings(idToken)
-    .then((userSettings: any) => {
-      response.send(userSettings);
+  accountService.getUserProfile(idToken)
+    .then((userProfile: any) => {
+      response.send(userProfile);
     })
     .catch((error: Error) => {
       response.send(error.message);
     })
 });
+
+
 
 erzhaler.listen(port, () => {
   console.log(`Erzhaler is running on port ${port}`);
