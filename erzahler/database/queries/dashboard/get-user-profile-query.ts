@@ -1,4 +1,4 @@
-export const getUserSettingsQuery = `
+export const getUserProfileQuery = `
   SELECT u.username,
     u.user_status,
     u.email,
