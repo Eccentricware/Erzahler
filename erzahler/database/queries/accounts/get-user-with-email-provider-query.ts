@@ -8,7 +8,7 @@ export const getUserWithEmailProviderQuery = `
     p.email as "provider_email",
     p.email_verified as "provider_email_verified"
   FROM users u
-  INNER JOIN providers p
+  INNER JOIN firebase_providers p
   ON u.user_id = p.user_id
   WHERE p.uid = $1;
 `;
