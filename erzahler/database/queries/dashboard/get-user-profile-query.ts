@@ -16,7 +16,9 @@ export const getUserProfileQuery = `
     u.display_real_name,
     json_agg (
       json_build_array (
-        p.provider_id
+        p.provider_id,
+        P.email,
+        p.email_verified
       )
     ) as "providers"
   FROM users u
