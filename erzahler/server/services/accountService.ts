@@ -230,6 +230,7 @@ export class AccountService {
     if (token.valid) {
       const pool = new Pool(victorCredentials);
       const userWithEmailProvider: any = await pool.query(getUserWithEmailProviderQuery, [token.uid]);
+
     }
   }
 
@@ -238,8 +239,10 @@ export class AccountService {
 
     if (token.valid) {
       const pool = new Pool(victorCredentials);
-      pool.query(validateUserEmailQuery, [token.uid]);
-      pool.query(validateProviderEmailQuery, [token.uid]);
+      pool.query(validateUserEmailQuery, [token.uid])
+        .catch((error: Error) => { console.log('Validating User Error:', error.message); });
+      pool.query(validateProviderEmailQuery, [token.uid])
+        .catch ((error: Error) => { console.log('Validating Provider Error:', error.message); });
     }
   }
 }
