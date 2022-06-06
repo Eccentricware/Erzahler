@@ -288,6 +288,7 @@ CREATE TABLE IF NOT EXISTS unit_history(
 CREATE TABLE IF NOT EXISTS users(
   user_id SERIAL,
   username VARCHAR(100) UNIQUE NOT NULL,
+  username_locked BOOLEAN NOT NULL DEFAULT false,
   user_status VARCHAR(100) NOT NULL,
   email VARCHAR(50),
   email_verified BOOLEAN,

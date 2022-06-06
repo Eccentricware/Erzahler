@@ -17,9 +17,8 @@ initializeApp({
 
 const accountService = new AccountService();
 
-erzhaler.get('/', (request, response) => {
-  const testFeedBack: string = `Who is up for an interactive story?`;
-  response.send(testFeedBack);
+erzhaler.get('/check-status', (request, response) => {
+  response.send(true);
 });
 
 erzhaler.post('/register-user', (request, response) => {
@@ -33,6 +32,12 @@ erzhaler.post('/register-user', (request, response) => {
       response.send(error.message);
     });
 });
+
+erzhaler.post('/verify-email', (request, response) => {
+  const { idToken } = request.body;
+
+  accountService.verifyEmail(idToken);
+})
 
 erzhaler.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
@@ -55,7 +60,12 @@ erzhaler.get('/get-user-profile/:idToken', (request, response) => {
     })
 });
 
+erzhaler.post('/update-email/:idToken', (request, response) => {
+  const { idToken } = request.params;
+  const { email } = request.body;
 
+  accountService.updateUserEmail(idToken, email);
+});
 
 erzhaler.listen(port, () => {
   console.log(`Erzhaler is running on port ${port}`);

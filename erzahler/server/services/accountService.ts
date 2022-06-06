@@ -6,6 +6,9 @@ import { getAuth, UserRecord } from 'firebase-admin/auth'
 import { createUserQuery } from '../../database/queries/accounts/create-user-query';
 import { createProviderQuery } from '../../database/queries/accounts/create-provider-query';
 import { getUserProfileQuery } from '../../database/queries/dashboard/get-user-profile-query';
+import { getUserWithEmailProviderQuery } from '../../database/queries/accounts/get-user-with-email-provider-query';
+import { validateUserEmailQuery } from '../../database/queries/accounts/validate-user-email-query';
+import { validateProviderEmailQuery } from '../../database/queries/accounts/validate-provider-email-query';
 
 export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
@@ -69,10 +72,11 @@ export class AccountService {
   ): Promise<any> {
     if (firebaseUser.providerData[0].providerId === 'password') {
       let verificationDeadline: number = Date.now();
-      verificationDeadline += 86400000;
+      verificationDeadline += 3600000;
 
       const emailUserArgs = [
         username,
+        false,
         'unverified',
         firebaseUser.email,
         firebaseUser.emailVerified,
@@ -101,6 +105,7 @@ export class AccountService {
     } else {
       const oAuthUserArgs = [
         username,
+        true,
         'active',
         null,
         null,
@@ -216,6 +221,25 @@ export class AccountService {
       }).catch((error: Error) => {
         return error.message;
       });
+    }
+  }
+
+  async updateUserEmail(idToken: string, email: string) {
+    const token: any = await this.validateToken(idToken);
+
+    if (token.valid) {
+      const pool = new Pool(victorCredentials);
+      const userWithEmailProvider: any = await pool.query(getUserWithEmailProviderQuery, [token.uid]);
+    }
+  }
+
+  async verifyEmail(idToken: string) {
+    const token: any = await this.validateToken(idToken);
+
+    if (token.valid) {
+      const pool = new Pool(victorCredentials);
+      pool.query(validateUserEmailQuery, [token.uid]);
+      pool.query(validateProviderEmailQuery, [token.uid]);
     }
   }
 }
