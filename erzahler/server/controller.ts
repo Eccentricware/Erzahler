@@ -60,11 +60,11 @@ erzhaler.get('/get-user-profile/:idToken', (request, response) => {
     })
 });
 
-erzhaler.post('/update-email/:idToken', (request, response) => {
+erzhaler.put('/update-email/:idToken', (request, response) => {
   const { idToken } = request.params;
-  const { email } = request.body;
+  const { newEmail } = request.body;
 
-  accountService.updateUserEmail(idToken, email);
+  accountService.updateUserEmail(idToken, newEmail);
 });
 
 erzhaler.listen(port, () => {
