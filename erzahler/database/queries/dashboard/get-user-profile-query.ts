@@ -1,5 +1,6 @@
 export const getUserProfileQuery = `
-  SELECT u.username,
+  SELECT u.user_id,
+    u.username,
     u.user_status,
     u.email,
     u.email_verified,
@@ -26,7 +27,8 @@ export const getUserProfileQuery = `
   ON u.user_id = p.user_id
   WHERE p.uid = $1
   AND p.user_id = u.user_id
-  GROUP BY u.username,
+  GROUP BY u.user_id,
+    u.username,
     u.user_status,
     u.email,
     u.email_verified,

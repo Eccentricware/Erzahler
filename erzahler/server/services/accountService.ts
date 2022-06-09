@@ -9,6 +9,8 @@ import { getUserProfileQuery } from '../../database/queries/dashboard/get-user-p
 import { getUserWithEmailProviderQuery } from '../../database/queries/accounts/get-user-with-email-provider-query';
 import { validateUserEmailQuery } from '../../database/queries/accounts/validate-user-email-query';
 import { validateProviderEmailQuery } from '../../database/queries/accounts/validate-provider-email-query';
+import { updateProviderEmailQuery } from '../../database/queries/accounts/update-provider-email-query';
+import { updateUserEmailQuery } from '../../database/queries/accounts/update-user-email-query';
 
 export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
@@ -198,7 +200,7 @@ export class AccountService {
 
       return userProfile
       .then((profiles: any) => {
-        console.log('profiles', profiles.rows);
+        // console.log('profiles', profiles.rows);
         return profiles.rows;
       })
       .catch((error: Error) => {
@@ -224,13 +226,30 @@ export class AccountService {
     }
   }
 
-  async updateUserEmail(idToken: string, email: string) {
+  async updateUserEmail(idToken: string, newEmail: string) {
     const token: any = await this.validateToken(idToken);
 
     if (token.valid) {
       const pool = new Pool(victorCredentials);
-      const userWithEmailProvider: any = await pool.query(getUserWithEmailProviderQuery, [token.uid]);
+      const userProfile: Promise<any> = pool.query(getUserProfileQuery, [token.uid]);
+      userProfile.then((userData: any) => {
+        pool.query(updateUserEmailQuery, [userData.rows[0].user_id])
+          .then(() => {
+            console.log('User update successful?');
+          })
+          .catch((error: Error) => {
+            console.log('Update failure for sure', error.message);
+          });;
+      })
 
+      pool.query
+      pool.query(updateProviderEmailQuery, [newEmail, token.uid])
+        .then(() => {
+          console.log('Provider update successful?');
+        })
+        .catch((error: Error) => {
+          console.log('Update failure for sure', error.message);
+        });
     }
   }
 
