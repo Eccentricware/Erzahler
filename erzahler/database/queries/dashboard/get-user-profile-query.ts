@@ -26,6 +26,7 @@ export const getUserProfileQuery = `
   INNER JOIN firebase_providers p
   ON u.user_id = p.user_id
   WHERE p.uid = $1
+    OR u.username = $1
   AND p.user_id = u.user_id
   GROUP BY u.user_id,
     u.username,
