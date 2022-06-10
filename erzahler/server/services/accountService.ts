@@ -11,6 +11,7 @@ import { validateUserEmailQuery } from '../../database/queries/accounts/validate
 import { validateProviderEmailQuery } from '../../database/queries/accounts/validate-provider-email-query';
 import { updateProviderEmailQuery } from '../../database/queries/accounts/update-provider-email-query';
 import { updateUserEmailQuery } from '../../database/queries/accounts/update-user-email-query';
+import { error } from 'console';
 
 export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
@@ -72,20 +73,8 @@ export class AccountService {
     firebaseUser: UserRecord,
     username: string,
   ): Promise<any> {
+    const addUserArgs: any[] = this.createAddUserArgs(firebaseUser, username);
     if (firebaseUser.providerData[0].providerId === 'password') {
-      let verificationDeadline: number = Date.now();
-      verificationDeadline += 3600000;
-
-      const emailUserArgs = [
-        username,
-        false,
-        'unverified',
-        firebaseUser.email,
-        firebaseUser.emailVerified,
-        new Date(verificationDeadline),
-        firebaseUser.metadata.creationTime,
-        firebaseUser.metadata.lastSignInTime,
-      ];
 
       await getAuth()
         .updateUser(firebaseUser.uid, {
@@ -100,62 +89,65 @@ export class AccountService {
             error: error.message
           };
         });
+    }
 
-      return await this.runAddUserQuery(firebaseUser, username, emailUserArgs);
+    return await this.runAddUserQuery(firebaseUser, username, addUserArgs);
+  }
 
+  async runAddUserQuery(firebaseUser: UserRecord, username: string, providerDependentArgs: any[]): Promise<any> {
+    const pool = new Pool(victorCredentials);
+    let returnedError: string = '';
 
+    await pool.query(createUserQuery, providerDependentArgs)
+      .catch((error: Error) => { returnedError = error.message});
+
+    const userId = await this.getUserId(username);
+    const createProviderArgs = this.createProviderArgs(userId, firebaseUser);
+
+    await pool.query(createProviderQuery, createProviderArgs).catch((error: Error) => { returnedError = error.message });
+
+    const userAdded = await pool.query(getUserProfileQuery, [username])
+      .then((result: any) => result)
+      .catch((error: Error) => { returnedError = error.message });
+
+    if (userAdded.rowCount === 1) {
+      return { success: true };
     } else {
-      const oAuthUserArgs = [
-        username,
-        true,
-        'active',
-        null,
-        null,
-        null,
-        firebaseUser.metadata.creationTime,
-        firebaseUser.metadata.lastSignInTime,
-      ];
-
-      return await this.runAddUserQuery(firebaseUser, username, oAuthUserArgs);
+      return { success: false };
     }
   }
 
-  async runAddUserQuery(firebaseUser: UserRecord, username: string, userArgs: any[]): Promise<any> {
-    const pool = new Pool(victorCredentials);
+  createAddUserArgs(firebaseUser: UserRecord, username: string): any[] {
+    const emailSignup = firebaseUser.providerData[0].providerId === 'password';
+    let verificationDeadline: number = Date.now();
 
-    const addUserQueryResultInternal: any = await pool.query(createUserQuery, userArgs)
-      .then((response: any) => {
-        return this.getUserId(username)
-          .then((userId) => {
-            return pool.query(
-              createProviderQuery,
-              [
-                userId,
-                firebaseUser.uid,
-                firebaseUser.providerData[0].providerId,
-                firebaseUser.providerData[0].displayName,
-                firebaseUser.providerData[0].email,
-                firebaseUser.providerData[0].photoURL,
-                firebaseUser.metadata.creationTime,
-                firebaseUser.metadata.lastSignInTime
-              ]
-            ).then(() => {
-              return { success: true };
-            }).catch((error: Error) => {
-              console.log('add provider error', error.message);
-              return { error: error.message};
-            });
-          })
-          .catch((error: Error) => {
-            console.log('Get userId error:', error.message);
-            return { error: error.message }
-          });
-    }).catch((error: Error) => {
-      console.log('Add user db error:', error.message);
-      return error.message;
-    });
+    if (emailSignup) {
+      verificationDeadline += 3600000;
+    }
 
-    return addUserQueryResultInternal;
+    return [
+      username,
+      emailSignup ? false : true,
+      emailSignup ? 'unverified' : 'active',
+      emailSignup ? firebaseUser.email : null,
+      emailSignup ? firebaseUser.emailVerified : null,
+      emailSignup ? new Date(verificationDeadline) : null,
+      firebaseUser.metadata.creationTime,
+      firebaseUser.metadata.lastSignInTime
+    ]
+  }
+
+  createProviderArgs(userId: string, firebaseUser: UserRecord): any[] {
+    return [
+      userId,
+      firebaseUser.uid,
+      firebaseUser.providerData[0].providerId,
+      firebaseUser.displayName,
+      firebaseUser.email,
+      firebaseUser.photoURL,
+      firebaseUser.metadata.creationTime,
+      firebaseUser.metadata.lastSignInTime
+    ];
   }
 
   async getUserId(username: string): Promise<any> {
