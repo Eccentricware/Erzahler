@@ -157,7 +157,7 @@ export class AccountService {
       .then((userResult: any) => {
         return userResult.rows[0].user_id;
       })
-      .catch((e: Error) => console.error(e.message));
+      .catch((error: Error) => console.error(error.message));
   }
 
   async getFirebaseUser(uid: string): Promise<any> {
@@ -223,24 +223,26 @@ export class AccountService {
 
     if (token.valid) {
       const pool = new Pool(victorCredentials);
+
       const userProfile: Promise<any> = pool.query(getUserProfileQuery, [token.uid]);
+      let verificationDeadline: Date = new Date(Date.now() + 3600000);
+
       userProfile.then((userData: any) => {
-        pool.query(updateUserEmailQuery, [userData.rows[0].user_id])
+        pool.query(updateUserEmailQuery, [verificationDeadline, userData.rows[0].user_id])
           .then(() => {
             console.log('User update successful?');
           })
           .catch((error: Error) => {
-            console.log('Update failure for sure', error.message);
-          });;
+            console.log('User update failure for sure', error.message);
+          });
       })
 
-      pool.query
       pool.query(updateProviderEmailQuery, [newEmail, token.uid])
         .then(() => {
           console.log('Provider update successful?');
         })
         .catch((error: Error) => {
-          console.log('Update failure for sure', error.message);
+          console.log('Provider update failure for sure', error.message);
         });
     }
   }
