@@ -1,6 +1,7 @@
 export const syncProviderEmailStateQuery = `
-  UPDATE firebase_providers
+  UPDATE providers
   SET email = $1,
-    email_verified = $2
-  WHERE uid = $3;
+    email_verified = $2,
+    last_sign_in_time = $3
+  WHERE uid = $4;
 `;
