@@ -1,13 +1,15 @@
 export const createProviderQuery = `
-  INSERT INTO firebase_providers(
+  INSERT INTO providers(
     user_id,
     uid,
-    provider_id,
+    provider_type,
     display_name,
     email,
-    photo_url,
+    email_verified,
+    verification_deadline,
     creation_time,
-    last_sign_in_time
+    last_sign_in_time,
+    photo_url
   ) VALUES (
     $1,
     $2,
@@ -16,6 +18,8 @@ export const createProviderQuery = `
     $5,
     $6,
     $7,
-    $8
+    $8,
+    $9,
+    $10
   );
 `;
