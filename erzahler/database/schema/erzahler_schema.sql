@@ -290,9 +290,6 @@ CREATE TABLE IF NOT EXISTS users(
   username VARCHAR(100) UNIQUE NOT NULL,
   username_locked BOOLEAN NOT NULL DEFAULT false,
   user_status VARCHAR(100) NOT NULL,
-  email VARCHAR(50),
-  email_verified BOOLEAN,
-  verification_deadline TIMESTAMP,
   time_zone VARCHAR(25),
   signup_time TIMESTAMP NOT NULL,
   last_sign_in_time TIMESTAMP NOT NULL,
@@ -313,20 +310,20 @@ CREATE TABLE IF NOT EXISTS users(
   PRIMARY KEY(user_id)
 );
 
-\echo 'Attempting to create firebase_providers table'
-CREATE TABLE IF NOT EXISTS firebase_providers(
-  firebase_provider_id SERIAL,
+\echo 'Attempting to create providers table'
+CREATE TABLE IF NOT EXISTS providers(
+  provider_id SERIAL,
   user_id INTEGER NOT NULL,
-  provider_id VARCHAR(15) NOT NULL,
   uid VARCHAR(1024) NOT NULL,
+  provider_type VARCHAR(15) NOT NULL,
+  display_name VARCHAR(64),
   email VARCHAR(50),
   email_verified BOOLEAN,
-  photo_url VARCHAR(1024),
-  disabled BOOLEAN NOT NULL DEFAULT false,
-  display_name VARCHAR(64),
+  verification_deadline TIMESTAMP,
   creation_time TIMESTAMP NOT NULL,
   last_sign_in_time TIMESTAMP NOT NULL,
-  PRIMARY KEY(firebase_provider_id),
+  photo_url VARCHAR(1024),
+  PRIMARY KEY(provider_id),
   FOREIGN KEY(user_id)
     REFERENCES users(user_id)
 );

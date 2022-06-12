@@ -5,6 +5,8 @@ import { victorCredentials } from '../../secrets/dbCredentials';
 import { getAuth, UserRecord } from 'firebase-admin/auth'
 import { createUserQuery } from '../../database/queries/accounts/create-user-query';
 import { createProviderQuery } from '../../database/queries/accounts/create-provider-query';
+import { syncUserEmailStateQuery } from '../../database/queries/accounts/sync-user-email-state-query';
+import { syncProviderEmailStateQuery } from '../../database/queries/accounts/sync-provider-email-state-query';
 import { getUserProfileQuery } from '../../database/queries/dashboard/get-user-profile-query';
 import { getUserWithEmailProviderQuery } from '../../database/queries/accounts/get-user-with-email-provider-query';
 import { validateUserEmailQuery } from '../../database/queries/accounts/validate-user-email-query';
@@ -65,6 +67,7 @@ export class AccountService {
     if (token.valid && usernameAvailable) {
       const firebaseUser = await this.getFirebaseUser(token.uid);
       const addUserResult: any = await this.addUserToDatabase(firebaseUser, username);
+      console.log('Add User Result', addUserResult)
       return addUserResult;
     }
   }
@@ -99,16 +102,27 @@ export class AccountService {
     let returnedError: string = '';
 
     await pool.query(createUserQuery, providerDependentArgs)
-      .catch((error: Error) => { returnedError = error.message});
+      .then((result: any) => { console.log(`User added`, result); })
+      .catch((error: Error) => {
+        console.log('Create User Query Error:', error.message);
+      });
 
     const userId = await this.getUserId(username);
     const createProviderArgs = this.createProviderArgs(userId, firebaseUser);
 
-    await pool.query(createProviderQuery, createProviderArgs).catch((error: Error) => { returnedError = error.message });
+    await pool.query(createProviderQuery, createProviderArgs)
+      .then((result: any) => {console.log(`Provider added`, result); })
+      .catch((error: Error) => {
+        console.log('Create Provider Query Error:', error.message);
+      });
 
-    const userAdded = await pool.query(getUserProfileQuery, [username])
-      .then((result: any) => result)
-      .catch((error: Error) => { returnedError = error.message });
+    const userAdded = await pool.query(getUserProfileQuery, [firebaseUser.uid])
+      .then((result: any) => result )
+      .catch((error: Error) => {
+        console.log('User Added Query Error', error.message);
+      });
+
+      console.log('userAdded rowcount', userAdded.rowCount);
 
     if (userAdded.rowCount === 1) {
       return { success: true };
@@ -119,34 +133,31 @@ export class AccountService {
 
   createAddUserArgs(firebaseUser: UserRecord, username: string): any[] {
     const emailSignup = firebaseUser.providerData[0].providerId === 'password';
-    let verificationDeadline: number = Date.now();
-
-    if (emailSignup) {
-      verificationDeadline += 3600000;
-    }
 
     return [
       username,
       emailSignup ? false : true,
       emailSignup ? 'unverified' : 'active',
-      emailSignup ? firebaseUser.email : null,
-      emailSignup ? firebaseUser.emailVerified : null,
-      emailSignup ? new Date(verificationDeadline) : null,
       firebaseUser.metadata.creationTime,
       firebaseUser.metadata.lastSignInTime
-    ]
+    ];
   }
 
   createProviderArgs(userId: string, firebaseUser: UserRecord): any[] {
+    const emailSignup = firebaseUser.providerData[0].providerId === 'password';
+    let verificationDeadline: Date = new Date(Date.now() + 3600000)
+
     return [
       userId,
       firebaseUser.uid,
       firebaseUser.providerData[0].providerId,
       firebaseUser.displayName,
       firebaseUser.email,
-      firebaseUser.photoURL,
+      firebaseUser.emailVerified,
+      emailSignup ? verificationDeadline : null,
       firebaseUser.metadata.creationTime,
-      firebaseUser.metadata.lastSignInTime
+      firebaseUser.metadata.lastSignInTime,
+      firebaseUser.photoURL
     ];
   }
 
@@ -187,20 +198,41 @@ export class AccountService {
     const token: any = await this.validateToken(idToken);
 
     if (token.valid) {
+      const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
+      console.log('Firebase User:', firebaseUser);
       const pool = new Pool(victorCredentials);
-      const userProfile: Promise<any> = pool.query(getUserProfileQuery, [token.uid]);
+      const blitzkarteUser = await pool.query(getUserProfileQuery, [token.uid])
+        .then((result: any) => result.rows[0])
+        .catch((error: Error) => console.log('User Profile Query Error:', error.message));
 
-      return userProfile
-      .then((profiles: any) => {
-        // console.log('profiles', profiles.rows);
-        return profiles.rows;
-      })
-      .catch((error: Error) => {
-        return { error: error.message };
-      });
+      // if (firebaseUser.providerData[0].providerId === 'password') {
+      //   await this.syncEmailStates(firebaseUser, blitzkarteUser, pool);
+      // }
+
+      return blitzkarteUser;
     } else {
       return { error: 'idToken is not valid' };
     }
+  }
+
+  async syncEmailStates(firebaseUser: UserRecord, blitzkarteUser: any, pool: Pool): Promise<void> {
+    console.log('Sync up firebaseUser:', firebaseUser);
+    console.log('Sync up BliztkarteUser:', blitzkarteUser);
+
+    if (firebaseUser.email !== blitzkarteUser.email
+      || firebaseUser.emailVerified !== blitzkarteUser.email_verified
+      || firebaseUser.providerData[0].email !== blitzkarteUser.provider_email) {
+        await pool.query(syncUserEmailStateQuery, [
+          firebaseUser.email,
+          firebaseUser.emailVerified,
+          blitzkarteUser.user_id
+        ]);
+        await pool.query(syncProviderEmailStateQuery, [
+          firebaseUser.providerData[0].email,
+          firebaseUser.emailVerified,
+          firebaseUser.uid
+        ]);
+      }
   }
 
   async checkProfileAssociated(idToken: string): Promise<any> {
@@ -227,6 +259,7 @@ export class AccountService {
       const userProfile: Promise<any> = pool.query(getUserProfileQuery, [token.uid]);
       let verificationDeadline: Date = new Date(Date.now() + 3600000);
 
+      // TO-DO: NO MORE USER_ID
       userProfile.then((userData: any) => {
         pool.query(updateUserEmailQuery, [verificationDeadline, userData.rows[0].user_id])
           .then(() => {
