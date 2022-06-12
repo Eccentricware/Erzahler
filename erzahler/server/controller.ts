@@ -33,11 +33,11 @@ erzhaler.post('/register-user', (request, response) => {
     });
 });
 
-erzhaler.post('/verify-email', (request, response) => {
-  const { idToken } = request.body;
+// erzhaler.post('/verify-email', (request, response) => {
+//   const { idToken } = request.body;
 
-  accountService.verifyEmail(idToken);
-})
+//   accountService.verifyEmail(idToken);
+// })
 
 erzhaler.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
@@ -60,12 +60,12 @@ erzhaler.get('/get-user-profile/:idToken', (request, response) => {
     })
 });
 
-erzhaler.put('/update-email/:idToken', (request, response) => {
-  const { idToken } = request.params;
-  const { newEmail } = request.body;
+// erzhaler.put('/update-email/:idToken', (request, response) => {
+//   const { idToken } = request.params;
+//   const { newEmail } = request.body;
 
-  accountService.updateUserEmail(idToken, newEmail);
-});
+//   accountService.updateUserEmail(idToken, newEmail);
+// });
 
 erzhaler.listen(port, () => {
   console.log(`Erzhaler is running on port ${port}`);

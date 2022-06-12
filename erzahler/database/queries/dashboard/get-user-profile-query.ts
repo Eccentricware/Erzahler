@@ -1,6 +1,7 @@
 export const getUserProfileQuery = `
   SELECT
     u.username,
+    u.username_locked,
     u.user_status,
     u.classic_unit_render,
     u.city_render_size,
@@ -14,8 +15,9 @@ export const getUserProfileQuery = `
     u.display_real_name,
     p.uid,
     p.provider_id as "provider_type",
-    p.email as "provider_email",
-    p.email_verified as "provider_email_verified"
+    p.email,
+    p.email_verified,
+    p.verification_deadline
   FROM users u
   INNER JOIN providers p
   ON u.user_id = p.user_id
