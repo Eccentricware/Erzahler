@@ -3,6 +3,7 @@ import { AccountService } from './services/accountService';
 import bodyParser from 'body-parser';
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import admin from 'firebase-admin';
+import { error } from 'console';
 const serviceAccount = require('/home/ubox/personal/Blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-f93fded183.json');
 
 const erzhaler = express();
@@ -33,12 +34,6 @@ erzhaler.post('/register-user', (request, response) => {
     });
 });
 
-// erzhaler.post('/verify-email', (request, response) => {
-//   const { idToken } = request.body;
-
-//   accountService.verifyEmail(idToken);
-// })
-
 erzhaler.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
   accountService.checkUsernameAvailable(username)
@@ -60,12 +55,17 @@ erzhaler.get('/get-user-profile/:idToken', (request, response) => {
     })
 });
 
-// erzhaler.put('/update-email/:idToken', (request, response) => {
-//   const { idToken } = request.params;
-//   const { newEmail } = request.body;
+erzhaler.post('/add-provider', (request, response) => {
+  const { idToken, username } = request.body;
 
-//   accountService.updateUserEmail(idToken, newEmail);
-// });
+  accountService.addProvider(idToken, username)
+    .then((result: any) => {
+      response.send(result);
+    })
+    .catch((error: Error) => {
+      response.send(error.message);
+    });
+});
 
 erzhaler.listen(port, () => {
   console.log(`Erzhaler is running on port ${port}`);
