@@ -1,9 +1,9 @@
 import express, { response } from 'express';
 import { AccountService } from './services/accountService';
 import bodyParser from 'body-parser';
-import { initializeApp, applicationDefault } from 'firebase-admin/app';
+import { initializeApp } from 'firebase-admin/app';
 import admin from 'firebase-admin';
-import { error } from 'console';
+import { GameService } from './services/gameService';
 const serviceAccount = require('/home/ubox/personal/Blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-f93fded183.json');
 
 const erzhaler = express();
@@ -17,6 +17,7 @@ initializeApp({
 });
 
 const accountService = new AccountService();
+const gameService = new GameService();
 
 erzhaler.get('/check-status', (request, response) => {
   response.send(true);
@@ -65,6 +66,10 @@ erzhaler.post('/add-provider', (request, response) => {
     .catch((error: Error) => {
       response.send(error.message);
     });
+});
+
+erzhaler.post('/new-game', (request, response) => {
+  gameService.newGame(request.body, <string>request.headers.idToken);
 });
 
 erzhaler.listen(port, () => {
