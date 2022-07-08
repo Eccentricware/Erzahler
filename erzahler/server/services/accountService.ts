@@ -9,7 +9,6 @@ import { createProviderQuery } from '../../database/queries/accounts/create-prov
 import { syncProviderEmailStateQuery } from '../../database/queries/accounts/sync-provider-email-state-query';
 import { lockUsernameQuery } from '../../database/queries/accounts/lock-username-query';
 import { clearVerficiationDeadlineQuery } from '../../database/queries/accounts/clear-verification-deadline-query';
-import { error } from 'console';
 
 export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
