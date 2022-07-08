@@ -1,5 +1,5 @@
 export class GameService {
-  async newGame(requestBody: any, idToken: string) {
-    console.log('A new phase begins');
+  async newGame(requestBody: any, idToken: string): Promise<any> {
+    return 'A new phase begins!';
   }
 }

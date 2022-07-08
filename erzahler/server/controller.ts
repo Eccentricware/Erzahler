@@ -4,14 +4,15 @@ import bodyParser from 'body-parser';
 import { initializeApp } from 'firebase-admin/app';
 import admin from 'firebase-admin';
 import { GameService } from './services/gameService';
-const serviceAccount = require('/home/ubox/personal/Blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-f93fded183.json');
+import { error } from 'console';
+const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 
 const erzhaler = express();
 const cors = require('cors');
 const port: number = 8000;
 
 erzhaler.use(cors());
-erzhaler.use(bodyParser.json());
+erzhaler.use(bodyParser.json({limit: '5mb'}));
 initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
@@ -69,7 +70,13 @@ erzhaler.post('/add-provider', (request, response) => {
 });
 
 erzhaler.post('/new-game', (request, response) => {
-  gameService.newGame(request.body, <string>request.headers.idToken);
+  gameService.newGame(request.body, <string>request.headers.idToken)
+    .then((result: any) => {
+      response.send({success: 'Success'});
+    })
+    .catch((error: Error) => {
+      response.send({error: error.message});
+    });
 });
 
 erzhaler.listen(port, () => {
