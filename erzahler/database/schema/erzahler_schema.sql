@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS games(
   blind_administrator BOOLEAN,
   private_game BOOLEAN,
   hidden_game BOOLEAN,
-  weekly_deadline BOOLEAN,
+  deadline_type VARCHAR(15),
   order_deadline TIMESTAMP,
   retreat_deadline TIMESTAMP,
   adjustment_deadline TIMESTAMP,
