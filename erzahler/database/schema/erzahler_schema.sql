@@ -18,16 +18,15 @@ CREATE TABLE IF NOT EXISTS games(
   private_game BOOLEAN,
   hidden_game BOOLEAN,
   deadline_type VARCHAR(15),
-  order_deadline TIMESTAMP,
-  retreat_deadline TIMESTAMP,
-  adjustment_deadline TIMESTAMP,
-  nomination_deadline TIMESTAMP,
-  vote_deadline TIMESTAMP,
-  double_first_turn BOOLEAN,
+  orders_deadline TIMESTAMP,
+  retreats_deadline TIMESTAMP,
+  adjustments_deadline TIMESTAMP,
+  nominations_deadline TIMESTAMP,
+  votes_deadline TIMESTAMP,
   nmr_removal INTEGER,
   partial_roster_start INTEGER,
-  vote_delay_lock INTEGER, --Hours before the deadline before can't delay
-  vote_delay_percent INTEGER, --Precent of players required to pass vote
+  vote_delay_lock INTEGER, --Minutes before the deadline before can't delay
+  vote_delay_percent INTEGER, --Percent of players required to pass vote
   vote_delay_count INTEGER, --Number of players required to pass vote
   vote_delay_display_percent INTEGER, --Percent of players voting yes before public
   vote_delay_display_count INTEGER, --Count of players voting yes before public,
