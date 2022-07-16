@@ -7,10 +7,11 @@ export class GameService {
     console.log(requestBody);
 
     // Insert into games
+    // Insert into assignments
     // Insert into turns
-    // Insert into rules
     // Insert into rules_in_games
     // Insert into provinces
+    // Insert into province_history
     // Insert into terrain
     // Insert into bridges
     // Insert into labels
@@ -20,7 +21,6 @@ export class GameService {
     // Insert into country_history
     // Insert into units
     // Insert into unit_history
-    // Insert into assignments
 
     return 'A new phase begins!';
   }
