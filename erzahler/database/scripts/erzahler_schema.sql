@@ -14,9 +14,9 @@ CREATE TABLE IF NOT EXISTS games(
   current_year INTEGER NOT NULL,
   stylized_year_start VARCHAR(10),
   concurrent_games_limit INTEGER,
-  blind_administrator BOOLEAN,
   private_game BOOLEAN,
   hidden_game BOOLEAN,
+  blind_administrator BOOLEAN DEFAULT false,
   deadline_type VARCHAR(15),
   orders_deadline TIMESTAMP,
   retreats_deadline TIMESTAMP,
@@ -24,20 +24,21 @@ CREATE TABLE IF NOT EXISTS games(
   nominations_deadline TIMESTAMP,
   votes_deadline TIMESTAMP,
   nmr_removal INTEGER,
-  partial_roster_start INTEGER,
   vote_delay_lock INTEGER, --Minutes before the deadline before can't delay
   vote_delay_percent INTEGER, --Percent of players required to pass vote
   vote_delay_count INTEGER, --Number of players required to pass vote
   vote_delay_display_percent INTEGER, --Percent of players voting yes before public
-  vote_delay_display_count INTEGER, --Count of players voting yes before public,
+  vote_delay_display_count INTEGER, --Count of players voting yes before public
+  confirmation_time INTEGER, --How many minutes players have for final play confirmation. 0 waits indefinitely. Null is auto-accept.
   PRIMARY KEY(game_id)
 );
 
 \echo "Attempting to create rules table"
 CREATE TABLE IF NOT EXISTS rules(
   rule_id SERIAL,
+  rule_key VARCHAR(50) NOT NULL,
   rule_name VARCHAR(50) NOT NULL,
-  rule_description VARCHAR(1000),
+  rule_description VARCHAR(MAX),
   PRIMARY KEY(rule_id)
 );
 
