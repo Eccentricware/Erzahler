@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
 
 export class GameService {
@@ -7,6 +8,7 @@ export class GameService {
     console.log(requestBody);
 
     // Insert into games
+    const newGame: any = await this.addNewGame(requestBody, pool);
     // Insert into assignments
     // Insert into turns
     // Insert into rules_in_games
@@ -23,5 +25,23 @@ export class GameService {
     // Insert into unit_history
 
     return 'A new phase begins!';
+  }
+
+  async addNewGame(settings: any, pool: Pool): Promise<any> {
+    return pool.query(insertNewGameQuery, [
+      settings.gameName,
+      settings.stylizedYearStart,
+      settings.concurrentGamesLimit,
+      settings.blindAdministrator,
+      settings.privateGame,
+      settings.hiddenGame,
+      settings.deadlineType,
+      settings.ordersDeadline,
+      settings.retreatsDeadline,
+      settings.adjustmentsDeadline,
+      settings.nominationsDeadline,
+      settings.votesDeadline,
+      settings.nmrRemoval
+    ]);
   }
 }
