@@ -19,7 +19,6 @@ export const insertNewGameQuery = `
     $1,
     'registration',
     0,
-    2000,
     $2,
     $3,
     $4,
@@ -30,6 +29,7 @@ export const insertNewGameQuery = `
     $9,
     $10,
     $11,
-    $12
+    $12,
+    $13
   );
 `;
