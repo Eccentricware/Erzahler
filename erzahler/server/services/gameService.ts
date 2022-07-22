@@ -1,33 +1,46 @@
+import { DecodedIdToken } from "firebase-admin/auth";
 import { Pool } from "pg";
+import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-assignments-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
+import { AccountService } from "./accountService";
 
 export class GameService {
-  async newGame(requestBody: any, idToken: string): Promise<any> {
-    const pool: Pool = new Pool(victorCredentials);
-    console.log(requestBody);
 
-    // Insert into games
-    const newGame: any = await this.addNewGame(requestBody, pool);
-    // Insert into assignments
-    // Insert into turns
-    // Insert into rules_in_games
-    // Insert into provinces
-    // Insert into province_history
-    // Insert into terrain
-    // Insert into bridges
-    // Insert into labels
-    // Insert into nodes
-    // Insert into node_adjacencies
-    // Insert into countries
-    // Insert into country_history
-    // Insert into units
-    // Insert into unit_history
+  async newGame(gameSettings: any, idToken: string): Promise<any> {
+    const accountService: AccountService = new AccountService();
+
+    const token: DecodedIdToken = await accountService.validateToken(idToken);
+    if (token.uid) {
+      const user: any = accountService.getUserProfile(idToken);
+
+      const pool: Pool = new Pool(victorCredentials);
+      console.log(gameSettings);
+
+      // Insert into games
+      const newGame: any = await this.addNewGame(pool, gameSettings);
+      // Insert into assignments
+      await this.addNewAssignment(pool, user.user_id, newGame.game_id);
+
+      // Insert into turns
+      // Insert into rules_in_games
+      // Insert into provinces
+      // Insert into province_history
+      // Insert into terrain
+      // Insert into bridges
+      // Insert into labels
+      // Insert into nodes
+      // Insert into node_adjacencies
+      // Insert into countries
+      // Insert into country_history
+      // Insert into units
+      // Insert into unit_history
+    }
 
     return 'A new phase begins!';
   }
 
-  async addNewGame(settings: any, pool: Pool): Promise<any> {
+  async addNewGame(pool: Pool, settings: any): Promise<any> {
     return pool.query(insertNewGameQuery, [
       settings.gameName,
       settings.stylizedYearStart,
@@ -42,6 +55,13 @@ export class GameService {
       settings.nominationsDeadline,
       settings.votesDeadline,
       settings.nmrRemoval
+    ]);
+  }
+
+  async addNewAssignment(pool: Pool, gameId: number, userId: number): Promise<any> {
+    return pool.query(insertAssignmentsQuery, [
+      userId,
+      gameId
     ]);
   }
 }
