@@ -1,4 +1,4 @@
-export const insertTurnsQuery = `
+export const insertTurnQuery = `
   INSERT INTO turns (
     game_id,
     deadline,
