@@ -2,6 +2,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { Pool } from "pg";
 import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-assignments-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
+import { insertTurnQuery } from "../../database/queries/new-game/insert-turn-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
 
@@ -23,6 +24,7 @@ export class GameService {
       await this.addNewAssignment(pool, user.user_id, newGame.game_id);
 
       // Insert into turns
+      await this.addNewTurn(pool, gameSettings, newGame.game_id);
       // Insert into rules_in_games
       // Insert into provinces
       // Insert into province_history
@@ -64,6 +66,16 @@ export class GameService {
     return pool.query(insertAssignmentsQuery, [
       userId,
       gameId
+    ]);
+  }
+
+  async addNewTurn(pool: Pool, settings: any, gameId: number): Promise<any> {
+    return pool.query(insertTurnQuery, [
+      settings.deadline,
+      1,
+      'Spring 2001',
+      'orders',
+      'active'
     ]);
   }
 }
