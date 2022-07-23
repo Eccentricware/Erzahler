@@ -43,6 +43,8 @@ export class GameService {
   async addNewGame(pool: Pool, settings: any): Promise<any> {
     return pool.query(insertNewGameQuery, [
       settings.gameName,
+      settings.startMethod,
+      settings.startTime,
       settings.stylizedYearStart,
       settings.concurrentGamesLimit,
       settings.blindAdministrator,
