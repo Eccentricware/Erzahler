@@ -1,6 +1,8 @@
 export const insertNewGameQuery = `
   INSERT INTO games (
     game_name,
+    start_method,
+    start_time,
     game_status,
     current_year,
     stylized_year_start,
@@ -30,6 +32,8 @@ export const insertNewGameQuery = `
     $10,
     $11,
     $12,
-    $13
+    $13,
+    $14,
+    $15
   );
 `;
