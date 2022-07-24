@@ -2,6 +2,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { Pool } from "pg";
 import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-assignments-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
+import { insertRulesInGamesQuery } from "../../database/queries/new-game/insert-rules-in-games-query";
 import { insertTurnQuery } from "../../database/queries/new-game/insert-turn-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
@@ -25,7 +26,10 @@ export class GameService {
 
       // Insert into turns
       await this.addNewTurn(pool, gameSettings, newGame.game_id);
+
       // Insert into rules_in_games
+      await this.addNewRulesInGames(pool, gameSettings, newGame.game_id);
+
       // Insert into provinces
       // Insert into province_history
       // Insert into terrain
@@ -77,5 +81,20 @@ export class GameService {
       'orders',
       'active'
     ]);
+  }
+
+  async addNewRulesInGame(pool: Pool, settings: any, gameId: number): Promise<any> {
+    settings.rules.forEach(async (rule: any) => {
+      const ruleId: number = await this.getRuleId(rule.name);
+      pool.query(insertRulesInGamesQuery, [
+        ruleId,
+        gameId,
+        rule.ruleEnabled
+      ]);
+    });
+  }
+
+  async getRuleId(name: string): Promise<number> {
+    return 13;
   }
 }
