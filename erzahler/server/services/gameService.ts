@@ -1,7 +1,8 @@
 import { DecodedIdToken } from "firebase-admin/auth";
-import { Pool } from "pg";
+import { Pool, PoolConfig } from "pg";
 import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-assignments-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
+import { insertProvinceQuery } from "../../database/queries/new-game/insert-province-query";
 import { insertRulesInGamesQuery } from "../../database/queries/new-game/insert-rules-in-games-query";
 import { insertTurnQuery } from "../../database/queries/new-game/insert-turn-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
@@ -28,9 +29,11 @@ export class GameService {
       await this.addNewTurn(pool, gameSettings, newGame.game_id);
 
       // Insert into rules_in_games
-      await this.addNewRulesInGames(pool, gameSettings, newGame.game_id);
+      await this.addNewRulesInGame(pool, gameSettings, newGame.game_id);
 
       // Insert into provinces
+      await this.addNewProvinces(pool, gameSettings, newGame.game_id);
+
       // Insert into province_history
       // Insert into terrain
       // Insert into bridges
@@ -97,4 +100,15 @@ export class GameService {
   async getRuleId(name: string): Promise<number> {
     return 13;
   }
-}
+
+  async addNewProvinces(pool: Pool, settings: any, gameId: number): Promise<any> {
+    settings.provinces.forEach(async (province: any) => {
+      pool.query(insertProvinceQuery, [
+        gameId,
+        province.name,
+        province.fullName,
+        province.type,
+        province.voteType
+      ]);
+    });
+  }
