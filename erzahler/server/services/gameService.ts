@@ -42,7 +42,7 @@ export class GameService {
       await this.addNewProvinces(pool, gameData, newGameId);
 
       // Insert into province_history
-      // await this.addNewProvinceHistories(pool, gameData, newGameId);
+       await this.addNewProvinceHistories(pool, gameData, newGameId);
 
       // Insert into terrain
       // Insert into bridges
@@ -136,8 +136,13 @@ export class GameService {
   async addNewProvinceHistories(pool: Pool, settings: any, gameId: number, turnId: number): Promise<any> {
     settings.provinces.forEach(async (province: any) => {
       pool.query(insertProvinceHistoryQuery, [
-
+        province.province_id,
+        turnId,
+        province.controller_id,
+        province.status,
+        province.vote_color,
+        province.status_color
       ]);
-    })
+    });
   }
 }
