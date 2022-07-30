@@ -6,6 +6,7 @@ import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-
 import { insertProvinceHistoryQuery } from "../../database/queries/new-game/insert-province-history-query";
 import { insertProvinceQuery } from "../../database/queries/new-game/insert-province-query";
 import { insertRulesInGamesQuery } from "../../database/queries/new-game/insert-rules-in-games-query";
+import { insertTerrainQuery } from "../../database/queries/new-game/insert-terrain-query";
 import { insertTurnQuery } from "../../database/queries/new-game/insert-turn-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
@@ -31,6 +32,7 @@ export class GameService {
 
       // Insert into turns
       await this.addNewTurn(pool, gameData, newGameId);
+      const newTurnId: number = 0;
 
       // Insert into rules_in_games
       await this.addNewRulesInGame(pool, gameData, newGameId);
@@ -40,11 +42,14 @@ export class GameService {
 
       // Insert into provinces
       await this.addNewProvinces(pool, gameData, newGameId);
+      const newProvinceId: number = 0;
 
       // Insert into province_history
-       await this.addNewProvinceHistories(pool, gameData, newGameId);
+      await this.addNewProvinceHistories(pool, gameData, newTurnId);
 
       // Insert into terrain
+      await this.addNewTerrain(pool, gameData, newProvinceId);
+
       // Insert into bridges
       // Insert into labels
       // Insert into nodes
@@ -133,8 +138,8 @@ export class GameService {
     });
   }
 
-  async addNewProvinceHistories(pool: Pool, settings: any, gameId: number, turnId: number): Promise<any> {
-    settings.provinces.forEach(async (province: any) => {
+  async addNewProvinceHistories(pool: Pool, gameData: any, turnId: number): Promise<any> {
+    gameData.provinces.forEach(async (province: any) => {
       pool.query(insertProvinceHistoryQuery, [
         province.province_id,
         turnId,
@@ -142,6 +147,20 @@ export class GameService {
         province.status,
         province.vote_color,
         province.status_color
+      ]);
+    });
+  }
+
+  async addNewTerrain(pool: Pool, gameData: any, newProvinceId: number): Promise<any> {
+    gameData.provinces.terrain.forEach(async (terrain: any) => {
+      pool.query(insertTerrainQuery, [
+        newProvinceId,
+        terrain.renderCategory,
+        terrain.points,
+        terrain.topBound,
+        terrain.leftBound,
+        terrain.rightBound,
+        terrain.bottomBound
       ]);
     });
   }
