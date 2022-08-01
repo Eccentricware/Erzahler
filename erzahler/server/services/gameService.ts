@@ -1,6 +1,7 @@
 import { DecodedIdToken } from "firebase-admin/auth";
 import { Pool, PoolConfig } from "pg";
 import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-assignments-query";
+import { insertBridgeQuery } from "../../database/queries/new-game/insert-bridge-query";
 import { insertCountryQuery } from "../../database/queries/new-game/insert-country-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
 import { insertProvinceHistoryQuery } from "../../database/queries/new-game/insert-province-history-query";
@@ -51,6 +52,8 @@ export class GameService {
       await this.addNewTerrain(pool, gameData, newProvinceId);
 
       // Insert into bridges
+      await this.addNewBridges(pool, gameData);
+
       // Insert into labels
       // Insert into nodes
       // Insert into node_adjacencies
@@ -161,6 +164,16 @@ export class GameService {
         terrain.leftBound,
         terrain.rightBound,
         terrain.bottomBound
+      ]);
+    });
+  }
+
+  async addNewBridges(pool: Pool,  gameData: any) {
+    gameData.bridges.forEach(async (bridge: any) => {
+      pool.query(insertBridgeQuery, [
+        bridge.province1,
+        bridge.province2,
+        bridge.points
       ]);
     });
   }
