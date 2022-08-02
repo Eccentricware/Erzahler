@@ -4,6 +4,7 @@ import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-a
 import { insertBridgeQuery } from "../../database/queries/new-game/insert-bridge-query";
 import { insertCountryQuery } from "../../database/queries/new-game/insert-country-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
+import { insertLabelsQuery } from "../../database/queries/new-game/insert-labels-query";
 import { insertProvinceHistoryQuery } from "../../database/queries/new-game/insert-province-history-query";
 import { insertProvinceQuery } from "../../database/queries/new-game/insert-province-query";
 import { insertRulesInGamesQuery } from "../../database/queries/new-game/insert-rules-in-games-query";
@@ -55,6 +56,7 @@ export class GameService {
       await this.addNewBridges(pool, gameData);
 
       // Insert into labels
+      await this.addNewLabels(pool, gameData);
       // Insert into nodes
       // Insert into node_adjacencies
       // Insert into country_history
@@ -168,12 +170,22 @@ export class GameService {
     });
   }
 
-  async addNewBridges(pool: Pool,  gameData: any) {
+  async addNewBridges(pool: Pool,  gameData: any): Promise<any>{
     gameData.bridges.forEach(async (bridge: any) => {
       pool.query(insertBridgeQuery, [
         bridge.province1,
         bridge.province2,
         bridge.points
+      ]);
+    });
+  }
+
+  async addNewLabels(pool: Pool, gameData: any): Promise<any> {
+    gameData.labels.forEach(async (label: any) => {
+      pool.query(insertLabelsQuery, [
+        label.provinceId,
+        label.loc,
+        label.labelText
       ]);
     });
   }
