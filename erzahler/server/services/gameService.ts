@@ -5,6 +5,7 @@ import { insertBridgeQuery } from "../../database/queries/new-game/insert-bridge
 import { insertCountryQuery } from "../../database/queries/new-game/insert-country-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
 import { insertLabelsQuery } from "../../database/queries/new-game/insert-labels-query";
+import { insertNodeQuery } from "../../database/queries/new-game/insert-node-query";
 import { insertProvinceHistoryQuery } from "../../database/queries/new-game/insert-province-history-query";
 import { insertProvinceQuery } from "../../database/queries/new-game/insert-province-query";
 import { insertRulesInGamesQuery } from "../../database/queries/new-game/insert-rules-in-games-query";
@@ -57,10 +58,16 @@ export class GameService {
 
       // Insert into labels
       await this.addNewLabels(pool, gameData);
+
       // Insert into nodes
+      await this.addNewNodes(pool, gameData);
+
       // Insert into node_adjacencies
+
       // Insert into country_history
+
       // Insert into units
+
       // Insert into unit_history
     }
 
@@ -186,6 +193,16 @@ export class GameService {
         label.provinceId,
         label.loc,
         label.labelText
+      ]);
+    });
+  }
+
+  async addNewNodes(pool: Pool, gameData: any): Promise<any> {
+    gameData.provinces.nodes.forEach(async (node: any) => {
+      pool.query(insertNodeQuery, [
+        node.province_id,
+        node.node_type,
+        node.loc
       ]);
     });
   }
