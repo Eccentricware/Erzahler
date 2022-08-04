@@ -5,6 +5,7 @@ import { insertBridgeQuery } from "../../database/queries/new-game/insert-bridge
 import { insertCountryQuery } from "../../database/queries/new-game/insert-country-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
 import { insertLabelsQuery } from "../../database/queries/new-game/insert-labels-query";
+import { insertNodeAdjacencyQuery } from "../../database/queries/new-game/insert-node-adjacency-query";
 import { insertNodeQuery } from "../../database/queries/new-game/insert-node-query";
 import { insertProvinceHistoryQuery } from "../../database/queries/new-game/insert-province-history-query";
 import { insertProvinceQuery } from "../../database/queries/new-game/insert-province-query";
@@ -63,6 +64,7 @@ export class GameService {
       await this.addNewNodes(pool, gameData);
 
       // Insert into node_adjacencies
+      await this.addNewNodeAdjacencies(pool, gameData);
 
       // Insert into country_history
 
@@ -203,6 +205,15 @@ export class GameService {
         node.province_id,
         node.node_type,
         node.loc
+      ]);
+    });
+  }
+
+  async addNewNodeAdjacencies(pool: Pool, gameData: any): Promise<any> {
+    gameData.nodeAdjacencies.forEach(async (link: any) => {
+      pool.query(insertNodeAdjacencyQuery, [
+        link.node1,
+        link.node2
       ]);
     });
   }
