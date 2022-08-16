@@ -2,6 +2,7 @@ import { DecodedIdToken } from "firebase-admin/auth";
 import { Pool, PoolConfig } from "pg";
 import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-assignments-query";
 import { insertBridgeQuery } from "../../database/queries/new-game/insert-bridge-query";
+import { insertCountryHistoryQuery } from "../../database/queries/new-game/insert-country-history-query";
 import { insertCountryQuery } from "../../database/queries/new-game/insert-country-query";
 import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
 import { insertLabelsQuery } from "../../database/queries/new-game/insert-labels-query";
@@ -67,6 +68,7 @@ export class GameService {
       await this.addNewNodeAdjacencies(pool, gameData);
 
       // Insert into country_history
+      await this.addNewCountryHistory(pool, gameData);
 
       // Insert into units
 
@@ -214,6 +216,21 @@ export class GameService {
       pool.query(insertNodeAdjacencyQuery, [
         link.node1,
         link.node2
+      ]);
+    });
+  }
+
+  async addNewCountryHistory(pool: Pool, gameData: any, newTurnId: number): Promise<any> {
+    gameData.nodeAdjacencies.forEach(async (country: any) => {
+      pool.query(insertCountryHistoryQuery, [
+        country.country_id,
+        newTurnId,
+        country.status,
+        country.city_count,
+        country.unit_count,
+        country.banked_builds,
+        country.nuked_range,
+        country.adjustments
       ]);
     });
   }
