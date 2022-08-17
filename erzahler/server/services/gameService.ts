@@ -13,6 +13,7 @@ import { insertProvinceQuery } from "../../database/queries/new-game/insert-prov
 import { insertRulesInGamesQuery } from "../../database/queries/new-game/insert-rules-in-games-query";
 import { insertTerrainQuery } from "../../database/queries/new-game/insert-terrain-query";
 import { insertTurnQuery } from "../../database/queries/new-game/insert-turn-query";
+import { insertUnitQuery } from "../../database/queries/new-game/insert-unit-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
 
@@ -68,9 +69,10 @@ export class GameService {
       await this.addNewNodeAdjacencies(pool, gameData);
 
       // Insert into country_history
-      await this.addNewCountryHistory(pool, gameData);
+      await this.addNewCountryHistory(pool, gameData, 0);
 
       // Insert into units
+      await this.addNewUnits(pool, gameData);
 
       // Insert into unit_history
     }
@@ -231,6 +233,15 @@ export class GameService {
         country.banked_builds,
         country.nuked_range,
         country.adjustments
+      ]);
+    });
+  }
+
+  async addNewUnits(pool: Pool, gameData: any): Promise<any> {
+    gameData.units.forEach(async (unit: any) => {
+      pool.query(insertUnitQuery, [
+        unit.country,
+        unit.type
       ]);
     });
   }
