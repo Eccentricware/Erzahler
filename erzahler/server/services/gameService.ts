@@ -13,6 +13,7 @@ import { insertProvinceQuery } from "../../database/queries/new-game/insert-prov
 import { insertRulesInGamesQuery } from "../../database/queries/new-game/insert-rules-in-games-query";
 import { insertTerrainQuery } from "../../database/queries/new-game/insert-terrain-query";
 import { insertTurnQuery } from "../../database/queries/new-game/insert-turn-query";
+import { insertUnitHistoryQuery } from "../../database/queries/new-game/insert-unit-history-query";
 import { insertUnitQuery } from "../../database/queries/new-game/insert-unit-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
@@ -75,6 +76,7 @@ export class GameService {
       await this.addNewUnits(pool, gameData);
 
       // Insert into unit_history
+      await this.addNewUnitHistory(pool, gameData);
     }
 
     return 'A new phase begins!';
@@ -242,6 +244,17 @@ export class GameService {
       pool.query(insertUnitQuery, [
         unit.country,
         unit.type
+      ]);
+    });
+  }
+
+  async addNewUnitHistory(pool: Pool, gameData: any, turnId: number): Promise<any> {
+    gameData.units.forEach(async (unit: any) => {
+      pool.query(insertUnitHistoryQuery, [
+        unit.id,
+        turnId,
+        unit.node,
+        'active'
       ]);
     });
   }
