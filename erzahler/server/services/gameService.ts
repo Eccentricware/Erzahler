@@ -76,7 +76,7 @@ export class GameService {
       await this.addNewUnits(pool, gameData);
 
       // Insert into unit_history
-      await this.addNewUnitHistory(pool, gameData);
+      await this.addNewUnitHistory(pool, gameData, newTurnId);
     }
 
     return 'A new phase begins!';
