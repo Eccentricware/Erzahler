@@ -70,7 +70,7 @@ erzhaler.post('/add-provider', (request, response) => {
 });
 
 erzhaler.post('/new-game', (request, response) => {
-  gameService.newGame(request.body, <string>request.headers.idToken)
+  gameService.newGame(request.body.gameData, <string>request.body.idToken)
     .then((result: any) => {
       response.send({success: 'Success'});
     })
