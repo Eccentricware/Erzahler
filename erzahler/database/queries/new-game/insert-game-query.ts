@@ -1,7 +1,7 @@
 export const insertNewGameQuery = `
   INSERT INTO games (
     game_name,
-    start_method,
+    assignment_method,
     start_time,
     game_status,
     current_year,
@@ -19,12 +19,14 @@ export const insertNewGameQuery = `
     nmr_removal
   ) VALUES (
     $1,
+    $2,
+    NULL,
     'registration',
     0,
-    $2,
+    '2000',
     $3,
     $4,
-    $5
+    $5,
     $6,
     $7,
     $8,
@@ -32,8 +34,6 @@ export const insertNewGameQuery = `
     $10,
     $11,
     $12,
-    $13,
-    $14,
-    $15
+    $13
   );
 `;

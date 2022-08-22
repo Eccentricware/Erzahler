@@ -1,3 +1,4 @@
+import { error } from "console";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { Pool, PoolConfig } from "pg";
 import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-assignments-query";
@@ -28,18 +29,17 @@ export class GameService {
       const user: any = accountService.getUserProfile(idToken);
 
       const pool: Pool = new Pool(victorCredentials);
-      console.log(gameData);
+      console.log('Game Data', gameData);
 
       // Insert into games
-      const newGame: any = await this.addNewGame(pool, gameData);
-      const newGameId: number = 0;
+      const newGameId: number = await this.addNewGame(pool, gameData);
+      console.log('New Game Id:', newGameId);
 
       // Insert into assignments
       await this.addNewAssignment(pool, user.user_id, newGameId);
 
       // Insert into turns
-      await this.addNewTurn(pool, gameData, newGameId);
-      const newTurnId: number = 0;
+      const newTurnId: number = await this.addNewTurn(pool, gameData, newGameId);
 
       // Insert into rules_in_games
       await this.addNewRulesInGame(pool, gameData, newGameId);
@@ -82,12 +82,10 @@ export class GameService {
     return 'A new phase begins!';
   }
 
-  async addNewGame(pool: Pool, settings: any): Promise<any> {
-    return pool.query(insertNewGameQuery, [
+  async addNewGame(pool: Pool, settings: any): Promise<number> {
+    const result: any = await pool.query(insertNewGameQuery, [
       settings.gameName,
-      settings.startMethod,
-      settings.startTime,
-      settings.stylizedYearStart,
+      settings.assignmentMethod,
       settings.concurrentGamesLimit,
       settings.blindAdministrator,
       settings.privateGame,
@@ -99,7 +97,14 @@ export class GameService {
       settings.nominationsDeadline,
       settings.votesDeadline,
       settings.nmrRemoval
-    ]);
+    ])
+    .catch((error: Error) => {
+      console.log('New game Error:', error.message);
+      return 0;
+    });
+
+    console.log('Result:', result);
+    return result.rows[0].game_id;
   }
 
   async addNewAssignment(pool: Pool, gameId: number, userId: number): Promise<any> {
@@ -109,14 +114,20 @@ export class GameService {
     ]);
   }
 
-  async addNewTurn(pool: Pool, settings: any, gameId: number): Promise<any> {
+  async addNewTurn(pool: Pool, settings: any, gameId: number): Promise<number> {
     return pool.query(insertTurnQuery, [
       settings.deadline,
       1,
       'Spring 2001',
       'orders',
       'active'
-    ]);
+    ])
+    .then((result: any) => {
+      return result.rows[0].turn_id;
+    })
+    .catch((error: Error) => {
+      return 0;
+    });
   }
 
   async addNewRulesInGame(pool: Pool, settings: any, gameId: number): Promise<any> {
