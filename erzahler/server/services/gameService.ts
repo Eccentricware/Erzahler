@@ -86,16 +86,22 @@ export class GameService {
     const result: any = await pool.query(insertNewGameQuery, [
       settings.gameName,
       settings.assignmentMethod,
+      settings.turn1Timing,
       settings.concurrentGamesLimit,
       settings.blindAdministrator,
       settings.privateGame,
       settings.hiddenGame,
       settings.deadlineType,
-      settings.ordersDeadline,
-      settings.retreatsDeadline,
-      settings.adjustmentsDeadline,
-      settings.nominationsDeadline,
-      settings.votesDeadline,
+      settings.ordersDay,
+      settings.ordersTime,
+      settings.retreatsDay,
+      settings.retreatsTime,
+      settings.adjustmentsDay,
+      settings.adjustmentsTime,
+      settings.nominationsDay,
+      settings.nominationsTime,
+      settings.votesDay,
+      settings.votesTime,
       settings.nmrRemoval
     ])
     .catch((error: Error) => {
