@@ -47,5 +47,5 @@ export const insertNewGameQuery = `
     $17,
     $18,
     $19
-  );
+  ) RETURNING game_id;
 `;
