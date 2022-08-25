@@ -83,7 +83,7 @@ export class GameService {
   }
 
   async addNewGame(pool: Pool, settings: any): Promise<number> {
-    const result: any = await pool.query(insertNewGameQuery, [
+    const settingsArray: any = [
       settings.gameName,
       settings.assignmentMethod,
       settings.turn1Timing,
@@ -103,13 +103,21 @@ export class GameService {
       settings.votesDay,
       settings.votesTime,
       settings.nmrRemoval
-    ])
+    ];
+
+    const result: any = await pool.query({
+      text: insertNewGameQuery,
+      values: settingsArray
+    })
+    .then((results: any) => {
+      console.log('.then results', results);
+      return results;
+    })
     .catch((error: Error) => {
       console.log('New game Error:', error.message);
       return 0;
     });
 
-    console.log('Result:', result);
     return result.rows[0].game_id;
   }
 
