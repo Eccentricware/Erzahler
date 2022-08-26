@@ -27,56 +27,49 @@ export class GameService {
     const token: DecodedIdToken = await accountService.validateToken(idToken);
     if (token.uid) {
       const user: any = await accountService.getUserProfile(idToken);
-
       const pool: Pool = new Pool(victorCredentials);
-      console.log('Game Data', gameData);
+      console.log('Game Data:', gameData);
 
-      // Insert into games
       const newGameId: number = await this.addNewGame(pool, gameData);
-      console.log('New Game Id:', newGameId);
-
-      // Insert into assignments
-      await this.addNewAssignment(pool, newGameId, user.user_id);
-
-      // Insert into turns
-      const newTurnId: number = await this.addNewTurn(pool, gameData, newGameId);
+      const newTurnId: number = await this.addInitialTurns(pool, gameData, newGameId);
+      await this.addCreatorAssignment(pool, newGameId, user.user_id);
 
       // Insert into rules_in_games
-      await this.addNewRulesInGame(pool, gameData, newGameId);
+      await this.addRulesInGame(pool, gameData, newGameId);
 
       // Insert into countries
-      await this.addNewCountries(pool, gameData, newGameId);
+      await this.addCountries(pool, gameData, newGameId);
 
       // Insert into provinces
-      await this.addNewProvinces(pool, gameData, newGameId);
+      await this.addProvinces(pool, gameData, newGameId);
       const newProvinceId: number = 0;
 
       // Insert into province_history
-      await this.addNewProvinceHistories(pool, gameData, newTurnId);
+      await this.addProvinceHistories(pool, gameData, newTurnId);
 
       // Insert into terrain
-      await this.addNewTerrain(pool, gameData, newProvinceId);
+      await this.addTerrain(pool, gameData, newProvinceId);
 
       // Insert into bridges
-      await this.addNewBridges(pool, gameData);
+      await this.addBridges(pool, gameData);
 
       // Insert into labels
-      await this.addNewLabels(pool, gameData);
+      await this.addLabels(pool, gameData);
 
       // Insert into nodes
-      await this.addNewNodes(pool, gameData);
+      await this.addNodes(pool, gameData);
 
       // Insert into node_adjacencies
-      await this.addNewNodeAdjacencies(pool, gameData);
+      await this.addNodeAdjacencies(pool, gameData);
 
       // Insert into country_history
-      await this.addNewCountryHistory(pool, gameData, 0);
+      await this.addCountryInitialHistory(pool, gameData, 0);
 
       // Insert into units
-      await this.addNewUnits(pool, gameData);
+      await this.addUnits(pool, gameData);
 
       // Insert into unit_history
-      await this.addNewUnitHistory(pool, gameData, newTurnId);
+      await this.addUnitInitialHistory(pool, gameData, newTurnId);
     }
 
     return 'A new phase begins!';
@@ -117,10 +110,11 @@ export class GameService {
       return 0;
     });
 
+    console.log(result.rows[0].game_id);
     return result.rows[0].game_id;
   }
 
-  async addNewAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
+  async addCreatorAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
     console.log(`New assignment Entry: gameId (${gameId}), userId (${userId})`);
     pool.query(insertAssignmentsQuery, [
       userId,
@@ -134,7 +128,7 @@ export class GameService {
     });
   }
 
-  async addNewTurn(pool: Pool, settings: any, gameId: number): Promise<number> {
+  async addInitialTurns(pool: Pool, settings: any, gameId: number): Promise<number> {
     return pool.query(insertTurnQuery, [
       settings.deadline,
       1,
@@ -150,7 +144,7 @@ export class GameService {
     });
   }
 
-  async addNewRulesInGame(pool: Pool, settings: any, gameId: number): Promise<any> {
+  async addRulesInGame(pool: Pool, settings: any, gameId: number): Promise<any> {
     settings.rules.forEach(async (rule: any) => {
       const ruleId: number = await this.getRuleId(rule.name);
       pool.query(insertRulesInGamesQuery, [
@@ -165,7 +159,7 @@ export class GameService {
     return 13;
   }
 
-  async addNewCountries(pool: Pool, gameData: any, gameId: number): Promise<any> {
+  async addCountries(pool: Pool, gameData: any, gameId: number): Promise<any> {
     gameData.countries.forEach(async (country: any) => {
       pool.query(insertCountryQuery, [
         gameId,
@@ -177,7 +171,7 @@ export class GameService {
     })
   }
 
-  async addNewProvinces(pool: Pool, settings: any, gameId: number): Promise<any> {
+  async addProvinces(pool: Pool, settings: any, gameId: number): Promise<any> {
     settings.provinces.forEach(async (province: any) => {
       pool.query(insertProvinceQuery, [
         gameId,
@@ -189,7 +183,7 @@ export class GameService {
     });
   }
 
-  async addNewProvinceHistories(pool: Pool, gameData: any, turnId: number): Promise<any> {
+  async addProvinceHistories(pool: Pool, gameData: any, turnId: number): Promise<any> {
     gameData.provinces.forEach(async (province: any) => {
       pool.query(insertProvinceHistoryQuery, [
         province.province_id,
@@ -202,7 +196,7 @@ export class GameService {
     });
   }
 
-  async addNewTerrain(pool: Pool, gameData: any, newProvinceId: number): Promise<any> {
+  async addTerrain(pool: Pool, gameData: any, newProvinceId: number): Promise<any> {
     gameData.provinces.terrain.forEach(async (terrain: any) => {
       pool.query(insertTerrainQuery, [
         newProvinceId,
@@ -216,7 +210,7 @@ export class GameService {
     });
   }
 
-  async addNewBridges(pool: Pool,  gameData: any): Promise<any>{
+  async addBridges(pool: Pool,  gameData: any): Promise<any>{
     gameData.bridges.forEach(async (bridge: any) => {
       pool.query(insertBridgeQuery, [
         bridge.province1,
@@ -226,7 +220,7 @@ export class GameService {
     });
   }
 
-  async addNewLabels(pool: Pool, gameData: any): Promise<any> {
+  async addLabels(pool: Pool, gameData: any): Promise<any> {
     gameData.labels.forEach(async (label: any) => {
       pool.query(insertLabelsQuery, [
         label.provinceId,
@@ -236,7 +230,7 @@ export class GameService {
     });
   }
 
-  async addNewNodes(pool: Pool, gameData: any): Promise<any> {
+  async addNodes(pool: Pool, gameData: any): Promise<any> {
     gameData.provinces.nodes.forEach(async (node: any) => {
       pool.query(insertNodeQuery, [
         node.province_id,
@@ -246,7 +240,7 @@ export class GameService {
     });
   }
 
-  async addNewNodeAdjacencies(pool: Pool, gameData: any): Promise<any> {
+  async addNodeAdjacencies(pool: Pool, gameData: any): Promise<any> {
     gameData.nodeAdjacencies.forEach(async (link: any) => {
       pool.query(insertNodeAdjacencyQuery, [
         link.node1,
@@ -255,7 +249,7 @@ export class GameService {
     });
   }
 
-  async addNewCountryHistory(pool: Pool, gameData: any, newTurnId: number): Promise<any> {
+  async addCountryInitialHistory(pool: Pool, gameData: any, newTurnId: number): Promise<any> {
     gameData.nodeAdjacencies.forEach(async (country: any) => {
       pool.query(insertCountryHistoryQuery, [
         country.country_id,
@@ -270,7 +264,7 @@ export class GameService {
     });
   }
 
-  async addNewUnits(pool: Pool, gameData: any): Promise<any> {
+  async addUnits(pool: Pool, gameData: any): Promise<any> {
     gameData.units.forEach(async (unit: any) => {
       pool.query(insertUnitQuery, [
         unit.country,
@@ -279,7 +273,7 @@ export class GameService {
     });
   }
 
-  async addNewUnitHistory(pool: Pool, gameData: any, turnId: number): Promise<any> {
+  async addUnitInitialHistory(pool: Pool, gameData: any, turnId: number): Promise<any> {
     gameData.units.forEach(async (unit: any) => {
       pool.query(insertUnitHistoryQuery, [
         unit.id,
