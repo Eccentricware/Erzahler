@@ -26,7 +26,7 @@ export class GameService {
 
     const token: DecodedIdToken = await accountService.validateToken(idToken);
     if (token.uid) {
-      const user: any = accountService.getUserProfile(idToken);
+      const user: any = await accountService.getUserProfile(idToken);
 
       const pool: Pool = new Pool(victorCredentials);
       console.log('Game Data', gameData);
@@ -36,7 +36,7 @@ export class GameService {
       console.log('New Game Id:', newGameId);
 
       // Insert into assignments
-      await this.addNewAssignment(pool, user.user_id, newGameId);
+      await this.addNewAssignment(pool, newGameId, user.user_id);
 
       // Insert into turns
       const newTurnId: number = await this.addNewTurn(pool, gameData, newGameId);
@@ -110,7 +110,6 @@ export class GameService {
       values: settingsArray
     })
     .then((results: any) => {
-      console.log('.then results', results);
       return results;
     })
     .catch((error: Error) => {
@@ -121,11 +120,18 @@ export class GameService {
     return result.rows[0].game_id;
   }
 
-  async addNewAssignment(pool: Pool, gameId: number, userId: number): Promise<any> {
-    return pool.query(insertAssignmentsQuery, [
+  async addNewAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
+    console.log(`New assignment Entry: gameId (${gameId}), userId (${userId})`);
+    pool.query(insertAssignmentsQuery, [
       userId,
       gameId
-    ]);
+    ])
+    .then((result: any) => {
+      console.log('New Assignment', result)
+    })
+    .catch((error: Error) => {
+      console.log('New Assignment Error:', error.message);
+    });
   }
 
   async addNewTurn(pool: Pool, settings: any, gameId: number): Promise<number> {

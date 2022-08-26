@@ -1,5 +1,6 @@
 export const getUserProfileQuery = `
   SELECT
+    u.user_id,
     u.username,
     u.username_locked,
     u.user_status,
