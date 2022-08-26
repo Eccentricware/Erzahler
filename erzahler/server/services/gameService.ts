@@ -31,7 +31,7 @@ export class GameService {
       console.log('Game Data:', gameData);
 
       const newGameId: number = await this.addNewGame(pool, gameData);
-      const newTurnId: number = await this.addNewTurn(pool, gameData, newGameId);
+      const newTurnId: number = await this.addInitialTurns(pool, gameData, newGameId);
       await this.addCreatorAssignment(pool, newGameId, user.user_id);
 
       // Insert into rules_in_games
@@ -128,7 +128,7 @@ export class GameService {
     });
   }
 
-  async addNewTurn(pool: Pool, settings: any, gameId: number): Promise<number> {
+  async addInitialTurns(pool: Pool, settings: any, gameId: number): Promise<number> {
     return pool.query(insertTurnQuery, [
       settings.deadline,
       1,
