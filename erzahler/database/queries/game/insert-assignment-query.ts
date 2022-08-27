@@ -1,4 +1,4 @@
-export const insertAssignmentsQuery = `
+export const insertAssignmentQuery = `
   INSERT INTO assignments (
     user_id,
     game_id,
@@ -7,7 +7,7 @@ export const insertAssignmentsQuery = `
   ) VALUES (
     $1,
     $2,
-    'creator',
+    $3,
     CURRENT_TIMESTAMP
   );
 `;

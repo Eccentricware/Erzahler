@@ -1,4 +1,4 @@
-export const insertRulesInGamesQuery = `
+export const insertRuleInGameQuery = `
   INSERT INTO rules_in_games (
     rule_id,
     game_id,

@@ -1,4 +1,4 @@
-export const insertLabelsQuery = `
+export const insertLabelQuery = `
   INSERT INTO labels (
     province_id,
     loc,
