@@ -1,21 +1,21 @@
 import { error } from "console";
 import { DecodedIdToken } from "firebase-admin/auth";
-import { Pool, PoolConfig } from "pg";
-import { insertAssignmentsQuery } from "../../database/queries/new-game/insert-assignments-query";
-import { insertBridgeQuery } from "../../database/queries/new-game/insert-bridge-query";
-import { insertCountryHistoryQuery } from "../../database/queries/new-game/insert-country-history-query";
-import { insertCountryQuery } from "../../database/queries/new-game/insert-country-query";
-import { insertNewGameQuery } from "../../database/queries/new-game/insert-game-query";
-import { insertLabelsQuery } from "../../database/queries/new-game/insert-labels-query";
-import { insertNodeAdjacencyQuery } from "../../database/queries/new-game/insert-node-adjacency-query";
-import { insertNodeQuery } from "../../database/queries/new-game/insert-node-query";
-import { insertProvinceHistoryQuery } from "../../database/queries/new-game/insert-province-history-query";
-import { insertProvinceQuery } from "../../database/queries/new-game/insert-province-query";
-import { insertRulesInGamesQuery } from "../../database/queries/new-game/insert-rules-in-games-query";
-import { insertTerrainQuery } from "../../database/queries/new-game/insert-terrain-query";
-import { insertTurnQuery } from "../../database/queries/new-game/insert-turn-query";
-import { insertUnitHistoryQuery } from "../../database/queries/new-game/insert-unit-history-query";
-import { insertUnitQuery } from "../../database/queries/new-game/insert-unit-query";
+import { Pool } from "pg";
+import { insertAssignmentQuery } from "../../database/queries/game/insert-assignment-query";
+import { insertBridgeQuery } from "../../database/queries/game/insert-bridge-query";
+import { insertCountryHistoryQuery } from "../../database/queries/game/insert-country-history-query";
+import { insertCountryQuery } from "../../database/queries/game/insert-country-query";
+import { insertNewGameQuery } from "../../database/queries/game/insert-game-query";
+import { insertLabelQuery } from "../../database/queries/game/insert-label-query";
+import { insertNodeAdjacencyQuery } from "../../database/queries/game/insert-node-adjacency-query";
+import { insertNodeQuery } from "../../database/queries/game/insert-node-query";
+import { insertProvinceHistoryQuery } from "../../database/queries/game/insert-province-history-query";
+import { insertProvinceQuery } from "../../database/queries/game/insert-province-query";
+import { insertRuleInGameQuery } from "../../database/queries/game/insert-rule-in-game-query";
+import { insertTerrainQuery } from "../../database/queries/game/insert-terrain-query";
+import { insertTurnQuery } from "../../database/queries/game/insert-turn-query";
+import { insertUnitHistoryQuery } from "../../database/queries/game/insert-unit-history-query";
+import { insertUnitQuery } from "../../database/queries/game/insert-unit-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
 
@@ -32,47 +32,24 @@ export class GameService {
 
       const newGameId: number = await this.addNewGame(pool, gameData);
       const newTurnId: number = await this.addInitialTurns(pool, gameData, newGameId);
+
       await this.addCreatorAssignment(pool, newGameId, user.user_id);
-
-      // Insert into rules_in_games
       await this.addRulesInGame(pool, gameData, newGameId);
-
-      // Insert into countries
       await this.addCountries(pool, gameData, newGameId);
-
-      // Insert into provinces
       await this.addProvinces(pool, gameData, newGameId);
       const newProvinceId: number = 0;
-
-      // Insert into province_history
       await this.addProvinceHistories(pool, gameData, newTurnId);
-
-      // Insert into terrain
       await this.addTerrain(pool, gameData, newProvinceId);
-
-      // Insert into bridges
       await this.addBridges(pool, gameData);
-
-      // Insert into labels
       await this.addLabels(pool, gameData);
-
-      // Insert into nodes
       await this.addNodes(pool, gameData);
-
-      // Insert into node_adjacencies
       await this.addNodeAdjacencies(pool, gameData);
-
-      // Insert into country_history
       await this.addCountryInitialHistory(pool, gameData, 0);
-
-      // Insert into units
       await this.addUnits(pool, gameData);
-
-      // Insert into unit_history
       await this.addUnitInitialHistory(pool, gameData, newTurnId);
+    } else {
+      console.log('Invalid Token UID');
     }
-
-    return 'A new phase begins!';
   }
 
   async addNewGame(pool: Pool, settings: any): Promise<number> {
@@ -116,9 +93,10 @@ export class GameService {
 
   async addCreatorAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
     console.log(`New assignment Entry: gameId (${gameId}), userId (${userId})`);
-    pool.query(insertAssignmentsQuery, [
+    pool.query(insertAssignmentQuery, [
       userId,
-      gameId
+      gameId,
+      'creator'
     ])
     .then((result: any) => {
       console.log('New Assignment', result)
@@ -147,7 +125,7 @@ export class GameService {
   async addRulesInGame(pool: Pool, settings: any, gameId: number): Promise<any> {
     settings.rules.forEach(async (rule: any) => {
       const ruleId: number = await this.getRuleId(rule.name);
-      pool.query(insertRulesInGamesQuery, [
+      pool.query(insertRuleInGameQuery, [
         ruleId,
         gameId,
         rule.ruleEnabled
@@ -222,7 +200,7 @@ export class GameService {
 
   async addLabels(pool: Pool, gameData: any): Promise<any> {
     gameData.labels.forEach(async (label: any) => {
-      pool.query(insertLabelsQuery, [
+      pool.query(insertLabelQuery, [
         label.provinceId,
         label.loc,
         label.labelText
