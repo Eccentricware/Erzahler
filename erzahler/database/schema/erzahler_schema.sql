@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS games(
   private_game BOOLEAN,
   hidden_game BOOLEAN,
   blind_administrator BOOLEAN DEFAULT false,
-  deadline_type VARCHAR(15),
   assignment_method VARCHAR(15) NOT NULL,
+  deadline_type VARCHAR(15),
   turn_1_timing VARCHAR(10) NOT NULL,
   start_time TIMESTAMP,
   orders_day VARCHAR(9),
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS games(
   votes_day VARCHAR(9),
   votes_time TIMESTAMP,
   nmr_removal INTEGER,
-  vote_delay_lock INTEGER, --Minutes before the deadline before can't delay
+  vote_delay_lock INTEGER, --Minutes before the deadline until can't delay
   vote_delay_percent INTEGER, --Percent of players required to pass vote
   vote_delay_count INTEGER, --Number of players required to pass vote
   vote_delay_display_percent INTEGER, --Percent of players voting yes before public
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS rules(
   rule_id SERIAL,
   rule_key VARCHAR(50) NOT NULL,
   rule_name VARCHAR(50) NOT NULL,
-  rule_description VARCHAR(MAX),
+  rule_description TEXT,
   PRIMARY KEY(rule_id)
 );
 
@@ -545,5 +545,3 @@ CREATE TABLE IF NOT EXISTS orders(
   FOREIGN KEY(destination_id)
     REFERENCES nodes(node_id)
 );
-
-\echo 'End of script'
