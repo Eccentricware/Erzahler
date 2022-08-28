@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/schema/initialize_database.sql
+--sudo -u postgres psql < database/scripts/initialize_database.sql
 
 DROP DATABASE IF EXISTS erzahler_dev;
 CREATE DATABASE erzahler_dev;
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS rules(
   rule_id SERIAL,
   rule_key VARCHAR(50) NOT NULL,
   rule_name VARCHAR(50) NOT NULL,
-  rule_description VARCHAR(MAX),
+  rule_description TEXT,
   PRIMARY KEY(rule_id)
 );
 
@@ -546,7 +546,7 @@ CREATE TABLE IF NOT EXISTS orders(
     REFERENCES nodes(node_id)
 );
 
-\echo 'End of script'
+\echo 'End of tables. Inserting Core Rules'
 
 INSERT INTO rules (rule_key, rule_name, rule_description) VALUES (
   'untf',
