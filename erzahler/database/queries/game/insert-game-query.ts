@@ -1,17 +1,15 @@
 export const insertNewGameQuery = `
   INSERT INTO games (
     game_name,
-    assignment_method,
-    turn_1_timing,
-    start_time,
     game_status,
+    assignment_method,
+    stylized_start_year,
     current_year,
-    stylized_year_start,
-    concurrent_games_limit,
-    blind_administrator,
-    private_game,
-    hidden_game,
+    turn_1_timing,
     deadline_type,
+    start_time,
+    game_time_zone,
+    observe_dst,
     orders_day,
     orders_time,
     retreats_day,
@@ -22,15 +20,18 @@ export const insertNewGameQuery = `
     nominations_time,
     votes_day,
     votes_time,
-    nmr_removal
+    nmr_tolerance_total,
+    concurrent_games_limit,
+    private_game,
+    hidden_game,
+    blind_administrator,
+    final_readiness_check
   ) VALUES (
     $1,
+    'registration',
     $2,
     $3,
-    NULL,
-    'registration',
     0,
-    '2000',
     $4,
     $5,
     $6,
@@ -46,6 +47,11 @@ export const insertNewGameQuery = `
     $16,
     $17,
     $18,
-    $19
+    $19,
+    $20,
+    $21,
+    $22,
+    $23,
+    $24
   ) RETURNING game_id;
 `;

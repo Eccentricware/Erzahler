@@ -56,12 +56,12 @@ export class GameService {
     const settingsArray: any = [
       settings.gameName,
       settings.assignmentMethod,
+      settings.stylizedStartYear,
       settings.turn1Timing,
-      settings.concurrentGamesLimit,
-      settings.blindAdministrator,
-      settings.privateGame,
-      settings.hiddenGame,
       settings.deadlineType,
+      settings.gameStart,
+      settings.timeZone,
+      settings.observeDst,
       settings.ordersDay,
       settings.ordersTime,
       settings.retreatsDay,
@@ -72,7 +72,12 @@ export class GameService {
       settings.nominationsTime,
       settings.votesDay,
       settings.votesTime,
-      settings.nmrRemoval
+      settings.nmrTolerance,
+      settings.concurrentGamesLimit,
+      settings.privateGame,
+      settings.hiddenGame,
+      settings.blindCreator,
+      settings.finalReadinessCheck
     ];
 
     const result: any = await pool.query({

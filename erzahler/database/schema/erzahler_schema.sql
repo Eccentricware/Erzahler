@@ -4,7 +4,6 @@ DROP DATABASE IF EXISTS erzahler_dev;
 CREATE DATABASE erzahler_dev;
 
 \c erzahler_dev;
-
 \echo 'Attempting to create games table'
 
 CREATE TABLE IF NOT EXISTS games(
@@ -12,13 +11,15 @@ CREATE TABLE IF NOT EXISTS games(
   game_name VARCHAR(50) UNIQUE NOT NULL,
   game_status VARCHAR(25) NOT NULL,
   current_year INTEGER NOT NULL,
-  stylized_year_start VARCHAR(10),
+  stylized_start_year INTEGER NOT NULL DEFAULT 2000,
   concurrent_games_limit INTEGER,
   private_game BOOLEAN,
   hidden_game BOOLEAN,
   blind_administrator BOOLEAN DEFAULT false,
   assignment_method VARCHAR(15) NOT NULL,
   deadline_type VARCHAR(15),
+  game_time_zone INTEGER NOT NULL DEFAULT 0,
+  observe_dst BOOLEAN DEFAULT true,
   turn_1_timing VARCHAR(10) NOT NULL,
   start_time TIMESTAMP,
   orders_day VARCHAR(9),
@@ -31,17 +32,21 @@ CREATE TABLE IF NOT EXISTS games(
   nominations_time TIMESTAMP,
   votes_day VARCHAR(9),
   votes_time TIMESTAMP,
-  nmr_removal INTEGER,
+  nmr_tolerance_total INTEGER,
+  nmr_tolerance_orders INTEGER,
+  nmr_tolerance_retreats INTEGER,
+  nmr_tolerance_adjustments INTEGER,
   vote_delay_lock INTEGER, --Minutes before the deadline until can't delay
   vote_delay_percent INTEGER, --Percent of players required to pass vote
   vote_delay_count INTEGER, --Number of players required to pass vote
   vote_delay_display_percent INTEGER, --Percent of players voting yes before public
   vote_delay_display_count INTEGER, --Count of players voting yes before public
   confirmation_time INTEGER, --How many minutes players have for final play confirmation. 0 waits indefinitely. Null is auto-accept.
+  final_readiness_check BOOLEAN NOT NULL DEFAULT true,
   PRIMARY KEY(game_id)
 );
 
-\echo "Attempting to create rules table"
+\echo 'Attempting to create rules table'
 CREATE TABLE IF NOT EXISTS rules(
   rule_id SERIAL,
   rule_key VARCHAR(50) NOT NULL,
@@ -50,7 +55,7 @@ CREATE TABLE IF NOT EXISTS rules(
   PRIMARY KEY(rule_id)
 );
 
-\echo "Attempting to create rules_in_games table"
+\echo 'Attempting to create rules_in_games table'
 CREATE TABLE IF NOT EXISTS rules_in_games(
   rule_in_game_id SERIAL,
   rule_id INTEGER NOT NULL,
@@ -111,7 +116,7 @@ CREATE TABLE IF NOT EXISTS country_history(
 
 
 
-\echo "Attempting to create alerts table"
+\echo 'Attempting to create alerts table'
 CREATE TABLE IF NOT EXISTS alerts(
   alert_id SERIAL,
   game_id INTEGER NOT NULL,
@@ -123,7 +128,7 @@ CREATE TABLE IF NOT EXISTS alerts(
     REFERENCES games(game_id)
 );
 
-\echo "Attempting to create alert_read_receipts table"
+\echo 'Attempting to create alert_read_receipts table'
 CREATE TABLE IF NOT EXISTS alert_read_receipts(
   alert_read_receipt_id SERIAL,
   alert_id INTEGER NOT NULL,
@@ -301,15 +306,18 @@ CREATE TABLE IF NOT EXISTS users(
   username VARCHAR(100) UNIQUE NOT NULL,
   username_locked BOOLEAN NOT NULL DEFAULT false,
   user_status VARCHAR(100) NOT NULL,
-  time_zone VARCHAR(25),
   signup_time TIMESTAMP NOT NULL,
+  time_zone VARCHAR(25),
   last_sign_in_time TIMESTAMP NOT NULL,
   classic_unit_render BOOLEAN NOT NULL DEFAULT false,
   city_render_size INTEGER NOT NULL DEFAULT 2,
   label_render_size INTEGER NOT NULL DEFAULT 2,
   unit_render_size INTEGER NOT NULL DEFAULT 2,
-  nmr_count INTEGER NOT NULL DEFAULT 0,
   wins INTEGER DEFAULT 0,
+  nmr_total INTEGER NOT NULL DEFAULT 0,
+  nmr_orders INTEGER NOT NULL DEFAULT 0,
+  nmr_retreats INTEGER NOT NULL DEFAULT 0,
+  nmr_adjustments INTEGER NOT NULL DEFAULT 0,
   dropouts INTEGER NOT NULL DEFAULT 0,
   saves INTEGER DEFAULT 0,
   color_theme VARCHAR(15),
@@ -403,7 +411,10 @@ CREATE TABLE IF NOT EXISTS assignments(
   assignment_type VARCHAR(15) NOT NULL,
   assignment_start TIMESTAMP NOT NULL,
   assignment_end TIMESTAMP,
-  nmr_count INTEGER,
+  nmr_total INTEGER,
+  nmr_orders INTEGER,
+  nmr_retreats INTEGER,
+  nmr_adjustments INTEGER,
   PRIMARY KEY(assignment_id),
   FOREIGN KEY(user_id)
     REFERENCES users(user_id),
