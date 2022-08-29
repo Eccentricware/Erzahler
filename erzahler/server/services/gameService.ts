@@ -33,7 +33,7 @@ export class GameService {
       const newGameId: number = await this.addNewGame(pool, gameData);
       const newTurnId: number = await this.addInitialTurns(pool, gameData, newGameId);
 
-      await this.addCreatorAssignment(pool, newGameId, user.user_id);
+      await this.addAdministratorAssignment(pool, newGameId, user.user_id);
       await this.addRulesInGame(pool, gameData, newGameId);
       await this.addCountries(pool, gameData, newGameId);
       await this.addProvinces(pool, gameData, newGameId);
@@ -96,12 +96,13 @@ export class GameService {
     return result.rows[0].game_id;
   }
 
-  async addCreatorAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
+  async addAdministratorAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
     console.log(`New assignment Entry: gameId (${gameId}), userId (${userId})`);
     pool.query(insertAssignmentQuery, [
       userId,
       gameId,
-      'creator'
+      null,
+      'administrator'
     ])
     .then((result: any) => {
       console.log('New Assignment', result)
