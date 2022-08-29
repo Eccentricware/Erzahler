@@ -1,4 +1,7 @@
---sudo -u postgres psql < database/schema/core-rules-script.sql
+--sudo -u postgres psql < database/scripts/core-rules-script.sql
+
+\c erzahler_dev;
+\echo 'Attempting to add core rules'
 
 INSERT INTO rules (rule_key, rule_name, rule_description) VALUES (
   'untf',
