@@ -31,14 +31,14 @@ export class GameService {
       console.log('Game Data:', gameData);
 
       const newGameId: number = await this.addNewGame(pool, gameData);
-      const newTurnId: number = await this.addInitialTurns(pool, gameData, newGameId);
+      const newTurnIds: number[] = await this.addInitialTurns(pool, gameData, newGameId);
 
       await this.addAdministratorAssignment(pool, newGameId, user.user_id);
       await this.addRulesInGame(pool, gameData, newGameId);
       await this.addCountries(pool, gameData, newGameId);
       await this.addProvinces(pool, gameData, newGameId);
       const newProvinceId: number = 0;
-      await this.addProvinceHistories(pool, gameData, newTurnId);
+      await this.addProvinceHistories(pool, gameData, newTurnIds[0]);
       await this.addTerrain(pool, gameData, newProvinceId);
       await this.addBridges(pool, gameData);
       await this.addLabels(pool, gameData);
@@ -46,7 +46,7 @@ export class GameService {
       await this.addNodeAdjacencies(pool, gameData);
       await this.addCountryInitialHistory(pool, gameData, 0);
       await this.addUnits(pool, gameData);
-      await this.addUnitInitialHistory(pool, gameData, newTurnId);
+      await this.addUnitInitialHistory(pool, gameData, newTurnIds[0]);
     } else {
       console.log('Invalid Token UID');
     }
@@ -112,20 +112,40 @@ export class GameService {
     });
   }
 
-  async addInitialTurns(pool: Pool, settings: any, gameId: number): Promise<number> {
-    return pool.query(insertTurnQuery, [
-      settings.deadline,
-      1,
-      'Spring 2001',
+  async addInitialTurns(pool: Pool, settings: any, gameId: number): Promise<number[]> {
+    const turn0Id = await pool.query(insertTurnQuery, [
+      gameId,
+      '2022-08-30 12:00:00',
+      0,
+      `Winter ${settings.stylizedStartYear}`,
       'orders',
-      'active'
+      'resolved'
     ])
     .then((result: any) => {
       return result.rows[0].turn_id;
     })
     .catch((error: Error) => {
+      console.log('Turn 0 Error: ', error.message);
       return 0;
     });
+
+    const turn1Id = await pool.query(insertTurnQuery, [
+      gameId,
+      '2022-09-06 12:00:00',
+      1,
+      `Winter ${settings.stylizedStartYear + 1}`,
+      'orders',
+      'paused'
+    ])
+    .then((result: any) => {
+      return result.rows[0].turn_id;
+    })
+    .catch((error: Error) => {
+      console.log('Turn 1 Error: ', error.message);
+      return 0;
+    });
+
+    return [turn0Id, turn1Id];
   }
 
   async addRulesInGame(pool: Pool, settings: any, gameId: number): Promise<any> {
