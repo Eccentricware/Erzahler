@@ -113,9 +113,10 @@ export class GameService {
   }
 
   async addInitialTurns(pool: Pool, settings: any, gameId: number): Promise<number[]> {
+    console.log('Initial turn settings:', settings);
     const turn0Id = await pool.query(insertTurnQuery, [
       gameId,
-      '2022-08-30 12:00:00',
+      settings.gameStart,
       0,
       `Winter ${settings.stylizedStartYear}`,
       'orders',
@@ -131,7 +132,7 @@ export class GameService {
 
     const turn1Id = await pool.query(insertTurnQuery, [
       gameId,
-      '2022-09-06 12:00:00',
+      settings.firstTurnDeadline,
       1,
       `Winter ${settings.stylizedStartYear + 1}`,
       'orders',
