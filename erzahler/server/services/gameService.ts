@@ -1,6 +1,6 @@
 import { error } from "console";
 import { DecodedIdToken } from "firebase-admin/auth";
-import { Pool } from "pg";
+import { Pool, QueryResult } from "pg";
 import { insertAssignmentQuery } from "../../database/queries/game/insert-assignment-query";
 import { insertBridgeQuery } from "../../database/queries/game/insert-bridge-query";
 import { insertCountryHistoryQuery } from "../../database/queries/game/insert-country-history-query";
@@ -29,6 +29,9 @@ export class GameService {
       const user: any = await accountService.getUserProfile(idToken);
       const pool: Pool = new Pool(victorCredentials);
       console.log('Game Data:', gameData);
+
+      const keyToIdLibrary: any = await this.createNewGameKeyToIdLibrary(pool);
+      console.log('keyToIdLibrary:', keyToIdLibrary)
 
       const newGameId: number = await this.addNewGame(pool, gameData);
       const newTurnIds: number[] = await this.addInitialTurns(pool, gameData, newGameId);
@@ -296,5 +299,16 @@ export class GameService {
         'active'
       ]);
     });
+  }
+
+  async createNewGameKeyToIdLibrary(pool: Pool): Promise<any> {
+    const keyToIdLibrary: any = {};
+
+    const ruleResults: QueryResult<any> = await pool.query('SELECT * FROM rules');
+    ruleResults.rows.forEach((rule: any) => {
+      keyToIdLibrary[rule.rule_key] = rule.rule_id;
+    });
+
+    return keyToIdLibrary;
   }
 }
