@@ -30,14 +30,14 @@ export class GameService {
       const pool: Pool = new Pool(victorCredentials);
       console.log('Game Data:', gameData);
 
-      const keyToIdLibrary: any = await this.createNewGameKeyToIdLibrary(pool);
-      console.log('keyToIdLibrary:', keyToIdLibrary)
+      const idLibrary: any = await this.createNewGameIdLibrary(pool);
 
-      const newGameId: number = await this.addNewGame(pool, gameData);
-      const newTurnIds: number[] = await this.addInitialTurns(pool, gameData, newGameId);
+      idLibrary.game = await this.addNewGame(pool, gameData);
+      const newTurnIds: number[] = await this.addInitialTurns(pool, gameData, idLibrary.newGameId);
 
-      await this.addCreatorAssignment(pool, newGameId, user.user_id);
-      await this.addRulesInGame(pool, gameData, newGameId, keyToIdLibrary.rules);
+      await this.addCreatorAssignment(pool, idLibrary.game, user.user_id);
+      await this.addRulesInGame(pool, gameData, idLibrary.game);
+      // Unnecessary progress tracker line
       await this.addCountries(pool, gameData, newGameId);
       await this.addProvinces(pool, gameData, newGameId);
       const newProvinceId: number = 0;
@@ -154,11 +154,11 @@ export class GameService {
     return [turn0Id, turn1Id];
   }
 
-  async addRulesInGame(pool: Pool, settings: any, gameId: number, ruleKTILibrary: any): Promise<any> {
+  async addRulesInGame(pool: Pool, settings: any, idLibrary: any): Promise<any> {
     settings.rules.forEach(async (rule: any) => {
       await pool.query(insertRuleInGameQuery, [
-        gameId,
-        ruleKTILibrary[rule.key],
+        idLibrary.game,
+        idLibrary.rules[rule.key],
         rule.enabled
       ])
       .catch((error: Error) => {
@@ -296,7 +296,7 @@ export class GameService {
     });
   }
 
-  async createNewGameKeyToIdLibrary(pool: Pool): Promise<any> {
+  async createNewGameIdLibrary(pool: Pool): Promise<any> {
     const keyToIdLibrary: any = {
       rules: {}
     };
