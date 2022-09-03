@@ -78,7 +78,8 @@ export class GameService {
       settings.hiddenGame,
       settings.blindCreator,
       settings.finalReadinessCheck,
-      settings.voteDeadlineExtension
+      settings.voteDeadlineExtension,
+      settings.partialRosterStart
     ];
 
     const result: any = await pool.query({

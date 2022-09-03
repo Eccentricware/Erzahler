@@ -10,12 +10,6 @@ INSERT INTO rules (rule_key, rule_name, rule_description) VALUES (
 );
 
 INSERT INTO rules (rule_key, rule_name, rule_description) VALUES (
-  'partialRosterStart',
-  'Partial Roster Start',
-  'If a specific start time is scheduled, the game will automatically start based upon who is assigned at the time. If the rule is not enabled, the start time will continually be delayed based on schedule type.'
-);
-
-INSERT INTO rules (rule_key, rule_name, rule_description) VALUES (
   'untf',
   'United Nations Task Force',
   'Players vote on an action to support or vacant province to hold'

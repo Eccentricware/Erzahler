@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS games(
   vote_delay_display_percent INTEGER, --Percent of players voting yes before public
   vote_delay_display_count INTEGER, --Count of players voting yes before public
   confirmation_time INTEGER, --How many minutes players have for final play confirmation. 0 waits indefinitely. Null is auto-accept.
+  partial_roster_start BOOLEAN NOT NULL DEFAULT false,
   final_readiness_check BOOLEAN NOT NULL DEFAULT true,
   PRIMARY KEY(game_id)
 );

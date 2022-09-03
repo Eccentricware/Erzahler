@@ -26,7 +26,8 @@ export const insertNewGameQuery = `
     hidden_game,
     blind_administrators,
     final_readiness_check,
-    vote_delay_enabled
+    vote_delay_enabled,
+    partial_roster_start
   ) VALUES (
     $1,
     'registration',
@@ -54,6 +55,7 @@ export const insertNewGameQuery = `
     $22,
     $23,
     $24,
-    $25
+    $25,
+    $26
   ) RETURNING game_id;
 `;
