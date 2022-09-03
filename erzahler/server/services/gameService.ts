@@ -37,7 +37,7 @@ export class GameService {
       const newTurnIds: number[] = await this.addInitialTurns(pool, gameData, newGameId);
 
       await this.addCreatorAssignment(pool, newGameId, user.user_id);
-      await this.addRulesInGame(pool, gameData, newGameId);
+      await this.addRulesInGame(pool, gameData, newGameId, keyToIdLibrary.rules);
       await this.addCountries(pool, gameData, newGameId);
       await this.addProvinces(pool, gameData, newGameId);
       const newProvinceId: number = 0;
@@ -154,20 +154,15 @@ export class GameService {
     return [turn0Id, turn1Id];
   }
 
-  async addRulesInGame(pool: Pool, settings: any, gameId: number): Promise<any> {
-    console.log('Insert rule gameId:', gameId);
+  async addRulesInGame(pool: Pool, settings: any, gameId: number, ruleKTILibrary: any): Promise<any> {
     settings.rules.forEach(async (rule: any) => {
-      console.log('Trying to insert rule:', rule);
       await pool.query(insertRuleInGameQuery, [
         gameId,
-        rule.enabled,
-        rule.key
+        ruleKTILibrary[rule.key],
+        rule.enabled
       ])
-      .then((result: any) => {
-        console.log('Rule in game added:', result);
-      })
       .catch((error: Error) => {
-        console.log('Add Rules In Games:', error.message);
+        console.log('Add Rule In Games:', error.message);
       });
     });
   }
@@ -302,11 +297,13 @@ export class GameService {
   }
 
   async createNewGameKeyToIdLibrary(pool: Pool): Promise<any> {
-    const keyToIdLibrary: any = {};
+    const keyToIdLibrary: any = {
+      rules: {}
+    };
 
     const ruleResults: QueryResult<any> = await pool.query('SELECT * FROM rules');
     ruleResults.rows.forEach((rule: any) => {
-      keyToIdLibrary[rule.rule_key] = rule.rule_id;
+      keyToIdLibrary.rules[rule.rule_key] = rule.rule_id;
     });
 
     return keyToIdLibrary;

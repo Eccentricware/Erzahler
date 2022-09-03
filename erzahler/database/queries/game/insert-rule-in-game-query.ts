@@ -3,11 +3,9 @@ export const insertRuleInGameQuery = `
     game_id,
     rule_id,
     rule_enabled
-  ) SELECT (
+  ) VALUES (
     $1,
-    rules.rule_id,
-    $2
-  ) FROM rules
-  WHERE
-  rule_key = $3;
+    $2,
+    $3
+  );
 `;
