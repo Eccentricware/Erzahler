@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS games(
   concurrent_games_limit INTEGER,
   private_game BOOLEAN,
   hidden_game BOOLEAN,
-  blind_administrator BOOLEAN DEFAULT false,
+  blind_administrators BOOLEAN DEFAULT false,
   assignment_method VARCHAR(15) NOT NULL,
   deadline_type VARCHAR(15),
   game_time_zone INTEGER NOT NULL DEFAULT 0,
@@ -36,12 +36,14 @@ CREATE TABLE IF NOT EXISTS games(
   nmr_tolerance_orders INTEGER,
   nmr_tolerance_retreats INTEGER,
   nmr_tolerance_adjustments INTEGER,
+  vote_delay_enabled BOOLEAN DEFAULT false,
   vote_delay_lock INTEGER, --Minutes before the deadline until can't delay
   vote_delay_percent INTEGER, --Percent of players required to pass vote
   vote_delay_count INTEGER, --Number of players required to pass vote
   vote_delay_display_percent INTEGER, --Percent of players voting yes before public
   vote_delay_display_count INTEGER, --Count of players voting yes before public
   confirmation_time INTEGER, --How many minutes players have for final play confirmation. 0 waits indefinitely. Null is auto-accept.
+  partial_roster_start BOOLEAN NOT NULL DEFAULT false,
   final_readiness_check BOOLEAN NOT NULL DEFAULT true,
   PRIMARY KEY(game_id)
 );

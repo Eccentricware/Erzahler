@@ -1,11 +1,13 @@
 export const insertRuleInGameQuery = `
   INSERT INTO rules_in_games (
-    rule_id,
     game_id,
+    rule_id,
     rule_enabled
-  ) VALUES (
+  ) SELECT (
     $1,
-    $2,
-    $3
-  )
+    rules.rule_id,
+    $2
+  ) FROM rules
+  WHERE
+  rule_key = $3;
 `;
