@@ -24,8 +24,9 @@ export const insertNewGameQuery = `
     concurrent_games_limit,
     private_game,
     hidden_game,
-    blind_administrator,
-    final_readiness_check
+    blind_administrators,
+    final_readiness_check,
+    vote_delay_enabled
   ) VALUES (
     $1,
     'registration',
@@ -52,6 +53,7 @@ export const insertNewGameQuery = `
     $21,
     $22,
     $23,
-    $24
+    $24,
+    $25
   ) RETURNING game_id;
 `;

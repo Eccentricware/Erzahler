@@ -33,7 +33,7 @@ export class GameService {
       const newGameId: number = await this.addNewGame(pool, gameData);
       const newTurnIds: number[] = await this.addInitialTurns(pool, gameData, newGameId);
 
-      await this.addAdministratorAssignment(pool, newGameId, user.user_id);
+      await this.addCreatorAssignment(pool, newGameId, user.user_id);
       await this.addRulesInGame(pool, gameData, newGameId);
       await this.addCountries(pool, gameData, newGameId);
       await this.addProvinces(pool, gameData, newGameId);
@@ -77,7 +77,8 @@ export class GameService {
       settings.privateGame,
       settings.hiddenGame,
       settings.blindCreator,
-      settings.finalReadinessCheck
+      settings.finalReadinessCheck,
+      settings.voteDeadlineExtension
     ];
 
     const result: any = await pool.query({
@@ -96,16 +97,16 @@ export class GameService {
     return result.rows[0].game_id;
   }
 
-  async addAdministratorAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
+  async addCreatorAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
     console.log(`New assignment Entry: gameId (${gameId}), userId (${userId})`);
     pool.query(insertAssignmentQuery, [
       userId,
       gameId,
       null,
-      'administrator'
+      'creator'
     ])
     .then((result: any) => {
-      console.log('New Assignment', result)
+      // console.log('New Assignment', result)
     })
     .catch((error: Error) => {
       console.log('New Assignment Error:', error.message);
@@ -150,13 +151,20 @@ export class GameService {
   }
 
   async addRulesInGame(pool: Pool, settings: any, gameId: number): Promise<any> {
+    console.log('Insert rule gameId:', gameId);
     settings.rules.forEach(async (rule: any) => {
-      const ruleId: number = await this.getRuleId(rule.name);
-      pool.query(insertRuleInGameQuery, [
-        ruleId,
+      console.log('Trying to insert rule:', rule);
+      await pool.query(insertRuleInGameQuery, [
         gameId,
-        rule.ruleEnabled
-      ]);
+        rule.enabled,
+        rule.key
+      ])
+      .then((result: any) => {
+        console.log('Rule in game added:', result);
+      })
+      .catch((error: Error) => {
+        console.log('Add Rules In Games:', error.message);
+      });
     });
   }
 
