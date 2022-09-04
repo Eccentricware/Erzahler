@@ -1,8 +1,8 @@
 export const insertProvinceQuery = `
-  INSER INTO provinces (
+  INSERT INTO provinces (
     game_id,
     province_name,
-    provice_fullname,
+    province_fullname,
     province_type,
     vote_type
   ) VALUES (
