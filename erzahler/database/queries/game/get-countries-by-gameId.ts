@@ -1,6 +1,6 @@
 export const getCountriesByGameIdQuery = `
   SELECT country_id,
-    flag_key
+    country_name
   FROM countries
   WHERE game_id = $1;
 `

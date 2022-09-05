@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS labels(
   label_id SERIAL,
   province_id INTEGER NOT NULL,
   loc INTEGER [] NOT NULL,
-  label_text VARCHAR(10),
+  label_text VARCHAR(13),
   PRIMARY KEY(label_id),
   FOREIGN KEY(province_id)
     REFERENCES provinces(province_id)
@@ -204,15 +204,16 @@ CREATE TABLE IF NOT EXISTS province_history(
   capital_owner_id INTEGER,
   province_status VARCHAR NOT NULL,
   valid_retreat BOOLEAN,
-  vote_color VARCHAR(7),
-  status_color VARCHAR(7),
+  vote_color VARCHAR(10),
+  status_color VARCHAR(10),
+  stroke_color VARCHAR(10),
   PRIMARY KEY(province_history_id),
   FOREIGN KEY(province_id)
     REFERENCES provinces(province_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
   FOREIGN KEY(controller_id)
-    REFERENCES turns(turn_id),
+    REFERENCES countries(country_id),
   FOREIGN KEY(capital_owner_id)
     REFERENCES countries(country_id)
 );
