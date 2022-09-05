@@ -6,7 +6,8 @@ export const insertProvinceHistoryQuery = `
     capital_owner_id,
     province_status,
     vote_color,
-    status_color
+    status_color,
+    stroke_color
   ) VALUES (
     $1,
     $2,
@@ -14,6 +15,7 @@ export const insertProvinceHistoryQuery = `
     $4,
     $5,
     $6,
-    $7
+    $7,
+    $8
   );
 `;

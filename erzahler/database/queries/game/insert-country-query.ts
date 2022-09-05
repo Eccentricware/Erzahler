@@ -11,5 +11,7 @@ export const insertCountryQuery = `
     $3,
     $4,
     $5
-  );
+  ) RETURNING
+    country_id,
+    country_name;
 `;

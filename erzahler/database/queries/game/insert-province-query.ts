@@ -11,5 +11,7 @@ export const insertProvinceQuery = `
     $3,
     $4,
     $5
-  );
+  ) RETURNING
+    province_id,
+    province_name;
 `;
