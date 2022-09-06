@@ -97,8 +97,6 @@ export class GameService {
       await this.addCreatorAssignment(pool, this.idLibrary.game, this.user.user_id);
       await this.addRulesInGame(pool, this.gameData.rules, this.idLibrary);
       await this.addTurn0(pool);
-
-
     })
     .catch((error: Error) => {
       console.log('New game Error:', error.message);
