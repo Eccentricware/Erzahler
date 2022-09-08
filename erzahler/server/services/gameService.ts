@@ -48,10 +48,6 @@ export class GameService {
 
       // Unnecessary progress tracker line
 
-      await this.addTerrain(pool, gameData);
-      await this.addBridges(pool, gameData);
-      await this.addLabels(pool, gameData);
-      await this.addNodes(pool, gameData);
       await this.addNodeAdjacencies(pool, gameData);
       await this.addCountryInitialHistory(pool, gameData, 0);
       await this.addUnits(pool, gameData);
@@ -139,7 +135,7 @@ export class GameService {
       this.idLibrary.game,
       this.gameData.firstTurnDeadline,
       1,
-      `Winter ${this.gameData.stylizedStartYear + 1}`,
+      `Spring ${this.gameData.stylizedStartYear + 1}`,
       'orders',
       'paused'
     ])
@@ -215,11 +211,15 @@ export class GameService {
     });
     // await this.addProvincesToIdLibrary(pool, idLibrary);
     Promise.all(provincePromises)
-      .then((resolvedProvincePromises) => {
+      .then(async (resolvedProvincePromises) => {
         resolvedProvincePromises.forEach((province: any) => {
           this.idLibrary.provinces[province.province_name] = province.province_id;
         });
-        this.addProvinceHistories(pool);
+        await this.addProvinceHistories(pool);
+        await this.addTerrain(pool);
+        // await this.addBridges(pool, gameData);
+        // await this.addLabels(pool, gameData);
+        // await this.addNodes(pool, gameData);
       });
   }
 
@@ -249,19 +249,64 @@ export class GameService {
     });
   }
 
-  async addTerrain(pool: Pool, gameData: any): Promise<any> {
-    gameData.provinces.terrain.forEach(async (terrain: any) => {
+  async addTerrain(pool: Pool): Promise<void> {
+    this.gameData.map.terrain.canal.forEach(async (terrain: any) => {
       pool.query(insertTerrainQuery, [
-        0,
+        this.idLibrary.provinces[terrain.province],
         terrain.renderCategory,
         terrain.points,
-        terrain.topBound,
-        terrain.leftBound,
-        terrain.rightBound,
-        terrain.bottomBound
+        terrain.bounds.top,
+        terrain.bounds.left,
+        terrain.bounds.right,
+        terrain.bounds.bottom
       ])
       .catch((error: Error) => {
-        console.log('Insert Terrain Error:', error.message);
+        console.log('Insert Canal Terrain Error:', error.message);
+      });
+    });
+
+    this.gameData.map.terrain.land.forEach(async (terrain: any) => {
+      pool.query(insertTerrainQuery, [
+        this.idLibrary.provinces[terrain.province],
+        terrain.renderCategory,
+        terrain.points,
+        terrain.bounds.top,
+        terrain.bounds.left,
+        terrain.bounds.right,
+        terrain.bounds.bottom
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Land Terrain Error:', error.message);
+      });
+    });
+
+    this.gameData.map.terrain.line.forEach(async (terrain: any) => {
+      pool.query(insertTerrainQuery, [
+        this.idLibrary.provinces[terrain.province],
+        terrain.renderCategory,
+        terrain.points,
+        terrain.bounds.top,
+        terrain.bounds.left,
+        terrain.bounds.right,
+        terrain.bounds.bottom
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Line Terrain Error:', error.message);
+      });
+    });
+
+    this.gameData.map.terrain.sea.forEach(async (terrain: any) => {
+      pool.query(insertTerrainQuery, [
+        this.idLibrary.provinces[terrain.province],
+        terrain.renderCategory,
+        terrain.points,
+        terrain.bounds.top,
+        terrain.bounds.left,
+        terrain.bounds.right,
+        terrain.bounds.bottom
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Sea Terrain Error:', error.message);
       });
     });
   }
