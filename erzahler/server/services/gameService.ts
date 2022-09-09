@@ -217,7 +217,7 @@ export class GameService {
         });
         await this.addProvinceHistories(pool);
         await this.addTerrain(pool);
-        // await this.addBridges(pool, gameData);
+        // await this.addBridges(pool);
         // await this.addLabels(pool, gameData);
         // await this.addNodes(pool, gameData);
       });
@@ -250,26 +250,32 @@ export class GameService {
   }
 
   async addTerrain(pool: Pool): Promise<void> {
-    this.gameData.map.terrain.canal.forEach(async (terrain: any) => {
+    this.gameData.map.terrain.sea.forEach(async (terrain: any) => {
       pool.query(insertTerrainQuery, [
         this.idLibrary.provinces[terrain.province],
+        terrain.type,
         terrain.renderCategory,
         terrain.points,
+        null,
+        null,
         terrain.bounds.top,
         terrain.bounds.left,
         terrain.bounds.right,
         terrain.bounds.bottom
       ])
       .catch((error: Error) => {
-        console.log('Insert Canal Terrain Error:', error.message);
+        console.log('Insert Sea Terrain Error:', error.message);
       });
     });
 
     this.gameData.map.terrain.land.forEach(async (terrain: any) => {
       pool.query(insertTerrainQuery, [
         this.idLibrary.provinces[terrain.province],
+        terrain.type,
         terrain.renderCategory,
         terrain.points,
+        null,
+        null,
         terrain.bounds.top,
         terrain.bounds.left,
         terrain.bounds.right,
@@ -283,8 +289,11 @@ export class GameService {
     this.gameData.map.terrain.line.forEach(async (terrain: any) => {
       pool.query(insertTerrainQuery, [
         this.idLibrary.provinces[terrain.province],
+        terrain.type,
         terrain.renderCategory,
         terrain.points,
+        this.idLibrary.provinces[terrain.start],
+        this.idLibrary.provinces[terrain.end],
         terrain.bounds.top,
         terrain.bounds.left,
         terrain.bounds.right,
@@ -295,34 +304,37 @@ export class GameService {
       });
     });
 
-    this.gameData.map.terrain.sea.forEach(async (terrain: any) => {
+    this.gameData.map.terrain.canal.forEach(async (terrain: any) => {
       pool.query(insertTerrainQuery, [
         this.idLibrary.provinces[terrain.province],
+        terrain.type,
         terrain.renderCategory,
         terrain.points,
+        null,
+        null,
         terrain.bounds.top,
         terrain.bounds.left,
         terrain.bounds.right,
         terrain.bounds.bottom
       ])
       .catch((error: Error) => {
-        console.log('Insert Sea Terrain Error:', error.message);
+        console.log('Insert Canal Terrain Error:', error.message);
       });
     });
   }
 
-  async addBridges(pool: Pool,  gameData: any): Promise<any>{
-    gameData.bridges.forEach(async (bridge: any) => {
-      pool.query(insertBridgeQuery, [
-        bridge.province1,
-        bridge.province2,
-        bridge.points
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Bridgs Error:', error.message);
-      });
-    });
-  }
+  // async addBridges(pool: Pool): Promise<any>{
+  //   this.gameData.map.bridges.forEach(async (bridge: any) => {
+  //     pool.query(insertBridgeQuery, [
+  //       bridge.province1,
+  //       bridge.province2,
+  //       bridge.points
+  //     ])
+  //     .catch((error: Error) => {
+  //       console.log('Insert Bridges Error:', error.message);
+  //     });
+  //   });
+  // }
 
   async addLabels(pool: Pool, gameData: any): Promise<any> {
     gameData.labels.forEach(async (label: any) => {

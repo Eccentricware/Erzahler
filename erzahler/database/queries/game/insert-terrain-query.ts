@@ -1,8 +1,11 @@
 export const insertTerrainQuery = `
   INSERT INTO terrain (
     province_id,
+    terrain_type,
     render_category,
     points,
+    bridge_start,
+    bridge_end,
     top_bound,
     left_bound,
     right_bound,
@@ -14,6 +17,9 @@ export const insertTerrainQuery = `
     $4,
     $5,
     $6,
-    $7
+    $7,
+    $8,
+    $9,
+    $10
   );
 `;

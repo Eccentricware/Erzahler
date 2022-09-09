@@ -161,29 +161,36 @@ CREATE TABLE IF NOT EXISTS provinces(
 CREATE TABLE IF NOT EXISTS terrain(
   terrain_id SERIAL,
   province_id INTEGER NOT NULL,
-  render_category VARCHAR NOT NULL,
+  terrain_type VARCHAR(15) NOT NULL,
+  render_category VARCHAR(15) NOT NULL,
   points VARCHAR NOT NULL,
+  bridge_start INTEGER,
+  bridge_end INTEGER,
   top_bound INTEGER NOT NULL,
   left_bound INTEGER NOT NULL,
   right_bound INTEGER NOT NULL,
   bottom_bound INTEGER NOT NULL,
   PRIMARY KEY(terrain_id),
   FOREIGN KEY(province_id)
+    REFERENCES provinces(province_id),
+  FOREIGN KEY(bridge_start)
+    REFERENCES provinces(province_id),
+  FOREIGN KEY(bridge_end)
     REFERENCES provinces(province_id)
 );
 
-\echo 'Attempting to create bridges table'
-CREATE TABLE IF NOT EXISTS bridges(
-  bridge_id SERIAL,
-  points VARCHAR NOT NULL,
-  start_province INTEGER NOT NULL,
-  end_province INTEGER NOT NULL,
-  PRIMARY KEY(bridge_id),
-  FOREIGN KEY(start_province)
-    REFERENCES provinces(province_id),
-  FOREIGN KEY(end_province)
-    REFERENCES provinces(province_id)
-);
+-- \echo 'Attempting to create bridges table'
+-- CREATE TABLE IF NOT EXISTS bridges(
+--   bridge_id SERIAL,
+--   points VARCHAR NOT NULL,
+--   start_province INTEGER NOT NULL,
+--   end_province INTEGER NOT NULL,
+--   PRIMARY KEY(bridge_id),
+--   FOREIGN KEY(start_province)
+--     REFERENCES provinces(province_id),
+--   FOREIGN KEY(end_province)
+--     REFERENCES provinces(province_id)
+-- );
 
 \echo 'Attempting to create labels table'
 CREATE TABLE IF NOT EXISTS labels(
