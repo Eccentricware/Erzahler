@@ -46,8 +46,6 @@ export class GameService {
 
       await this.addNewGame(pool, this.gameData);
 
-      // Unnecessary progress tracker line
-
       await this.addNodeAdjacencies(pool, gameData);
       await this.addCountryInitialHistory(pool, gameData, 0);
       await this.addUnits(pool, gameData);
@@ -217,8 +215,7 @@ export class GameService {
         });
         await this.addProvinceHistories(pool);
         await this.addTerrain(pool);
-        // await this.addBridges(pool);
-        // await this.addLabels(pool, gameData);
+        await this.addLabels(pool);
         // await this.addNodes(pool, gameData);
       });
   }
@@ -231,7 +228,6 @@ export class GameService {
   // }
 
   async addProvinceHistories(pool: Pool): Promise<any> {
-    console.log('idLibrary.turns at Province History:', this.idLibrary.turns);
     this.gameData.map.provinces.forEach(async (province: any) => {
       pool.query(insertProvinceHistoryQuery, [
         this.idLibrary.provinces[province.name],
@@ -323,25 +319,16 @@ export class GameService {
     });
   }
 
-  // async addBridges(pool: Pool): Promise<any>{
-  //   this.gameData.map.bridges.forEach(async (bridge: any) => {
-  //     pool.query(insertBridgeQuery, [
-  //       bridge.province1,
-  //       bridge.province2,
-  //       bridge.points
-  //     ])
-  //     .catch((error: Error) => {
-  //       console.log('Insert Bridges Error:', error.message);
-  //     });
-  //   });
-  // }
-
-  async addLabels(pool: Pool, gameData: any): Promise<any> {
-    gameData.labels.forEach(async (label: any) => {
+  async addLabels(pool: Pool): Promise<any> {
+    console.log('idLibrary.provinces at Labels:', this.idLibrary.provinces);
+    this.gameData.map.labels.forEach(async (label: any) => {
       pool.query(insertLabelQuery, [
-        label.provinceId,
+        this.idLibrary.provinces[label.province],
+        label.name,
+        label.type,
         label.loc,
-        label.labelText
+        label.text,
+        label.fill
       ])
       .catch((error: Error) => {
         console.log('Insert Label Error:', error.message);
