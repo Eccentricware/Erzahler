@@ -1,6 +1,6 @@
 import { error } from "console";
 import { DecodedIdToken } from "firebase-admin/auth";
-import { Pool, QueryResult } from "pg";
+import { Pool, Query, QueryResult } from "pg";
 import { getCountriesByGameIdQuery } from "../../database/queries/game/get-countries-by-gameId";
 import { getProvincesByGameIdQuery } from "../../database/queries/game/get-provinces-by-gameId";
 import { insertAssignmentQuery } from "../../database/queries/game/insert-assignment-query";
@@ -39,7 +39,7 @@ export class GameService {
     if (token.uid) {
       this.user = await accountService.getUserProfile(idToken);
       const pool: Pool = new Pool(victorCredentials);
-      // console.log('Game Data:', gameData);
+      console.log('Game Data:', gameData);
 
       const idLibrary: any = await this.createNewGameIdLibrary(pool);
       this.gameData = gameData;
@@ -139,7 +139,7 @@ export class GameService {
     ])
     .then(async (result: any) => {
       this.idLibrary.turns[1] = result.rows[0].turn_id;
-      await this.addCountries(pool, this.gameData, this.idLibrary);
+      await this.addCountries(pool);
     })
     .catch((error: Error) => {
       console.log('Turn 1 Error: ', error.message);
@@ -160,8 +160,8 @@ export class GameService {
     });
   }
 
-  async addCountries(pool: Pool, gameData: any, idLibrary: any): Promise<void> {
-    const newCountries: Promise<any>[] = gameData.map.countries.map(async (country: any) => {
+  async addCountries(pool: Pool): Promise<void> {
+    const newCountries: Promise<any>[] = this.gameData.dbRows.countries.map(async (country: any) => {
       await pool.query(insertCountryQuery, [
         this.idLibrary.game,
         country.name,
@@ -180,25 +180,19 @@ export class GameService {
 
     Promise.all(newCountries)
     .then(async () => {
-      await this.addProvinces(pool, this.gameData, this.idLibrary);
+      await this.addProvinces(pool);
     });
   }
 
-  async addCountriesToIdLibrary(pool: Pool, idLibrary: any): Promise<void> {
-    const insertedCountryResults: QueryResult<any> = await pool.query(getCountriesByGameIdQuery, [idLibrary.game]);
-    insertedCountryResults.rows.forEach((country: any) => {
-      idLibrary.countries[country.country_name] = country.country_id;
-    });
-  }
-
-  async addProvinces(pool: Pool, gameData: any, idLibrary: any): Promise<void> {
-    const provincePromises: Promise<any>[] = this.gameData.map.provinces.map((province: any) => {
+  async addProvinces(pool: Pool): Promise<void> {
+    const provincePromises: Promise<any>[] = this.gameData.dbRows.provinces.map((province: any) => {
       return pool.query(insertProvinceQuery, [
         this.idLibrary.game,
         province.name,
         province.fullName,
         province.type,
-        province.voteType
+        province.voteType,
+        province.cityLoc
       ])
       .then((result: QueryResult<any>) => {
         return result.rows[0];
@@ -207,7 +201,7 @@ export class GameService {
         console.log('Insert Province Error:', error.message);
       });
     });
-    // await this.addProvincesToIdLibrary(pool, idLibrary);
+
     Promise.all(provincePromises)
       .then(async (resolvedProvincePromises) => {
         resolvedProvincePromises.forEach((province: any) => {
@@ -221,7 +215,7 @@ export class GameService {
   }
 
   async addProvinceHistories(pool: Pool): Promise<any> {
-    this.gameData.map.provinces.forEach(async (province: any) => {
+    this.gameData.dbRows.provinces.forEach(async (province: any) => {
       pool.query(insertProvinceHistoryQuery, [
         this.idLibrary.provinces[province.name],
         this.idLibrary.turns[0],
@@ -239,43 +233,7 @@ export class GameService {
   }
 
   async addTerrain(pool: Pool): Promise<void> {
-    this.gameData.map.terrain.sea.forEach(async (terrain: any) => {
-      pool.query(insertTerrainQuery, [
-        this.idLibrary.provinces[terrain.province],
-        terrain.type,
-        terrain.renderCategory,
-        terrain.points,
-        null,
-        null,
-        terrain.bounds.top,
-        terrain.bounds.left,
-        terrain.bounds.right,
-        terrain.bounds.bottom
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Sea Terrain Error:', error.message);
-      });
-    });
-
-    this.gameData.map.terrain.land.forEach(async (terrain: any) => {
-      pool.query(insertTerrainQuery, [
-        this.idLibrary.provinces[terrain.province],
-        terrain.type,
-        terrain.renderCategory,
-        terrain.points,
-        null,
-        null,
-        terrain.bounds.top,
-        terrain.bounds.left,
-        terrain.bounds.right,
-        terrain.bounds.bottom
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Land Terrain Error:', error.message);
-      });
-    });
-
-    this.gameData.map.terrain.line.forEach(async (terrain: any) => {
+    this.gameData.dbRows.terrain.forEach(async (terrain: any) => {
       pool.query(insertTerrainQuery, [
         this.idLibrary.provinces[terrain.province],
         terrain.type,
@@ -289,31 +247,13 @@ export class GameService {
         terrain.bounds.bottom
       ])
       .catch((error: Error) => {
-        console.log('Insert Line Terrain Error:', error.message);
-      });
-    });
-
-    this.gameData.map.terrain.canal.forEach(async (terrain: any) => {
-      pool.query(insertTerrainQuery, [
-        this.idLibrary.provinces[terrain.province],
-        terrain.type,
-        terrain.renderCategory,
-        terrain.points,
-        null,
-        null,
-        terrain.bounds.top,
-        terrain.bounds.left,
-        terrain.bounds.right,
-        terrain.bounds.bottom
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Canal Terrain Error:', error.message);
+        console.log('Insert Sea Terrain Error:', error.message);
       });
     });
   }
 
   async addLabels(pool: Pool): Promise<any> {
-    this.gameData.map.labels.forEach(async (label: any) => {
+    this.gameData.dbRows.labels.forEach(async (label: any) => {
       pool.query(insertLabelQuery, [
         this.idLibrary.provinces[label.province],
         label.name,
@@ -329,8 +269,8 @@ export class GameService {
   }
 
   async addNodes(pool: Pool): Promise<any> {
-    this.gameData.map.nodes.pins.land.forEach(async (node: any) => {
-      pool.query(insertNodeQuery, [
+    const nodePromises: Promise<QueryResult<any>>[] = this.gameData.dbRows.nodes.map(async (node: any) => {
+      return pool.query(insertNodeQuery, [
         this.idLibrary.provinces[node.province],
         node.name,
         node.type,
@@ -341,45 +281,13 @@ export class GameService {
       });
     });
 
-    this.gameData.map.nodes.pins.sea.forEach(async (node: any) => {
-      pool.query(insertNodeQuery, [
-        this.idLibrary.provinces[node.province],
-        node.name,
-        node.type,
-        node.loc
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Node Error:', error.message);
-      });
-    });
-
-    this.gameData.map.nodes.pins.air.forEach(async (node: any) => {
-      pool.query(insertNodeQuery, [
-        this.idLibrary.provinces[node.province],
-        node.name,
-        node.type,
-        node.loc
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Node Error:', error.message);
-      });
-    });
-
-    this.gameData.map.nodes.pins.event.forEach(async (node: any) => {
-      pool.query(insertNodeQuery, [
-        this.idLibrary.provinces[node.province],
-        node.name,
-        node.type,
-        node.loc
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Node Error:', error.message);
-      });
+    Promise.all(nodePromises).then((nodes: any) => {
+      this.addNodeAdjacencies(pool);
     });
   }
 
-  async addNodeAdjacencies(pool: Pool, gameData: any): Promise<any> {
-    gameData.nodeAdjacencies.forEach(async (link: any) => {
+  async addNodeAdjacencies(pool: Pool): Promise<any> {
+    this.gameData.nodeAdjacencies.forEach(async (link: any) => {
       pool.query(insertNodeAdjacencyQuery, [
         link.node1,
         link.node2
