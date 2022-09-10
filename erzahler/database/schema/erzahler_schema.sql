@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS provinces(
   province_fullname VARCHAR(25),
   province_type VARCHAR(15) NOT NULL,
   vote_type VARCHAR(15),
+  city_loc INTEGER[],
   PRIMARY KEY(province_id),
   FOREIGN KEY(game_id)
     REFERENCES games(game_id)
@@ -189,6 +190,21 @@ CREATE TABLE IF NOT EXISTS labels(
   label_text VARCHAR(13),
   fill VARCHAR(21),
   PRIMARY KEY(label_id),
+  FOREIGN KEY(province_id)
+    REFERENCES provinces(province_id)
+);
+
+\echo 'Attempting to create label_lines table'
+CREATE TABLE IF NOT EXISTS label_lines(
+  label_line_id SERIAL,
+  province_id INTEGER NOT NULL,
+  label_line_name VARCHAR(20) NOT NULL,
+  x1 INTEGER NOT NULL,
+  x2 INTEGER NOT NULL,
+  y1 INTEGER NOT NULL,
+  y2 INTEGER NOT NULL,
+  stroke VARCHAR(15),
+  PRIMARY KEY(label_line_id),
   FOREIGN KEY(province_id)
     REFERENCES provinces(province_id)
 );
