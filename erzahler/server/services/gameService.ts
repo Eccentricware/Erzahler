@@ -216,16 +216,9 @@ export class GameService {
         await this.addProvinceHistories(pool);
         await this.addTerrain(pool);
         await this.addLabels(pool);
-        // await this.addNodes(pool, gameData);
+        await this.addNodes(pool);
       });
   }
-
-  // async addProvincesToIdLibrary(pool: Pool, idLibrary: any): Promise<void> {
-  //   const { rows } = await pool.query(getProvincesByGameIdQuery, [idLibrary.game]);
-  //   rows.forEach(async (province: any) => {
-  //     idLibrary[province.province_name] = province.province_id;
-  //   });
-  // }
 
   async addProvinceHistories(pool: Pool): Promise<any> {
     this.gameData.map.provinces.forEach(async (province: any) => {
@@ -320,7 +313,6 @@ export class GameService {
   }
 
   async addLabels(pool: Pool): Promise<any> {
-    console.log('idLibrary.provinces at Labels:', this.idLibrary.provinces);
     this.gameData.map.labels.forEach(async (label: any) => {
       pool.query(insertLabelQuery, [
         this.idLibrary.provinces[label.province],
@@ -336,11 +328,48 @@ export class GameService {
     });
   }
 
-  async addNodes(pool: Pool, gameData: any): Promise<any> {
-    gameData.provinces.nodes.forEach(async (node: any) => {
+  async addNodes(pool: Pool): Promise<any> {
+    this.gameData.map.nodes.pins.land.forEach(async (node: any) => {
       pool.query(insertNodeQuery, [
-        node.province_id,
-        node.node_type,
+        this.idLibrary.provinces[node.province],
+        node.name,
+        node.type,
+        node.loc
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Node Error:', error.message);
+      });
+    });
+
+    this.gameData.map.nodes.pins.sea.forEach(async (node: any) => {
+      pool.query(insertNodeQuery, [
+        this.idLibrary.provinces[node.province],
+        node.name,
+        node.type,
+        node.loc
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Node Error:', error.message);
+      });
+    });
+
+    this.gameData.map.nodes.pins.air.forEach(async (node: any) => {
+      pool.query(insertNodeQuery, [
+        this.idLibrary.provinces[node.province],
+        node.name,
+        node.type,
+        node.loc
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Node Error:', error.message);
+      });
+    });
+
+    this.gameData.map.nodes.pins.event.forEach(async (node: any) => {
+      pool.query(insertNodeQuery, [
+        this.idLibrary.provinces[node.province],
+        node.name,
+        node.type,
         node.loc
       ])
       .catch((error: Error) => {
