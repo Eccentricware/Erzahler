@@ -296,6 +296,7 @@ CREATE TABLE IF NOT EXISTS votes(
 CREATE TABLE IF NOT EXISTS units(
   unit_id SERIAL,
   country_id INTEGER NOT NULL,
+  unit_name VARCHAR(100) NOT NULL,
   unit_type VARCHAR(10) NOT NULL,
   PRIMARY KEY(unit_id),
   FOREIGN KEY(country_id)
@@ -303,7 +304,7 @@ CREATE TABLE IF NOT EXISTS units(
 );
 
 \echo 'Attempting to create unit_history table'
-CREATE TABLE IF NOT EXISTS unit_history(
+CREATE TABLE IF NOT EXISTS unit_histories(
   unit_history_id SERIAL,
   unit_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,

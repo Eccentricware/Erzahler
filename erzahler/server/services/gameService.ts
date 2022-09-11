@@ -1,10 +1,6 @@
-import { error } from "console";
 import { DecodedIdToken } from "firebase-admin/auth";
-import { Pool, Query, QueryResult } from "pg";
-import { getCountriesByGameIdQuery } from "../../database/queries/game/get-countries-by-gameId";
-import { getProvincesByGameIdQuery } from "../../database/queries/game/get-provinces-by-gameId";
+import { Pool, QueryResult } from "pg";
 import { insertAssignmentQuery } from "../../database/queries/game/insert-assignment-query";
-import { insertBridgeQuery } from "../../database/queries/game/insert-bridge-query";
 import { insertCountryHistoryQuery } from "../../database/queries/game/insert-country-history-query";
 import { insertCountryQuery } from "../../database/queries/game/insert-country-query";
 import { insertNewGameQuery } from "../../database/queries/game/insert-game-query";
@@ -28,7 +24,8 @@ export class GameService {
     countries: {},
     turns: {},
     provinces: {},
-    nodes: {}
+    nodes: {},
+    units: {}
   };
   gameData: any = {};
   user: any = undefined;
@@ -40,14 +37,13 @@ export class GameService {
     if (token.uid) {
       this.user = await accountService.getUserProfile(idToken);
       const pool: Pool = new Pool(victorCredentials);
-      // console.log('Game Data:', gameData);
 
       const idLibrary: any = await this.createNewGameIdLibrary(pool);
       this.gameData = gameData;
 
-      await this.addNewGame(pool, this.gameData);
-      await this.addUnits(pool, gameData);
-      await this.addUnitInitialHistory(pool, gameData, 0);
+      await this.addNewGame(pool, this.gameData)
+      .then(() => console.log('Game Reponse Successful'))
+      .catch((error: Error) => console.log('Game Response Failure:', error.message));
     } else {
       console.log('Invalid Token UID');
     }
@@ -83,16 +79,23 @@ export class GameService {
       settings.partialRosterStart
     ];
 
-    const result: any = await pool.query(insertNewGameQuery, settingsArray)
-    .then(async (results: QueryResult<any>) => {
-      this.idLibrary.game = results.rows[0].game_id;
-      await this.addCreatorAssignment(pool, this.idLibrary.game, this.user.user_id);
-      await this.addRulesInGame(pool, this.gameData.rules, this.idLibrary);
-      await this.addTurn0(pool);
-    })
-    .catch((error: Error) => {
-      console.log('New game Error:', error.message);
-    });
+    return pool.query(insertNewGameQuery, settingsArray)
+      .then(async (results: QueryResult<any>) => {
+        this.idLibrary.game = results.rows[0].game_id;
+        console.log('Game Row Added Successfully');
+
+        Promise.all([
+          this.addCreatorAssignment(pool, this.idLibrary.game, this.user.user_id),
+          this.addRulesInGame(pool, this.gameData.rules, this.idLibrary),
+          this.addTurn0(pool)
+        ]).then(() => {
+          console.log('Assignment, rules, turns resolved');
+        });
+
+      })
+      .catch((error: Error) => {
+        console.log('New game Error:', error.message);
+      });
   }
 
   async addCreatorAssignment(pool: Pool, gameId: number, userId: number): Promise<void> {
@@ -102,6 +105,7 @@ export class GameService {
       null,
       'creator'
     ])
+    .then(() => console.log('Assignment Row Added Successfully'))
     .catch((error: Error) => {
       console.log('New Assignment Error:', error.message);
     });
@@ -117,6 +121,7 @@ export class GameService {
       'resolved'
     ])
     .then((result: any) => {
+      console.log('Turn 0 Added Successfully');
       this.idLibrary.turns[0] = result.rows[0].turn_id;
       this.addTurn1(pool);
     })
@@ -136,6 +141,7 @@ export class GameService {
       'paused'
     ])
     .then(async (result: any) => {
+      console.log('Turn 1 Added Successfully');
       this.idLibrary.turns[1] = result.rows[0].turn_id;
       await this.addCountries(pool);
     })
@@ -146,7 +152,7 @@ export class GameService {
   }
 
   async addRulesInGame(pool: Pool, rules: any, idLibrary: any): Promise<any> {
-    rules.forEach(async (rule: any) => {
+    const rulePromises: Promise<QueryResult<any>>[] = rules.map(async (rule: any) => {
       await pool.query(insertRuleInGameQuery, [
         this.idLibrary.game,
         this.idLibrary.rules[rule.key],
@@ -156,6 +162,8 @@ export class GameService {
         console.log('Rule In Games Error:', error.message);
       });
     });
+
+    Promise.all(rulePromises).then(() => console.log('Add rules in game finished'));
   }
 
   async addCountries(pool: Pool): Promise<void> {
@@ -178,6 +186,7 @@ export class GameService {
 
     Promise.all(newCountries)
     .then(async () => {
+      console.log('Countries Added');
       await this.addProvinces(pool);
       await this.addCountryInitialHistories(pool);
     });
@@ -193,8 +202,9 @@ export class GameService {
         province.voteType,
         province.cityLoc
       ])
-      .then((result: QueryResult<any>) => {
-        return result.rows[0];
+      .then((newProvinceResult: QueryResult<any>) => {
+        const newProvince = newProvinceResult.rows[0];
+        this.idLibrary.provinces[newProvince.province_name] = newProvince.province_id;
       })
       .catch((error: Error) => {
         console.log('Insert Province Error:', error.message);
@@ -203,9 +213,7 @@ export class GameService {
 
     Promise.all(provincePromises)
       .then(async (resolvedProvincePromises) => {
-        resolvedProvincePromises.forEach((province: any) => {
-          this.idLibrary.provinces[province.province_name] = province.province_id;
-        });
+        console.log('Provinces Added');
         await this.addProvinceHistories(pool);
         await this.addTerrain(pool);
         await this.addLabels(pool);
@@ -277,7 +285,6 @@ export class GameService {
       ])
       .then((newNodeResult: any) => {
         const newNode = newNodeResult.rows[0];
-        console.log('newNode', newNode);
         this.idLibrary.nodes[newNode.node_name] = newNode.node_id;
       })
       .catch((error: Error) => {
@@ -287,6 +294,7 @@ export class GameService {
 
     Promise.all(nodePromises).then((nodes: any) => {
       this.addNodeAdjacencies(pool);
+      this.addUnits(pool);
     });
   }
 
@@ -320,24 +328,33 @@ export class GameService {
     });
   }
 
-  async addUnits(pool: Pool, gameData: any): Promise<any> {
-    gameData.units.forEach(async (unit: any) => {
-      pool.query(insertUnitQuery, [
-        unit.country,
+  async addUnits(pool: Pool): Promise<any> {
+    const unitPromises: Promise<QueryResult<any>>[] = this.gameData.dbRows.units.map(async (unit: any) => {
+      return pool.query(insertUnitQuery, [
+        this.idLibrary.countries[unit.country],
+        unit.fullName,
         unit.type
       ])
+      .then((newUnitResult: any) => {
+        const newUnit = newUnitResult.rows[0];
+        this.idLibrary.units[newUnit.unit_name] = newUnit.unit_id;
+      })
       .catch((error: Error) => {
         console.log('Insert Unit Error:', error.message);
       });
     });
+
+    Promise.all(unitPromises).then((units: any) => {
+      this.addInitialUnitHistories(pool);
+    });
   }
 
-  async addUnitInitialHistory(pool: Pool, gameData: any, turnId: number): Promise<any> {
-    gameData.units.forEach(async (unit: any) => {
+  async addInitialUnitHistories(pool: Pool): Promise<void> {
+    this.gameData.dbRows.units.forEach(async (unit: any) => {
       pool.query(insertUnitHistoryQuery, [
-        unit.id,
-        turnId,
-        unit.node,
+        this.idLibrary.units[unit.fullName],
+        this.idLibrary.turns[0],
+        this.idLibrary.nodes[unit.node],
         'active'
       ])
       .catch((error: Error) => {
