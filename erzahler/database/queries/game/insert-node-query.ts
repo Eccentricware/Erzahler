@@ -9,5 +9,7 @@ export const insertNodeQuery = `
     $2,
     $3,
     $4
-  );
+  ) RETURNING
+    node_id,
+    node_name;
 `;

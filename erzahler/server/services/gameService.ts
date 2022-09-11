@@ -27,7 +27,8 @@ export class GameService {
     rules: {},
     countries: {},
     turns: {},
-    provinces: {}
+    provinces: {},
+    nodes: {}
   };
   gameData: any = {};
   user: any = undefined;
@@ -39,15 +40,12 @@ export class GameService {
     if (token.uid) {
       this.user = await accountService.getUserProfile(idToken);
       const pool: Pool = new Pool(victorCredentials);
-      console.log('Game Data:', gameData);
+      // console.log('Game Data:', gameData);
 
       const idLibrary: any = await this.createNewGameIdLibrary(pool);
       this.gameData = gameData;
 
       await this.addNewGame(pool, this.gameData);
-
-      await this.addNodeAdjacencies(pool, gameData);
-      await this.addCountryInitialHistory(pool, gameData, 0);
       await this.addUnits(pool, gameData);
       await this.addUnitInitialHistory(pool, gameData, 0);
     } else {
@@ -181,6 +179,7 @@ export class GameService {
     Promise.all(newCountries)
     .then(async () => {
       await this.addProvinces(pool);
+      await this.addCountryInitialHistories(pool);
     });
   }
 
@@ -276,6 +275,11 @@ export class GameService {
         node.type,
         node.loc
       ])
+      .then((newNodeResult: any) => {
+        const newNode = newNodeResult.rows[0];
+        console.log('newNode', newNode);
+        this.idLibrary.nodes[newNode.node_name] = newNode.node_id;
+      })
       .catch((error: Error) => {
         console.log('Insert Node Error:', error.message);
       });
@@ -287,10 +291,10 @@ export class GameService {
   }
 
   async addNodeAdjacencies(pool: Pool): Promise<any> {
-    this.gameData.nodeAdjacencies.forEach(async (link: any) => {
+    this.gameData.dbRows.links.forEach(async (link: any) => {
       pool.query(insertNodeAdjacencyQuery, [
-        link.node1,
-        link.node2
+        this.idLibrary.nodes[link.alpha.name],
+        this.idLibrary.nodes[link.omega.name]
       ])
       .catch((error: Error) => {
         console.log('Insert Node Adjacency Error:', error.message);
@@ -298,16 +302,16 @@ export class GameService {
     });
   }
 
-  async addCountryInitialHistory(pool: Pool, gameData: any, newTurnId: number): Promise<any> {
-    gameData.nodeAdjacencies.forEach(async (country: any) => {
+  async addCountryInitialHistories(pool: Pool): Promise<any> {
+    this.gameData.dbRows.countries.forEach(async (country: any) => {
       pool.query(insertCountryHistoryQuery, [
-        country.country_id,
-        newTurnId,
-        country.status,
-        country.city_count,
-        country.unit_count,
-        country.banked_builds,
-        country.nuked_range,
+        this.idLibrary.countries[country.name],
+        this.idLibrary.turns[0],
+        country.rank !== 'n' ? 'available' : 'npc',
+        country.cities.length,
+        country.units.length,
+        country.bankedBuilds,
+        country.nuke,
         country.adjustments
       ])
       .catch((error: Error) => {
