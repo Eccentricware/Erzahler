@@ -3,4 +3,4 @@ export const getUsernameQuery = `
     username
   FROM users
   WHERE lower(username) = LOWER($1);
-`;``
+`;

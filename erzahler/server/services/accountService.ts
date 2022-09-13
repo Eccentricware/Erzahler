@@ -16,11 +16,7 @@ export class AccountService {
 
     return pool.query(getUsernameQuery, [username])
       .then((usernameCountResponse: any) => {
-        if (usernameCountResponse.rows.length === 0) {
-          return true;
-        } else {
-          return false;
-        }
+        return usernameCountResponse.rows.length === 0;
       })
       .catch((error: Error) => console.error(error.message));
   }
