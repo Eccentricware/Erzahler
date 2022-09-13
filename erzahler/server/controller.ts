@@ -1,10 +1,9 @@
-import express, { response } from 'express';
+import express from 'express';
 import { AccountService } from './services/accountService';
 import bodyParser from 'body-parser';
 import { initializeApp } from 'firebase-admin/app';
 import admin from 'firebase-admin';
 import { GameService } from './services/gameService';
-import { error } from 'console';
 const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 
 const erzhaler = express();
@@ -43,6 +42,15 @@ erzhaler.get('/check-username/:username', (request, response) => {
       response.send(usernameAvailable);
     })
     .catch((error: Error) => response.send(error.message));
+});
+
+erzhaler.get('/check-game-name/:gameName', (request, response) => {
+  const { gameName } = request.params;
+  gameService.checkGameNameAvailability(gameName)
+    .then((gameNameAvailable: boolean) => {
+      response.send(gameNameAvailable);
+    })
+    .catch((error: Error) => response.send('Game availability check error: ' + error.message))
 });
 
 erzhaler.get('/get-user-profile/:idToken', (request, response) => {

@@ -1,5 +1,6 @@
 import { DecodedIdToken } from "firebase-admin/auth";
 import { Pool, QueryResult } from "pg";
+import { checkGameNameAvailabilityQuery } from "../../database/queries/game/check-game-name-availability-query";
 import { insertAssignmentQuery } from "../../database/queries/game/insert-assignment-query";
 import { insertCountryHistoryQuery } from "../../database/queries/game/insert-country-history-query";
 import { insertCountryQuery } from "../../database/queries/game/insert-country-query";
@@ -368,5 +369,13 @@ export class GameService {
     ruleResults.rows.forEach((rule: any) => {
       this.idLibrary.rules[rule.rule_key] = rule.rule_id;
     });
+  }
+
+  async checkGameNameAvailability(gameName: string): Promise<boolean> {
+    const pool: Pool = new Pool(victorCredentials);
+
+    const gameNameResults: QueryResult<any> = await pool.query(checkGameNameAvailabilityQuery, [gameName]);
+
+    return gameNameResults.rowCount === 0;
   }
 }
