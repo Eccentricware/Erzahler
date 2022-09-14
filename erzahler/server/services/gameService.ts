@@ -30,6 +30,7 @@ export class GameService {
   };
   gameData: any = {};
   user: any = undefined;
+  errors: string[] = [];
 
   async newGame(gameData: any, idToken: string): Promise<any> {
     const accountService: AccountService = new AccountService();
@@ -38,15 +39,32 @@ export class GameService {
     if (token.uid) {
       this.user = await accountService.getUserProfile(idToken);
       const pool: Pool = new Pool(victorCredentials);
-
-      const idLibrary: any = await this.createNewGameIdLibrary(pool);
       this.gameData = gameData;
 
-      await this.addNewGame(pool, this.gameData)
-      .then(() => console.log('Game Reponse Successful'))
-      .catch((error: Error) => console.log('Game Response Failure:', error.message));
+      return await this.addNewGame(pool, this.gameData)
+      .then(() => {
+        console.log('Game Reponse Successful');
+        pool.end();
+        return { success: true };
+
+      })
+      .catch((error: Error) => {
+        console.log('Game Response Failure:', error.message)
+        this.errors.push('New Game Error' + error.message);
+        pool.end();
+        return {
+          success: false,
+          gameId: this.idLibrary.game,
+          errors: this.errors
+        }
+      });
+
     } else {
-      console.log('Invalid Token UID');
+      console.log('Invalid Token UID attempting to save new game');
+      return {
+        success: false,
+        error: 'Invalid Token UID'
+      }
     }
   }
 
@@ -87,7 +105,7 @@ export class GameService {
 
         Promise.all([
           this.addCreatorAssignment(pool, this.idLibrary.game, this.user.user_id),
-          this.addRulesInGame(pool, this.gameData.rules, this.idLibrary),
+          this.addRulesInGame(pool, this.gameData.rules),
           this.addTurn0(pool)
         ]).then(() => {
           console.log('Assignment, rules, turns resolved');
@@ -96,6 +114,7 @@ export class GameService {
       })
       .catch((error: Error) => {
         console.log('New game Error:', error.message);
+        this.errors.push('New Game Error: ' + error.message);
       });
   }
 
@@ -109,6 +128,7 @@ export class GameService {
     .then(() => console.log('Assignment Row Added Successfully'))
     .catch((error: Error) => {
       console.log('New Assignment Error:', error.message);
+      this.errors.push('New Assignment Error:' + error.message);
     });
   }
 
@@ -128,7 +148,7 @@ export class GameService {
     })
     .catch((error: Error) => {
       console.log('Turn 0 Error: ', error.message);
-      return 0;
+      this.errors.push('Turn 0 Error: ' + error.message);
     });
   }
 
@@ -148,11 +168,12 @@ export class GameService {
     })
     .catch((error: Error) => {
       console.log('Turn 1 Error: ', error.message);
+      this.errors.push('Turn 1 Error: ' + error.message);
       return 0;
     });
   }
 
-  async addRulesInGame(pool: Pool, rules: any, idLibrary: any): Promise<any> {
+  async addRulesInGame(pool: Pool, rules: any): Promise<any> {
     const rulePromises: Promise<QueryResult<any>>[] = rules.map(async (rule: any) => {
       await pool.query(insertRuleInGameQuery, [
         this.idLibrary.game,
@@ -161,6 +182,7 @@ export class GameService {
       ])
       .catch((error: Error) => {
         console.log('Rule In Games Error:', error.message);
+        this.errors.push('Error adding Rule In Game: ' + error.message);
       });
     });
 
@@ -182,6 +204,7 @@ export class GameService {
       })
       .catch((error: Error) => {
         console.log('Insert Country Error:', error.message);
+        this.errors.push('Insert Country Error:' + error.message);
       });
     });
 
@@ -209,6 +232,7 @@ export class GameService {
       })
       .catch((error: Error) => {
         console.log('Insert Province Error:', error.message);
+        this.errors.push('Insert Province Error: ' + error.message);
       });
     });
 
@@ -236,6 +260,7 @@ export class GameService {
       ])
       .catch((error: Error) => {
         console.log('Insert Province History Error:', error.message);
+        this.errors.push('Insert Province History Error:' + error.message);
       });
     });
   }
@@ -256,6 +281,7 @@ export class GameService {
       ])
       .catch((error: Error) => {
         console.log('Insert Sea Terrain Error:', error.message);
+        this.errors.push('Insert Sea Terrain Error:' + error.message);
       });
     });
   }
@@ -272,6 +298,7 @@ export class GameService {
       ])
       .catch((error: Error) => {
         console.log('Insert Label Error:', error.message);
+        this.errors.push('Insert Label Error: ' + error.message);
       });
     });
   }
@@ -290,6 +317,7 @@ export class GameService {
       })
       .catch((error: Error) => {
         console.log('Insert Node Error:', error.message);
+        this.errors.push('Insert Node Error: ' + error.message);
       });
     });
 
@@ -307,6 +335,7 @@ export class GameService {
       ])
       .catch((error: Error) => {
         console.log('Insert Node Adjacency Error:', error.message);
+        this.errors.push('Insert Node Adjacency Error: ' + error.message);
       });
     });
   }
@@ -325,6 +354,7 @@ export class GameService {
       ])
       .catch((error: Error) => {
         console.log('Insert Country History Error:', error.message);
+        this.errors.push('Insert Country History Error: ' + error.message);
       });
     });
   }
@@ -342,6 +372,7 @@ export class GameService {
       })
       .catch((error: Error) => {
         console.log('Insert Unit Error:', error.message);
+        this.errors.push('Insert Unit Error: ' + error.message);
       });
     });
 
@@ -360,6 +391,7 @@ export class GameService {
       ])
       .catch((error: Error) => {
         console.log('Insert Unit History Error:', error.message);
+        this.errors.push('Insert Unit History Error: ' + error.message);
       });
     });
   }
