@@ -45,8 +45,10 @@ export class GameService {
       .then(() => {
         console.log('Game Reponse Successful');
         pool.end();
-        return { success: true };
-
+        return {
+          success: true,
+          gameId: this.idLibrary.game
+        };
       })
       .catch((error: Error) => {
         console.log('Game Response Failure:', error.message)
@@ -54,7 +56,6 @@ export class GameService {
         pool.end();
         return {
           success: false,
-          gameId: this.idLibrary.game,
           errors: this.errors
         }
       });
