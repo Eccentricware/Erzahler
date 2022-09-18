@@ -20,15 +20,6 @@ import { AccountService } from "./accountService";
 import { count } from "console";
 
 export class GameService {
-  idLibrary: any = {
-    game: undefined,
-    rules: {},
-    countries: {},
-    turns: {},
-    provinces: {},
-    nodes: {},
-    units: {}
-  };
   gameData: any = {};
   user: any = undefined;
   errors: string[] = [];
@@ -43,14 +34,13 @@ export class GameService {
       this.gameData = gameData;
 
       return await this.addNewGame(pool, this.gameData)
-      .then(() => {
-        // console.log('Game Reponse Successful');
-        pool.end();
-        return {
-          success: true,
-          gameId: this.idLibrary.game,
-          errors: this.errors
-        };
+        .then((newGameId: any) => {
+          pool.end();
+          return {
+            success: true,
+            gameId: newGameId,
+            errors: this.errors
+          };
       })
       .catch((error: Error) => {
         console.log('Game Response Failure:', error.message)
@@ -71,7 +61,7 @@ export class GameService {
     }
   }
 
-  async addNewGame(pool: Pool, settings: any): Promise<void> {
+  async addNewGame(pool: Pool, settings: any): Promise<any> {
     const settingsArray: any = [
       settings.gameName,
       settings.assignmentMethod,
@@ -103,15 +93,15 @@ export class GameService {
 
     return await pool.query(insertNewGameQuery, settingsArray)
       .then(async (results: QueryResult<any>) => {
-        this.idLibrary.game = results.rows[0].game_id;
+        const newGame = results.rows[0];
         console.log('Game Row Added Successfully');
 
-        Promise.all([
+        return await Promise.all([
           await this.addCreatorAssignment(pool, this.user.user_id),
           await this.addRulesInGame(pool),
           await this.addTurn0(pool)
         ]).then(() => {
-          console.log('Assignment, rules, turns resolved');
+          return newGame.game_id;
         });
 
       })
@@ -124,9 +114,9 @@ export class GameService {
   async addCreatorAssignment(pool: Pool, userId: number): Promise<void> {
     await pool.query(insertAssignmentQuery, [
       userId,
-      this.idLibrary.game,
       null,
-      'creator'
+      'creator',
+      this.gameData.gameName
     ])
     .catch((error: Error) => {
       console.log('New Assignment Error:', error.message);
@@ -136,16 +126,15 @@ export class GameService {
 
   async addTurn0(pool: Pool): Promise<void> {
     await pool.query(insertTurnQuery, [
-      this.idLibrary.game,
       this.gameData.gameStart,
       0,
       `Winter ${this.gameData.stylizedStartYear}`,
       'orders',
-      'resolved'
+      'resolved',
+      this.gameData.gameName
     ])
     .then(async (result: any) => {
       console.log('Turn 0 Added Successfully');
-      this.idLibrary.turns[0] = result.rows[0].turn_id;
       await this.addTurn1(pool);
     })
     .catch((error: Error) => {
@@ -157,16 +146,15 @@ export class GameService {
   async addTurn1(pool: Pool): Promise<void> {
     console.log('trying turn 1');
     await pool.query(insertTurnQuery, [
-      this.idLibrary.game,
       this.gameData.firstTurnDeadline,
       1,
       `Spring ${this.gameData.stylizedStartYear + 1}`,
       'orders',
-      'paused'
+      'paused',
+      this.gameData.gameName
     ])
     .then(async (result: any) => {
       console.log('Turn 1 Added Successfully');
-      this.idLibrary.turns[1] = result.rows[0].turn_id;
       await this.addCountries(pool);
     })
     .catch((error: Error) => {
@@ -179,7 +167,7 @@ export class GameService {
   async addRulesInGame(pool: Pool): Promise<any> {
     const rulePromises: Promise<QueryResult<any>>[] = await this.gameData.rules.map(async (rule: any) => {
       return await pool.query(insertRuleInGameQuery, [
-        this.idLibrary.game,
+        this.gameData.gameName,
         rule.key,
         rule.enabled
       ])
@@ -228,17 +216,13 @@ export class GameService {
   async addProvinces(pool: Pool): Promise<void> {
     const provincePromises: Promise<any>[] = await this.gameData.dbRows.provinces.map(async (province: any) => {
       return await pool.query(insertProvinceQuery, [
-        this.idLibrary.game,
         province.name,
         province.fullName,
         province.type,
         province.voteType,
-        province.cityLoc
+        province.cityLoc,
+        this.gameData.gameName
       ])
-      .then((newProvinceResult: QueryResult<any>) => {
-        const newProvince = newProvinceResult.rows[0];
-        this.idLibrary.provinces[newProvince.province_name] = newProvince.province_id;
-      })
       .catch((error: Error) => {
         console.log('Insert Province Error:', error.message);
         this.errors.push('Insert Province Error: ' + error.message);
@@ -431,13 +415,6 @@ export class GameService {
         console.log('Initial History Promise Error: ' + error.message);
         this.errors.push('Initial History Promise Error: ' + error.message);
       });
-  }
-
-  async createNewGameIdLibrary(pool: Pool): Promise<void> {
-    const ruleResults: QueryResult<any> = await pool.query('SELECT * FROM rules');
-    ruleResults.rows.forEach((rule: any) => {
-      this.idLibrary.rules[rule.rule_key] = rule.rule_id;
-    });
   }
 
   async checkGameNameAvailability(gameName: string): Promise<boolean> {
