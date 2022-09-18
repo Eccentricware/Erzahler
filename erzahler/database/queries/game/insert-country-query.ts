@@ -5,13 +5,13 @@ export const insertCountryQuery = `
     rank,
     color,
     flag_key
-  ) VALUES (
+  )
+  SELECT
+    game_id,
     $1,
     $2,
     $3,
-    $4,
-    $5
-  ) RETURNING
-    country_id,
-    country_name;
+    $4
+  FROM games
+  WHERE game_name = $5;
 `;

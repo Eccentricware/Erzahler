@@ -6,12 +6,16 @@ export const insertLabelQuery = `
     loc,
     label_text,
     fill
-  ) VALUES (
+  )
+  SELECT
+    p.province_id,
     $1,
     $2,
     $3,
     $4,
-    $5,
-    $6
-  );
+    $5
+  FROM provinces p
+  INNER JOIN games g ON g.game_id = p.game_id
+  WHERE g.game_name = $6
+    AND p.province_name = $7;
 `;
