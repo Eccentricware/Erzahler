@@ -5,11 +5,13 @@ export const insertAssignmentQuery = `
     country_id,
     assignment_type,
     assignment_start
-  ) VALUES (
+  )
+  SELECT
     $1,
+    g.game_id,
     $2,
     $3,
-    $4,
     CURRENT_TIMESTAMP
-  );
+  FROM games g
+  WHERE g.game_name = $4;
 `;

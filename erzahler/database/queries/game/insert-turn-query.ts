@@ -6,12 +6,14 @@ export const insertTurnQuery = `
     turn_name,
     turn_type,
     turn_status
-  ) VALUES (
+  )
+  SELECT
+    g.game_id,
     $1,
     $2,
     $3,
     $4,
-    $5,
-    $6
-  ) RETURNING turn_id;
+    $5
+  FROM games g
+  WHERE g.game_name = $6
 `;

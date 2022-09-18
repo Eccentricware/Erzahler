@@ -6,14 +6,14 @@ export const insertProvinceQuery = `
     province_type,
     vote_type,
     city_loc
-  ) VALUES (
+  )
+  SELECT
+    game_id,
     $1,
     $2,
     $3,
     $4,
-    $5,
-    $6
-  ) RETURNING
-    province_id,
-    province_name;
+    $5
+  FROM games
+  WHERE game_name = $6
 `;
