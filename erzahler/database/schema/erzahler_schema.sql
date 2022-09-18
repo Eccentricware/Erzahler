@@ -99,8 +99,8 @@ CREATE TABLE IF NOT EXISTS countries(
     REFERENCES games(game_id)
 );
 
-\echo 'Attempting to create country_history table'
-CREATE TABLE IF NOT EXISTS country_history(
+\echo 'Attempting to create country_histories table'
+CREATE TABLE IF NOT EXISTS country_histories(
   country_history_id SERIAL,
   country_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
@@ -209,8 +209,8 @@ CREATE TABLE IF NOT EXISTS label_lines(
     REFERENCES provinces(province_id)
 );
 
-\echo 'Attempting to create province_history table'
-CREATE TABLE IF NOT EXISTS province_history(
+\echo 'Attempting to create province_histories table'
+CREATE TABLE IF NOT EXISTS province_histories(
   province_history_id SERIAL,
   province_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
@@ -303,7 +303,7 @@ CREATE TABLE IF NOT EXISTS units(
     REFERENCES countries(country_id)
 );
 
-\echo 'Attempting to create unit_history table'
+\echo 'Attempting to create unit_histories table'
 CREATE TABLE IF NOT EXISTS unit_histories(
   unit_history_id SERIAL,
   unit_id INTEGER NOT NULL,

@@ -1,5 +1,5 @@
 export const insertCountryHistoryQuery = `
-  INSERT INTO country_history (
+  INSERT INTO country_histories (
     country_id,
     turn_id,
     country_status,
@@ -8,14 +8,20 @@ export const insertCountryHistoryQuery = `
     banked_builds,
     nuke_range,
     adjustments
-  ) VALUES (
+  )
+  SELECT
+    c.country_id,
+    t.turn_id,
     $1,
     $2,
     $3,
     $4,
     $5,
-    $6,
-    $7,
-    $8
-  );
+    $6
+  FROM countries c
+  INNER JOIN games g ON g.game_id = c.game_id
+  INNER JOIN turns T ON t.game_id = g.game_id
+  WHERE g.game_name = $7
+    AND t.turn_number = 0
+    AND c.country_name = $8
 `;

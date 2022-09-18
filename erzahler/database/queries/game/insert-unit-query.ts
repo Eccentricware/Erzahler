@@ -3,11 +3,15 @@ export const insertUnitQuery = `
     country_id,
     unit_name,
     unit_type
-  ) VALUES (
+  )
+  SELECT
+    c.country_id,
     $1,
-    $2,
-    $3
-  ) RETURNING
-    unit_id,
-    unit_name;
+    $2
+  FROM countries c
+  INNER JOIN games g ON g.game_id = c.game_id
+  INNER JOIN turns t ON t.game_id = g.game_id
+  WHERE g.game_name = $3
+    AND t.turn_number = 0
+    AND c.country_name = $4
 `;

@@ -4,12 +4,14 @@ export const insertNodeQuery = `
     node_name,
     node_type,
     loc
-  ) VALUES (
+  )
+  SELECT
+    p.province_id,
     $1,
     $2,
-    $3,
-    $4
-  ) RETURNING
-    node_id,
-    node_name;
+    $3
+  FROM provinces p
+  INNER JOIN games g ON g.game_id = p.game_id
+  WHERE g.game_name = $4
+    AND p.province_name = $5;
 `;
