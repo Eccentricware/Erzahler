@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import { initializeApp } from 'firebase-admin/app';
 import admin from 'firebase-admin';
 import { GameService } from './services/gameService';
+import assert from 'assert';
 const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 
 const erzhaler = express();
@@ -86,6 +87,19 @@ erzhaler.post('/new-game', (request, response) => {
       response.send({error: error.message});
     });
 });
+
+erzhaler.get('/game-details/:gameId', (request, response) => {
+  const idToken: any = request.headers.idtoken;
+  const gameId: number = Number(request.params.gameId);
+
+  gameService.getGameData(idToken, gameId)
+    .then((result: any) => {
+      response.send(result);
+    })
+    .catch((error: Error) => {
+      response.send('Get game data error: ' + error.message);
+    });
+})
 
 erzhaler.listen(port, () => {
   console.log(`Erzhaler is running on port ${port}`);

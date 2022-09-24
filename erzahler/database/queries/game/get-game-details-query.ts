@@ -1,28 +1,5 @@
 export const getGameDetailsQuery = `
-WITH assignments as (
-	SELECT
-	g.game_id,
-    c.country_name,
-    CASE
-      WHEN (
-        SELECT 1
-        FROM Assignments a
-        WHERE a.game_id = $1
-          and a.assignment_type IN ('administrator', 'creator', 'superuser')
-          and a.user_id = $2
-          and a.assignment_end IS NULL
-      ) = 1
-      THEN u.username
-      ELSE NULL
-    END username
-  FROM countries c
-  INNER JOIN games g ON g.game_id = c.game_id
-  LEFT JOIN assignments a ON a.country_id = c.country_id
-  LEFT JOIN users u ON u.user_id = a.user_id
-  WHERE g.game_id = $1
-  ORDER BY c.rank, c.country_name
-)
-SELECT g.game_name,
+  SELECT g.game_name,
     g.time_created,
     g.game_status,
     g.current_year,
@@ -58,13 +35,7 @@ SELECT g.game_name,
     g.vote_delay_display_percent,
     g.vote_delay_display_count,
     g.partial_roster_start,
-    g.final_readiness_check,
-	json_agg(assignments) as assignments
-FROM games g
-LEFT JOIN assignments  ON assignments.game_id = g.game_id
-WHERE g.game_id = $1
-GROUP BY g.game_id
-	)
-select row_to_json(game)
-FROM game
+    g.final_readiness_check
+  FROM games g
+  WHERE g.game_id = $1;
 `;
