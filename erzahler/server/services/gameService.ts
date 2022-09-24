@@ -17,7 +17,9 @@ import { insertUnitHistoryQuery } from "../../database/queries/game/insert-unit-
 import { insertUnitQuery } from "../../database/queries/game/insert-unit-query";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
-import { count } from "console";
+import { getGameDetailsQuery } from "../../database/queries/game/get-game-details-query";
+import { getRulesInGameQuery } from "../../database/queries/game/get-rules-in-game-query";
+import { getAssignmentsQuery } from "../../database/queries/game/get-assignments-query";
 
 export class GameService {
   gameData: any = {};
@@ -425,7 +427,30 @@ export class GameService {
     return gameNameResults.rowCount === 0;
   }
 
-  async checkGameAdmin(pool: Pool, userId: number) {
+  async getGameData(idToken: string, gameId: number): Promise<any> {
+    const accountService: AccountService = new AccountService();
 
+    const token: DecodedIdToken = await accountService.validateToken(idToken);
+    if (token.uid) {
+      this.user = await accountService.getUserProfile(idToken);
+      const pool: Pool = new Pool(victorCredentials);
+
+      const gameData: any = await pool.query(getGameDetailsQuery, [gameId])
+        .then((gameDataResults: any) => gameDataResults.rows[0])
+        .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
+
+        const ruleData: any = await pool.query(getRulesInGameQuery, [gameId])
+        .then((ruleDataResults: any) => ruleDataResults.rows)
+        .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
+
+        const assignmentData: any = await pool.query(getAssignmentsQuery, [gameId, this.user.user_id])
+        .then((assignmentDataResults: any) => assignmentDataResults.rows)
+        .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
+
+      gameData.rules = ruleData;
+      gameData.assignments = assignmentData;
+
+      return gameData;
+    }
   }
 }
