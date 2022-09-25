@@ -20,6 +20,7 @@ import { AccountService } from "./accountService";
 import { getGameDetailsQuery } from "../../database/queries/game/get-game-details-query";
 import { getRulesInGameQuery } from "../../database/queries/game/get-rules-in-game-query";
 import { getAssignmentsQuery } from "../../database/queries/game/get-assignments-query";
+import { getGameAdminsQuery } from "../../database/queries/game/get-game-admins-query";
 
 export class GameService {
   gameData: any = {};
@@ -435,19 +436,24 @@ export class GameService {
       this.user = await accountService.getUserProfile(idToken);
       const pool: Pool = new Pool(victorCredentials);
 
-      const gameData: any = await pool.query(getGameDetailsQuery, [gameId])
+      const gameData: any = await pool.query(getGameDetailsQuery, [gameId, this.user.user_id])
         .then((gameDataResults: any) => gameDataResults.rows[0])
         .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
 
-        const ruleData: any = await pool.query(getRulesInGameQuery, [gameId])
+      const ruleData: any = await pool.query(getRulesInGameQuery, [gameId])
         .then((ruleDataResults: any) => ruleDataResults.rows)
         .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
 
-        const assignmentData: any = await pool.query(getAssignmentsQuery, [gameId, this.user.user_id])
+      const administratorData: any = await pool.query(getGameAdminsQuery, [gameId])
+        .then((administratorDataResults: any) => administratorDataResults.rows)
+        .catch((error: Error) => console.log('Get Administrator Data Results Error: ' + error.message));
+
+      const assignmentData: any = await pool.query(getAssignmentsQuery, [gameId, this.user.user_id])
         .then((assignmentDataResults: any) => assignmentDataResults.rows)
         .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
 
       gameData.rules = ruleData;
+      gameData.administrators = administratorData;
       gameData.assignments = assignmentData;
 
       return gameData;
