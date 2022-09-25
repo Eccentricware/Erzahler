@@ -35,7 +35,21 @@ export const getGameDetailsQuery = `
     g.vote_delay_display_percent,
     g.vote_delay_display_count,
     g.partial_roster_start,
-    g.final_readiness_check
+    g.final_readiness_check,
+    CASE
+      WHEN (
+        SELECT 1
+        FROM assignments a
+        WHERE a.game_id = $1
+          and a.assignment_type IN ('administrator', 'creator')
+          and a.user_id = $2
+          and a.assignment_end IS NULL
+      ) = 1
+      THEN true
+      ELSE false
+    END display_as_admin
   FROM games g
+  LEFT JOIN assignments a ON a.game_id = g.game_id
+  LEFT JOIN users u ON u.user_id = a.user_id
   WHERE g.game_id = $1;
 `;

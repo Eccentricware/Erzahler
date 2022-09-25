@@ -4,7 +4,7 @@ export const getAssignmentsQuery = `
     CASE
       WHEN (
         SELECT 1
-        FROM Assignments a
+        FROM assignments a
         WHERE a.game_id = $1
           and a.assignment_type IN ('administrator', 'creator', 'superuser')
           and a.user_id = $2
