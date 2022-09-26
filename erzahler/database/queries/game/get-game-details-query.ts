@@ -36,6 +36,14 @@ export const getGameDetailsQuery = `
     g.vote_delay_display_count,
     g.partial_roster_start,
     g.final_readiness_check,
+    g.nomination_timing,
+    g.nomination_year,
+    g.automatic_assignments,
+    g.rating_limits_enabled,
+    g.fun_min,
+    g.fun_max,
+    g.skill_min,
+    g.skill_max,
     CASE
       WHEN (
         SELECT 1

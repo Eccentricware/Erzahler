@@ -27,7 +27,15 @@ export const insertNewGameQuery = `
     blind_administrators,
     final_readiness_check,
     vote_delay_enabled,
-    partial_roster_start
+    partial_roster_start,
+    nomination_timing,
+    nomination_year,
+    automatic_assignments,
+    rating_limits_enabled,
+    fun_min,
+    fun_max,
+    skill_min,
+    skill_max
   ) VALUES (
     $1,
     'registration',
@@ -56,6 +64,14 @@ export const insertNewGameQuery = `
     $23,
     $24,
     $25,
-    $26
+    $26,
+    $27,
+    $28,
+    $29,
+    $30,
+    $31,
+    $32,
+    $33,
+    $34
   ) RETURNING game_id;
 `;
