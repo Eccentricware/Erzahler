@@ -51,6 +51,14 @@ CREATE TABLE IF NOT EXISTS games(
   confirmation_time INTEGER, --How many minutes players have for final play confirmation. 0 waits indefinitely. Null is auto-accept.
   partial_roster_start BOOLEAN NOT NULL DEFAULT false,
   final_readiness_check BOOLEAN NOT NULL DEFAULT true,
+  nomination_timing VARCHAR(25),
+  nomination_year INTEGER,
+  automatic_assignments BOOLEAN DEFAULT false,
+  rating_limits_enabled BOOLEAN DEFAULT false,
+  fun_min INTEGER,
+  fun_max INTEGER,
+  skill_min INTEGER,
+  skill_max INTEGER
   PRIMARY KEY(game_id)
 );
 
