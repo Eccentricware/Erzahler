@@ -91,7 +91,15 @@ export class GameService {
       settings.blindCreator,
       settings.finalReadinessCheck,
       settings.voteDeadlineExtension,
-      settings.partialRosterStart
+      settings.partialRosterStart,
+      settings.nominationTiming,
+      settings.nominationYear,
+      settings.automaticAssignments,
+      settings.ratingLimits,
+      settings.funRange[0],
+      settings.funRange[1],
+      settings.skillRange[0],
+      settings.skillRange[1]
     ];
 
     return await pool.query(insertNewGameQuery, settingsArray)
