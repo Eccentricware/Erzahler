@@ -438,33 +438,38 @@ export class GameService {
 
   async getGameData(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
+    const pool: Pool = new Pool(victorCredentials);
+    let userId = 0;
 
-    const token: DecodedIdToken = await accountService.validateToken(idToken);
-    if (token.uid) {
-      this.user = await accountService.getUserProfile(idToken);
-      const pool: Pool = new Pool(victorCredentials);
+    if (idToken !== '') {
+      const token: DecodedIdToken = await accountService.validateToken(idToken);
 
-      const gameData: any = await pool.query(getGameDetailsQuery, [gameId, this.user.user_id])
-        .then((gameDataResults: any) => gameDataResults.rows[0])
-        .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
-
-      const ruleData: any = await pool.query(getRulesInGameQuery, [gameId])
-        .then((ruleDataResults: any) => ruleDataResults.rows)
-        .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
-
-      const administratorData: any = await pool.query(getGameAdminsQuery, [gameId])
-        .then((administratorDataResults: any) => administratorDataResults.rows)
-        .catch((error: Error) => console.log('Get Administrator Data Results Error: ' + error.message));
-
-      const assignmentData: any = await pool.query(getAssignmentsQuery, [gameId, this.user.user_id])
-        .then((assignmentDataResults: any) => assignmentDataResults.rows)
-        .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
-
-      gameData.rules = ruleData;
-      gameData.administrators = administratorData;
-      gameData.assignments = assignmentData;
-
-      return gameData;
+      if (token.uid) {
+        this.user = await accountService.getUserProfile(idToken);
+        userId = this.user.user_id;
+      }
     }
+
+    const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId])
+      .then((gameDataResults: any) => gameDataResults.rows[0])
+      .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
+
+    const ruleData: any = await pool.query(getRulesInGameQuery, [gameId])
+      .then((ruleDataResults: any) => ruleDataResults.rows)
+      .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
+
+    const administratorData: any = await pool.query(getGameAdminsQuery, [gameId])
+      .then((administratorDataResults: any) => administratorDataResults.rows)
+      .catch((error: Error) => console.log('Get Administrator Data Results Error: ' + error.message));
+
+    const assignmentData: any = await pool.query(getAssignmentsQuery, [gameId, userId])
+      .then((assignmentDataResults: any) => assignmentDataResults.rows)
+      .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
+
+    gameData.rules = ruleData;
+    gameData.administrators = administratorData;
+    gameData.assignments = assignmentData;
+
+    return gameData;
   }
 }
