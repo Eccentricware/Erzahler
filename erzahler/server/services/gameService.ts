@@ -22,6 +22,8 @@ import { getRulesInGameQuery } from "../../database/queries/game/get-rules-in-ga
 import { getAssignmentsQuery } from "../../database/queries/game/get-assignments-query";
 import { getGameAdminsQuery } from "../../database/queries/game/get-game-admins-query";
 import { getRegisteredPlayersQuery } from "../../database/queries/game/get-registered-players-query";
+import { checkUserGameAdminQuery } from "../../database/queries/game/check-user-game-admin-query";
+import { updateGameSettingsQuery } from "../../database/queries/game/update-game-settings-query";
 
 export class GameService {
   gameData: any = {};
@@ -477,5 +479,60 @@ export class GameService {
     gameData.registeredPlayers = registeredPlayerData;
 
     return gameData;
+  }
+
+  async updateGameSettings(idToken: string, gameData: any): Promise<any> {
+    const accountService: AccountService = new AccountService();
+
+    const token: DecodedIdToken = await accountService.validateToken(idToken);
+    if (token.uid) {
+      const pool: Pool = new Pool(victorCredentials);
+
+      const isAdmin = await pool.query(checkUserGameAdminQuery, [token.uid, gameData.game_id]);
+      if (isAdmin) {
+        await pool.query(updateGameSettingsQuery, [
+          gameData.gameName,
+          gameData.assignmentMethod,
+          gameData.stylizedStartYear,
+          gameData.turn1Timing,
+          gameData.deadlineType,
+          gameData.startTime,
+          gameData.gameTimeZone,
+          gameData.observeDst,
+          gameData.ordersDay,
+          gameData.ordersTime,
+          gameData.retreatsDay,
+          gameData.retreatsTime,
+          gameData.adjustmentsDay,
+          gameData.adjustmentsTime,
+          gameData.nominationsDay,
+          gameData.nominationsTime,
+          gameData.votesDay,
+          gameData.votesTime,
+          gameData.nmrTolerance,
+          gameData.concurrentGamesLimit,
+          gameData.privateGame,
+          gameData.hiddenGame,
+          gameData.blindCreator,
+          gameData.finalReadinessCheck,
+          gameData.voteDeadlineExtension,
+          gameData.partialRosterStart,
+          gameData.nominationTiming,
+          gameData.nominationYear,
+          gameData.automaticAssignments,
+          gameData.ratingLimits,
+          gameData.funRange[0],
+          gameData.funRange[1],
+          gameData.skillRange[0],
+          gameData.skillRange[1],
+          gameData.gameId
+        ])
+        .then((result: any) => 'Game Updated')
+        .catch((error: Error) => 'Update Game Error: ' + error.message);
+
+      } else {
+        return 'Not admin!';
+      }
+    }
   }
 }
