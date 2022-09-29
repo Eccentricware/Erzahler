@@ -1,8 +1,9 @@
 export const checkUserGameAdminQuery = `
-  SELECT user_id
-  FROM assignments
-  WHERE game_id = $1
-  AND user_id = $2,
-  AND assignment_type IN ('administrator', 'commander', 'creator'),
-  AND assignment_end IS NULL;
+  SELECT u.user_id
+  FROM users u
+  INNER JOIN providers p ON p.user_id = u.user_id
+  INNER JOIN assignments a ON a.user_id = u.user_id
+  WHERE p.uid = $1
+    AND a.game_id = $2
+    AND a.assignment_type IN ('administrator', 'commander', 'creator')
 `;

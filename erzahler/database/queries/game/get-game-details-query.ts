@@ -1,5 +1,6 @@
 export const getGameDetailsQuery = `
-  SELECT g.game_name,
+  SELECT g.game_id,
+    g.game_name,
     g.time_created,
     g.game_status,
     g.current_year,

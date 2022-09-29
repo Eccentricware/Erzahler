@@ -88,6 +88,17 @@ erzhaler.post('/new-game', (request, response) => {
     });
 });
 
+erzhaler.put('/update-game', (request, response) => {
+  const idToken: any = request.headers.idtoken;
+  gameService.updateGameSettings(idToken, request.body.gameData)
+    .then((result: any) => {
+      response.send(result);
+    })
+    .catch((error: Error) => {
+      response.send({error: error.message});
+    });
+});
+
 erzhaler.get('/game-details/:gameId', (request, response) => {
   const idToken: any = request.headers.idtoken;
   const gameId: number = Number(request.params.gameId);
