@@ -21,6 +21,7 @@ import { getGameDetailsQuery } from "../../database/queries/game/get-game-detail
 import { getRulesInGameQuery } from "../../database/queries/game/get-rules-in-game-query";
 import { getAssignmentsQuery } from "../../database/queries/game/get-assignments-query";
 import { getGameAdminsQuery } from "../../database/queries/game/get-game-admins-query";
+import { getRegisteredPlayersQuery } from "../../database/queries/game/get-registered-players-query";
 
 export class GameService {
   gameData: any = {};
@@ -465,6 +466,13 @@ export class GameService {
     const assignmentData: any = await pool.query(getAssignmentsQuery, [gameId, userId])
       .then((assignmentDataResults: any) => assignmentDataResults.rows)
       .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
+
+    if (gameData.display_as_admin) {
+      const registeredPlayerData: any = await pool.query(getRegisteredPlayersQuery, [gameId])
+        .then((registeredPlayerDataResults: QueryResult<any>) => registeredPlayerDataResults.rows)
+        .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
+        gameData.registeredPlayers = registeredPlayerData ? registeredPlayerData : [];
+    }
 
     gameData.rules = ruleData;
     gameData.administrators = administratorData;
