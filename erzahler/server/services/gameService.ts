@@ -467,16 +467,14 @@ export class GameService {
       .then((assignmentDataResults: any) => assignmentDataResults.rows)
       .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
 
-    if (gameData.display_as_admin) {
-      const registeredPlayerData: any = await pool.query(getRegisteredPlayersQuery, [gameId])
-        .then((registeredPlayerDataResults: QueryResult<any>) => registeredPlayerDataResults.rows)
-        .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
-        gameData.registeredPlayers = registeredPlayerData ? registeredPlayerData : [];
-    }
+    const registeredPlayerData: any = await pool.query(getRegisteredPlayersQuery, [gameId])
+      .then((registeredPlayerDataResults: QueryResult<any>) => registeredPlayerDataResults.rows)
+      .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
 
     gameData.rules = ruleData;
     gameData.administrators = administratorData;
     gameData.assignments = assignmentData;
+    gameData.registeredPlayers = registeredPlayerData;
 
     return gameData;
   }
