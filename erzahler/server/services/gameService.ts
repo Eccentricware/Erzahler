@@ -24,6 +24,7 @@ import { getGameAdminsQuery } from "../../database/queries/game/get-game-admins-
 import { getRegisteredPlayersQuery } from "../../database/queries/game/get-registered-players-query";
 import { checkUserGameAdminQuery } from "../../database/queries/game/check-user-game-admin-query";
 import { updateGameSettingsQuery } from "../../database/queries/game/update-game-settings-query";
+import { updateTurnQuery } from "../../database/queries/game/update-turn-query";
 
 export class GameService {
   gameData: any = {};
@@ -488,16 +489,16 @@ export class GameService {
     if (token.uid) {
       const pool: Pool = new Pool(victorCredentials);
 
-      const isAdmin = await pool.query(checkUserGameAdminQuery, [token.uid, gameData.game_id]);
+      const isAdmin = await pool.query(checkUserGameAdminQuery, [token.uid, gameData.gameId]);
       if (isAdmin) {
-        await pool.query(updateGameSettingsQuery, [
+        const gameSettings = [
           gameData.gameName,
           gameData.assignmentMethod,
           gameData.stylizedStartYear,
           gameData.turn1Timing,
           gameData.deadlineType,
           gameData.startTime,
-          gameData.gameTimeZone,
+          gameData.timeZone,
           gameData.observeDst,
           gameData.ordersDay,
           gameData.ordersTime,
@@ -526,10 +527,44 @@ export class GameService {
           gameData.skillRange[0],
           gameData.skillRange[1],
           gameData.gameId
-        ])
-        .then((result: any) => 'Game Updated')
-        .catch((error: Error) => 'Update Game Error: ' + error.message);
+        ];
+        const errors: string[] = [];
 
+        console.log('Internal Game Data:', gameData);
+        const gameUpdate = await pool.query(updateGameSettingsQuery, gameSettings)
+        .catch((error: Error) => {
+          console.log('Update Game Error: ' + error.message);
+          errors.push('Update Game Error: ' + error.message);
+        });
+
+        const turn0Update = await pool.query(updateTurnQuery, [gameData.gameStart, 0, gameData.gameId])
+          .catch((error: Error) => {
+            console.log('Update Turn 0 Error: ' + error.message);
+            errors.push('Update Turn 0 Error: ' + error.message);
+          });
+
+        const turn1Update = await pool.query(updateTurnQuery, [gameData.firstTurnDeadline, 0, gameData.gameId])
+          .catch((error: Error) => {
+            console.log('Update Turn 1 Error: ' + error.message);
+            errors.push('Update Turn 1 Error: ' + error.message);
+          });
+
+        return Promise.all([gameUpdate, turn0Update, turn1Update])
+          .then((result: any) => {
+            return {
+              success: true,
+              message: 'Game Updated'
+            }
+          })
+          .catch((error: Error) => {
+            errors.push('Update Game Settings Error: ' + error.message)
+            return {
+              success: false,
+              errors: errors
+            };
+          });
+
+        console.log(errors);
       } else {
         return 'Not admin!';
       }

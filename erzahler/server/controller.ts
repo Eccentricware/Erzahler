@@ -89,8 +89,7 @@ erzhaler.post('/new-game', (request, response) => {
 });
 
 erzhaler.put('/update-game', (request, response) => {
-  const idToken: any = request.headers.idtoken;
-  gameService.updateGameSettings(idToken, request.body.gameData)
+  gameService.updateGameSettings(request.body.idToken, request.body.gameData)
     .then((result: any) => {
       response.send(result);
     })
