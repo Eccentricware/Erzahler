@@ -72,7 +72,8 @@ export class GameService {
 
   async addNewGame(pool: Pool, settings: any): Promise<any> {
     const schedulerService: SchedulerService = new SchedulerService();
-    const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(settings);
+    const events: StartScheduleObject = schedulerService.extractEvents(settings);
+    const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
     console.log('Schedule', schedule);
 
     const settingsArray: any = [

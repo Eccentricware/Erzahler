@@ -1,4 +1,8 @@
 export interface StartScheduleObject {
+  userTimeZone: string;
+  observeDst: boolean;
+  deadlineType: string;
+  turn1Timing: string;
   gameStart: Date | string;
   firstTurnDeadline: Date | string;
   ordersDay: Date | string;
