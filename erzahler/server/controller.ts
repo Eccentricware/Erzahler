@@ -1,10 +1,9 @@
 import express from 'express';
-import { AccountService } from './services/accountService';
 import bodyParser from 'body-parser';
 import { initializeApp } from 'firebase-admin/app';
 import admin from 'firebase-admin';
+import { AccountService } from './services/accountService';
 import { GameService } from './services/gameService';
-import assert from 'assert';
 const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 
 const erzhaler = express();
