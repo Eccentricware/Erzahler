@@ -25,6 +25,8 @@ import { getRegisteredPlayersQuery } from "../../database/queries/game/get-regis
 import { checkUserGameAdminQuery } from "../../database/queries/game/check-user-game-admin-query";
 import { updateGameSettingsQuery } from "../../database/queries/game/update-game-settings-query";
 import { updateTurnQuery } from "../../database/queries/game/update-turn-query";
+import { SchedulerService } from "./schedulerService";
+import { StartScheduleObject } from "../../models/start-schedule-object";
 
 export class GameService {
   gameData: any = {};
@@ -69,25 +71,29 @@ export class GameService {
   }
 
   async addNewGame(pool: Pool, settings: any): Promise<any> {
+    const schedulerService: SchedulerService = new SchedulerService();
+    const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(settings);
+    console.log('Schedule', schedule);
+
     const settingsArray: any = [
       settings.gameName,
       settings.assignmentMethod,
       settings.stylizedStartYear,
       settings.turn1Timing,
       settings.deadlineType,
-      settings.gameStart,
+      schedule.gameStart,
       settings.timeZone,
       settings.observeDst,
       settings.ordersDay,
-      settings.ordersTime,
+      schedule.ordersTime,
       settings.retreatsDay,
-      settings.retreatsTime,
+      schedule.retreatsTime,
       settings.adjustmentsDay,
-      settings.adjustmentsTime,
+      schedule.adjustmentsTime,
       settings.nominationsDay,
-      settings.nominationsTime,
+      schedule.nominationsTime,
       settings.votesDay,
-      settings.votesTime,
+      schedule.votesTime,
       settings.nmrTolerance,
       settings.concurrentGamesLimit,
       settings.privateGame,
@@ -114,7 +120,7 @@ export class GameService {
         return await Promise.all([
           await this.addCreatorAssignment(pool, this.user.user_id),
           await this.addRulesInGame(pool),
-          await this.addTurn0(pool)
+          await this.addTurn0(pool, schedule)
         ]).then(() => {
           return newGame.game_id;
         });
@@ -139,9 +145,9 @@ export class GameService {
     });
   }
 
-  async addTurn0(pool: Pool): Promise<void> {
+  async addTurn0(pool: Pool, schedule: StartScheduleObject): Promise<void> {
     await pool.query(insertTurnQuery, [
-      this.gameData.gameStart,
+      schedule.gameStart,
       0,
       `Winter ${this.gameData.stylizedStartYear}`,
       'orders',
@@ -150,7 +156,7 @@ export class GameService {
     ])
     .then(async (result: any) => {
       console.log('Turn 0 Added Successfully');
-      await this.addTurn1(pool);
+      await this.addTurn1(pool, schedule);
     })
     .catch((error: Error) => {
       console.log('Turn 0 Error: ', error.message);
@@ -158,10 +164,10 @@ export class GameService {
     });
   }
 
-  async addTurn1(pool: Pool): Promise<void> {
+  async addTurn1(pool: Pool, schedule: StartScheduleObject): Promise<void> {
     console.log('trying turn 1');
     await pool.query(insertTurnQuery, [
-      this.gameData.firstTurnDeadline,
+      schedule.firstTurnDeadline,
       1,
       `Spring ${this.gameData.stylizedStartYear + 1}`,
       'orders',
@@ -442,6 +448,7 @@ export class GameService {
 
   async getGameData(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
+    const schedulerService: SchedulerService = new SchedulerService();
     const pool: Pool = new Pool(victorCredentials);
     let userId = 0;
 
@@ -478,6 +485,10 @@ export class GameService {
     gameData.administrators = administratorData;
     gameData.assignments = assignmentData;
     gameData.registeredPlayers = registeredPlayerData;
+
+    gameData.orders_time = schedulerService.timeIdentity(gameData.orders_time);
+
+    console.log('Providing front end orders_time:', gameData.orders_time);
 
     return gameData;
   }
