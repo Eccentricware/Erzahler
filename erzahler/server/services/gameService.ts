@@ -27,6 +27,7 @@ import { updateGameSettingsQuery } from "../../database/queries/game/update-game
 import { updateTurnQuery } from "../../database/queries/game/update-turn-query";
 import { SchedulerService } from "./schedulerService";
 import { StartScheduleObject } from "../../models/start-schedule-object";
+import { FormattingService } from "./formattingService";
 
 export class GameService {
   gameData: any = {};
@@ -450,6 +451,7 @@ export class GameService {
   async getGameData(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
+    const formattingService: FormattingService = new FormattingService();
     const pool: Pool = new Pool(victorCredentials);
     let userId = 0;
 
@@ -458,28 +460,38 @@ export class GameService {
 
       if (token.uid) {
         this.user = await accountService.getUserProfile(idToken);
-        userId = this.user.user_id;
+        userId = this.user.userId;
       }
     }
 
     const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId])
-      .then((gameDataResults: any) => gameDataResults.rows[0])
+      .then((gameDataResults: any) => {
+        return formattingService.convertKeysSnakeToCamel(gameDataResults.rows[0]);
+      })
       .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
 
     const ruleData: any = await pool.query(getRulesInGameQuery, [gameId])
-      .then((ruleDataResults: any) => ruleDataResults.rows)
+      .then((ruleDataResults: any) => {
+        return ruleDataResults.rows.map((rule: any) => formattingService.convertKeysSnakeToCamel(rule));
+      })
       .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
 
     const administratorData: any = await pool.query(getGameAdminsQuery, [gameId])
-      .then((administratorDataResults: any) => administratorDataResults.rows)
+      .then((adminDataResults: any) => {
+        return adminDataResults.rows.map((adminAssignment: any) => formattingService.convertKeysSnakeToCamel(adminAssignment));
+      })
       .catch((error: Error) => console.log('Get Administrator Data Results Error: ' + error.message));
 
     const assignmentData: any = await pool.query(getAssignmentsQuery, [gameId, userId])
-      .then((assignmentDataResults: any) => assignmentDataResults.rows)
+      .then((assignmentDataResults: any) => {
+        return assignmentDataResults.rows.map((assignment: any) => formattingService.convertKeysSnakeToCamel(assignment));
+      })
       .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
 
     const registeredPlayerData: any = await pool.query(getRegisteredPlayersQuery, [gameId])
-      .then((registeredPlayerDataResults: QueryResult<any>) => registeredPlayerDataResults.rows)
+      .then((registeredPlayerDataResults: QueryResult<any>) => {
+        return registeredPlayerDataResults.rows.map((player: any) => formattingService.convertKeysSnakeToCamel(player));
+      })
       .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
 
     gameData.rules = ruleData;
@@ -487,9 +499,9 @@ export class GameService {
     gameData.assignments = assignmentData;
     gameData.registeredPlayers = registeredPlayerData;
 
-    gameData.orders_time = schedulerService.timeIdentity(gameData.orders_time);
+    gameData.ordersTime = schedulerService.timeIdentity(gameData.ordersTime);
 
-    console.log('Providing front end orders_time:', gameData.orders_time);
+    console.log('Providing front end ordersTime:', gameData.ordersTime);
 
     return gameData;
   }

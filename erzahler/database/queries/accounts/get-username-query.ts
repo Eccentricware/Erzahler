@@ -1,5 +1,5 @@
 export const getUsernameQuery = `
-  SELECT user_id,
+  SELECT
     username
   FROM users
   WHERE lower(username) = LOWER($1);
