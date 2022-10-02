@@ -1,4 +1,4 @@
-export interface CredentialCheck {
+export interface CredentialCheckObject {
   usernameAvailable?: boolean;
   emailAvailable?: boolean;
   credentialsAvailable?: boolean;

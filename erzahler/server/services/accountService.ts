@@ -9,6 +9,8 @@ import { createProviderQuery } from '../../database/queries/accounts/create-prov
 import { syncProviderEmailStateQuery } from '../../database/queries/accounts/sync-provider-email-state-query';
 import { lockUsernameQuery } from '../../database/queries/accounts/lock-username-query';
 import { clearVerficiationDeadlineQuery } from '../../database/queries/accounts/clear-verification-deadline-query';
+import { UserProfileObject } from '../../models/user-profile-object';
+import { FormattingService } from './formattingService';
 
 export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
@@ -158,7 +160,8 @@ export class AccountService {
       });
   }
 
-  async getUserProfile(idToken: string): Promise<any> {
+  async getUserProfile(idToken: string): Promise<UserProfileObject | any> {
+    const formattingService: FormattingService = new FormattingService();
     const token: DecodedIdToken = await this.validateToken(idToken);
 
     if (token.uid) {
@@ -172,11 +175,11 @@ export class AccountService {
         firebaseUser.uid
       ]);
 
-      const blitzkarteUser = await pool.query(getUserProfileQuery, [token.uid])
-        .then((result: any) => result.rows[0])
+      const blitzkarteUser: UserProfileObject = await pool.query(getUserProfileQuery, [token.uid])
+        .then((userResults: any) => formattingService.convertKeysSnakeToCamel(userResults.rows[0]))
         .catch((error: Error) => console.log('User Profile Query Error:', error.message));
 
-      if (blitzkarteUser.username_locked === false && firebaseUser.emailVerified === true) {
+      if (blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
         await pool.query(lockUsernameQuery, [firebaseUser.uid])
           .then((result: any) => { console.log('Username Locked'); })
           .catch((error: Error) => { console.log(error.message); });
