@@ -1,7 +1,42 @@
 import { StartScheduleObject } from "../../models/start-schedule-object";
+import { getTimeZones, TimeZone } from '@vvo/tzdb';
+import { WeeklyScheduleEventObject } from "../../models/weekly-schedule-event-object";
+import { DateTime } from 'luxon';
 
 export class SchedulerService {
-  extractEvents(settings: any): StartScheduleObject {
+  timeZones: TimeZone[];
+  turnOrder: string[] = [
+    'orders',
+    'retreats',
+    'adjustments',
+    'nominations',
+    'votes'
+  ];
+  days: string[] = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday'
+  ];
+  dayValues: any = {
+    'Sunday': 0,
+    'Monday': 1,
+    'Tuesday': 2,
+    'Wednesday': 3,
+    'Thursday': 4,
+    'Friday': 5,
+    'Saturday': 6
+  };
+
+  constructor() {
+    this.timeZones = getTimeZones();
+  }
+
+  // Helpful for debugging by removing all extraneous variables
+  extractEvents(settings: any) {
     return {
       userTimeZone: settings.timeZone,
       observeDst: settings.observeDst,
@@ -22,20 +57,10 @@ export class SchedulerService {
     }
   }
 
-  prepareStartSchedule(events: StartScheduleObject): StartScheduleObject {
+  prepareStartSchedule(events: any): StartScheduleObject {
     console.log('Settings in prepareStartSchedule:', events);
     let gameStart = '2022 10 01 01:00:00';
     let firstTurnDeadline = '2022 10 02 02:00:00';
-    let ordersDay = 'Monday';
-    let ordersTime = '03:00:00';
-    let retreatsDay = 'Monday';
-    let retreatsTime = '04:00:00';
-    let adjustmentsDay = 'Monday';
-    let adjustmentsTime = '05:00:00';
-    let nominationsDay = 'Monday';
-    let nominationsTime = '06:00:00';
-    let votesDay = 'Monday';
-    let votesTime = '07:00:00';
 
     const schedule: StartScheduleObject = {
       userTimeZone: events.userTimeZone,
@@ -44,16 +69,11 @@ export class SchedulerService {
       turn1Timing: events.turn1Timing,
       gameStart: gameStart,
       firstTurnDeadline: firstTurnDeadline,
-      ordersDay: ordersDay,
-      ordersTime: ordersTime,
-      retreatsDay: retreatsDay,
-      retreatsTime: retreatsTime,
-      adjustmentsDay: adjustmentsDay,
-      adjustmentsTime: adjustmentsTime,
-      nominationsDay: nominationsDay,
-      nominationsTime: nominationsTime,
-      votesDay: votesDay,
-      votesTime: votesTime
+      orders: this.resolveScheduledEvent(events.ordersDay, events.ordersTime, events.userTimeZone),
+      retreats: this.resolveScheduledEvent(events.retreatsDay, events.retreatsTime, events.userTimeZone),
+      adjustments: this.resolveScheduledEvent(events.adjustmentsDay, events.adjustmentsTime, events.userTimeZone),
+      nominations: this.resolveScheduledEvent(events.nominationsDay, events.nominationsTime, events.userTimeZone),
+      votes: this.resolveScheduledEvent(events.votesDay, events.votesTime, events.userTimeZone)
     }
 
     return schedule;
@@ -68,5 +88,32 @@ export class SchedulerService {
 
   timeIdentity(serverTime: Date) {
     return serverTime;
+  }
+
+  resolveScheduledEvent(day: string, time: string, timeZoneName: string): WeeklyScheduleEventObject {
+    const timeZone: TimeZone = getTimeZones().filter((timeZone: TimeZone) => timeZone.name === timeZoneName)[0];
+    const localTime: DateTime = DateTime.fromISO(time);
+    const utcTime: DateTime = DateTime.fromISO(time).minus({minutes: timeZone.currentTimeOffsetInMinutes});
+    let utcDayIndex: number = this.days.indexOf(day);
+
+    console.log(`If time zone is ${timeZoneName}, the offest is ${timeZone.currentTimeOffsetInMinutes / 60} hours so local hour ${localTime.hour} is UTC Hour ${utcTime.hour}`);
+    if (timeZone.currentTimeOffsetInMinutes < 0 && utcTime.hour < localTime.hour) {
+      utcDayIndex = (utcDayIndex + 1) % 7;
+    }
+
+    if (timeZone.currentTimeOffsetInMinutes > 0 && utcTime.hour > localTime.hour) {
+      utcDayIndex--;
+      if (utcDayIndex < 0) {
+        utcDayIndex = 6;
+      }
+    }
+
+    const eventInUtc: WeeklyScheduleEventObject = {
+      day: this.days[utcDayIndex],
+      time: utcTime.toISOTime()
+    }
+
+    console.log('Returing utcEvent:', eventInUtc);
+    return eventInUtc;
   }
 }
