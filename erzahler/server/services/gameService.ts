@@ -73,7 +73,7 @@ export class GameService {
 
   async addNewGame(pool: Pool, settings: any): Promise<any> {
     const schedulerService: SchedulerService = new SchedulerService();
-    const events: StartScheduleObject = schedulerService.extractEvents(settings);
+    const events = schedulerService.extractEvents(settings);
     const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
     console.log('Schedule', schedule);
 
@@ -86,16 +86,16 @@ export class GameService {
       schedule.gameStart,
       settings.timeZone,
       settings.observeDst,
-      settings.ordersDay,
-      schedule.ordersTime,
-      settings.retreatsDay,
-      schedule.retreatsTime,
-      settings.adjustmentsDay,
-      schedule.adjustmentsTime,
-      settings.nominationsDay,
-      schedule.nominationsTime,
-      settings.votesDay,
-      schedule.votesTime,
+      schedule.orders.day,
+      schedule.orders.time,
+      schedule.retreats.day,
+      schedule.retreats.time,
+      schedule.adjustments.day,
+      schedule.adjustments.time,
+      schedule.nominations.day,
+      schedule.nominations.time,
+      schedule.votes.day,
+      schedule.votes.time,
       settings.nmrTolerance,
       settings.concurrentGamesLimit,
       settings.privateGame,
@@ -120,7 +120,7 @@ export class GameService {
         console.log('Game Row Added Successfully');
 
         return await Promise.all([
-          await this.addCreatorAssignment(pool, this.user.user_id),
+          await this.addCreatorAssignment(pool, this.user.userId),
           await this.addRulesInGame(pool),
           await this.addTurn0(pool, schedule)
         ]).then(() => {

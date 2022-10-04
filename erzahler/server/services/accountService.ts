@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { getUsernameQuery } from '../../database/queries/accounts/get-username-query';
+import { getUserIdQuery } from '../../database/queries/accounts/get-user-id-query';
 import { victorCredentials } from '../../secrets/dbCredentials';
 import { DecodedIdToken, getAuth, UserRecord } from 'firebase-admin/auth'
 import { createUserQuery } from '../../database/queries/accounts/create-user-query';
@@ -16,7 +16,7 @@ export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
     const pool: Pool = new Pool(victorCredentials);
 
-    return pool.query(getUsernameQuery, [username])
+    return pool.query(getUserIdQuery, [username])
       .then((usernameCountResponse: any) => {
         return usernameCountResponse.rows.length === 0;
       })
@@ -142,8 +142,9 @@ export class AccountService {
   async getUserId(username: string): Promise<any> {
     const pool = new Pool(victorCredentials);
 
-    return pool.query(getUsernameQuery, [username])
+    return pool.query(getUserIdQuery, [username])
       .then((userResult: any) => {
+        console.log('userResult.user_id:', userResult.rows[0].user_id);
         return userResult.rows[0].user_id;
       })
       .catch((error: Error) => console.error(error.message));
