@@ -9,7 +9,7 @@ CREATE DATABASE erzahler_dev;
 CREATE TABLE IF NOT EXISTS games(
   game_id SERIAL,
   game_name VARCHAR(50) UNIQUE NOT NULL,
-  time_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  time_created TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
   game_status VARCHAR(25) NOT NULL,
   current_year INTEGER NOT NULL,
   stylized_start_year INTEGER NOT NULL DEFAULT 2000,
