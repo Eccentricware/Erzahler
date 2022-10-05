@@ -58,17 +58,16 @@ export class SchedulerService {
   }
 
   prepareStartSchedule(events: any): StartScheduleObject {
+    console.log('gameStart', events.gameStart);
+    console.log('firstTurnDeadline is a', typeof events.firstTurnDeadline);
     console.log('Settings in prepareStartSchedule:', events);
-    let gameStart = '2022 10 01 01:00:00';
-    let firstTurnDeadline = '2022 10 02 02:00:00';
-
     const schedule: StartScheduleObject = {
       userTimeZone: events.userTimeZone,
       observeDst: events.observeDst,
       deadlineType: events.deadlineType,
       turn1Timing: events.turn1Timing,
-      gameStart: gameStart,
-      firstTurnDeadline: firstTurnDeadline,
+      gameStart: events.gameStart,
+      firstTurnDeadline: events.firstTurnDeadline,
       orders: this.resolveScheduledEvent(events.ordersDay, events.ordersTime, events.userTimeZone),
       retreats: this.resolveScheduledEvent(events.retreatsDay, events.retreatsTime, events.userTimeZone),
       adjustments: this.resolveScheduledEvent(events.adjustmentsDay, events.adjustmentsTime, events.userTimeZone),
@@ -83,6 +82,7 @@ export class SchedulerService {
 
   localDateToUtcDate(date: Date): Date | string {
     console.log('Receiving Date', date);
+    date.toUTCString
     return date;
   }
 
