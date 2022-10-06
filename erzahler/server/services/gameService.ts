@@ -454,6 +454,7 @@ export class GameService {
     const formattingService: FormattingService = new FormattingService();
     const pool: Pool = new Pool(victorCredentials);
     let userId = 0;
+    let userTimeZone = 'Africa/Monrovia';
 
     if (idToken !== '') {
       const token: DecodedIdToken = await accountService.validateToken(idToken);
@@ -461,10 +462,13 @@ export class GameService {
       if (token.uid) {
         this.user = await accountService.getUserProfile(idToken);
         userId = this.user.userId;
+        userTimeZone = this.user.timeZone;
       }
     }
 
-    const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId])
+    console.log(userTimeZone);
+
+    const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId, userTimeZone])
       .then((gameDataResults: any) => {
         return formattingService.convertKeysSnakeToCamel(gameDataResults.rows[0]);
       })

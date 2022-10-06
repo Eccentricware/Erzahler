@@ -339,7 +339,7 @@ CREATE TABLE IF NOT EXISTS users(
   username_locked BOOLEAN NOT NULL DEFAULT false,
   user_status VARCHAR(100) NOT NULL,
   signup_time TIMESTAMP NOT NULL,
-  time_zone VARCHAR(25),
+  time_zone VARCHAR(50) NOT NULL DEFAULT 'Africa/Monrovia',
   last_sign_in_time TIMESTAMP NOT NULL,
   classic_unit_render BOOLEAN NOT NULL DEFAULT false,
   city_render_size INTEGER NOT NULL DEFAULT 2,
