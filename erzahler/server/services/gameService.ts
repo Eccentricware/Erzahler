@@ -28,6 +28,7 @@ import { updateTurnQuery } from "../../database/queries/game/update-turn-query";
 import { SchedulerService } from "./schedulerService";
 import { StartScheduleObject } from "../../models/start-schedule-object";
 import { FormattingService } from "./formattingService";
+import { getGamesQuery } from "../../database/queries/game/get-games-query";
 
 export class GameService {
   gameData: any = {};
@@ -446,6 +447,23 @@ export class GameService {
     const gameNameResults: QueryResult<any> = await pool.query(checkGameNameAvailabilityQuery, [gameName]);
 
     return gameNameResults.rowCount === 0;
+  }
+
+  async findGames(idToken: string): Promise<any> {
+    const accountService: AccountService = new AccountService();
+    const formattingService: FormattingService  = new FormattingService();
+    const pool: Pool = new Pool(victorCredentials);
+    //const token: DecodedIdToken = await accountService.validateToken(idToken);
+
+    const games = await pool.query(getGamesQuery, [])
+      .then((gamesResults: any) => {
+        return formattingService.convertKeysSnakeToCamel(gamesResults);
+      })
+      .catch((error: Error) => {
+        console.log('Get Games Query Error', error.message);
+      });
+
+      return games.rows;
   }
 
   async getGameData(idToken: string, gameId: number): Promise<any> {
