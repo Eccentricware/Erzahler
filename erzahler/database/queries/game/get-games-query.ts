@@ -12,6 +12,6 @@ export const getGamesQuery = `
     g.skill_min,
     g.skill_max
   FROM games g
-  WHERE g.game_status in ($1, $2, $3, $4, $5, $6)
+  --WHERE g.game_status in ($1, $2, $3, $4, $5, $6)
   ORDER BY g.time_created;
 `;
