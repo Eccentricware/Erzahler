@@ -453,17 +453,32 @@ export class GameService {
     const accountService: AccountService = new AccountService();
     const formattingService: FormattingService  = new FormattingService();
     const pool: Pool = new Pool(victorCredentials);
-    //const token: DecodedIdToken = await accountService.validateToken(idToken);
+    let userId = 0;
+    let userTimeZone = 'Africa/Monrovia';
 
-    const games = await pool.query(getGamesQuery, [])
+    console.log('idToken in findGames', idToken);
+
+    if (idToken) {
+      const token: DecodedIdToken = await accountService.validateToken(idToken);
+
+      if (token.uid) {
+        this.user = await accountService.getUserProfile(idToken);
+        userId = this.user.userId;
+        userTimeZone = this.user.timeZone;
+      }
+    }
+
+    const games = await pool.query(getGamesQuery, [userTimeZone])
       .then((gamesResults: any) => {
+        console.log('gameResults', gamesResults)
         return formattingService.convertKeysSnakeToCamel(gamesResults);
       })
       .catch((error: Error) => {
         console.log('Get Games Query Error', error.message);
       });
 
-      return games.rows;
+    console.log('Games', games.rows);
+    return games.rows;
   }
 
   async getGameData(idToken: string, gameId: number): Promise<any> {
@@ -474,7 +489,7 @@ export class GameService {
     let userId = 0;
     let userTimeZone = 'Africa/Monrovia';
 
-    if (idToken !== '') {
+    if (idToken) {
       const token: DecodedIdToken = await accountService.validateToken(idToken);
 
       if (token.uid) {
@@ -483,8 +498,6 @@ export class GameService {
         userTimeZone = this.user.timeZone;
       }
     }
-
-    console.log(userTimeZone);
 
     const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId, userTimeZone])
       .then((gameDataResults: any) => {

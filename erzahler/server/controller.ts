@@ -107,6 +107,7 @@ erzhaler.get('/game-details/:gameId', (request, response) => {
       response.send(result);
     })
     .catch((error: Error) => {
+      console
       response.send('Get game data error: ' + error.message);
     });
 });
@@ -116,11 +117,13 @@ erzhaler.get('/find-games', (request, response) => {
 
   gameService.findGames(idToken)
     .then((result: any) => {
+      console.log('controller result', result);
       response.send(result);
     })
     .catch((error: Error) => {
+      console.log('controller error', error);
       response.send('Game find error: ' + error.message);
-    })
+    });
 });
 
 erzhaler.listen(port, () => {
