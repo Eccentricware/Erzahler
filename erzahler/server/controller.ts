@@ -113,7 +113,7 @@ erzhaler.get('/game-details/:gameId', (request, response) => {
 });
 
 erzhaler.get('/find-games', (request, response) => {
-  const idToken: any = request.headers.idToken;
+  const idToken: any = request.headers.idtoken;
 
   gameService.findGames(idToken)
     .then((result: any) => {

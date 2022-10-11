@@ -78,8 +78,6 @@ export class SchedulerService {
     return schedule;
   }
 
-
-
   localDateToUtcDate(date: Date): Date | string {
     console.log('Receiving Date', date);
     date.toUTCString
@@ -115,5 +113,23 @@ export class SchedulerService {
 
     console.log('Returing utcEvent:', eventInUtc);
     return eventInUtc;
+  }
+
+  enforceLocalDay(day: string, time: string, localTimeZoneName: string): string {
+    const timeZone = this.timeZones.filter((timeZone: TimeZone) => {
+      return timeZone.name === localTimeZoneName;
+    })[0];
+
+    const localTime: DateTime = DateTime.fromISO(time);
+    return 'Nonday';
+  }
+
+  enforceLocalSchedule(game: any, localTimeZoneName: string): any {
+    game.ordersDay = this.enforceLocalDay(
+      game.ordersDay,
+      game.ordersTime,
+      localTimeZoneName
+    );
+    return game;
   }
 }

@@ -4,6 +4,9 @@ DROP DATABASE IF EXISTS erzahler_dev;
 CREATE DATABASE erzahler_dev;
 
 \c erzahler_dev;
+\echo 'Attempting to set time zone to utc'
+SET TIME ZONE 'utc';
+
 \echo 'Attempting to create games table'
 
 CREATE TABLE IF NOT EXISTS games(
