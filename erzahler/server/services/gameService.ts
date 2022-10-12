@@ -26,10 +26,11 @@ import { checkUserGameAdminQuery } from "../../database/queries/game/check-user-
 import { updateGameSettingsQuery } from "../../database/queries/game/update-game-settings-query";
 import { updateTurnQuery } from "../../database/queries/game/update-turn-query";
 import { SchedulerService } from "./schedulerService";
-import { StartScheduleObject } from "../../models/start-schedule-object";
+import { StartScheduleObject } from "../../models/objects/start-schedule-object";
 import { FormattingService } from "./formattingService";
 import { getGamesQuery } from "../../database/queries/game/get-games-query";
-import { GameSummary } from "../../models/classes/game-summary";
+import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
+import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 
 export class GameService {
   gameData: any = {};
@@ -471,9 +472,9 @@ export class GameService {
     console.log('User time zone:', userTimeZone);
     const gameResults: any = await pool.query(getGamesQuery, [userTimeZone])
       .then((gamesResults: QueryResult<any>) => {
-        return gamesResults.rows.map((game: any) => {
+        return gamesResults.rows.map((game: GameSummaryQueryObject) => {
           console.log('game', game);
-          return new GameSummary(game, userTimeZone);
+          return new GameSummaryBuilder(game, userTimeZone);
         });
       })
       .catch((error: Error) => {

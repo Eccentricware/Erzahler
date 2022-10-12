@@ -1,6 +1,6 @@
-import { StartScheduleObject } from "../../models/start-schedule-object";
 import { getTimeZones, TimeZone } from '@vvo/tzdb';
-import { WeeklyScheduleEventObject } from "../../models/weekly-schedule-event-object";
+import { StartScheduleObject } from "../../models/objects/start-schedule-object";
+import { WeeklyScheduleEventObject } from "../../models/objects/weekly-schedule-event-object";
 import { DateTime } from 'luxon';
 
 export class SchedulerService {
@@ -122,6 +122,10 @@ export class SchedulerService {
 
     const localTime: DateTime = DateTime.fromISO(time);
     return 'Nonday';
+  }
+
+  enforceLocalTime(timeL: string, localTimeZoneName: string, militaryTime: boolean): string {
+    return '43:21 XM';
   }
 
   enforceLocalSchedule(game: any, localTimeZoneName: string): any {
