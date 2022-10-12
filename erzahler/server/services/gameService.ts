@@ -26,9 +26,11 @@ import { checkUserGameAdminQuery } from "../../database/queries/game/check-user-
 import { updateGameSettingsQuery } from "../../database/queries/game/update-game-settings-query";
 import { updateTurnQuery } from "../../database/queries/game/update-turn-query";
 import { SchedulerService } from "./schedulerService";
-import { StartScheduleObject } from "../../models/start-schedule-object";
+import { StartScheduleObject } from "../../models/objects/start-schedule-object";
 import { FormattingService } from "./formattingService";
 import { getGamesQuery } from "../../database/queries/game/get-games-query";
+import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
+import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 
 export class GameService {
   gameData: any = {};
@@ -452,11 +454,10 @@ export class GameService {
   async findGames(idToken: string): Promise<any> {
     const accountService: AccountService = new AccountService();
     const formattingService: FormattingService  = new FormattingService();
+    const schedulerService: SchedulerService = new SchedulerService();
     const pool: Pool = new Pool(victorCredentials);
     let userId = 0;
     let userTimeZone = 'Africa/Monrovia';
-
-    console.log('idToken in findGames', idToken);
 
     if (idToken) {
       const token: DecodedIdToken = await accountService.validateToken(idToken);
@@ -468,17 +469,19 @@ export class GameService {
       }
     }
 
-    const games = await pool.query(getGamesQuery, [userTimeZone])
-      .then((gamesResults: any) => {
-        console.log('gameResults', gamesResults)
-        return formattingService.convertKeysSnakeToCamel(gamesResults);
+    console.log('User time zone:', userTimeZone);
+    const gameResults: any = await pool.query(getGamesQuery, [userTimeZone])
+      .then((gamesResults: QueryResult<any>) => {
+        return gamesResults.rows.map((game: GameSummaryQueryObject) => {
+          console.log('game', game);
+          return new GameSummaryBuilder(game, userTimeZone);
+        });
       })
       .catch((error: Error) => {
         console.log('Get Games Query Error', error.message);
       });
 
-    console.log('Games', games.rows);
-    return games.rows;
+    return gameResults;
   }
 
   async getGameData(idToken: string, gameId: number): Promise<any> {

@@ -1,11 +1,14 @@
 export const getGamesQuery = `
   SELECT g.game_id,
     g.game_name,
+    u.username as creator,
+    g.nomination_timing,
+    g.nomination_year,
     g.time_created,
     g.game_status,
     g.deadline_type,
     g.orders_day,
-    g.orders_time AT TIME ZONE $1 orders_time,
+    g.orders_time AT TIME ZONE 'America/Los_Angeles' orders_time,
     g.orders_span,
     g.retreats_day,
     g.retreats_time AT TIME ZONE $1 retreats_time,
@@ -27,7 +30,7 @@ export const getGamesQuery = `
       WHERE c.rank != 'n'
       GROUP BY g.game_id
       LIMIT 1
-    ) as countries,
+    ) as country_count,
     (
       SELECT COUNT (*)
       FROM assignments a
@@ -36,7 +39,10 @@ export const getGamesQuery = `
       WHERE a.assignment_type IN ('registered', 'assigned')
       GROUP BY g.game_id
       LIMIT 1
-    ) as players
+    ) as player_count
   FROM games g
+  INNER JOIN assignments a ON a.game_id = g.game_id
+  INNER JOIN users u ON u.user_id = a.user_id
+  WHERE a.assignment_type = 'creator'
   ORDER BY g.time_created;
 `;

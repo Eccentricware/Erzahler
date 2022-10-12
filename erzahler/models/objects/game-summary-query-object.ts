@@ -1,0 +1,31 @@
+export interface GameSummaryQueryObject {
+  game_id: number;
+  game_name: string;
+  creator: string;
+  game_status: string;
+  deadline_type: string;
+  nomination_timing: string;
+  nomination_year: number;
+  player_count: number;
+  country_count: number;
+  turn1_timing: string;
+  start_time: Date;
+  timeCreated: Date;
+  current_year: number;
+  orders_day: string;
+  orders_time: string;
+  orders_span: number;
+  retreats_day: string;
+  retreats_time: string;
+  retreats_span: number;
+  adjustments_day: string;
+  adjustments_time: string;
+  adjustments_span: number;
+  display_as_admin: boolean;
+  nominations_day: string;
+  nominations_time: string;
+  nominations_span: number;
+  votes_day: string;
+  votes_time: string;
+  votes_span: number;
+}
