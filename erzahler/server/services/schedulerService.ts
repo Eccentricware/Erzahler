@@ -1,7 +1,8 @@
 import { getTimeZones, TimeZone } from '@vvo/tzdb';
 import { StartScheduleObject } from "../../models/objects/start-schedule-object";
 import { WeeklyScheduleEventObject } from "../../models/objects/weekly-schedule-event-object";
-import { DateTime } from 'luxon';
+import { DateTime, HourNumbers } from 'luxon';
+import { DayOfWeek } from '../../models/enumeration/day_of_week-enum';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -12,15 +13,17 @@ export class SchedulerService {
     'nominations',
     'votes'
   ];
+
   days: string[] = [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday'
+    DayOfWeek.SUNDAY,
+    DayOfWeek.MONDAY,
+    DayOfWeek.TUESDAY,
+    DayOfWeek.WEDNESDAY,
+    DayOfWeek.THURSDAY,
+    DayOfWeek.FRIDAY,
+    DayOfWeek.SATURDAY
   ];
+
   dayValues: any = {
     'Sunday': 0,
     'Monday': 1,
@@ -33,6 +36,14 @@ export class SchedulerService {
 
   constructor() {
     this.timeZones = getTimeZones();
+  }
+
+  getTimeZone(timeZoneName: string): TimeZone {
+    const timeZone: TimeZone = this.timeZones.filter(
+      (timeZone: TimeZone) => timeZone.name === timeZoneName
+    )[0];
+
+    return timeZone;
   }
 
   // Helpful for debugging by removing all extraneous variables
@@ -124,8 +135,34 @@ export class SchedulerService {
     return 'Nonday';
   }
 
-  enforceLocalTime(timeL: string, localTimeZoneName: string, militaryTime: boolean): string {
-    return '43:21 XM';
+  enforceLocalTime(timeUtc: string, localTimeZoneName: string, militaryTime: boolean): string {
+    const timeZone: TimeZone = this.getTimeZone(localTimeZoneName);
+
+    const utcDateTime: DateTime = DateTime.fromISO(timeUtc);
+    const localDateTime: DateTime = utcDateTime.plus({minutes: timeZone.currentTimeOffsetInMinutes});
+
+    let localHour: string | HourNumbers = localDateTime.hour;
+    let meridiem = 'AM';
+
+    console.log('local hour', localHour);
+
+    if (true) {
+      if (localHour === 0) {
+        localHour = 12;
+      }
+      if (localHour >= 12) {
+        meridiem = 'PM';
+      }
+      if (localHour > 12) {
+        localHour -= 12;
+      }
+    }
+
+    localHour = String(localHour).padStart(2, '0');
+    const localMinute = String(localDateTime.minute).padStart(2, '0');
+    const localTimeString = `${localHour}:${localMinute}${true ? meridiem : ''}`;
+
+    return localTimeString;
   }
 
   enforceLocalSchedule(game: any, localTimeZoneName: string): any {

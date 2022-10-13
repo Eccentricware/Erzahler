@@ -10,7 +10,7 @@ export const getAssignmentsQuery = `
           and a.user_id = $2
           and a.assignment_end IS NULL
       ) = 1
-        OR g.game_status != 'registration'
+        OR g.game_status != GameStatus.REGISTRATION
       THEN u.username
       ELSE NULL
     END username

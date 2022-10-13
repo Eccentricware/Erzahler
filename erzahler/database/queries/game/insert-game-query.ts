@@ -38,7 +38,7 @@ export const insertNewGameQuery = `
     skill_max
   ) VALUES (
     $1,
-    'registration',
+    GameStatus.REGISTRATION,
     $2,
     $3,
     0,
