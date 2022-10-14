@@ -51,7 +51,7 @@ export const getGameDetailsQuery = `
         SELECT 1
         FROM assignments a
         WHERE a.game_id = $1
-          and a.assignment_type IN ('administrator', 'creator')
+          and a.assignment_type IN ('Administrator', 'Creator')
           and a.user_id = $2
           and a.assignment_end IS NULL
       ) = 1

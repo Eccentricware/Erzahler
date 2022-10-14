@@ -127,15 +127,30 @@ export class SchedulerService {
   }
 
   enforceLocalDay(day: string, time: string, localTimeZoneName: string): string {
-    const timeZone = this.timeZones.filter((timeZone: TimeZone) => {
-      return timeZone.name === localTimeZoneName;
-    })[0];
+    const timeZone = this.getTimeZone(localTimeZoneName);
+    const utcTime: DateTime = DateTime.fromISO(time);
+    let shiftedDayIndex = this.days.indexOf(day);
+    const shiftedTime = utcTime.hour + timeZone.currentTimeOffsetInMinutes / 60;
 
-    const localTime: DateTime = DateTime.fromISO(time);
-    return 'Nonday';
+    if (shiftedTime < 0) {
+      shiftedDayIndex--;
+      if (shiftedDayIndex < 0) {
+        shiftedDayIndex = 6;
+      }
+    }
+
+    if (shiftedTime >= 24) {
+      shiftedDayIndex++;
+      if (shiftedDayIndex > 6) {
+        shiftedDayIndex = 0;
+      }
+    }
+
+    return this.days[shiftedDayIndex];
   }
 
-  enforceLocalTime(timeUtc: string, localTimeZoneName: string, militaryTime: boolean): string {
+  enforceLocalTime(timeUtc: string, localTimeZoneName: string, meridiemTime: boolean): string {
+    console.log('Meridian time', meridiemTime);
     const timeZone: TimeZone = this.getTimeZone(localTimeZoneName);
 
     const utcDateTime: DateTime = DateTime.fromISO(timeUtc);
@@ -146,12 +161,13 @@ export class SchedulerService {
 
     console.log('local hour', localHour);
 
-    if (true) {
-      if (localHour === 0) {
-        localHour = 12;
-      }
+    if (meridiemTime) {
       if (localHour >= 12) {
         meridiem = 'PM';
+      }
+
+      if (localHour === 0) {
+        localHour = 12;
       }
       if (localHour > 12) {
         localHour -= 12;
@@ -160,7 +176,7 @@ export class SchedulerService {
 
     localHour = String(localHour).padStart(2, '0');
     const localMinute = String(localDateTime.minute).padStart(2, '0');
-    const localTimeString = `${localHour}:${localMinute}${true ? meridiem : ''}`;
+    const localTimeString = `${localHour}:${localMinute}${meridiemTime ? ' ' + meridiem : ''}`;
 
     return localTimeString;
   }

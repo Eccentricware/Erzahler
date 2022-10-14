@@ -6,11 +6,11 @@ export const getAssignmentsQuery = `
         SELECT 1
         FROM assignments a
         WHERE a.game_id = $1
-          and a.assignment_type IN ('administrator', 'creator', 'superuser')
+          and a.assignment_type IN ('Administrator', 'Creator', 'Superuser')
           and a.user_id = $2
           and a.assignment_end IS NULL
       ) = 1
-        OR g.game_status != GameStatus.REGISTRATION
+        OR g.game_status != 'Registration'
       THEN u.username
       ELSE NULL
     END username

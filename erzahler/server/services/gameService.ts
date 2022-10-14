@@ -141,7 +141,7 @@ export class GameService {
     await pool.query(insertAssignmentQuery, [
       userId,
       null,
-      'creator',
+      'Creator',
       this.gameData.gameName
     ])
     .catch((error: Error) => {
@@ -458,6 +458,7 @@ export class GameService {
     const pool: Pool = new Pool(victorCredentials);
     let userId = 0;
     let userTimeZone = 'Africa/Monrovia';
+    let meridiemTime = false;
 
     if (idToken) {
       const token: DecodedIdToken = await accountService.validateToken(idToken);
@@ -466,6 +467,7 @@ export class GameService {
         this.user = await accountService.getUserProfile(idToken);
         userId = this.user.userId;
         userTimeZone = this.user.timeZone;
+        meridiemTime = this.user.meridiemTime;
       }
     }
 
@@ -474,7 +476,7 @@ export class GameService {
       .then((gamesResults: QueryResult<any>) => {
         return gamesResults.rows.map((game: GameSummaryQueryObject) => {
           console.log('game', game);
-          return new GameSummaryBuilder(game, userTimeZone);
+          return new GameSummaryBuilder(game, userTimeZone, meridiemTime);
         });
       })
       .catch((error: Error) => {

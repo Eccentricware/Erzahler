@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS games(
   nmr_tolerance_orders INTEGER,
   nmr_tolerance_retreats INTEGER,
   nmr_tolerance_adjustments INTEGER,
+  original_schedule BOOLEAN DEFAULT true,
   vote_delay_enabled BOOLEAN DEFAULT false,
   vote_delay_lock INTEGER, --Minutes before the deadline until can't delay
   vote_delay_percent INTEGER, --Percent of players required to pass vote
@@ -343,6 +344,7 @@ CREATE TABLE IF NOT EXISTS users(
   user_status VARCHAR(100) NOT NULL,
   signup_time TIMESTAMP NOT NULL,
   time_zone VARCHAR(50) NOT NULL DEFAULT 'Africa/Monrovia',
+  meridiem_time BOOLEAN DEFAULT true, -- true: AM/PM, false: 24 hour
   last_sign_in_time TIMESTAMP NOT NULL,
   classic_unit_render BOOLEAN NOT NULL DEFAULT false,
   city_render_size INTEGER NOT NULL DEFAULT 2,

@@ -36,13 +36,13 @@ export const getGamesQuery = `
       FROM assignments a
       INNER JOIN games g
       ON g.game_id = a.game_id
-      WHERE a.assignment_type IN ('registered', 'assigned')
+      WHERE a.assignment_type IN ('Registered', 'Assigned')
       GROUP BY g.game_id
       LIMIT 1
     ) as player_count
   FROM games g
   INNER JOIN assignments a ON a.game_id = g.game_id
   INNER JOIN users u ON u.user_id = a.user_id
-  WHERE a.assignment_type = 'creator'
+  WHERE a.assignment_type = 'Creator'
   ORDER BY g.time_created;
 `;

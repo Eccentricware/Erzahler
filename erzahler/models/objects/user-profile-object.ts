@@ -21,4 +21,6 @@ export interface UserProfileObject {
   email: string;
   emailVerified: boolean;
   verificationDeadline: Date;
+  timeZone: string;
+  meridiemTime: boolean;
 }
