@@ -18,6 +18,7 @@ export const getUserProfileQuery = `
     u.real_name,
     u.display_real_name,
     u.time_zone,
+    u.meridiem_time,
     p.uid,
     p.provider_id as "provider_type",
     p.email,

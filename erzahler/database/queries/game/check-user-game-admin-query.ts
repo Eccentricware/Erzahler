@@ -5,5 +5,5 @@ export const checkUserGameAdminQuery = `
   INNER JOIN assignments a ON a.user_id = u.user_id
   WHERE p.uid = $1
     AND a.game_id = $2
-    AND a.assignment_type IN ('administrator', 'commander', 'creator')
+    AND a.assignment_type IN ('Administrator', 'Commander', 'Creator')
 `;

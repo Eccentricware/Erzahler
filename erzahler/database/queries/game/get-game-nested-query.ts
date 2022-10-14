@@ -9,7 +9,7 @@ export const getGameNestedQuery = `
         SELECT 1
         FROM Assignments a
         WHERE a.game_id = 42
-          and a.assignment_type IN ('administrator', 'creator', 'superuser')
+          and a.assignment_type IN ('Administrator', 'Creator', 'Superuser')
           and a.user_id = 1
           and a.assignment_end IS NULL
       ) = 1

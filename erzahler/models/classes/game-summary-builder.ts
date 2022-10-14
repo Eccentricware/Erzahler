@@ -32,7 +32,8 @@ export class GameSummaryBuilder {
   nominationTiming: string;
   nominationYear: number;
 
-  constructor(rawGame: GameSummaryQueryObject, localTimeZoneName: string) {
+  constructor(rawGame: GameSummaryQueryObject, localTimeZoneName: string, meridiemTime: boolean) {
+    console.log('game meridiem time', meridiemTime);
     this.gameId = rawGame.game_id;
     this.gameName = rawGame.game_name;
     this.creator = rawGame.creator;
@@ -54,7 +55,7 @@ export class GameSummaryBuilder {
     this.ordersTime = this.scheduler.enforceLocalTime(
       rawGame.orders_time,
       localTimeZoneName,
-      true
+      meridiemTime
     );
     this.ordersSpan = rawGame.orders_span;
     this.retreatsDay = this.scheduler.enforceLocalDay(
@@ -65,7 +66,7 @@ export class GameSummaryBuilder {
     this.retreatsTime = this.scheduler.enforceLocalTime(
       rawGame.retreats_time,
       localTimeZoneName,
-      true
+      meridiemTime
     );
     this.retreatsSpan = rawGame.retreats_span;
     this.adjustmentsDay = this.scheduler.enforceLocalDay(
@@ -76,7 +77,7 @@ export class GameSummaryBuilder {
     this.adjustmentsTime = this.scheduler.enforceLocalTime(
       rawGame.adjustments_time,
       localTimeZoneName,
-      true
+      meridiemTime
     );
     this.adjustmentsSpan = rawGame.adjustments_span;
     this.nominationsDay = this.scheduler.enforceLocalDay(
@@ -87,7 +88,7 @@ export class GameSummaryBuilder {
     this.nominationsTime = this.scheduler.enforceLocalTime(
       rawGame.nominations_time,
       localTimeZoneName,
-      true
+      meridiemTime
     );
     this.nominationsSpan = rawGame.nominations_span;
     this.votesDay = this.scheduler.enforceLocalDay(
@@ -98,7 +99,7 @@ export class GameSummaryBuilder {
     this.votesTime = this.scheduler.enforceLocalTime(
       rawGame.votes_time,
       localTimeZoneName,
-      true
+      meridiemTime
     );
     this.votesSpan = rawGame.votes_span;
   }

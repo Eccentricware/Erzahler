@@ -9,7 +9,7 @@ import { createProviderQuery } from '../../database/queries/accounts/create-prov
 import { syncProviderEmailStateQuery } from '../../database/queries/accounts/sync-provider-email-state-query';
 import { lockUsernameQuery } from '../../database/queries/accounts/lock-username-query';
 import { clearVerficiationDeadlineQuery } from '../../database/queries/accounts/clear-verification-deadline-query';
-import { UserProfileObject } from '../../models/user-profile-object';
+import { UserProfileObject } from '../../models/objects/user-profile-object';
 import { FormattingService } from './formattingService';
 
 export class AccountService {
@@ -189,6 +189,7 @@ export class AccountService {
           .catch((error: Error) => { console.log(error.message); });
       }
 
+      console.log('bkUser', blitzkarteUser)
       return blitzkarteUser;
     } else {
       return { error: 'idToken is not valid' };
