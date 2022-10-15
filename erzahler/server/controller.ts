@@ -45,6 +45,19 @@ erzhaler.get('/check-username/:username', (request, response) => {
     .catch((error: Error) => response.send(error.message));
 });
 
+erzhaler.put('/update-user-settings', (request, response) => {
+  const idToken = request.headers.idtoken;
+  const data = request.body;
+  console.log('Receiving')
+  accountService.updateUserSettings(<string>idToken, data)
+    .then(() => {
+      response.send({success: true});
+    })
+    .catch((error: Error) => {
+      response.send({error: 'Update User Profile Controller Error: ' + error.message});
+    });
+})
+
 erzhaler.get('/check-game-name/:gameName', (request, response) => {
   const { gameName } = request.params;
   gameService.checkGameNameAvailability(gameName)

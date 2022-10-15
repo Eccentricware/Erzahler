@@ -11,6 +11,7 @@ import { lockUsernameQuery } from '../../database/queries/accounts/lock-username
 import { clearVerficiationDeadlineQuery } from '../../database/queries/accounts/clear-verification-deadline-query';
 import { UserProfileObject } from '../../models/objects/user-profile-object';
 import { FormattingService } from './formattingService';
+import { updatePlayerSettings } from '../../database/queries/dashboard/update-user-query';
 
 export class AccountService {
   async checkUsernameAvailable(username: string): Promise<any> {
@@ -189,7 +190,6 @@ export class AccountService {
           .catch((error: Error) => { console.log(error.message); });
       }
 
-      console.log('bkUser', blitzkarteUser)
       return blitzkarteUser;
     } else {
       return { error: 'idToken is not valid' };
@@ -219,6 +219,32 @@ export class AccountService {
       } else {
         console.log('Provider in Database');
       }
+    }
+  }
+
+  async updateUserSettings(idToken: string, data: any) {
+    console.log('idToken', idToken)
+    const token = await this.validateToken(idToken);
+    console.log(token);
+
+    if (token.uid) {
+      const pool = new Pool(victorCredentials);
+
+      const blitzkarteUser: UserProfileObject = await this.getUserProfile(idToken);
+      console.log('Data', data);
+      console.log('User', blitzkarteUser);
+      return pool.query(updatePlayerSettings, [
+        data.timeZone,
+        data.meridiemTime,
+        blitzkarteUser.userId
+      ])
+      .then(() => { success: true})
+      .catch((error: Error) => {
+        return {
+          success: false,
+          error: 'Update Profile Query Error: ' + error.message
+        }
+      });
     }
   }
 }
