@@ -471,11 +471,9 @@ export class GameService {
       }
     }
 
-    console.log('User time zone:', userTimeZone);
     const gameResults: any = await pool.query(getGamesQuery, [userTimeZone])
       .then((gamesResults: QueryResult<any>) => {
         return gamesResults.rows.map((game: GameSummaryQueryObject) => {
-          console.log('game', game);
           return new GameSummaryBuilder(game, userTimeZone, meridiemTime);
         });
       })
@@ -541,7 +539,7 @@ export class GameService {
 
     gameData.ordersTime = schedulerService.timeIdentity(gameData.ordersTime);
 
-    console.log('Providing front end ordersTime:', gameData.ordersTime);
+    // console.log('Providing front end ordersTime:', gameData.ordersTime);
 
     return gameData;
   }
@@ -594,7 +592,7 @@ export class GameService {
         ];
         const errors: string[] = [];
 
-        console.log('Internal Game Data:', gameData);
+        // console.log('Internal Game Data:', gameData);
         const gameUpdate = await pool.query(updateGameSettingsQuery, gameSettings)
         .catch((error: Error) => {
           console.log('Update Game Error: ' + error.message);
