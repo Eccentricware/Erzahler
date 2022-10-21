@@ -1,4 +1,4 @@
-export const getUserRegistrationStatus = `
+export const getPlayerRegistrationStatus = `
   SELECT a.assignment_type
   FROM assignments a
   INNER JOIN games g ON g.game_id = a.game_id
