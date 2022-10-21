@@ -31,6 +31,8 @@ import { FormattingService } from "./formattingService";
 import { getGamesQuery } from "../../database/queries/game/get-games-query";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
+import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
+import { error } from "console";
 
 export class GameService {
   gameData: any = {};
@@ -532,10 +534,18 @@ export class GameService {
       })
       .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
 
+    const playerRegistration: any = await pool.query(getPlayerRegistrationStatus, [gameId, userId])
+      .then((playerRegistrationResults: any) => {
+        return playerRegistrationResults.rows.map((registrationType: any) => formattingService.convertKeysSnakeToCamel(registrationType));
+      })
+      .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
+
     gameData.rules = ruleData;
     gameData.administrators = administratorData;
     gameData.assignments = assignmentData;
     gameData.registeredPlayers = registeredPlayerData;
+    console.log('Player registration', playerRegistration);
+    gameData.playerRegistration = playerRegistration;
 
     gameData.ordersTime = schedulerService.timeIdentity(gameData.ordersTime);
 
