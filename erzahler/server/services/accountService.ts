@@ -223,16 +223,16 @@ export class AccountService {
   }
 
   async updateUserSettings(idToken: string, data: any) {
-    console.log('idToken', idToken)
+    // console.log('idToken', idToken)
     const token = await this.validateToken(idToken);
-    console.log(token);
+    // console.log(token);
 
     if (token.uid) {
       const pool = new Pool(victorCredentials);
 
       const blitzkarteUser: UserProfileObject = await this.getUserProfile(idToken);
-      console.log('Data', data);
-      console.log('User', blitzkarteUser);
+      // console.log('Data', data);
+      // console.log('User', blitzkarteUser);
       return pool.query(updatePlayerSettings, [
         data.timeZone,
         data.meridiemTime,

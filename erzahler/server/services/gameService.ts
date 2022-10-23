@@ -544,12 +544,10 @@ export class GameService {
     gameData.administrators = administratorData;
     gameData.assignments = assignmentData;
     gameData.registeredPlayers = registeredPlayerData;
-    console.log('Player registration', playerRegistration);
     gameData.playerRegistration = playerRegistration;
 
     gameData.ordersTime = schedulerService.timeIdentity(gameData.ordersTime);
 
-    // console.log('Providing front end ordersTime:', gameData.ordersTime);
 
     return gameData;
   }
@@ -635,8 +633,6 @@ export class GameService {
               errors: errors
             };
           });
-
-        console.log(errors);
       } else {
         return 'Not admin!';
       }

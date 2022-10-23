@@ -48,7 +48,7 @@ erzhaler.get('/check-username/:username', (request, response) => {
 erzhaler.put('/update-user-settings', (request, response) => {
   const idToken = request.headers.idtoken;
   const data = request.body;
-  console.log('Receiving')
+
   accountService.updateUserSettings(<string>idToken, data)
     .then(() => {
       response.send({success: true});
@@ -67,8 +67,8 @@ erzhaler.get('/check-game-name/:gameName', (request, response) => {
     .catch((error: Error) => response.send('Game availability check error: ' + error.message))
 });
 
-erzhaler.get('/get-user-profile/:idToken', (request, response) => {
-  const { idToken } = request.params;
+erzhaler.get('/get-user-profile', (request, response) => {
+  const idToken: string = <string>request.headers.idtoken;
 
   accountService.getUserProfile(idToken)
     .then((userProfile: any) => {
@@ -102,7 +102,10 @@ erzhaler.post('/new-game', (request, response) => {
 });
 
 erzhaler.put('/update-game', (request, response) => {
-  gameService.updateGameSettings(request.body.idToken, request.body.gameData)
+  const idToken = <string>request.headers.idtoken;
+  const gameData = request.body.gameData;
+
+  gameService.updateGameSettings(idToken, gameData)
     .then((result: any) => {
       response.send(result);
     })
@@ -130,11 +133,9 @@ erzhaler.get('/find-games', (request, response) => {
 
   gameService.findGames(idToken)
     .then((result: any) => {
-      console.log('controller result', result);
       response.send(result);
     })
     .catch((error: Error) => {
-      console.log('controller error', error);
       response.send('Game find error: ' + error.message);
     });
 });

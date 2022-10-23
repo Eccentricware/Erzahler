@@ -33,7 +33,6 @@ export class GameSummaryBuilder {
   nominationYear: number;
 
   constructor(rawGame: GameSummaryQueryObject, localTimeZoneName: string, meridiemTime: boolean) {
-    console.log('game meridiem time', meridiemTime);
     this.gameId = rawGame.game_id;
     this.gameName = rawGame.game_name;
     this.creator = rawGame.creator;
