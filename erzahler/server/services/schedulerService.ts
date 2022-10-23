@@ -69,9 +69,9 @@ export class SchedulerService {
   }
 
   prepareStartSchedule(events: any): StartScheduleObject {
-    console.log('gameStart', events.gameStart);
-    console.log('firstTurnDeadline is a', typeof events.firstTurnDeadline);
-    console.log('Settings in prepareStartSchedule:', events);
+    // console.log('gameStart', events.gameStart);
+    // console.log('firstTurnDeadline is a', typeof events.firstTurnDeadline);
+    // console.log('Settings in prepareStartSchedule:', events);
     const schedule: StartScheduleObject = {
       userTimeZone: events.userTimeZone,
       observeDst: events.observeDst,
@@ -90,7 +90,7 @@ export class SchedulerService {
   }
 
   localDateToUtcDate(date: Date): Date | string {
-    console.log('Receiving Date', date);
+    // console.log('Receiving Date', date);
     date.toUTCString
     return date;
   }
@@ -105,7 +105,7 @@ export class SchedulerService {
     const utcTime: DateTime = DateTime.fromISO(time).minus({minutes: timeZone.currentTimeOffsetInMinutes});
     let utcDayIndex: number = this.days.indexOf(day);
 
-    console.log(`If time zone is ${timeZoneName}, the offest is ${timeZone.currentTimeOffsetInMinutes / 60} hours so local hour ${localTime.hour} is UTC Hour ${utcTime.hour}`);
+    // console.log(`If time zone is ${timeZoneName}, the offest is ${timeZone.currentTimeOffsetInMinutes / 60} hours so local hour ${localTime.hour} is UTC Hour ${utcTime.hour}`);
     if (timeZone.currentTimeOffsetInMinutes < 0 && utcTime.hour < localTime.hour) {
       utcDayIndex = (utcDayIndex + 1) % 7;
     }
@@ -122,7 +122,7 @@ export class SchedulerService {
       time: utcTime.toISOTime()
     }
 
-    console.log('Returing utcEvent:', eventInUtc);
+    // console.log('Returing utcEvent:', eventInUtc);
     return eventInUtc;
   }
 
@@ -150,7 +150,7 @@ export class SchedulerService {
   }
 
   enforceLocalTime(timeUtc: string, localTimeZoneName: string, meridiemTime: boolean): string {
-    console.log('Meridian time', meridiemTime);
+    // console.log('Meridian time', meridiemTime);
     const timeZone: TimeZone = this.getTimeZone(localTimeZoneName);
 
     const utcDateTime: DateTime = DateTime.fromISO(timeUtc);
@@ -159,7 +159,7 @@ export class SchedulerService {
     let localHour: string | HourNumbers = localDateTime.hour;
     let meridiem = 'AM';
 
-    console.log('local hour', localHour);
+    // console.log('local hour', localHour);
 
     if (meridiemTime) {
       if (localHour >= 12) {
