@@ -22,7 +22,6 @@ erzhaler.get('/check-status', (request, response) => {
   response.send(true);
 });
 
-
 erzhaler.listen(port, () => {
   console.log(`Erzhaler is running on port ${port}`);
 });

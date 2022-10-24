@@ -32,7 +32,6 @@ import { getGamesQuery } from "../../database/queries/game/get-games-query";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
-import { error } from "console";
 
 export class GameService {
   gameData: any = {};
@@ -554,6 +553,9 @@ export class GameService {
 
   async updateGameSettings(idToken: string, gameData: any): Promise<any> {
     const accountService: AccountService = new AccountService();
+    const schedulerService: SchedulerService = new SchedulerService();
+    const events = schedulerService.extractEvents(gameData);
+    const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
 
     const token: DecodedIdToken = await accountService.validateToken(idToken);
     if (token.uid) {
@@ -567,19 +569,19 @@ export class GameService {
           gameData.stylizedStartYear,
           gameData.turn1Timing,
           gameData.deadlineType,
-          gameData.startTime,
+          schedule.gameStart,
           gameData.timeZone,
           gameData.observeDst,
-          gameData.ordersDay,
-          gameData.ordersTime,
-          gameData.retreatsDay,
-          gameData.retreatsTime,
-          gameData.adjustmentsDay,
-          gameData.adjustmentsTime,
-          gameData.nominationsDay,
-          gameData.nominationsTime,
-          gameData.votesDay,
-          gameData.votesTime,
+          schedule.orders.day,
+          schedule.orders.time,
+          schedule.retreats.day,
+          schedule.retreats.time,
+          schedule.adjustments.day,
+          schedule.adjustments.time,
+          schedule.nominations.day,
+          schedule.nominations.time,
+          schedule.votes.day,
+          schedule.votes.time,
           gameData.nmrTolerance,
           gameData.concurrentGamesLimit,
           gameData.privateGame,
