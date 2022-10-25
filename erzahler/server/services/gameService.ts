@@ -32,6 +32,7 @@ import { getGamesQuery } from "../../database/queries/game/get-games-query";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
+import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 
 export class GameService {
   gameData: any = {};
@@ -492,6 +493,7 @@ export class GameService {
     const pool: Pool = new Pool(victorCredentials);
     let userId = 0;
     let userTimeZone = 'Africa/Monrovia';
+    let meridiemTime = false;
 
     if (idToken) {
       const token: DecodedIdToken = await accountService.validateToken(idToken);
@@ -500,12 +502,13 @@ export class GameService {
         this.user = await accountService.getUserProfile(idToken);
         userId = this.user.userId;
         userTimeZone = this.user.timeZone;
+        meridiemTime = this.user.meridiemTime;
       }
     }
 
     const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId, userTimeZone])
       .then((gameDataResults: any) => {
-        return formattingService.convertKeysSnakeToCamel(gameDataResults.rows[0]);
+        return new GameDetailsBuilder(gameDataResults.rows[0], userTimeZone, meridiemTime);
       })
       .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
 
