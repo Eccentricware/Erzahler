@@ -1,17 +1,15 @@
-export const insertAssignmentQuery = `
+export const registerPlayerQuery = `
   INSERT INTO assignments (
     user_id,
     game_id,
-    country_id,
     assignment_type,
+    assignment_status,
     assignment_start
-  )
-  SELECT
+  ) VALUES (
     $1,
-    g.game_id,
     $2,
-    $3,
+    'Player',
+    'Registered',
     NOW() AT TIME ZONE 'utc'
-  FROM games g
-  WHERE g.game_name = $4;
+  );
 `;
