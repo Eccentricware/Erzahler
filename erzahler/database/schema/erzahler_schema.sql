@@ -12,7 +12,7 @@ SET TIME ZONE 'utc';
 CREATE TABLE IF NOT EXISTS games(
   game_id SERIAL,
   game_name VARCHAR(50) UNIQUE NOT NULL,
-  time_created TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
+  time_created TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'utc'),
   game_status VARCHAR(25) NOT NULL,
   current_year INTEGER NOT NULL,
   stylized_start_year INTEGER NOT NULL DEFAULT 2000,
@@ -445,6 +445,7 @@ CREATE TABLE IF NOT EXISTS assignments(
   game_id INTEGER NOT NULL,
   country_id INTEGER,
   assignment_type VARCHAR(15) NOT NULL,
+  assignment_status VARCHAR(25) NOT NULL,
   assignment_start TIMESTAMP NOT NULL,
   assignment_end TIMESTAMP,
   nmr_total INTEGER,
