@@ -55,7 +55,6 @@ SELECT
     g.blind_administrators,
     g.assignment_method,
     g.deadline_type,
-    g.game_time_zone,
     g.observe_dst,
     g.turn_1_timing,
     g.start_time,

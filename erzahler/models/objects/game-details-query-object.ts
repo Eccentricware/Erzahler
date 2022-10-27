@@ -11,8 +11,6 @@ export interface GameDetailsQueryObject {
   blind_administrators: boolean;
   assignment_method: string;
   deadline_type: string;
-  game_time_zone: string;
-  user_time_zone: string;
   meridiem_time: boolean;
   observe_dst: boolean;
   turn_1_timing: string;

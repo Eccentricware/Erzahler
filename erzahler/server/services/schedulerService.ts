@@ -47,9 +47,9 @@ export class SchedulerService {
   }
 
   // Helpful for debugging by removing all extraneous variables
-  extractEvents(settings: any) {
+  extractEvents(settings: any, userTimeZone: string) {
     return {
-      userTimeZone: settings.timeZone,
+      userTimeZone: userTimeZone,
       observeDst: settings.observeDst,
       deadlineType: settings.deadlineType,
       turn1Timing: settings.turn1Timing,

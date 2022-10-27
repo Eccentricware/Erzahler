@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS games(
   blind_administrators BOOLEAN DEFAULT false,
   assignment_method VARCHAR(15) NOT NULL,
   deadline_type VARCHAR(15),
-  game_time_zone VARCHAR(50),
   observe_dst BOOLEAN DEFAULT true,
   turn_1_timing VARCHAR(10) NOT NULL,
   start_time TIMESTAMP,
@@ -343,8 +342,8 @@ CREATE TABLE IF NOT EXISTS users(
   username_locked BOOLEAN NOT NULL DEFAULT false,
   user_status VARCHAR(100) NOT NULL,
   signup_time TIMESTAMP NOT NULL,
-  time_zone VARCHAR(50) NOT NULL DEFAULT 'Africa/Monrovia',
-  meridiem_time BOOLEAN DEFAULT true, -- true: AM/PM, false: 24 hour
+  time_zone VARCHAR(50) NOT NULL DEFAULT 'America/Los_Angeles',
+  meridiem_time BOOLEAN DEFAULT true, --true: AM/PM, false: 24 hour
   last_sign_in_time TIMESTAMP NOT NULL,
   classic_unit_render BOOLEAN NOT NULL DEFAULT false,
   city_render_size INTEGER NOT NULL DEFAULT 2,

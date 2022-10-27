@@ -8,7 +8,6 @@ export const insertNewGameQuery = `
     turn_1_timing,
     deadline_type,
     start_time,
-    game_time_zone,
     observe_dst,
     orders_day,
     orders_time,
@@ -71,7 +70,6 @@ export const insertNewGameQuery = `
     $30,
     $31,
     $32,
-    $33,
-    $34
+    $33
   ) RETURNING game_id;
 `;

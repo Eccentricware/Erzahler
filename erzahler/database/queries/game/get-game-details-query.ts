@@ -11,8 +11,6 @@ export const getGameDetailsQuery = `
     g.blind_administrators,
     g.assignment_method,
     g.deadline_type,
-    g.game_time_zone,
-    u.time_zone user_time_zone,
     u.meridiem_time,
     g.observe_dst,
     g.turn_1_timing,

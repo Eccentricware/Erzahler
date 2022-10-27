@@ -48,7 +48,7 @@ export class GameService {
       const pool: Pool = new Pool(victorCredentials);
       this.gameData = gameData;
 
-      return await this.addNewGame(pool, this.gameData)
+      return await this.addNewGame(pool, this.gameData, this.user.timeZone)
         .then((newGameId: any) => {
           pool.end();
           return {
@@ -76,9 +76,9 @@ export class GameService {
     }
   }
 
-  async addNewGame(pool: Pool, settings: any): Promise<any> {
+  async addNewGame(pool: Pool, settings: any, userTimeZoneName: string): Promise<any> {
     const schedulerService: SchedulerService = new SchedulerService();
-    const events = schedulerService.extractEvents(settings);
+    const events = schedulerService.extractEvents(settings, userTimeZoneName);
     const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
     console.log('Schedule', schedule);
 
@@ -89,7 +89,6 @@ export class GameService {
       settings.turn1Timing,
       settings.deadlineType,
       schedule.gameStart,
-      settings.timeZone,
       settings.observeDst,
       schedule.orders.day,
       schedule.orders.time,
@@ -555,10 +554,9 @@ export class GameService {
   }
 
   async updateGameSettings(idToken: string, gameData: any): Promise<any> {
+    console.log('triggering save');
     const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
-    const events = schedulerService.extractEvents(gameData);
-    const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
 
     const token: DecodedIdToken = await accountService.validateToken(idToken);
     if (token.uid) {
@@ -566,6 +564,10 @@ export class GameService {
 
       const isAdmin = await pool.query(checkUserGameAdminQuery, [token.uid, gameData.gameId]);
       if (isAdmin) {
+        this.user = await accountService.getUserProfile(idToken);
+        const events = schedulerService.extractEvents(gameData, this.user.timeZone);
+        const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
+
         const gameSettings = [
           gameData.gameName,
           gameData.assignmentMethod,
@@ -573,7 +575,6 @@ export class GameService {
           gameData.turn1Timing,
           gameData.deadlineType,
           schedule.gameStart,
-          gameData.timeZone,
           gameData.observeDst,
           schedule.orders.day,
           schedule.orders.time,
@@ -632,7 +633,8 @@ export class GameService {
             }
           })
           .catch((error: Error) => {
-            errors.push('Update Game Settings Error: ' + error.message)
+            errors.push('Update Game Settings Error: ' + error.message);
+            console.log('Update Game Settings Error: ' + error.message);
             return {
               success: false,
               errors: errors
