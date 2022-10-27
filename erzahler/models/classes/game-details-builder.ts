@@ -15,8 +15,6 @@ export class GameDetailsBuilder {
   blindAdministrators: boolean;
   assignmentMethod: string;
   deadlineType: string;
-  gameTimeZone: string;
-  userTimeZone: string;
   meridiemTime: boolean;
   observeDst: boolean;
   turn1Timing: string;
@@ -66,8 +64,6 @@ export class GameDetailsBuilder {
     this.blindAdministrators = rawGame.blind_administrators;
     this.assignmentMethod = rawGame.assignment_method;
     this.deadlineType = rawGame.deadline_type;
-    this.gameTimeZone = rawGame.game_time_zone;
-    this.userTimeZone = rawGame.user_time_zone;
     this.meridiemTime = rawGame.meridiem_time;
     this.observeDst = rawGame.observe_dst;
     this.turn1Timing = rawGame.turn_1_timing;

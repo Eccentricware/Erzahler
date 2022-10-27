@@ -8,7 +8,7 @@ export const getGamesQuery = `
     g.game_status,
     g.deadline_type,
     g.orders_day,
-    g.orders_time AT TIME ZONE 'America/Los_Angeles' orders_time,
+    g.orders_time AT TIME ZONE $1 orders_time,
     g.orders_span,
     g.retreats_day,
     g.retreats_time AT TIME ZONE $1 retreats_time,
