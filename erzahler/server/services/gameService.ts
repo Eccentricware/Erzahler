@@ -42,9 +42,9 @@ export class GameService {
   async newGame(gameData: any, idToken: string): Promise<any> {
     const accountService: AccountService = new AccountService();
 
-    const token: DecodedIdToken = await accountService.validateToken(idToken);
-    if (token.uid) {
-      this.user = await accountService.getUserProfile(idToken);
+    // const token: DecodedIdToken = await accountService.validateToken(idToken);
+  this.user = await accountService.getUserProfile(idToken);
+  if (!this.user.error) {
       const pool: Pool = new Pool(victorCredentials);
       this.gameData = gameData;
 
@@ -462,10 +462,10 @@ export class GameService {
     let meridiemTime = false;
 
     if (idToken) {
-      const token: DecodedIdToken = await accountService.validateToken(idToken);
+      // const token: DecodedIdToken = await accountService.validateToken(idToken);
 
-      if (token.uid) {
-        this.user = await accountService.getUserProfile(idToken);
+      this.user = await accountService.getUserProfile(idToken);
+      if (!this.user.error) {
         userId = this.user.userId;
         userTimeZone = this.user.timeZone;
         meridiemTime = this.user.meridiemTime;
@@ -495,10 +495,10 @@ export class GameService {
     let meridiemTime = false;
 
     if (idToken) {
-      const token: DecodedIdToken = await accountService.validateToken(idToken);
+      // const token: DecodedIdToken = await accountService.validateToken(idToken);
 
-      if (token.uid) {
-        this.user = await accountService.getUserProfile(idToken);
+      this.user = await accountService.getUserProfile(idToken);
+      if (!this.user.error) {
         userId = this.user.userId;
         userTimeZone = this.user.timeZone;
         meridiemTime = this.user.meridiemTime;
