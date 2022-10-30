@@ -118,7 +118,8 @@ export class AccountService {
       emailSignup ? false : true,
       emailSignup ? 'unverified' : 'active',
       firebaseUser.metadata.creationTime,
-      firebaseUser.metadata.lastSignInTime
+      firebaseUser.metadata.lastSignInTime,
+      'America/Los_Angeles'
     ];
   }
 

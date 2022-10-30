@@ -1,4 +1,3 @@
-import { DecodedIdToken } from "firebase-admin/auth";
 import { Pool } from "pg";
 import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
 import { victorCredentials } from "../../secrets/dbCredentials";
