@@ -1,4 +1,4 @@
-export const registerPlayerQuery = `
+export const registerUserQuery = `
   INSERT INTO assignments (
     user_id,
     game_id,
@@ -8,8 +8,8 @@ export const registerPlayerQuery = `
   ) VALUES (
     $1,
     $2,
-    'Player',
-    'Registered',
+    $3,
+    $4,
     NOW() AT TIME ZONE 'utc'
   );
 `;
