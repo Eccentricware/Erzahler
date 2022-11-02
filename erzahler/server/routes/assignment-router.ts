@@ -4,10 +4,10 @@ import { AssignmentService } from "../services/assignmentService";
 export const assignmentRouter = express.Router();
 const assignmentService = new AssignmentService();
 
-assignmentRouter.post('/register/:gameId/:assignmentType', (request, response) => {
+assignmentRouter.post('/register', (request, response) => {
   const idToken = <string>request.headers.idtoken;
-  const gameId = Number(request.params.gameId);
-  const assignmentType = <string>request.params.assignmentType;
+  const gameId = Number(request.body.gameId);
+  const assignmentType = <string>request.body.assignmentType;
 
   assignmentService.addPlayerAssignment(idToken, gameId, assignmentType)
     .then((result: any) => {
