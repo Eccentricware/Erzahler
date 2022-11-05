@@ -9,7 +9,7 @@ export const registerUserQuery = `
     $1,
     $2,
     $3,
-    $4,
+    'Registered',
     NOW() AT TIME ZONE 'utc'
   );
 `;
