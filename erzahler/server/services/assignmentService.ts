@@ -3,6 +3,7 @@ import { getPlayerRegistrationStatus } from "../../database/queries/assignments/
 import { registerUserQuery } from "../../database/queries/assignments/register-user-query";
 import { unregisterUserQuery } from "../../database/queries/assignments/unregister-user-query";
 import { updateUserAssignmentQuery } from "../../database/queries/assignments/update-user-assignment-query";
+import { AssignmentStatus } from "../../models/enumeration/assignment-status-enum";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
 
@@ -22,10 +23,12 @@ export class AssignmentService {
       .then((results: any) => { return results.rows})
       .catch((error: Error) => console.log('Get Player Registration Status Error: ' + error.message));
 
+      const blockedStatuses = [AssignmentStatus.BANNED];
+
       const existingAssignment = userAssignmentTypes.filter((assignment: any) => {
         return assignment.assignment_type === assignmentType;
       });
-      if (existingAssignment.length === 0) {
+      if (existingAssignment.length === 0 && !blockedStatuses.includes(existingAssignment.assignment_type)) {
         return await pool.query(registerUserQuery, [
           this.user.userId,
           gameId,
