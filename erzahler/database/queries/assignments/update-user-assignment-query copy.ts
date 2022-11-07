@@ -1,4 +1,4 @@
-export const updateUserAssignmentQuery = `
+export const reregisterUserQuery = `
   UPDATE assignments
   SET country_id = $1,
     assignment_start = $2,

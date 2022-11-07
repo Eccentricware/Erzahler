@@ -1,7 +1,7 @@
 export const registerUserQuery = `
   INSERT INTO assignments (
-    user_id,
     game_id,
+    user_id,
     assignment_type,
     assignment_status,
     assignment_start

@@ -517,24 +517,6 @@ export class GameService {
       })
       .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
 
-    const administratorData: any = await pool.query(getGameAdminsQuery, [gameId])
-      .then((adminDataResults: any) => {
-        return adminDataResults.rows.map((adminAssignment: any) => formattingService.convertKeysSnakeToCamel(adminAssignment));
-      })
-      .catch((error: Error) => console.log('Get Administrator Data Results Error: ' + error.message));
-
-    const assignmentData: any = await pool.query(getAssignmentsQuery, [gameId, userId])
-      .then((assignmentDataResults: any) => {
-        return assignmentDataResults.rows.map((assignment: any) => formattingService.convertKeysSnakeToCamel(assignment));
-      })
-      .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
-
-    const registeredPlayerData: any = await pool.query(getRegisteredPlayersQuery, [gameId])
-      .then((registeredPlayerDataResults: QueryResult<any>) => {
-        return registeredPlayerDataResults.rows.map((player: any) => formattingService.convertKeysSnakeToCamel(player));
-      })
-      .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
-
     const playerRegistration: any = await pool.query(getPlayerRegistrationStatus, [gameId, userId])
       .then((playerRegistrationResults: any) => {
         return playerRegistrationResults.rows.map((registrationType: any) => formattingService.convertKeysSnakeToCamel(registrationType));
@@ -542,14 +524,9 @@ export class GameService {
       .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
 
     gameData.rules = ruleData;
-    gameData.administrators = administratorData;
-    gameData.assignments = assignmentData;
-    gameData.registeredPlayers = registeredPlayerData;
     gameData.playerRegistration = playerRegistration;
 
     gameData.ordersTime = schedulerService.timeIdentity(gameData.ordersTime);
-
-
     return gameData;
   }
 

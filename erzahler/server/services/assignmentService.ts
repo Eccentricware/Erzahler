@@ -2,7 +2,7 @@ import { Pool, QueryResult, } from "pg";
 import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
 import { registerUserQuery } from "../../database/queries/assignments/register-user-query";
 import { unregisterUserQuery } from "../../database/queries/assignments/unregister-user-query";
-import { updateUserAssignmentQuery } from "../../database/queries/assignments/update-user-assignment-query";
+import { reregisterUserQuery } from "../../database/queries/assignments/reregister-user-query";
 import { getAssignmentsQuery } from "../../database/queries/game/get-assignments-query";
 import { getRegisteredPlayersQuery } from "../../database/queries/game/get-registered-players-query";
 import { AssignmentStatus } from "../../models/enumeration/assignment-status-enum";
@@ -10,6 +10,9 @@ import { AssignmentDataObject } from "../../models/objects/assignment-data-objec
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
 import { FormattingService } from "./formattingService";
+import { getGameAdminsQuery } from "../../database/queries/game/get-game-admins-query";
+import { clearCountryAssignmentsQuery } from "../../database/queries/assignments/clear-country-assignments-query";
+import { assignUserQuery } from "../../database/queries/assignments/assign-user-query";
 
 export class AssignmentService {
   user: any = undefined;
@@ -22,10 +25,13 @@ export class AssignmentService {
 
     if (idToken) {
       this.user = await accountService.getUserProfile(idToken);
+      console.log('this.user', this.user);
       if (!this.user.error) {
         userId = this.user.userId;
       }
     }
+
+    console.log(`Get Game Assignments: idToken (${idToken ? true : false}) gameId ${gameId} and userId: ${userId}`);
 
     const assignments: any = await pool.query(getAssignmentsQuery, [gameId, userId])
       .then((assignmentDataResults: QueryResult<any>) => {
@@ -57,6 +63,7 @@ export class AssignmentService {
   async addUserAssignment(idToken: string, gameId: number, assignmentType: string) {
     const accountService: AccountService = new AccountService();
     const pool = new Pool(victorCredentials);
+    console.log('gameId', gameId, 'assignmentType', assignmentType, 'userId', this.user.userId);
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
@@ -74,8 +81,8 @@ export class AssignmentService {
       });
       if (existingAssignment.length === 0 && !blockedStatuses.includes(existingAssignment.assignment_type)) {
         return await pool.query(registerUserQuery, [
-          this.user.userId,
           gameId,
+          this.user.userId,
           assignmentType
         ])
         .then(() => { return {success: true }; })
@@ -87,13 +94,9 @@ export class AssignmentService {
           }
         });
       } else if (existingAssignment[0].assignment_end !== null) {
-        return await pool.query(updateUserAssignmentQuery, [
-          null,
-          new Date().toUTCString(),
-          null,
-          'Registered',
-          this.user.userId,
+        return await pool.query(reregisterUserQuery, [
           gameId,
+          this.user.userId,
           assignmentType
         ])
         .then(() => { return {success: true }; })
@@ -120,19 +123,66 @@ export class AssignmentService {
   }
 
   async removeUserAssignment(idToken: string, gameId: number, assignmentType: string) {
+    console.log('gameId', gameId);
+    console.log('assignmentType', assignmentType);
+    console.log('userId', this.user);
     const accountService: AccountService = new AccountService();
     const pool = new Pool(victorCredentials);
-    console.log('gameId', gameId, 'assignmentType', assignmentType, 'userId', this.user.userId);
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
       return await pool.query(unregisterUserQuery, [
-        this.user.userId,
         gameId,
+        this.user.userId,
         assignmentType
       ])
       .then(() => { return {success: true }; })
       .catch((error: Error) => { console.log('Unregister User Error: ' + error.message); });
     }
+  }
+
+  async assignPlayer(idToken: string, gameId: number, playerId: number, countryId: number) {
+    const accountService: AccountService = new AccountService();
+    const pool = new Pool(victorCredentials);
+
+    console.log(`idToken (${idToken ? true : false}) gameId (${gameId}) playerId (${playerId}) countryId (${countryId})`);
+
+    this.user = await accountService.getUserProfile(idToken);
+    if (!this.user.error) {
+      const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
+
+      if (requestFromAdmin) {
+        await pool.query(clearCountryAssignmentsQuery, [gameId, countryId])
+          .catch((error: Error) => { console.log('Clear Country Assignments Error: ' + error.message)});
+
+        if (playerId > 0) {
+          await pool.query(assignUserQuery, [
+            countryId,
+            gameId,
+            playerId
+          ])
+          .catch((error: Error) => { console.log('Assign User Error: ' + error.message)});
+        }
+      }
+    } else {
+      return {
+        success: false,
+        error: 'Invalid user'
+      }
+    }
+  }
+
+  async isPlayerAdmin(gameId: number, playerId: number): Promise<boolean> {
+    const pool = new Pool(victorCredentials);
+
+    const gameAdmins = await pool.query(getGameAdminsQuery, [gameId])
+      .then((results: QueryResult) => results.rows )
+      .catch((error: Error) => {
+        console.log('Get Game Admins Query Error: ' + error.message);
+        return [];
+      });
+
+    const playerAdmin = gameAdmins.filter((admin: any) => admin.user_id === playerId);
+    return playerAdmin.length > 0;
   }
 }
