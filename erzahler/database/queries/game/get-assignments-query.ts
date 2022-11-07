@@ -1,8 +1,20 @@
 export const getAssignmentsQuery = `
   SELECT
-    c.country_id,
+	c.country_id,
     c.country_name,
-    c.rank,
+	CASE
+      WHEN (
+        SELECT 1
+        FROM assignments a
+        WHERE a.game_id = $1
+          and a.assignment_type IN ('Administrator', 'Creator', 'Superuser')
+          and a.user_id = $2
+          and a.assignment_end IS NULL
+      ) = 1
+        OR g.game_status != 'Registration'
+      THEN u.user_id
+      ELSE NULL
+    END user_id,
     CASE
       WHEN (
         SELECT 1
