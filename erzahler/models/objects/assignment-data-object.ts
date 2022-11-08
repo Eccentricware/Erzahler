@@ -3,4 +3,7 @@ export interface AssignmentDataObject {
   registrants: any[];
   userStatus: any[];
   userIsAdmin: boolean;
+  allAssigned: boolean;
+  partialRosterStart: boolean;
+  finalReadinessCheck: boolean;
 }
