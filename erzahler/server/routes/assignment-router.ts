@@ -8,6 +8,8 @@ assignmentRouter.get(`/:gameId`, (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const gameId = Number(request.params.gameId);
 
+  console.log('idToken', idToken);
+
   assignmentService.getGameAssignments(idToken, gameId)
     .then((result: any) => {
       response.send(result);

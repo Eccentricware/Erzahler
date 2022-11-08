@@ -14,7 +14,7 @@ export const getAssignmentsQuery = `
         OR g.game_status != 'Registration'
       THEN u.user_id
       ELSE NULL
-    END user_id,
+    END player_id,
     CASE
       WHEN (
         SELECT 1

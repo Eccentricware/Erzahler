@@ -13,9 +13,11 @@ import { FormattingService } from "./formattingService";
 import { getGameAdminsQuery } from "../../database/queries/game/get-game-admins-query";
 import { clearCountryAssignmentsQuery } from "../../database/queries/assignments/clear-country-assignments-query";
 import { assignUserQuery } from "../../database/queries/assignments/assign-user-query";
+import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 
 export class AssignmentService {
   user: any = undefined;
+  adminRoles = [AssignmentType.ADMINISTRATOR, AssignmentType.CREATOR];
 
   async getGameAssignments(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
@@ -51,10 +53,13 @@ export class AssignmentService {
       })
       .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
 
+    const userIsAdmin: boolean = await this.isPlayerAdmin(gameId, userId);
+
     const assignmentData: AssignmentDataObject = {
       assignments: assignments,
       registrants: registeredUsers,
-      userStatus: userStatus
+      userStatus: userStatus,
+      userIsAdmin: userIsAdmin
     };
 
     return assignmentData;
