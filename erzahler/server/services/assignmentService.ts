@@ -14,6 +14,8 @@ import { getGameAdminsQuery } from "../../database/queries/game/get-game-admins-
 import { clearCountryAssignmentsQuery } from "../../database/queries/assignments/clear-country-assignments-query";
 import { assignUserQuery } from "../../database/queries/assignments/assign-user-query";
 import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
+import { getGameDetailsQuery } from "../../database/queries/game/get-game-details-query";
+import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 
 export class AssignmentService {
   user: any = undefined;
@@ -34,6 +36,12 @@ export class AssignmentService {
     }
 
     console.log(`Get Game Assignments: idToken (${idToken ? true : false}) gameId ${gameId} and userId: ${userId}`);
+
+    const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId, 'America/Los_Angeles'])
+      .then((gameDataResults: any) => {
+        return new GameDetailsBuilder(gameDataResults.rows[0], 'America/Los_Angeles', true);
+      })
+      .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
 
     const assignments: any = await pool.query(getAssignmentsQuery, [gameId, userId])
       .then((assignmentDataResults: QueryResult<any>) => {
@@ -59,7 +67,10 @@ export class AssignmentService {
       assignments: assignments,
       registrants: registeredUsers,
       userStatus: userStatus,
-      userIsAdmin: userIsAdmin
+      userIsAdmin: userIsAdmin,
+      allAssigned: assignments.filter((assignment: any) => assignment.playerId === null).length === 0,
+      partialRosterStart: gameData.partialRosterStart,
+      finalReadinessCheck: gameData.finalReadinessCheck
     };
 
     return assignmentData;
