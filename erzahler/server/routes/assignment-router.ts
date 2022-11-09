@@ -8,8 +8,6 @@ assignmentRouter.get(`/:gameId`, (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const gameId = Number(request.params.gameId);
 
-  console.log('idToken', idToken);
-
   assignmentService.getGameAssignments(idToken, gameId)
     .then((result: any) => {
       response.send(result);
@@ -25,7 +23,7 @@ assignmentRouter.post('/register', (request, response) => {
   const gameId = Number(request.body.gameId);
   const assignmentType = <string>request.body.assignmentType;
 
-  assignmentService.addUserAssignment(idToken, gameId, assignmentType)
+  assignmentService.registerUser(idToken, gameId, assignmentType)
     .then((result: any) => {
       response.send(result);
     })
@@ -44,7 +42,7 @@ assignmentRouter.post('/unregister', (request, response) => {
   console.log(Number(request.body.gameId));
   console.log(<string>request.body.assignmentType);
 
-  assignmentService.removeUserAssignment(idToken, gameId, assignmentType)
+  assignmentService.unregisterUser(idToken, gameId, assignmentType)
     .then((result: any) => {
       response.send(result);
     })

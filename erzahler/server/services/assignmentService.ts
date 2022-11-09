@@ -76,7 +76,7 @@ export class AssignmentService {
     return assignmentData;
   }
 
-  async addUserAssignment(idToken: string, gameId: number, assignmentType: string) {
+  async registerUser(idToken: string, gameId: number, assignmentType: string) {
     const accountService: AccountService = new AccountService();
     const pool = new Pool(victorCredentials);
     console.log('gameId', gameId, 'assignmentType', assignmentType, 'userId', this.user.userId);
@@ -95,6 +95,7 @@ export class AssignmentService {
       const existingAssignment = userAssignmentTypes.filter((assignment: any) => {
         return assignment.assignment_type === assignmentType;
       });
+
       if (existingAssignment.length === 0 && !blockedStatuses.includes(existingAssignment.assignment_type)) {
         return await pool.query(registerUserQuery, [
           gameId,
@@ -138,7 +139,7 @@ export class AssignmentService {
     }
   }
 
-  async removeUserAssignment(idToken: string, gameId: number, assignmentType: string) {
+  async unregisterUser(idToken: string, gameId: number, assignmentType: string) {
     console.log('gameId', gameId);
     console.log('assignmentType', assignmentType);
     console.log('userId', this.user);
