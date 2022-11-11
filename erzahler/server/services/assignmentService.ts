@@ -16,6 +16,8 @@ import { assignUserQuery } from "../../database/queries/assignments/assign-user-
 import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { getGameDetailsQuery } from "../../database/queries/game/get-game-details-query";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
+import { lockAssignmentQuery } from "../../database/queries/assignments/lock-assignment-query";
+import { unlockAssignmentQuery } from "../../database/queries/assignments/unlock-assignment-query";
 
 export class AssignmentService {
   user: any = undefined;
@@ -29,13 +31,13 @@ export class AssignmentService {
 
     if (idToken) {
       this.user = await accountService.getUserProfile(idToken);
-      console.log('this.user', this.user);
+      // console.log('this.user', this.user);
       if (!this.user.error) {
         userId = this.user.userId;
       }
     }
 
-    console.log(`Get Game Assignments: idToken (${idToken ? true : false}) gameId ${gameId} and userId: ${userId}`);
+    // console.log(`Get Game Assignments: idToken (${idToken ? true : false}) gameId ${gameId} and userId: ${userId}`);
 
     const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId, 'America/Los_Angeles'])
       .then((gameDataResults: any) => {
@@ -74,6 +76,20 @@ export class AssignmentService {
     };
 
     return assignmentData;
+  }
+
+  async isPlayerAdmin(gameId: number, playerId: number): Promise<boolean> {
+    const pool = new Pool(victorCredentials);
+
+    const gameAdmins = await pool.query(getGameAdminsQuery, [gameId])
+      .then((results: QueryResult) => results.rows )
+      .catch((error: Error) => {
+        console.log('Get Game Admins Query Error: ' + error.message);
+        return [];
+      });
+
+    const playerAdmin = gameAdmins.filter((admin: any) => admin.user_id === playerId);
+    return playerAdmin.length > 0;
   }
 
   async registerUser(idToken: string, gameId: number, assignmentType: string) {
@@ -162,8 +178,6 @@ export class AssignmentService {
     const accountService: AccountService = new AccountService();
     const pool = new Pool(victorCredentials);
 
-    console.log(`idToken (${idToken ? true : false}) gameId (${gameId}) playerId (${playerId}) countryId (${countryId})`);
-
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
       const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
@@ -189,17 +203,41 @@ export class AssignmentService {
     }
   }
 
-  async isPlayerAdmin(gameId: number, playerId: number): Promise<boolean> {
+  async lockAssignment(idToken: string, gameId: number, playerId: number) {
+    const accountService: AccountService = new AccountService();
     const pool = new Pool(victorCredentials);
 
-    const gameAdmins = await pool.query(getGameAdminsQuery, [gameId])
-      .then((results: QueryResult) => results.rows )
-      .catch((error: Error) => {
-        console.log('Get Game Admins Query Error: ' + error.message);
-        return [];
-      });
+    this.user = await accountService.getUserProfile(idToken);
+    if (!this.user.error) {
+      const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
 
-    const playerAdmin = gameAdmins.filter((admin: any) => admin.user_id === playerId);
-    return playerAdmin.length > 0;
+      if (requestFromAdmin) {
+        await pool.query(lockAssignmentQuery, [gameId, playerId]);
+      }
+    } else {
+      return {
+        success: false,
+        error: 'Invalid user'
+      }
+    }
+  }
+
+  async unlockAssignment(idToken: string, gameId: number, playerId: number) {
+    const accountService: AccountService = new AccountService();
+    const pool = new Pool(victorCredentials);
+
+    this.user = await accountService.getUserProfile(idToken);
+    if (!this.user.error) {
+      const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
+
+      if (requestFromAdmin) {
+        await pool.query(unlockAssignmentQuery, [gameId, playerId]);
+      }
+    } else {
+      return {
+        success: false,
+        error: 'Invalid user'
+      }
+    }
   }
 }

@@ -18,7 +18,6 @@ assignmentRouter.get(`/:gameId`, (request, response) => {
 })
 
 assignmentRouter.post('/register', (request, response) => {
-  console.log('Seeing register request');
   const idToken = <string>request.headers.idtoken;
   const gameId = Number(request.body.gameId);
   const assignmentType = <string>request.body.assignmentType;
@@ -33,7 +32,6 @@ assignmentRouter.post('/register', (request, response) => {
 });
 
 assignmentRouter.post('/unregister', (request, response) => {
-  console.log('Seeing unregister request');
   const idToken = <string> request.headers.idtoken;
   const gameId = Number(request.body.gameId);
   const assignmentType = <string>request.body.assignmentType;
@@ -54,14 +52,42 @@ assignmentRouter.post('/unregister', (request, response) => {
 assignmentRouter.post('/assign-player', (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const gameId = request.body.gameId;
-  const userId = request.body.userId;
+  const playerId = request.body.userId;
   const countryId = request.body.countryId;
 
-  assignmentService.assignPlayer(idToken, gameId, userId, countryId)
+  assignmentService.assignPlayer(idToken, gameId, playerId, countryId)
     .then((result: any) => {
-      response.send(result);
+      response.send({success: true});
     })
     .catch((error: Error) => {
       response.send({error: error.message});
-    });;
-})
+    });
+});
+
+assignmentRouter.put('/lock-assignment', (request, response) => {
+  const idToken = <string>request.headers.idtoken;
+  const gameId = request.body.gameId;
+  const playerId = request.body.userId;
+
+  assignmentService.lockAssignment(idToken, gameId, playerId)
+    .then((result: any) => {
+      response.send({success: true});
+    })
+    .catch((error: Error) => {
+      response.send({error: error.message});
+    });
+});
+
+assignmentRouter.put('/unlock-assignment', (request, response) => {
+  const idToken = <string>request.headers.idtoken;
+  const gameId = request.body.gameId;
+  const playerId = request.body.userId;
+
+  assignmentService.unlockAssignment(idToken, gameId, playerId)
+    .then((result: any) => {
+      response.send({success: true});
+    })
+    .catch((error: Error) => {
+      response.send({error: error.message});
+    });
+});
