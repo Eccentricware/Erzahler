@@ -600,7 +600,7 @@ export class GameService {
             errors.push('Update Turn 0 Error: ' + error.message);
           });
 
-        const turn1Update = await pool.query(updateTurnQuery, [gameData.firstTurnDeadline, 0, gameData.gameId])
+        const turn1Update = await pool.query(updateTurnQuery, [gameData.firstTurnDeadline, 1, gameData.gameId])
           .catch((error: Error) => {
             console.log('Update Turn 1 Error: ' + error.message);
             errors.push('Update Turn 1 Error: ' + error.message);
@@ -649,16 +649,20 @@ export class GameService {
         gameStatus = GameStatus.PLAYING;
       }
 
-      const startEvents = schedulerService.finalizeStartEvents(gameData);
-
       if (gameData.displayAsAdmin) {
+        const events = schedulerService.extractEvents(gameData, this.user.timeZone);
+        const startSchedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
+
         await pool.query(startGameQuery, [
           gameStatus,
-          startEvents.startTime,
+          startSchedule.gameStart,
           gameId
         ]);
 
-        await pool.query(updateFirstTurnQuery, [startEvents.firstTurnDeadline, gameId]);
+        await pool.query(updateTurnQuery, [startSchedule.gameStart, 0, gameId]);
+        await pool.query(updateTurnQuery, [startSchedule.firstTurnDeadline, 1, gameId]);
+
+        // Scheduler here for glory!
       }
     }
   }
