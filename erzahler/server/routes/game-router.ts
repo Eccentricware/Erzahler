@@ -61,3 +61,20 @@ gameRouter.put('/update', (request, response) => {
       response.send({error: error.message});
     });
 });
+
+gameRouter.post('/declare-ready', (request, response) => {
+  const idToken = <string>request.headers.idtoken;
+  const gameId = request.body.gameId;
+
+  gameService.declareReady(idToken, gameId)
+    .then(() => {
+      return {
+        success: true
+      };
+    })
+    .then(() => {
+      return {
+        success: false
+      }
+    });
+});
