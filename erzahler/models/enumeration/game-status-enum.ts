@@ -4,5 +4,6 @@ export enum GameStatus {
   PAUSED = 'Paused',
   PLAYING = 'Playing',
   PROCESSING = 'Processing',
+  READY = 'Ready',
   REGISTRATION = 'Registration'
 }

@@ -33,6 +33,10 @@ import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
+import { AssignmentService } from "./assignmentService";
+import { startGameQuery } from "../../database/queries/game/start-game-query";
+import { StartTiming } from "../../models/enumeration/start-timing-enum";
+import { GameStatus } from "../../models/enumeration/game-status-enum";
 
 export class GameService {
   gameData: any = {};
@@ -619,6 +623,42 @@ export class GameService {
           });
       } else {
         return 'Not admin!';
+      }
+    }
+  }
+
+  async declareReady(idToken: string, gameId: number): Promise<any> {
+    const accountService: AccountService = new AccountService();
+    const assignmentService: AssignmentService = new AssignmentService();
+    const schedulerService: SchedulerService = new SchedulerService();
+    const pool = new Pool(victorCredentials);
+
+    this.user = await accountService.getUserProfile(idToken);
+    if (!this.user.error) {
+      const gameData = await this.getGameData(idToken, gameId);
+
+      const optionsWithImmediateStart = [
+        StartTiming.IMMEDIATE,
+        StartTiming.REMAINDER,
+        StartTiming.EXTENDED
+      ];
+
+      let gameStatus = GameStatus.READY;
+
+      if (optionsWithImmediateStart.includes(gameData.turn1Timing)) {
+        gameStatus = GameStatus.PLAYING;
+      }
+
+      const startEvents = schedulerService.finalizeStartEvents(gameData);
+
+      if (gameData.displayAsAdmin) {
+        await pool.query(startGameQuery, [
+          gameStatus,
+          startEvents.startTime,
+          gameId
+        ]);
+
+        await pool.query(updateFirstTurnQuery, [startEvents.firstTurnDeadline, gameId]);
       }
     }
   }
