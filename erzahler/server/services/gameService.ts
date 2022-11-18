@@ -37,6 +37,7 @@ import { AssignmentService } from "./assignmentService";
 import { startGameQuery } from "../../database/queries/game/start-game-query";
 import { StartTiming } from "../../models/enumeration/start-timing-enum";
 import { GameStatus } from "../../models/enumeration/game-status-enum";
+import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
 
 export class GameService {
   gameData: any = {};
@@ -650,7 +651,7 @@ export class GameService {
       }
 
       if (gameData.displayAsAdmin) {
-        const events = schedulerService.extractEvents(gameData, this.user.timeZone);
+        const events: StartScheduleEvents = schedulerService.extractEvents(gameData, this.user.timeZone);
         const startSchedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
 
         await pool.query(startGameQuery, [
