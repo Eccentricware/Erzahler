@@ -93,11 +93,13 @@ CREATE TABLE IF NOT EXISTS rules_in_games(
 CREATE TABLE IF NOT EXISTS turns(
   turn_id SERIAL,
   game_id INTEGER NOT NULL,
-  deadline TIMESTAMP NOT NULL,
   turn_number INTEGER NOT NULL,
   turn_name VARCHAR(50),
   turn_type VARCHAR(10) NOT NULL,
   turn_status VARCHAR(15) NOT NULL,
+  deadline TIMESTAMP NOT NULL,
+  resolved_time TIMESTAMP,
+  deadline_missed BOOLEAN
   PRIMARY KEY(turn_id),
   FOREIGN KEY(game_id)
     REFERENCES games(game_id)
