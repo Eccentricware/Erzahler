@@ -19,9 +19,6 @@ import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
 import { getGameDetailsQuery } from "../../database/queries/game/get-game-details-query";
 import { getRulesInGameQuery } from "../../database/queries/game/get-rules-in-game-query";
-import { getAssignmentsQuery } from "../../database/queries/game/get-assignments-query";
-import { getGameAdminsQuery } from "../../database/queries/game/get-game-admins-query";
-import { getRegisteredPlayersQuery } from "../../database/queries/game/get-registered-players-query";
 import { checkUserGameAdminQuery } from "../../database/queries/game/check-user-game-admin-query";
 import { updateGameSettingsQuery } from "../../database/queries/game/update-game-settings-query";
 import { updateTurnQuery } from "../../database/queries/game/update-turn-query";
@@ -38,6 +35,9 @@ import { startGameQuery } from "../../database/queries/game/start-game-query";
 import { StartTiming } from "../../models/enumeration/start-timing-enum";
 import { GameStatus } from "../../models/enumeration/game-status-enum";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
+import schedule from 'node-schedule';
+import { TurnStatus } from "../../models/enumeration/turn-status-enum";
+import { InitialTimes, StartDetails } from "../../models/objects/initial-times-object";
 
 export class GameService {
   gameData: any = {};
@@ -83,7 +83,7 @@ export class GameService {
 
   async addNewGame(pool: Pool, settings: any, userTimeZoneName: string): Promise<any> {
     const schedulerService: SchedulerService = new SchedulerService();
-    const events = schedulerService.extractEvents(settings, userTimeZoneName);
+    const events: StartScheduleEvents = schedulerService.extractEvents(settings, userTimeZoneName);
     const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
     console.log('Schedule', schedule);
 
@@ -162,7 +162,7 @@ export class GameService {
       0,
       `Winter ${this.gameData.stylizedStartYear}`,
       'orders',
-      'resolved',
+      TurnStatus.RESOLVED,
       this.gameData.gameName
     ])
     .then(async (result: any) => {
@@ -182,7 +182,7 @@ export class GameService {
       1,
       `Spring ${this.gameData.stylizedStartYear + 1}`,
       'orders',
-      'paused',
+      TurnStatus.PAUSED,
       this.gameData.gameName
     ])
     .then(async (result: any) => {
@@ -638,32 +638,21 @@ export class GameService {
     if (!this.user.error) {
       const gameData = await this.getGameData(idToken, gameId);
 
-      const optionsWithImmediateStart = [
-        StartTiming.IMMEDIATE,
-        StartTiming.REMAINDER,
-        StartTiming.EXTENDED
-      ];
-
-      let gameStatus = GameStatus.READY;
-
-      if (optionsWithImmediateStart.includes(gameData.turn1Timing)) {
-        gameStatus = GameStatus.PLAYING;
-      }
-
       if (gameData.displayAsAdmin) {
-        const events: StartScheduleEvents = schedulerService.extractEvents(gameData, this.user.timeZone);
-        const startSchedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
+        const startDetails: StartDetails = await schedulerService.lockStartDetails(gameId);
 
         await pool.query(startGameQuery, [
-          gameStatus,
-          startSchedule.gameStart,
+          startDetails.gameStatus,
+          startDetails.gameStart,
           gameId
         ]);
 
-        await pool.query(updateTurnQuery, [startSchedule.gameStart, 0, gameId]);
-        await pool.query(updateTurnQuery, [startSchedule.firstTurnDeadline, 1, gameId]);
+        await pool.query(updateTurnQuery, [startDetails.gameStart, 0, gameId]);
+        await pool.query(updateTurnQuery, [startDetails.firstTurn, 1, gameId]);
 
-        // Scheduler here for glory!
+        const firstTurnDeadlineJob: schedule.Job = schedule.scheduleJob(startDetails.firstTurn, () => {
+          console.log('First turn is going to happen someday!');
+        });
       }
     }
   }

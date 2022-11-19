@@ -5,11 +5,14 @@ import admin from 'firebase-admin';
 import { gameRouter } from './routes/game-router';
 import { userRouter } from './routes/user-router';
 import { assignmentRouter } from './routes/assignment-router';
-const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
+import schedule from 'node-schedule';
+import cors from 'cors';
+import { SchedulerService } from './services/schedulerService';
 
+const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 const erzhaler = express();
-const cors = require('cors');
 const port: number = 8000;
+const schedulerService: SchedulerService = new SchedulerService();
 
 erzhaler.use(cors());
 erzhaler.use(bodyParser.json({limit: '5mb'}));
@@ -23,6 +26,8 @@ erzhaler.use('/assignments', assignmentRouter);
 erzhaler.get('/check-status', (request, response) => {
   response.send(true);
 });
+
+schedulerService.recoverDeadlines();
 
 erzhaler.listen(port, () => {
   console.log(`Erzhaler is running on port ${port}`);

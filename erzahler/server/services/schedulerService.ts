@@ -3,6 +3,17 @@ import { StartScheduleObject } from "../../models/objects/start-schedule-object"
 import { WeeklyScheduleEventObject } from "../../models/objects/weekly-schedule-event-object";
 import { DateTime, HourNumbers } from 'luxon';
 import { DayOfWeek } from '../../models/enumeration/day_of_week-enum';
+import schedule from 'node-schedule';
+import { StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
+import { Pool, QueryResult } from 'pg';
+import { victorCredentials } from '../../secrets/dbCredentials';
+import { getScheduleSettingsQuery } from '../../database/queries/scheduler/get-schedule-settings-query';
+import { ScheduleSettingsQueryResult } from '../../models/objects/schedule-settings-query-object';
+import { error } from 'console';
+import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
+import { StartTiming } from '../../models/enumeration/start-timing-enum';
+import { GameStatus } from '../../models/enumeration/game-status-enum';
+import { StartDetails } from '../../models/objects/initial-times-object';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -68,10 +79,11 @@ export class SchedulerService {
     }
   }
 
-  prepareStartSchedule(events: any): StartScheduleObject {
+  prepareStartSchedule(events: StartScheduleEvents): StartScheduleObject {
     // console.log('gameStart', events.gameStart);
     // console.log('firstTurnDeadline is a', typeof events.firstTurnDeadline);
     // console.log('Settings in prepareStartSchedule:', events);
+
     const schedule: StartScheduleObject = {
       userTimeZone: events.userTimeZone,
       observeDst: events.observeDst,
@@ -188,5 +200,118 @@ export class SchedulerService {
       localTimeZoneName
     );
     return game;
+  }
+
+  recoverDeadlines() {
+    console.log('Now is ' + new Date());
+
+    let seconds = 2;
+    const testDeadline = schedule.scheduleJob(Date.now() + 1000 * seconds, (deadline: Date) => {
+      console.log(`The test deadline is ${deadline}`);
+    });
+  }
+
+  async lockStartDetails(gameId: number): Promise<StartDetails> {
+    const scheduleSettings = await this.getGameScheduleSettings(gameId);
+
+    let gameStatus = GameStatus.READY;
+    let gameStart: DateTime = DateTime.utc(); // Now
+    const now: DateTime = DateTime.utc();
+    let firstTurn: DateTime = this.findNextSpring(scheduleSettings);
+
+    switch (scheduleSettings.turn1Timing) {
+      case StartTiming.IMMEDIATE:
+        gameStatus = GameStatus.PLAYING;
+        gameStart = now;
+        firstTurn = firstTurn;
+        break;
+      case StartTiming.STANDARD:
+        gameStatus = GameStatus.READY;
+        gameStart = firstTurn;
+        firstTurn = firstTurn.plus({week: 1});
+        break;
+      case StartTiming.REMAINDER:
+        gameStatus = GameStatus.PLAYING;
+        gameStart = now;
+        firstTurn = firstTurn.plus({week: 1});
+        break;
+      case StartTiming.DOUBLE:
+        gameStatus = GameStatus.READY;
+        gameStart = firstTurn;
+        firstTurn = firstTurn.plus({week: 2});
+        break;
+      case StartTiming.EXTENDED:
+        gameStatus = GameStatus.PLAYING;
+        gameStart = now;
+        firstTurn = firstTurn.plus({week: 2});
+        break;
+    }
+
+    return {
+      gameStatus: gameStatus,
+      gameStart: gameStart,
+      firstTurn: firstTurn
+    }
+  }
+
+  async getGameScheduleSettings(gameId:number): Promise<any> {
+    const pool = new Pool(victorCredentials);
+
+    return await pool.query(getScheduleSettingsQuery, [gameId])
+      .then((result: QueryResult<any>) => {
+        return result.rows.map((gameScheduleSettings: ScheduleSettingsQueryResult) => {
+          return new SchedulerSettingsBuilder(gameScheduleSettings);
+        })[0];
+      })
+      .catch((error: Error) => {
+        console.log('Get Schedule Settings Query Error: ' + error.message);
+      });
+  }
+
+  findNextSpring(scheduleSettings: SchedulerSettingsBuilder): DateTime {
+    const now: DateTime = DateTime.utc();
+    let nextDeadline: DateTime = DateTime.utc();
+
+    const currentWeekday = this.days[now.weekday];
+    const deadlineWeekday = scheduleSettings.ordersDay;
+
+    // How much are we going to ADD to now to get the next deadline?
+
+    // If positive, the current time in the week is past the deadline
+    const dayDifference = this.dayValues[scheduleSettings.ordersDay] - now.weekday;
+    const hourDifference = Number(scheduleSettings.ordersTime.split(':')[0]) - now.hour;
+    const minuteDifference = Number(scheduleSettings.ordersTime.split(':')[1]) - now.minute;
+
+    nextDeadline = now.plus({
+      day: dayDifference,
+      hour: hourDifference,
+      minute: minuteDifference
+    });
+
+    const deadlineLaterInWeek = this.isDeadlineLaterInWeek(dayDifference, hourDifference, minuteDifference);
+
+    if (!deadlineLaterInWeek) {
+      nextDeadline = nextDeadline.plus({week: 1});
+    }
+
+    return nextDeadline;
+  }
+
+  isDeadlineLaterInWeek(dayDifference: number, hourDifference: number, minuteDifference: number): boolean {
+    // Postive values mean deadline is later than now's time increment
+    // Now Sunday, Deadline Monday, Difference = 1
+    if (dayDifference < 0) {
+      return false;
+    }
+
+    if (hourDifference < 0) {
+      return false;
+    }
+
+    if (minuteDifference < 0) {
+      return false;
+    }
+
+    return true;
   }
 }
