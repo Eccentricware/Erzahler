@@ -30,14 +30,11 @@ import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
-import { AssignmentService } from "./assignmentService";
 import { startGameQuery } from "../../database/queries/game/start-game-query";
-import { StartTiming } from "../../models/enumeration/start-timing-enum";
-import { GameStatus } from "../../models/enumeration/game-status-enum";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
 import schedule from 'node-schedule';
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
-import { InitialTimes, StartDetails } from "../../models/objects/initial-times-object";
+import { StartDetails } from "../../models/objects/initial-times-object";
 
 export class GameService {
   gameData: any = {};
@@ -630,7 +627,6 @@ export class GameService {
 
   async declareReady(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
-    const assignmentService: AssignmentService = new AssignmentService();
     const schedulerService: SchedulerService = new SchedulerService();
     const pool = new Pool(victorCredentials);
 
@@ -647,12 +643,18 @@ export class GameService {
           gameId
         ]);
 
-        await pool.query(updateTurnQuery, [startDetails.gameStart, 0, gameId]);
-        await pool.query(updateTurnQuery, [startDetails.firstTurn, 1, gameId]);
+        await pool.query(updateTurnQuery, [startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId]);
+        await pool.query(updateTurnQuery, [startDetails.firstTurn, TurnStatus.PENDING, 1, gameId]);
 
-        const firstTurnDeadlineJob: schedule.Job = schedule.scheduleJob(startDetails.firstTurn, () => {
-          console.log('First turn is going to happen someday!');
-        });
+        const firstTurnDeadlineJob: schedule.Job = schedule.scheduleJob(
+          `${gameData.gameName} - Spring 2001`,
+          startDetails.firstTurn,
+          () => {
+            console.log('First turn is going to happen someday!');
+          }
+        );
+
+        console.log(firstTurnDeadlineJob);
       }
     }
   }
