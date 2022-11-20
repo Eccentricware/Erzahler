@@ -1,7 +1,30 @@
 export const getGamesQuery = `
+  WITH countries_in_games AS (
+      SELECT c.game_id,
+        COUNT(c.game_id) as country_count
+      FROM countries c
+      WHERE c.rank != 'n'
+      GROUP BY c.game_id
+      ORDER BY c.game_id
+    ),
+    players_in_games AS (
+      SELECT a.game_id,
+        COUNT(a.game_id) as player_count
+      FROM assignments a
+      INNER JOIN games g ON g.game_id = a.game_id
+      WHERE a.assignment_type = 'Player'
+      AND
+        CASE
+          WHEN g.game_status = 'Registration' THEN a.assignment_status IN ('Assigned', 'Locked', 'Registered') ELSE a.assignment_status = 'Active'
+        END
+      GROUP BY a.game_id
+      ORDER BY a.game_id
+    )
   SELECT g.game_id,
     g.game_name,
     u.username as creator,
+    cig.country_count,
+    pig.player_count,
     g.nomination_timing,
     g.nomination_year,
     g.time_created,
@@ -21,28 +44,12 @@ export const getGamesQuery = `
     g.nominations_span,
     g.votes_day,
     g.votes_time AT TIME ZONE $1 votes_time,
-    g.votes_span,
-    (
-      SELECT COUNT(*)
-      FROM countries c
-      INNER JOIN games g
-      ON g.game_id = c.game_id
-      WHERE c.rank != 'n'
-      GROUP BY g.game_id
-      LIMIT 1
-    ) as country_count,
-    (
-      SELECT COUNT (*)
-      FROM assignments a
-      INNER JOIN games g
-      ON g.game_id = a.game_id
-      WHERE a.assignment_type IN ('Registered', 'Assigned')
-      GROUP BY g.game_id
-      LIMIT 1
-    ) as player_count
+    g.votes_span
   FROM games g
   INNER JOIN assignments a ON a.game_id = g.game_id
   INNER JOIN users u ON u.user_id = a.user_id
+  LEFT JOIN players_in_games pig ON pig.game_id = g.game_id
+  LEFT JOIN countries_in_games cig ON cig.game_id = g.game_id
   WHERE a.assignment_type = 'Creator'
   ORDER BY g.time_created;
 `;
