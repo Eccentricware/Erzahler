@@ -5,7 +5,6 @@ import admin from 'firebase-admin';
 import { gameRouter } from './routes/game-router';
 import { userRouter } from './routes/user-router';
 import { assignmentRouter } from './routes/assignment-router';
-import schedule from 'node-schedule';
 import cors from 'cors';
 import { SchedulerService } from './services/schedulerService';
 
@@ -27,7 +26,7 @@ erzhaler.get('/check-status', (request, response) => {
   response.send(true);
 });
 
-schedulerService.recoverDeadlines();
+schedulerService.syncDeadlines();
 
 erzhaler.listen(port, () => {
   console.log(`Erzhaler is running on port ${port}`);

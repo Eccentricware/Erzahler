@@ -14,6 +14,8 @@ import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings
 import { StartTiming } from '../../models/enumeration/start-timing-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { StartDetails } from '../../models/objects/initial-times-object';
+import { getPendingTurnsQuery } from '../../database/queries/scheduler/get-pending-turns-query';
+import { ResolutionService } from './resolutionService';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -202,13 +204,34 @@ export class SchedulerService {
     return game;
   }
 
-  recoverDeadlines() {
-    console.log('Now is ' + new Date());
+  async syncDeadlines(): Promise<void> {
+    const resolutionService: ResolutionService = new ResolutionService();
+    const pool = new Pool(victorCredentials);
 
-    let seconds = 2;
-    const testDeadline = schedule.scheduleJob(Date.now() + 1000 * seconds, (deadline: Date) => {
-      console.log(`The test deadline is ${deadline}`);
+    const pendingTurns = await pool.query(getPendingTurnsQuery, [])
+      .then((results: QueryResult<any>) => {
+        return results.rows.map((turn: any) => {
+          return {
+            gameId: turn.game_id,
+            turnId: turn.turn_id,
+            gameName: turn.game_name,
+            turnName: turn.turn_name,
+            deadline: turn.deadline
+          }
+        })
+      });
+
+    pendingTurns.forEach((deadline: any) => {
+      schedule.scheduleJob(
+        `${deadline.gameName} - ${deadline.turnName}`,
+        deadline.deadline,
+        () => {
+          resolutionService.resolveTurn(deadline.turnId);
+        }
+      );
     });
+
+    console.log(schedule);
   }
 
   async lockStartDetails(gameId: number): Promise<StartDetails> {

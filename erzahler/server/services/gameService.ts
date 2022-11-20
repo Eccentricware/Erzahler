@@ -36,6 +36,7 @@ import schedule from 'node-schedule';
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { StartDetails } from "../../models/objects/initial-times-object";
 import { ResolutionService } from "./resolutionService";
+import { GameStatus } from "../../models/enumeration/game-status-enum";
 
 export class GameService {
   gameData: any = {};
@@ -636,7 +637,7 @@ export class GameService {
     if (!this.user.error) {
       const gameData = await this.getGameData(idToken, gameId);
 
-      if (gameData.displayAsAdmin) {
+      if (gameData.displayAsAdmin && gameData.gameStatus === GameStatus.REGISTRATION) {
         const startDetails: StartDetails = await schedulerService.lockStartDetails(gameId);
 
         await pool.query(startGameQuery, [
