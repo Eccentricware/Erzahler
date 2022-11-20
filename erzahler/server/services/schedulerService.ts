@@ -217,7 +217,7 @@ export class SchedulerService {
     let gameStatus = GameStatus.READY;
     let gameStart: DateTime = DateTime.utc(); // Now
     const now: DateTime = DateTime.utc();
-    let firstTurn: DateTime = this.findNextSpring(scheduleSettings);
+    let firstTurn: DateTime = this.findNextOccurence(scheduleSettings.ordersDay, scheduleSettings.ordersTime);
 
     switch (scheduleSettings.turn1Timing) {
       case StartTiming.IMMEDIATE:
@@ -268,19 +268,19 @@ export class SchedulerService {
       });
   }
 
-  findNextSpring(scheduleSettings: SchedulerSettingsBuilder): DateTime {
+  findNextOccurence(eventDay: string, eventTime: string): DateTime {
     const now: DateTime = DateTime.utc();
     let nextDeadline: DateTime = DateTime.utc();
 
-    const currentWeekday = this.days[now.weekday];
-    const deadlineWeekday = scheduleSettings.ordersDay;
+    const eventHour = Number(eventTime.split(':')[0]);
+    const eventMinute = Number(eventTime.split(':')[1]);
 
     // How much are we going to ADD to now to get the next deadline?
 
     // If positive, the current time in the week is past the deadline
-    const dayDifference = this.dayValues[scheduleSettings.ordersDay] - now.weekday;
-    const hourDifference = Number(scheduleSettings.ordersTime.split(':')[0]) - now.hour;
-    const minuteDifference = Number(scheduleSettings.ordersTime.split(':')[1]) - now.minute;
+    const dayDifference = this.dayValues[eventDay] - now.weekday;
+    const hourDifference = eventHour - now.hour;
+    const minuteDifference = eventMinute - now.minute;
 
     nextDeadline = now.plus({
       day: dayDifference,
@@ -288,7 +288,7 @@ export class SchedulerService {
       minute: minuteDifference
     });
 
-    const deadlineLaterInWeek = this.isDeadlineLaterInWeek(dayDifference, hourDifference, minuteDifference);
+    const deadlineLaterInWeek = this.isEventLaterInWeek(dayDifference, hourDifference, minuteDifference);
 
     if (!deadlineLaterInWeek) {
       nextDeadline = nextDeadline.plus({week: 1});
@@ -297,18 +297,18 @@ export class SchedulerService {
     return nextDeadline;
   }
 
-  isDeadlineLaterInWeek(dayDifference: number, hourDifference: number, minuteDifference: number): boolean {
+  isEventLaterInWeek(dayDifference: number, hourDifference: number, minuteDifference: number): boolean {
     // Postive values mean deadline is later than now's time increment
     // Now Sunday, Deadline Monday, Difference = 1
     if (dayDifference < 0) {
       return false;
     }
 
-    if (hourDifference < 0) {
+    if (dayDifference === 0 && hourDifference < 0) {
       return false;
     }
 
-    if (minuteDifference < 0) {
+    if (dayDifference === 0 && hourDifference === 0 && minuteDifference < 0) {
       return false;
     }
 
