@@ -37,6 +37,7 @@ import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { StartDetails } from "../../models/objects/initial-times-object";
 import { ResolutionService } from "./resolutionService";
 import { GameStatus } from "../../models/enumeration/game-status-enum";
+import { setAssignmentsActiveQuery } from "../../database/queries/assignments/set-assignments-active-query";
 
 export class GameService {
   gameData: any = {};
@@ -645,6 +646,8 @@ export class GameService {
           startDetails.gameStart,
           gameId
         ]);
+
+        await pool.query(setAssignmentsActiveQuery, [gameId]);
 
         await pool.query(updateTurnQuery, [startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId]);
         const upcomingTurn = await pool.query(updateTurnQuery, [startDetails.firstTurn, TurnStatus.PENDING, 1, gameId])
