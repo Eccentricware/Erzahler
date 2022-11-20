@@ -35,6 +35,7 @@ import { StartScheduleEvents } from "../../models/objects/start-schedule-events-
 import schedule from 'node-schedule';
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { StartDetails } from "../../models/objects/initial-times-object";
+import { ResolutionService } from "./resolutionService";
 
 export class GameService {
   gameData: any = {};
@@ -628,6 +629,7 @@ export class GameService {
   async declareReady(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
+    const resolutionService: ResolutionService = new ResolutionService();
     const pool = new Pool(victorCredentials);
 
     this.user = await accountService.getUserProfile(idToken);
@@ -644,13 +646,14 @@ export class GameService {
         ]);
 
         await pool.query(updateTurnQuery, [startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId]);
-        await pool.query(updateTurnQuery, [startDetails.firstTurn, TurnStatus.PENDING, 1, gameId]);
+        const upcomingTurn = await pool.query(updateTurnQuery, [startDetails.firstTurn, TurnStatus.PENDING, 1, gameId])
+          .then((turns: any) => turns.rows[0] );
 
         const firstTurnDeadlineJob: schedule.Job = schedule.scheduleJob(
-          `${gameData.gameName} - Spring 2001`,
+          `${gameData.gameName} - ${upcomingTurn.name}`,
           startDetails.firstTurn,
           () => {
-            console.log('First turn is going to happen someday!');
+            resolutionService.resolveTurn(upcomingTurn.id);
           }
         );
 
