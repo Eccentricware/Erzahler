@@ -1,5 +1,6 @@
-export const getUnresolvedDeadlinesQuery = `
+export const getPendingTurnsQuery = `
   SELECT g.game_id,
+    t.turn_id,
     g.game_name,
     t.turn_name,
     t.deadline
