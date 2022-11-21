@@ -640,37 +640,13 @@ export class GameService {
   async declareReady(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
-    const resolutionService: ResolutionService = new ResolutionService();
-    const pool = new Pool(victorCredentials);
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
       const gameData = await this.getGameData(idToken, gameId);
 
       if (gameData.displayAsAdmin && gameData.gameStatus === GameStatus.REGISTRATION) {
-        const startDetails: StartDetails = await schedulerService.lockStartDetails(gameId);
-
-        await pool.query(startGameQuery, [
-          startDetails.gameStatus,
-          startDetails.gameStart,
-          gameId
-        ]);
-
-        await pool.query(setAssignmentsActiveQuery, [gameId]);
-
-        await pool.query(updateTurnQuery, [startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId]);
-        const upcomingTurn = await pool.query(updateTurnQuery, [startDetails.firstTurn, TurnStatus.PENDING, 1, gameId])
-          .then((turns: any) => turns.rows[0] );
-
-        const firstTurnDeadlineJob: schedule.Job = schedule.scheduleJob(
-          `${gameData.gameName} - ${upcomingTurn.name}`,
-          startDetails.firstTurn,
-          () => {
-            resolutionService.resolveTurn(upcomingTurn.id);
-          }
-        );
-
-        console.log(firstTurnDeadlineJob);
+        await schedulerService.prepareGameStart(gameData);
       }
     }
   }

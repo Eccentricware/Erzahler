@@ -5,6 +5,7 @@ export const updateTurnQuery = `
   WHERE turn_number = $3
     AND game_id = $4
   RETURNING
-    turn_id as id,
-    turn_name as name;
+    turn_id,
+    turn_name
+    deadline;
 `;
