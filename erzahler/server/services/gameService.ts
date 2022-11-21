@@ -38,6 +38,7 @@ import { StartDetails } from "../../models/objects/initial-times-object";
 import { ResolutionService } from "./resolutionService";
 import { GameStatus } from "../../models/enumeration/game-status-enum";
 import { setAssignmentsActiveQuery } from "../../database/queries/assignments/set-assignments-active-query";
+import { OptionsService } from "./optionsService";
 
 export class GameService {
   gameData: any = {};
@@ -46,14 +47,15 @@ export class GameService {
 
   async newGame(gameData: any, idToken: string): Promise<any> {
     const accountService: AccountService = new AccountService();
+    const optionsService: OptionsService = new OptionsService();
 
     // const token: DecodedIdToken = await accountService.validateToken(idToken);
-  this.user = await accountService.getUserProfile(idToken);
-  if (!this.user.error) {
+    this.user = await accountService.getUserProfile(idToken);
+    if (!this.user.error) {
       const pool: Pool = new Pool(victorCredentials);
       this.gameData = gameData;
 
-      return await this.addNewGame(pool, this.gameData, this.user.timeZone)
+      const newGameResult = await this.addNewGame(pool, this.gameData, this.user.timeZone)
         .then((newGameId: any) => {
           pool.end();
           return {
@@ -61,16 +63,23 @@ export class GameService {
             gameId: newGameId,
             errors: this.errors
           };
-      })
-      .catch((error: Error) => {
-        console.log('Game Response Failure:', error.message)
-        this.errors.push('New Game Error' + error.message);
-        pool.end();
-        return {
-          success: false,
-          errors: this.errors
-        }
-      });
+        })
+        .catch((error: Error) => {
+          console.log('Game Response Failure:', error.message)
+          this.errors.push('New Game Error' + error.message);
+          pool.end();
+          return {
+            success: false,
+            gameId: 0,
+            errors: this.errors
+          }
+        });
+
+      if (newGameResult.success) {
+        optionsService.saveOptionsByGameId(newGameResult.gameId);
+      }
+
+      return newGameResult;
 
     } else {
       console.log('Invalid Token UID attempting to save new game');
