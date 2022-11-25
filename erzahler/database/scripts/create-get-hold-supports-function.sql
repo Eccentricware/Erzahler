@@ -1,18 +1,18 @@
---sudo -u postgres psql < database/scripts/create-get-adjacent-transports-function.sql
+--sudo -u postgres psql < database/scripts/create-get-hold-supports-function.sql
 
 \c erzahler_dev;
-\echo 'Attempting to create get_adjacent_transports funnction'
+\echo 'Attempting to create get_adjacent_units funnction'
 
-CREATE OR REPLACE FUNCTION get_adjacent_transports(INTEGER) --turn_id
-RETURNS TABLE(unit_id INTEGER, adjacent_transports json)
+CREATE OR REPLACE FUNCTION get_hold_supports(INTEGER) --turn_id
+RETURNS TABLE(unit_id INTEGER, hold_supports json)
 AS $$
   SELECT u.unit_id,
-		json_agg(CASE
+  	json_agg(CASE
 			WHEN n.node_id = na.node_1_id
 				THEN json_build_object('unit_id', u2.unit_id, 'unit_name', u2.unit_name)
 			WHEN n.node_id = na.node_2_id
 				THEN json_build_object('unit_id', u1.unit_id, 'unit_name', u1.unit_name)
-		END) AS adjacent_transports
+		END) AS hold_supports
 	FROM nodes n
 	INNER JOIN unit_histories uh ON uh.node_id = n.node_id
 	INNER JOIN units u ON u.unit_id = uh.unit_id
@@ -31,11 +31,5 @@ AS $$
 	INNER JOIN turns t ON t.turn_id = uh.turn_id
 	WHERE t.turn_id = $1
 		AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)
-		AND CASE
-			WHEN n.node_id = na.node_1_id
-				THEN (u2.unit_type = 'fleet' AND p2.province_type != 'coast') OR u2.unit_type = 'wing'
-			WHEN n.node_id = na.node_2_id
-				THEN (u1.unit_type = 'fleet' AND p1.province_type != 'coast') OR u1.unit_type = 'wing'
-		END
 	GROUP BY u.unit_id;
- $$ LANGUAGE SQL;
+$$ LANGUAGE SQL;
