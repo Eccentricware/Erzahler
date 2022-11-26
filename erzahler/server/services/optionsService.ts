@@ -10,4 +10,8 @@ export class OptionsService {
   async processMovementStandard(): Promise<void> {
     // Standard is not convoyed
   }
+
+  async processMovementConvoyed(): Promise<void> {
+    // Convoyed is not standard
+  }
 }
