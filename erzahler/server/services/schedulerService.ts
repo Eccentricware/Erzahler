@@ -16,6 +16,11 @@ import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { getPendingTurnsQuery } from '../../database/queries/scheduler/get-pending-turns-query';
 import { ResolutionService } from './resolutionService';
+import { setAssignmentsActiveQuery } from '../../database/queries/assignments/set-assignments-active-query';
+import { startGameQuery } from '../../database/queries/game/start-game-query';
+import { updateTurnQuery } from '../../database/queries/game/update-turn-query';
+import { TurnStatus } from '../../models/enumeration/turn-status-enum';
+import { FormattingService } from './formattingService';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -232,6 +237,54 @@ export class SchedulerService {
     });
 
     console.log(schedule);
+  }
+
+  async prepareGameStart(gameData: any): Promise<void> {
+    const formattingService: FormattingService = new FormattingService();
+    const resolutionService: ResolutionService = new ResolutionService();
+    const pool = new Pool(victorCredentials);
+
+    const gameId = gameData.gameId;
+    const startDetails: StartDetails = await this.lockStartDetails(gameId);
+
+    await pool.query(startGameQuery, [
+      startDetails.gameStatus,
+      startDetails.gameStart,
+      gameId
+    ]);
+
+    await pool.query(setAssignmentsActiveQuery, [gameId]);
+
+    // Is this clunky?
+    await pool.query(updateTurnQuery, [startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId])
+      .then((turns: QueryResult<any>) => {
+        return turns.rows.map((turn: any) => { return formattingService.convertKeysSnakeToCamel(turn); })[0];
+      });
+
+    const firstTurn = await pool.query(updateTurnQuery, [startDetails.firstTurn, TurnStatus.PENDING, 1, gameId])
+      .then((turns: QueryResult<any>) => {
+        return turns.rows.map((turn: any) => { return formattingService.convertKeysSnakeToCamel(turn); })[0];
+      });
+
+    if (startDetails.gameStatus === GameStatus.PLAYING) {
+      resolutionService.startGame(gameId);
+    } else {
+      schedule.scheduleJob(
+        `${gameData.gameName} - Game Start`,
+        startDetails.gameStart,
+        () => {
+          resolutionService.startGame(gameId);
+        }
+      )
+    }
+
+    schedule.scheduleJob(
+      `${gameData.gameName} - ${firstTurn.turnName}`,
+      startDetails.firstTurn,
+      () => {
+        resolutionService.resolveTurn(firstTurn.turnId);
+      }
+    );
   }
 
   async lockStartDetails(gameId: number): Promise<StartDetails> {
