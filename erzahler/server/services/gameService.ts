@@ -440,7 +440,7 @@ export class GameService {
   async addInitialUnitHistories(pool: Pool): Promise<any> {
     const initialHistoryPromises: Promise<QueryResult<any>>[] = await this.gameData.dbRows.units.map(async (unit: any) => {
       return await pool.query(insertUnitHistoryQuery, [
-        'active',
+        'Active',
         this.gameData.gameName,
         unit.fullName,
         unit.node
