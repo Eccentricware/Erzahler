@@ -14,7 +14,7 @@ import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings
 import { StartTiming } from '../../models/enumeration/start-timing-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { StartDetails } from '../../models/objects/initial-times-object';
-import { getPendingTurnsQuery } from '../../database/queries/scheduler/get-pending-turns-query';
+import { getUpcomingTurnsQuery } from '../../database/queries/scheduler/get-upcoming-turns-query';
 import { ResolutionService } from './resolutionService';
 import { setAssignmentsActiveQuery } from '../../database/queries/assignments/set-assignments-active-query';
 import { startGameQuery } from '../../database/queries/game/start-game-query';
@@ -213,7 +213,7 @@ export class SchedulerService {
     const resolutionService: ResolutionService = new ResolutionService();
     const pool = new Pool(victorCredentials);
 
-    const pendingTurns = await pool.query(getPendingTurnsQuery, [])
+    const pendingTurns = await pool.query(getUpcomingTurnsQuery, [])
       .then((results: QueryResult<any>) => {
         return results.rows.map((turn: any) => {
           return {

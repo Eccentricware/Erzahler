@@ -3,7 +3,7 @@
 \c erzahler_dev;
 \echo 'Attempting to create get_node_adjacencies funnction'
 
-CREATE OR REPLACE FUNCTION get_node_adjacencies(INTEGER, BOOLEAN) --game_id, air node only
+CREATE OR REPLACE FUNCTION get_node_adjacencies(INTEGER, BOOLEAN) --game_id, air_nodes_only
 RETURNS TABLE(node_id INTEGER, adjacencies JSON)
 AS $$
   SELECT n.node_id,

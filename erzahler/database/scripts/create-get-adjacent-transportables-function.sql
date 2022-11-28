@@ -6,7 +6,7 @@
 CREATE OR REPLACE FUNCTION get_adjacent_transportables(INTEGER) --turn_id
 RETURNS TABLE(unit_id INTEGER, adjacent_transportables json)
 AS $$
-  SELECT u.unit_id,
+	SELECT u.unit_id,
 		json_agg(CASE
 			WHEN n.node_id = na.node_1_id
 				THEN json_build_object('unit_id', u2.unit_id, 'unit_name', u2.unit_name)
@@ -36,5 +36,6 @@ AS $$
 			WHEN n.node_id = na.node_1_id THEN u2.unit_type IN ('army', 'nuke')
 			WHEN n.node_id = na.node_2_id THEN u1.unit_type IN ('army', 'nuke')
 		END
-	GROUP BY u.unit_id;
+	GROUP BY u.unit_id
+
  $$ LANGUAGE SQL;
