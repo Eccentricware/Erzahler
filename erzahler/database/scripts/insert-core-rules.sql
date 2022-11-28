@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/scripts/core-rules-script.sql
+--sudo -u postgres psql < database/scripts/insert-core-rules.sql
 
 \c erzahler_dev;
 \echo 'Attempting to add core rules'
