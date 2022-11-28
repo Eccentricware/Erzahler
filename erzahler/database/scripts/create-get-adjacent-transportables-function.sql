@@ -31,10 +31,10 @@ AS $$
 	INNER JOIN turns t ON t.turn_id = uh.turn_id
 	WHERE t.turn_id = $1
 		AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)
-		AND ((u.unit_type = 'fleet' AND p.province_type != 'coast') OR u.unit_type = 'wing')
+		AND ((u.unit_type = 'Fleet' AND p.province_type != 'coast') OR u.unit_type = 'Wing')
 		AND CASE
-			WHEN n.node_id = na.node_1_id THEN u2.unit_type IN ('army', 'nuke')
-			WHEN n.node_id = na.node_2_id THEN u1.unit_type IN ('army', 'nuke')
+			WHEN n.node_id = na.node_1_id THEN u2.unit_type IN ('Army', 'Nuke')
+			WHEN n.node_id = na.node_2_id THEN u1.unit_type IN ('Army', 'Nuke')
 		END
 	GROUP BY u.unit_id
 

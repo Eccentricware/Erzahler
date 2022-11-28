@@ -21,7 +21,7 @@ export const getUnitAdjacentInfoQuery = `
   LEFT JOIN get_adjacent_transports($2) tu ON tu.unit_id = u.unit_id
   LEFT JOIN get_transport_destinations($2) td ON td.unit_id = u.unit_id
   LEFT JOIN get_adjacent_transportables($2) tt ON tt.unit_id = u.unit_id
-  WHERE u.unit_type != 'garrison'
+  WHERE u.unit_type != 'Garrison'
     AND uh.unit_status = 'active'
     AND t.turn_id = $2
   ORDER BY u.unit_type
