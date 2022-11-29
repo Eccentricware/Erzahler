@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS turns(
   game_id INTEGER NOT NULL,
   turn_number INTEGER NOT NULL,
   turn_name VARCHAR(50),
-  turn_type VARCHAR(10) NOT NULL,
+  turn_type VARCHAR(23) NOT NULL,
   turn_status VARCHAR(15) NOT NULL,
   deadline TIMESTAMP NOT NULL,
   resolved_time TIMESTAMP,
