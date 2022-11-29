@@ -236,7 +236,7 @@ export class SchedulerService {
       );
     });
 
-    console.log(schedule);
+    // console.log(schedule);
   }
 
   async prepareGameStart(gameData: any): Promise<void> {

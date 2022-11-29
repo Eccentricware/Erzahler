@@ -15,10 +15,10 @@ AS $$
 		END) AS adjacent_units,
 		json_agg(CASE
 			WHEN n.node_id = na.node_1_id
-			AND ((u2.unit_type = 'Fleet' AND p2.province_type != 'coast') OR u2.unit_type = 'wing')
+			AND ((u2.unit_type = 'Fleet' AND p2.province_type != 'coast') OR u2.unit_type = 'Wing')
 				THEN json_build_object('unit_id', u2.unit_id, 'unit_name', u2.unit_name)
 			WHEN n.node_id = na.node_2_id
-			AND ((u1.unit_type = 'Fleet' AND p1.province_type != 'coast') OR u1.unit_type = 'wing')
+			AND ((u1.unit_type = 'Fleet' AND p1.province_type != 'coast') OR u1.unit_type = 'Wing')
 				THEN json_build_object('unit_id', u1.unit_id, 'unit_name', u1.unit_name)
 		END) AS adjacent_transports
 	FROM nodes n

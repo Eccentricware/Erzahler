@@ -7,12 +7,15 @@ import { userRouter } from './routes/user-router';
 import { assignmentRouter } from './routes/assignment-router';
 import cors from 'cors';
 import { SchedulerService } from './services/schedulerService';
+import { OptionsService } from './services/optionsService';
 
 const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 const erzhaler = express();
 const port: number = 8000;
 const schedulerService: SchedulerService = new SchedulerService();
 
+const optionsService: OptionsService = new OptionsService();
+optionsService.saveOptionsForTurn(7, 13);
 
 erzhaler.use(cors());
 erzhaler.use(bodyParser.json({limit: '5mb'}));
