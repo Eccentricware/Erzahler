@@ -1,15 +1,85 @@
 import { createHash } from "crypto";
 import { Pool, QueryResult, QueryResultRow } from "pg";
+import { getGameStateQuery } from "../../database/queries/options/get-last-turn-info-query";
 import { getUnitAdjacentInfoQuery } from "../../database/queries/options/get-unit-adjacent-info-query";
-import { UnitAdjacencyInfo, UnitAdjacyInfoResult } from "../../models/objects/unit-adjacency-info-object";
+import { TurnType } from "../../models/enumeration/turn-type-enum";
+import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
+import { AdjacenctMovement, UnitAdjacencyInfo, UnitAdjacyInfoResult } from "../../models/objects/unit-adjacency-info-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
 
 export class OptionsService {
-  async saveOptionsForTurn(gameId: number, turnId: number): Promise<void> {
+  // Turns to be processed are pending or preliminary
+  // Preliminaries for Fall Orders during Spring Retreats, and Adjustments during Fall retreats
+    // If Adjustment preliminary, must also account for possible nomination
 
-    const unitInfo: UnitAdjacencyInfo[] = await this.getUnitAdjacencyInfo(gameId, turnId);
+  // Only one turn pending at a time
+  // Adjustments/Nominations can be logically co-preliminary
 
-    console.log('unitInfo', unitInfo);
+  findUpcomingTurns(gameId: number) {
+
+  }
+
+
+
+  async saveOptionsForNextTurns(gameId: number): Promise<void> {
+    const sharedAdjacentProvinces: any = {};
+
+    const gameState: GameState = await this.getGameState(gameId);
+    const nextTurns: NextTurns = this.findNextTurns(gameState);
+    const unitInfo: UnitAdjacencyInfo[] = await this.getUnitAdjacencyInfo(gameId, gameState.turnId);
+
+    unitInfo.forEach((unit: UnitAdjacencyInfo) => {
+      unit.adjacencies.forEach((adjacency: AdjacenctMovement) => {
+        if (sharedAdjacentProvinces[adjacency.provinceId]) {
+          sharedAdjacentProvinces[adjacency.provinceId].push({
+            unitId: unit.unitId,
+            nodeId: adjacency.nodeId
+          });
+        } else {
+          sharedAdjacentProvinces[adjacency.provinceId] = [{
+            unitId: unit.unitId,
+            nodeId: adjacency.nodeId
+          }];
+        }
+      });
+    });
+
+    console.log('unitInfo');
+  }
+
+  findNextTurns(gameState: GameState): NextTurns {
+    const nextTurns: NextTurns = { pending: TurnType.SPRING_ORDERS };
+
+    return nextTurns;
+  }
+
+  async getGameState(gameId: number): Promise<any> {
+    const pool = new Pool(victorCredentials);
+
+    const gameState: GameState = await pool.query(getGameStateQuery, [gameId])
+      .then((result: QueryResult<any>) => {
+        return result.rows.map((lastTurnResult: GameStateResult) => {
+          return <GameState> {
+            gameId: lastTurnResult.game_id,
+            turnId: lastTurnResult.turn_id,
+            deadline: lastTurnResult.deadline,
+            turnNumber: lastTurnResult.turn_number,
+            turnName: lastTurnResult.turn_name,
+            turnType: lastTurnResult.turn_type,
+            turnStatus: lastTurnResult.turn_status,
+            resolvedTime: lastTurnResult.resolved_time,
+            deadlineMissed: lastTurnResult.deadline_missed,
+            nominateDuringAdjustments: lastTurnResult.nominate_during_adjustments,
+            voteDuringSpring: lastTurnResult.vote_during_spring,
+            nominationTiming: lastTurnResult.nomination_timing,
+            nominationYear: lastTurnResult.nomination_year,
+            currentYear: lastTurnResult.current_year,
+            yearNumber: lastTurnResult.year_number
+          }
+        })[0];
+      });
+
+    return gameState;
   }
 
   async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitAdjacencyInfo[]> {

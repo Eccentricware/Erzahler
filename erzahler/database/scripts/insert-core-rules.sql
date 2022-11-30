@@ -14,3 +14,9 @@ INSERT INTO rules (rule_key, rule_name, rule_description) VALUES (
   'United Nations Task Force',
   'Players vote on an action to support or vacant province to hold'
 );
+
+INSERT INTO rules (rule_key, rule_name, rule_description) VALUES (
+  'anonymousPlay',
+  'Anonymous Play',
+  'Players communicate through in-game chat that does not display any player-specific information'
+);
