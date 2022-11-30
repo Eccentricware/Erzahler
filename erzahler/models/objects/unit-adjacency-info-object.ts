@@ -7,14 +7,14 @@ export interface UnitAdjacencyInfo {
   provinceId: number;
   provinceName: string;
   adjacencies: AdjacenctMovement[];
-  holdSupports: HoldSupport[];
-  adjacentTransports: AdjacentTransport[];
-  adjacentTransportables: AdjacentTransportable[];
-  transportDestinations: TransportDestination[];
+  holdSupports: HoldSupport[] | undefined;
+  adjacentTransports: AdjacentTransport[] | undefined;
+  adjacentTransportables: AdjacentTransportable[] | undefined;
+  transportDestinations: TransportDestination[] | undefined;
   turnType: string;
 }
 
-interface AdjacenctMovement {
+export interface AdjacenctMovement {
   nodeId: number;
   provinceId: number;
 }
@@ -48,10 +48,10 @@ export interface UnitAdjacyInfoResult {
   province_id: number;
   province_name: string;
   adjacencies: AdjacenctMovementResult[];
-  hold_supports: HoldSupportResult[];
-  adjacent_transports: AdjacentTransportResult[];
-  adjacent_transportables: AdjacentTransportableResult[];
-  transport_destinations: TransportDestinationResult[];
+  hold_supports: HoldSupportResult[] | undefined;
+  adjacent_transports: AdjacentTransportResult[] | undefined;
+  adjacent_transportables: AdjacentTransportableResult[] | undefined;
+  transport_destinations: TransportDestinationResult[] | undefined;
   turn_type: string;
 }
 
