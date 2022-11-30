@@ -69,6 +69,26 @@ CREATE TABLE IF NOT EXISTS games(
   PRIMARY KEY(game_id)
 );
 
+\echo 'Attempting to create coalition_schedules table'
+CREATE TABLE IF NOT EXISTS coalition_schedules(
+  coalition_schedule_id SERIAL,
+  game_id INTEGER NOT NULL,
+  base_percent INTEGER NOT NULL DEFAULT 50, -- Math.floor(n * 100/[50]) + 1
+  base_adjust INTEGER NOT NULL DEFAULT 1,   -- Math.floor(n * 100/50) + [1]
+  base_final INTEGER NOT NULL, -- Counts from provinces table
+  total_possible INTEGER,
+  penalty_a INTEGER DEFAULT 9,
+  penalty_b INTEGER DEFAULT 6,
+  penalty_c INTEGER DEFAULT 3,
+  penalty_d INTEGER DEFAULT 1,
+  penalty_e INTEGER DEFAULT 0,
+  penalty_f INTEGER DEFAULT NULL,
+  penalty_g INTEGER DEFAULT NULL,
+  PRIMARY KEY (coalition_schedule_id),
+  FOREIGN KEY(game_id)
+    REFERENCES games(game_id)
+);
+
 \echo 'Attempting to create rules table'
 CREATE TABLE IF NOT EXISTS rules(
   rule_id SERIAL,
