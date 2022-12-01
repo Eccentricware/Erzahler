@@ -1,10 +1,12 @@
+import { TurnType } from "../enumeration/turn-type-enum";
+
 export interface GameState {
   gameId: number;
   turnId: number;
   deadline: Date;
   turnNumber: number;
   turnName: string;
-  turnType: string;
+  turnType: TurnType;
   turnStatus: string;
   resolvedTime?: Date;
   deadlineMissed?: boolean;
@@ -14,6 +16,9 @@ export interface GameState {
   nominationYear?: number;
   currentYear: number;
   yearNumber: number;
+  highestRankedReq: number;
+  allVotesControlled: boolean;
+  unitsInRetreat: boolean;
 }
 
 export interface GameStateResult {
@@ -22,7 +27,7 @@ export interface GameStateResult {
   deadline: Date;
   turn_number: number;
   turn_name: string;
-  turn_type: string;
+  turn_type: TurnType;
   turn_status: string;
   resolved_time?: Date;
   deadline_missed?: boolean;
@@ -32,6 +37,9 @@ export interface GameStateResult {
   nomination_year?: number;
   current_year: number;
   year_number: number;
+  highest_ranked_req: number;
+  all_votes_controlled: boolean;
+  unit_in_retreat: boolean;
 }
 
 export interface NextTurns {
