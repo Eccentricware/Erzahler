@@ -15,18 +15,78 @@ export class OptionsService {
   // Only one turn pending at a time
   // Adjustments/Nominations can be logically co-preliminary
 
-  findUpcomingTurns(gameId: number) {
+  async saveOptionsForNextTurns(gameId: number): Promise<void> {
+    const gameState: GameState = await this.getGameState(gameId);
+    const nextTurns: NextTurns = this.findNextTurns(gameState);
 
+    switch(nextTurns.pending) {
+      case TurnType.ORDERS_AND_VOTES:
+        await this.processSpringOrdersAndVotes(gameState);
+        break;
+      case TurnType.SPRING_ORDERS:
+        await this.processSpringOrders(gameState, false);
+        break;
+      case TurnType.SPRING_RETREATS:
+        await this.processSpringRetreats(gameState);
+        break;
+      case TurnType.FALL_ORDERS:
+        await this.processFallOrders(gameState, false);
+        break;
+      case TurnType.FALL_RETREATS:
+        await this.processFallRetreats(gameState);
+        break;
+      case TurnType.ADJUSTMENTS:
+        await this.processAdjustments(gameState, false);
+        break;
+      case TurnType.ADJ_AND_NOM:
+        await this.processAdjustmentsAndNominations(gameState, false);
+        break;
+      case TurnType.NOMINATIONS:
+        await this.processNominations(gameState);
+        break;
+      case TurnType.VOTES:
+        await this.processVotes(gameState);
+    }
+
+    if (nextTurns.preliminary) {
+      switch(nextTurns.preliminary) {
+        case TurnType.SPRING_ORDERS:
+          await this.processSpringOrders(gameState, true);
+          break;
+        case TurnType.FALL_ORDERS:
+          await this.processFallOrders(gameState, true);
+          break;
+        case TurnType.ADJUSTMENTS:
+          await this.processAdjustments(gameState, true);
+          break;
+        case TurnType.ADJ_AND_NOM:
+          await this.processAdjustmentsAndNominations(gameState, true);
+      }
+    }
+
+    console.log('End of save options');
+  }
+
+  async processSpringOrdersAndVotes(gameState: GameState) {
+    this.processSpringUnitOrders(gameState);
+  }
+
+  async processSpringOrders(gameState: GameState, preliminary: boolean) {  // During Votes
+    this.processSpringUnitOrders(gameState);
   }
 
 
+  async processSpringRetreats(gameState: GameState) {}
+  async processFallOrders(gameState: GameState, preliminary: boolean) {} // During Retreats
+  async processFallRetreats(gameState: GameState) {}
+  async processAdjustments(gameState: GameState, preliminary: boolean) {} // During Retreats
+  async processAdjustmentsAndNominations(gameState: GameState, preliminary: boolean) {} // During Retreats
+  async processNominations(gameState: GameState) {}
+  async processVotes(gameState: GameState) {}
 
-  async saveOptionsForNextTurns(gameId: number): Promise<void> {
+  async processSpringUnitOrders(gameState: GameState) {
     const sharedAdjacentProvinces: any = {};
-
-    const gameState: GameState = await this.getGameState(gameId);
-    const nextTurns: NextTurns = this.findNextTurns(gameState);
-    const unitInfo: UnitAdjacencyInfo[] = await this.getUnitAdjacencyInfo(gameId, gameState.turnId);
+    const unitInfo: UnitAdjacencyInfo[] = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId);
 
     unitInfo.forEach((unit: UnitAdjacencyInfo) => {
       unit.adjacencies.forEach((adjacency: AdjacenctMovement) => {
@@ -44,7 +104,7 @@ export class OptionsService {
       });
     });
 
-    console.log('unitInfo');
+    console.log('End of processSpringUnitOrders');
   }
 
   findNextTurns(gameState: GameState): NextTurns {
