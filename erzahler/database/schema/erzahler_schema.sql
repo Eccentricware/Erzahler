@@ -84,6 +84,9 @@ CREATE TABLE IF NOT EXISTS coalition_schedules(
   penalty_e INTEGER DEFAULT 0,
   penalty_f INTEGER DEFAULT NULL,
   penalty_g INTEGER DEFAULT NULL,
+  highest_ranked VARCHAR(3) DEFAULT 'ABB',
+  highest_ranked_req INTEGER,
+  all_votes_controlled BOOLEAN DEFAULT false,
   PRIMARY KEY (coalition_schedule_id),
   FOREIGN KEY(game_id)
     REFERENCES games(game_id)
