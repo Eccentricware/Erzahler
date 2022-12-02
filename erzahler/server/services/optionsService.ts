@@ -42,7 +42,7 @@ export class OptionsService {
         await this.processAdjustmentsAndNominations(gameState, false);
         break;
       case TurnType.NOMINATIONS:
-        await this.processNominations(gameState);
+        await this.processNominations(gameState, false);
         break;
       case TurnType.VOTES:
         await this.processVotes(gameState);
@@ -61,6 +61,9 @@ export class OptionsService {
           break;
         case TurnType.ADJ_AND_NOM:
           await this.processAdjustmentsAndNominations(gameState, true);
+          break;
+        case TurnType.NOMINATIONS:
+          await this.processNominations(gameState, true);
       }
     }
 
@@ -75,13 +78,12 @@ export class OptionsService {
     this.processSpringUnitOrders(gameState);
   }
 
-
   async processSpringRetreats(gameState: GameState) {}
   async processFallOrders(gameState: GameState, preliminary: boolean) {} // During Retreats
   async processFallRetreats(gameState: GameState) {}
   async processAdjustments(gameState: GameState, preliminary: boolean) {} // During Retreats
   async processAdjustmentsAndNominations(gameState: GameState, preliminary: boolean) {} // During Retreats
-  async processNominations(gameState: GameState) {}
+  async processNominations(gameState: GameState, preliminary: boolean) {} // During Adjustments
   async processVotes(gameState: GameState) {}
 
   async processSpringUnitOrders(gameState: GameState) {
@@ -161,7 +163,10 @@ export class OptionsService {
     if (gameState.turnType === TurnType.FALL_RETREATS) {
       if (nominationsStarted && nominateDuringAdjustments) {
         nextTurns.pending = TurnType.ADJ_AND_NOM;
-      } else  {
+      } else if (nominationsStarted && !nominateDuringAdjustments) {
+        nextTurns.pending = TurnType.ADJUSTMENTS;
+        nextTurns.preliminary = TurnType.NOMINATIONS;
+      } else {
         nextTurns.pending = TurnType.ADJUSTMENTS;
       }
     }
@@ -189,7 +194,8 @@ export class OptionsService {
       if (voteDuringSpring) {
         nextTurns.pending = TurnType.ORDERS_AND_VOTES;
       } else {
-        nextTurns.pending = TurnType.SPRING_ORDERS;
+        nextTurns.pending = TurnType.VOTES;
+        nextTurns.preliminary = TurnType.SPRING_ORDERS;
       }
     }
 
