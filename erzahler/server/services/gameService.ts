@@ -76,7 +76,7 @@ export class GameService {
         });
 
       if (newGameResult.success) {
-        optionsService.saveOptionsForTurn(newGameResult.gameId, 13);
+        optionsService.saveOptionsForNextTurns(newGameResult.gameId);
       }
 
       return newGameResult;
