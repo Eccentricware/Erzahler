@@ -1,4 +1,14 @@
-export interface UnitAdjacencyInfo {
+export interface OptionsContext {
+  unitInfo: UnitOptions[]
+  unitIdToIndexLib: any;
+  sharedAdjProvinces: any;
+  transportPaths: any;
+  transports: any;
+  transportables: any;
+  transportDestinations: any;
+}
+
+export interface UnitOptions {
   unitId: number;
   unitName: string;
   unitType: string;

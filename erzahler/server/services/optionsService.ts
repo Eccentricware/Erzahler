@@ -99,13 +99,17 @@ export class OptionsService {
       unitIdToIndexLib: {},
       sharedAdjProvinces: {},
       transportPaths: {},
-      transports: {}
+      transports: {},
+      transportables: [],
+      transportDestinations: {}
     }
 
     // Holds can be pulled at get options
     // Organizes data for all ops, but completes adjacency options
     optionsCtx.unitInfo.forEach((unit: UnitOptions, index: number) => {
       optionsCtx.unitIdToIndexLib[unit.unitId] = index;
+
+      // Standard move support
       unit.adjacencies.forEach((adjacency: AdjacenctMovement) => {
         if (optionsCtx.sharedAdjProvinces[adjacency.provinceId]) {
           optionsCtx.sharedAdjProvinces[adjacency.provinceId].push({
@@ -119,6 +123,32 @@ export class OptionsService {
           }];
         }
       });
+
+      // Transport Option Extraction
+      if (unit.adjacentTransportables) {
+        unit.adjacentTransportables.forEach((transportable: any) => {
+          if (!optionsCtx.transportables.includes(transportable.unitId)) {
+            optionsCtx.transportables.push(transportable.unitId);
+          }
+        });
+      };
+
+      if (unit.adjacentTransports) {
+        unit.adjacentTransports.forEach((transport: any) => {
+          if (optionsCtx.transports[unit.unitId]) {
+            optionsCtx.transports[unit.unitId].push(transport.unitId);
+          } else {
+            optionsCtx.transports[unit.unitId] = [transport.unitId];
+          }
+        });
+      };
+
+      if (unit.transportDestinations) {
+        optionsCtx.transportDestinations[unit.unitId]
+          = unit.transportDestinations.map((destination: any) => {
+            return destination.provinceId;
+          });
+      }
     });
 
     // Move Support
