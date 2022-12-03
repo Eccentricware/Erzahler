@@ -95,3 +95,10 @@ interface TransportDestinationResult {
   node_id: number;
   node_name: string;
 }
+
+export interface TransportPathLink {
+  transportsSoFar: number[];
+  destinationsSoFar: number[];
+  transportOptions: number[];
+  nextTransportLink: any;
+}

@@ -4,8 +4,9 @@ import { getGameStateQuery } from "../../database/queries/options/get-game-state
 import { getUnitAdjacentInfoQuery } from "../../database/queries/options/get-unit-adjacent-info-query";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, OptionsContext, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, OptionsContext, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
+import { mergeArrays, subtractArray } from "./data-structure-service";
 
 export class OptionsService {
 
@@ -100,14 +101,13 @@ export class OptionsService {
       sharedAdjProvinces: {},
       transportPaths: {},
       transports: {},
-      transportables: [],
+      transportables: {},
       transportDestinations: {}
     }
 
     this.sortAdjacencyInfo(optionsCtx);
-
-    // Move Support
     this.processMoveSupport(optionsCtx);
+    this.processTransportPaths(optionsCtx);
 
     console.log('End of processSpringUnitOrders');
   }
@@ -136,8 +136,10 @@ export class OptionsService {
       // Transport Option Extraction
       if (unit.adjacentTransportables) {
         unit.adjacentTransportables.forEach((transportable: any) => {
-          if (!optionsCtx.transportables.includes(transportable.unitId)) {
-            optionsCtx.transportables.push(transportable.unitId);
+          if (optionsCtx.transportables[transportable.unitId]) {
+            optionsCtx.transportables[transportable.unitId].push(unit.unitId);
+          } else {
+            optionsCtx.transportables[transportable.unitId] = [unit.unitId];
           }
         });
       };
@@ -161,8 +163,6 @@ export class OptionsService {
     });
   }
 
-  sortSharedSupport(optionsCtx: OptionsContext) {}
-
   processMoveSupport(optionsCtx: OptionsContext) {
     for (let province in optionsCtx.sharedAdjProvinces) {
       if (optionsCtx.sharedAdjProvinces[province].length > 1) {
@@ -182,6 +182,46 @@ export class OptionsService {
         });
       }
     }
+  }
+
+  processTransportPaths(optionsCtx: OptionsContext) {
+    this. startPaths(optionsCtx);
+    for (let path in optionsCtx.transportPaths) {
+      this.extendPath(optionsCtx, optionsCtx.transportPaths[path]);
+    }
+  }
+
+  startPaths(optionsCtx: OptionsContext) {
+    for (let transportableId in optionsCtx.transportables) {
+      optionsCtx.transportPaths[transportableId] = {
+        transportsSoFar: [],
+        destinationsSoFar: [],
+        transportOptions: optionsCtx.transports[transportableId],
+        nextTransportLink: {}
+      }
+    }
+  }
+
+  extendPath(optionsCtx: OptionsContext, currentPathLink: TransportPathLink) {
+    currentPathLink.transportOptions.forEach((transportId: number) => {
+      const nextTransportsSoFar: number[] = currentPathLink.destinationsSoFar.slice();
+      nextTransportsSoFar.push(transportId);
+
+      const nextDestinationsSoFar: number[] = currentPathLink.destinationsSoFar.slice();
+      nextDestinationsSoFar.push(...optionsCtx.transportDestinations[transportId]);
+
+      const nextTransportOptions: number[] = currentPathLink.transportOptions.filter((optionId: number) => optionId !== transportId);
+
+      const nextTransportLink: TransportPathLink = {
+        destinationsSoFar: nextDestinationsSoFar,
+        nextTransportLink: {},
+        transportOptions: nextTransportOptions,
+        transportsSoFar: nextTransportsSoFar
+      };
+
+      currentPathLink.nextTransportLink[transportId] = nextTransportLink;
+      this.extendPath(optionsCtx, currentPathLink.nextTransportLink[transportId]);
+    });
   }
 
   getDetailedUnit(optionsCtx: OptionsContext, unitId: number): UnitOptions {
