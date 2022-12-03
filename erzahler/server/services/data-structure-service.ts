@@ -1,11 +1,11 @@
 export function mergeArrays(array1: any[], array2: any[]): any[] {
-  array1.forEach((element: any) => {
-    if (!array2.includes(element)) {
-      array2.push(element);
+  array2.forEach((element: any) => {
+    if (!array1.includes(element)) {
+      array1.push(element);
     }
   });
 
-  return array2;
+  return array1;
 };
 
 export function subtractArray(filterArray: any[], removeArray: any[]): any[] {

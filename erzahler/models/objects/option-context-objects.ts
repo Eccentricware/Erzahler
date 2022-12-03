@@ -17,8 +17,10 @@ export interface UnitOptions {
   provinceId: number;
   provinceName: string;
   adjacencies: AdjacenctMovement[];
-  holdSupports: HoldSupport[] | undefined;
+  moveTransported: number[];
+  holdSupports: HoldSupport[];
   moveSupports: any;
+  allTransports: any;
   adjacentTransports: AdjacentTransport[] | undefined;
   adjacentTransportables: AdjacentTransportable[] | undefined;
   transportDestinations: TransportDestination[] | undefined;

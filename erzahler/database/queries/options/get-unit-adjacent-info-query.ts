@@ -24,5 +24,5 @@ export const getUnitAdjacentInfoQuery = `
   WHERE u.unit_type != 'Garrison'
     AND uh.unit_status = 'active'
     AND t.turn_id = $2
-  ORDER BY u.unit_type;
+  ORDER BY u.unit_id;
 `;
