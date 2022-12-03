@@ -9,9 +9,9 @@ AS $$
   SELECT u.unit_id,
 		json_agg(CASE
 			WHEN n.node_id = na.node_1_id
-				THEN json_build_object('province_id', p2.province_id, 'province_name', p2.province_name)
+				THEN json_build_object('node_id', nd2.node_id, 'node_name', nd2.node_name)
 			WHEN n.node_id = na.node_2_id
-				THEN json_build_object('province_id', p1.province_id, 'province_name', p1.province_name)
+				THEN json_build_object('node_id', nd1.node_id, 'node_name', nd1.node_name)
 		END) AS transport_destinations
 	FROM nodes n
 	INNER JOIN unit_histories uh ON uh.node_id = n.node_id
@@ -22,6 +22,8 @@ AS $$
 	INNER JOIN provinces p ON p.province_id = n.province_id
 	INNER JOIN provinces p1 ON p1.province_id = n1.province_id
 	INNER JOIN provinces p2 ON p2.province_id = n2.province_id
+	INNER JOIN nodes nd1 ON nd1.province_id = p1.province_id AND nd1.node_type = 'land'
+	INNER JOIN nodes nd2 ON nd2.province_id = p2.province_id AND nd2.node_type = 'land'
 	INNER JOIN turns t ON t.turn_id = uh.turn_id
 	WHERE t.turn_id = $1
 		AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)

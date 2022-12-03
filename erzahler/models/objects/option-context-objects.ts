@@ -51,8 +51,8 @@ interface AdjacentTransportable {
 }
 
 interface TransportDestination {
-  provinceId: number;
-  provinceName: string;
+  nodeId: number;
+  nodeName: string;
 }
 
 export interface UnitAdjacyInfoResult {
@@ -92,6 +92,6 @@ interface AdjacentTransportableResult {
 }
 
 interface TransportDestinationResult {
-  province_id: number;
-  province_name: string;
+  node_id: number;
+  node_name: string;
 }

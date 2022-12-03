@@ -104,6 +104,15 @@ export class OptionsService {
       transportDestinations: {}
     }
 
+    this.sortAdjacencyInfo(optionsCtx);
+
+    // Move Support
+    this.processMoveSupport(optionsCtx);
+
+    console.log('End of processSpringUnitOrders');
+  }
+
+  sortAdjacencyInfo(optionsCtx: OptionsContext) {
     // Holds can be pulled at get options
     // Organizes data for all ops, but completes adjacency options
     optionsCtx.unitInfo.forEach((unit: UnitOptions, index: number) => {
@@ -146,16 +155,13 @@ export class OptionsService {
       if (unit.transportDestinations) {
         optionsCtx.transportDestinations[unit.unitId]
           = unit.transportDestinations.map((destination: any) => {
-            return destination.provinceId;
+            return destination.nodeId;
           });
       }
     });
-
-    // Move Support
-    this.processMoveSupport(optionsCtx);
-
-    console.log('End of processSpringUnitOrders');
   }
+
+  sortSharedSupport(optionsCtx: OptionsContext) {}
 
   processMoveSupport(optionsCtx: OptionsContext) {
     for (let province in optionsCtx.sharedAdjProvinces) {
@@ -356,7 +362,7 @@ export class OptionsService {
           moveSupports: {},
           adjacentTransports: result.adjacent_transports && result.adjacent_transports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           adjacentTransportables: result.adjacent_transportables && result.adjacent_transportables.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
-          transportDestinations: result.transport_destinations && result.transport_destinations.map((province) => { return { provinceId: province.province_id, provinceName: province.province_name}})
+          transportDestinations: result.transport_destinations && result.transport_destinations.map((node) => { return { nodeId: node.node_id, nodeName: node.node_name}})
         }
       })
     });
