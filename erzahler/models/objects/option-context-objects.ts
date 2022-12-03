@@ -97,8 +97,9 @@ interface TransportDestinationResult {
 }
 
 export interface TransportPathLink {
-  transportsSoFar: number[];
-  destinationsSoFar: number[];
+  transports: number[];
+  destinations: number[];
+  contributions: any;
   transportOptions: number[];
   nextTransportLink: any;
 }
