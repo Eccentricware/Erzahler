@@ -210,7 +210,12 @@ export class OptionsService {
       const nextDestinationsSoFar: number[] = currentPathLink.destinationsSoFar.slice();
       nextDestinationsSoFar.push(...optionsCtx.transportDestinations[transportId]);
 
-      const nextTransportOptions: number[] = currentPathLink.transportOptions.filter((optionId: number) => optionId !== transportId);
+      let nextTransportOptions: number[] = [];
+      if (optionsCtx.transports[transportId]) {
+        nextTransportOptions = optionsCtx.transports[transportId].filter((optionId: number) =>
+          !nextTransportsSoFar.includes(optionId)
+        );
+      }
 
       const nextTransportLink: TransportPathLink = {
         destinationsSoFar: nextDestinationsSoFar,
