@@ -23,15 +23,18 @@ export interface UnitOptions {
   holdSupports: HoldSupport[];
   moveSupports: any;
   transportSupports: any;
+  nukeTargets: string[];
   allTransports: any;
   adjacentTransports: AdjacentTransport[] | undefined;
   adjacentTransportables: AdjacentTransportable[] | undefined;
   transportDestinations: TransportDestination[] | undefined;
+  nukeRange: number;
 }
 
 export interface AdjacenctMovement {
   nodeId: number;
   provinceId: number;
+  provinceName: string;
 }
 
 
@@ -74,12 +77,14 @@ export interface UnitAdjacyInfoResult {
   adjacent_transports: AdjacentTransportResult[] | undefined;
   adjacent_transportables: AdjacentTransportableResult[] | undefined;
   transport_destinations: TransportDestinationResult[] | undefined;
+  nuke_range: number;
 }
 
 
 export interface AdjacenctMovementResult {
   node_id: number;
   province_id: number;
+  province_name: string;
 }
 
 interface HoldSupportResult {
@@ -109,4 +114,10 @@ export interface TransportPathLink {
   contributions: any;
   transportOptions: number[];
   nextTransportLink: any;
+}
+
+export interface AirAdjacency {
+  nodeId: number;
+  provinceName: string;
+  adjacencies: any[]
 }

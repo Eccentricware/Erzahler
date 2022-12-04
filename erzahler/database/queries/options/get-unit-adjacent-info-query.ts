@@ -10,12 +10,15 @@ export const getUnitAdjacentInfoQuery = `
     hs.hold_supports,
     tu.adjacent_transports,
     tt.adjacent_transportables,
-    td.transport_destinations
+    td.transport_destinations,
+    ch.nuke_range
   FROM units u
   INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id
   INNER JOIN nodes n ON n.node_id = uh.node_id
   INNER JOIN provinces p ON p.province_id = n.province_id
   INNER JOIN turns t ON t.turn_id = uh.turn_id
+  INNER JOIN countries c ON c.country_id = u.country_id
+  INNER JOIN country_histories ch ON ch.country_id = c.country_id
   INNER JOIN get_node_adjacencies($1, false) a ON a.node_id = uh.node_id
   LEFT JOIN get_hold_supports($2) hs ON hs.unit_id = u.unit_id
   LEFT JOIN get_adjacent_transports($2) tu ON tu.unit_id = u.unit_id
