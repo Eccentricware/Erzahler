@@ -77,7 +77,7 @@ export interface UnitAdjacyInfoResult {
 }
 
 
-interface AdjacenctMovementResult {
+export interface AdjacenctMovementResult {
   node_id: number;
   province_id: number;
 }

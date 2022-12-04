@@ -39,6 +39,8 @@ import { ResolutionService } from "./resolutionService";
 import { GameStatus } from "../../models/enumeration/game-status-enum";
 import { setAssignmentsActiveQuery } from "../../database/queries/assignments/set-assignments-active-query";
 import { OptionsService } from "./optionsService";
+import { TurnType } from "../../models/enumeration/turn-type-enum";
+import { insertCoalitionScheduleQuery } from "../../database/queries/game/insert-coalition-schedule-query";
 
 export class GameService {
   gameData: any = {};
@@ -140,7 +142,8 @@ export class GameService {
         return await Promise.all([
           await this.addCreatorAssignment(pool, this.user.userId),
           await this.addRulesInGame(pool),
-          await this.addTurn0(pool, schedule)
+          await this.addTurn0(pool, schedule),
+          await this.addCoalitionSchedule(pool)
         ]).then(() => {
           return newGame.game_id;
         });
@@ -165,12 +168,35 @@ export class GameService {
     });
   }
 
+  async addCoalitionSchedule(pool: Pool): Promise<void> {
+    await pool.query(insertCoalitionScheduleQuery, [
+      50,
+      1,
+      undefined,
+      9,
+      6,
+      3,
+      1,
+      0,
+      undefined,
+      undefined,
+      undefined,
+      'ABB',
+      undefined,
+      this.gameData.gameName
+    ])
+    .catch((error: Error) => {
+      console.log('Add Coalition Error:', error.message);
+      this.errors.push('Add Coalition Error:' + error.message);
+    })
+  }
+
   async addTurn0(pool: Pool, schedule: StartScheduleObject): Promise<void> {
     await pool.query(insertTurnQuery, [
       schedule.gameStart,
       0,
       `Winter ${this.gameData.stylizedStartYear}`,
-      'orders',
+      TurnType.ADJUSTMENTS,
       TurnStatus.RESOLVED,
       this.gameData.gameName
     ])
@@ -190,7 +216,7 @@ export class GameService {
       schedule.firstTurnDeadline,
       1,
       `Spring ${this.gameData.stylizedStartYear + 1}`,
-      'orders',
+      TurnType.SPRING_ORDERS,
       TurnStatus.PAUSED,
       this.gameData.gameName
     ])

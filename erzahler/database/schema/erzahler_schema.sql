@@ -73,9 +73,9 @@ CREATE TABLE IF NOT EXISTS games(
 CREATE TABLE IF NOT EXISTS coalition_schedules(
   coalition_schedule_id SERIAL,
   game_id INTEGER NOT NULL,
-  base_percent INTEGER NOT NULL DEFAULT 50, -- Math.floor(n * 100/[50]) + 1
-  base_adjust INTEGER NOT NULL DEFAULT 1,   -- Math.floor(n * 100/50) + [1]
-  base_final INTEGER NOT NULL, -- Counts from provinces table
+  base_percent INTEGER DEFAULT 50, -- Math.floor(n * 100/[50]) + 1
+  base_adjust INTEGER DEFAULT 1,   -- Math.floor(n * 100/50) + [1]
+  base_final INTEGER, -- Counts from provinces table
   total_possible INTEGER,
   penalty_a INTEGER DEFAULT 9,
   penalty_b INTEGER DEFAULT 6,
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS country_histories(
   city_count INTEGER NOT NULL,
   unit_count INTEGER NOT NULL,
   banked_builds INTEGER NOT NULL,
-  nuke_range INTEGER NOT NULL,
+  nuke_range INTEGER,
   adjustments INTEGER NOT NULL,
   PRIMARY KEY(country_history_id),
   FOREIGN KEY(country_id)

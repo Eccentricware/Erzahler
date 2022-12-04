@@ -1,10 +1,11 @@
 import { createHash } from "crypto";
 import { Pool, QueryResult } from "pg";
 import { getGameStateQuery } from "../../database/queries/options/get-game-state-query";
+import { getNukeAdjQuery } from "../../database/queries/options/get-nuke-adj-query";
 import { getUnitAdjacentInfoQuery } from "../../database/queries/options/get-unit-adjacent-info-query";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, OptionsContext, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, OptionsContext, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 
@@ -110,6 +111,7 @@ export class OptionsService {
     this.sortAdjacencyInfo(optionsCtx);
     this.processTransportPaths(optionsCtx);
     this.processMoveSupport(optionsCtx);
+    this.processNukeOptions(gameState, optionsCtx);
 
     console.log('End of processSpringUnitOrders');
   }
@@ -272,7 +274,7 @@ export class OptionsService {
             transportingUnit.allTransports[transportedUnitId] = [...nextContributions[transportId]];
           }
 
-          this.addConvoysToSharedAdjProvinces(optionsCtx, nextContributions[transportId], transportedUnitId);
+          // this.addConvoysToSharedAdjProvinces(optionsCtx, nextContributions[transportId], transportedUnitId);
         }
       }
     });
@@ -494,8 +496,25 @@ export class OptionsService {
     return unitAdjacencyInfoResult;
   }
 
-  async processHolds(): Promise<void> {
-    // Fleets can't hold in the fall, UNLESS THEY HAVE POWER!!!
+  async processNukeOptions(gameState: GameState, optionsCtx: OptionsContext): Promise<void> {
+    const pool = new Pool(victorCredentials);
+
+    const nukeAdjArray: {nodeId: number, adjacencies: any }[] = await pool.query(getNukeAdjQuery, [gameState.gameId])
+      .then((results: QueryResult<any>) => {
+        return results.rows.map((result: any) => {
+          return {
+            nodeId: result.node_id,
+            adjacencies: result.adjacencies
+          }
+        });
+      })
+      .catch((error: Error) => {
+        console.log('getNukeAdjQuery Error: ' + error.message)
+        return [{nodeId: 0, adjacencies: undefined}]
+      });
+    const nukeNodeIdToIndex: any = {};
+
+    nukeAdjArray.forEach((nukeTarget: any) => {})
   }
 
   async processMovementStandard(): Promise<void> {
