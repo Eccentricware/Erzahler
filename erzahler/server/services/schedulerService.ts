@@ -9,7 +9,6 @@ import { Pool, QueryResult } from 'pg';
 import { victorCredentials } from '../../secrets/dbCredentials';
 import { getScheduleSettingsQuery } from '../../database/queries/scheduler/get-schedule-settings-query';
 import { ScheduleSettingsQueryResult } from '../../models/objects/schedule-settings-query-object';
-import { error } from 'console';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
 import { StartTiming } from '../../models/enumeration/start-timing-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';

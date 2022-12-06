@@ -1,15 +1,14 @@
-import { createHash } from "crypto";
 import { Pool, QueryResult } from "pg";
 import { getGameStateQuery } from "../../database/queries/options/get-game-state-query";
 import { getAirAdjQuery } from "../../database/queries/options/get-air-adj-query";
 import { getUnitAdjacentInfoQuery } from "../../database/queries/options/get-unit-adjacent-info-query";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OptionsContext, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OptionsContext, OrderOption, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 import { UnitType } from "../../models/enumeration/unit-enum";
-import { error } from "console";
+import pgPromise from 'pg-promise'
 
 export class OptionsService {
 
@@ -24,82 +23,64 @@ export class OptionsService {
     const gameState: GameState = await this.getGameState(gameId);
     const nextTurns: NextTurns = this.findNextTurns(gameState);
 
-    switch(nextTurns.pending) {
-      case TurnType.ORDERS_AND_VOTES:
-        await this.processSpringOrdersAndVotes(gameState);
-        break;
-      case TurnType.SPRING_ORDERS:
-        await this.processSpringOrders(gameState, false);
-        break;
-      case TurnType.SPRING_RETREATS:
-        await this.processSpringRetreats(gameState);
-        break;
-      case TurnType.FALL_ORDERS:
-        await this.processFallOrders(gameState, false);
-        break;
-      case TurnType.FALL_RETREATS:
-        await this.processFallRetreats(gameState);
-        break;
-      case TurnType.ADJUSTMENTS:
-        await this.processAdjustments(gameState, false);
-        break;
-      case TurnType.ADJ_AND_NOM:
-        await this.processAdjustmentsAndNominations(gameState, false);
-        break;
-      case TurnType.NOMINATIONS:
-        await this.processNominations(gameState, false);
-        break;
-      case TurnType.VOTES:
-        await this.processVotes(gameState);
-    }
+    const optionsContext: OptionsContext = await this.processUnitOrderOptions(gameState);
+    await this.saveUnitOrderOptions(optionsContext);
+    // switch(nextTurns.pending) {
+    //   case TurnType.ORDERS_AND_VOTES:
+    //     await this.processSpringOrdersAndVotes(gameState);
+    //     break;
+    //   case TurnType.SPRING_ORDERS:
+    //     await this.processSpringOrders(gameState, false);
+    //     break;
+    //   case TurnType.SPRING_RETREATS:
+    //     await this.processSpringRetreats(gameState);
+    //     break;
+    //   case TurnType.FALL_ORDERS:
+    //     await this.processFallOrders(gameState, false);
+    //     break;
+    //   case TurnType.FALL_RETREATS:
+    //     await this.processFallRetreats(gameState);
+    //     break;
 
-    if (nextTurns.preliminary) {
-      switch(nextTurns.preliminary) {
-        case TurnType.SPRING_ORDERS:
-          await this.processSpringOrders(gameState, true);
-          break;
-        case TurnType.FALL_ORDERS:
-          await this.processFallOrders(gameState, true);
-          break;
-        case TurnType.ADJUSTMENTS:
-          await this.processAdjustments(gameState, true);
-          break;
-        case TurnType.ADJ_AND_NOM:
-          await this.processAdjustmentsAndNominations(gameState, true);
-          break;
-        case TurnType.NOMINATIONS:
-          await this.processNominations(gameState, true);
-      }
-    }
+    //   case TurnType.ADJUSTMENTS:
+    //     await this.processAdjustments(gameState, false);
+    //     break;
+    //   case TurnType.ADJ_AND_NOM:
+    //     await this.processAdjustmentsAndNominations(gameState, false);
+    //     break;
+    //   case TurnType.NOMINATIONS:
+    //     await this.processNominations(gameState, false);
+    //     break;
+    //   case TurnType.VOTES:
+    //     await this.processVotes(gameState);
+    // }
+
+    // if (nextTurns.preliminary) {
+    //   switch(nextTurns.preliminary) {
+    //     case TurnType.SPRING_ORDERS:
+    //       await this.processSpringOrders(gameState, true);
+    //       break;
+    //     case TurnType.FALL_ORDERS:
+    //       await this.processFallOrders(gameState, true);
+    //       break;
+    //     case TurnType.ADJUSTMENTS:
+    //       await this.processAdjustments(gameState, true);
+    //       break;
+    //     case TurnType.ADJ_AND_NOM:
+    //       await this.processAdjustmentsAndNominations(gameState, true);
+    //       break;
+    //     case TurnType.NOMINATIONS:
+    //       await this.processNominations(gameState, true);
+    //   }
+    // }
 
     console.log('End of save options');
   }
 
-  async processSpringOrdersAndVotes(gameState: GameState) {
-    //Units
-    this.processSpringUnitOrders(gameState);
-    // Tech
-    // Builds
-    // Votes
-  }
-
-  async processSpringOrders(gameState: GameState, preliminary: boolean) {  // During Votes
-    this.processSpringUnitOrders(gameState);
-  }
-
-  // Turn Types
-  async processSpringRetreats(gameState: GameState) {}
-  async processFallOrders(gameState: GameState, preliminary: boolean) {} // During Retreats
-  async processFallRetreats(gameState: GameState) {}
-  async processAdjustments(gameState: GameState, preliminary: boolean) {} // During Retreats
-  async processAdjustmentsAndNominations(gameState: GameState, preliminary: boolean) {} // During Retreats
-  async processNominations(gameState: GameState, preliminary: boolean) {} // During Adjustments
-  async processVotes(gameState: GameState) {}
-
-  // Order Types
-  async processSpringUnitOrders(gameState: GameState) {
+  async processUnitOrderOptions(gameState: GameState): Promise<OptionsContext> {
+    const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId) ;
     const optionsCtx: OptionsContext = {
-      unitInfo: await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId),
+      unitInfo: unitInfo,
       unitIdToIndexLib: {},
       sharedAdjProvinces: {},
       potentialConvoyProvinces: {},
@@ -107,7 +88,8 @@ export class OptionsService {
       transportPaths: {},
       transports: {},
       transportables: {},
-      transportDestinations: {}
+      transportDestinations: {},
+      turnId: gameState.turnId
     };
 
     this.sortAdjacencyInfo(optionsCtx);
@@ -116,6 +98,7 @@ export class OptionsService {
     this.processNukeOptions(gameState, optionsCtx);
 
     console.log('End of processSpringUnitOrders');
+    return optionsCtx;
   }
 
   sortAdjacencyInfo(optionsCtx: OptionsContext) {
@@ -571,19 +554,61 @@ export class OptionsService {
     });
   }
 
-  async processMovementStandard(): Promise<void> {
-    // Standard is not convoyed
+  async saveUnitOrderOptions(optionsContext: OptionsContext): Promise<any> {
+    // const pool = new Pool(victorCredentials); // needs pg promise pool ?
+    const pgp = pgPromise()
+    const db = pgp(victorCredentials);
+    const columns = new pgp.helpers.ColumnSet([
+      'unit_id',
+      'order_type',
+      'secondary_unit_id',
+      'destination_choices',
+      'turn_id'
+    ], {table: 'order_options'});
+
+    const orderOptions: OrderOption[] = [];
+    optionsContext.unitInfo.forEach((unit: UnitOptions) => {
+      orderOptions.push(this.formatStandardMovement(unit, optionsContext.turnId));
+      // orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
+      // orderOptions.push(this.formatSupportHold(unit, optionsContext.turnId));
+      // orderOptions.push(this.formatSupportMoveStandard(unit, optionsContext.turnId));
+      // orderOptions.push(this.formatSupportMoveTransported(unit, optionsContext.turnId));
+      // orderOptions.push(this.formatTransport(unit, optionsContext.turnId));
+      // orderOptions.push(this.formatNuke(unit, optionsContext.turnId));
+    });
+
+    const orderOptionValues = orderOptions.map((option: OrderOption) => {
+      return {
+        unit_id: option.unitId,
+        order_type: option.orderType,
+        secondary_unit_id: option.secondaryUnitId,
+        destination_choices: option.destinationChoices,
+        turn_id: option.turnId
+      }
+    });
+
+    const up = pgp.helpers.insert(orderOptionValues, columns)
+    db.query(up);
+
   }
 
-  async processMovementConvoyed(): Promise<void> {
-    // Convoyed is not standard
+  formatStandardMovement(unit: UnitOptions, turnId: number): OrderOption {
+    const stdMovementDestinations: number[] = unit.adjacencies.map((adjacency: AdjacenctMovement) => adjacency.nodeId);
+    const stdMovementOptions: OrderOption = {
+      unitId: unit.unitId,
+      orderType: 'Move',
+      secondaryUnitId: undefined,
+      destinationChoices: stdMovementDestinations,
+      turnId: turnId
+    }
+
+    return stdMovementOptions;
   }
 
-  async saveOptionsHashes(turnId: number): Promise<void> {
-    const testString1 = [[1,1,10],[2,1,2]].toString();
-    console.log('testString1', createHash('sha256').update(testString1).digest('hex'));
-    const testString2 = [[1,1,10],[2,1,3]].toString();
-    console.log('testString2', createHash('sha256').update(testString2).digest('hex'));
-  }
-
+  // formatTransportedMovement(unit: UnitOptions, turnId: number): OrderOption {}
+  // formatSupportHold(unit: UnitOptions, turnId: number): OrderOption {}
+  // formatSupportMoveStandard(unit: UnitOptions, turnId: number): OrderOption {}
+  // formatSupportMoveTransported(unit: UnitOptions, turnId: number): OrderOption {}
+  // formatTransport(unit: UnitOptions, turnId: number): OrderOption {}
+  // formatNuke(unit: UnitOptions, turnId: number): OrderOption {}
 }

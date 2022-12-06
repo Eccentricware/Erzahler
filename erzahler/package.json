@@ -23,7 +23,8 @@
     "luxon": "^3.0.4",
     "node-schedule": "^2.1.0",
     "nodemon": "^2.0.16",
-    "pg": "^8.7.3"
+    "pg": "^8.7.3",
+    "pg-promise": "^10.15.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",

@@ -553,7 +553,7 @@ CREATE TABLE IF NOT EXISTS order_options(
   unit_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
   secondary_unit_id INTEGER,
-  destination_choices INTEGER [] NOT NULL,
+  destination_choices INTEGER[],
   order_type VARCHAR(15) NOT NULL,
   PRIMARY KEY(order_option_id),
   FOREIGN KEY(unit_id)
