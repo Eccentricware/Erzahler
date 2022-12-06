@@ -1,8 +1,8 @@
 export interface OrderOption {
   unitId: number;
   orderType: string;
-  secondaryUnitId: number | undefined;
-  destinationChoices: number[];
+  secondaryUnitId?: number | undefined;
+  destinationChoices?: number[];
   turnId: number;
 }
 
@@ -46,7 +46,7 @@ export interface AdjacenctMovement {
   provinceName: string;
 }
 
-interface HoldSupport {
+export interface HoldSupport {
   unitId: number;
   unitName: string;
 }
