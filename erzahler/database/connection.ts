@@ -1,8 +1,19 @@
-// const pgPromise = require('pg-promise')();
-// import Pool from 'pg';
-// import { DBCredentials, victorCredentials } from '../secrets/dbCredentials';
+import pgPromise, { IDatabase, IInitOptions, IMain } from "pg-promise";
+import { victorCredentials } from "../secrets/dbCredentials";
+import { OptionsRepository } from "./repos/options-repo";
 
-// const connection: DBCredentials = victorCredentials;
+interface IExtensions {
+  optionsRepo: OptionsRepository;
+}
 
-// export const erzahlerDB = new Pool(victorCredentials);
-// export const erzahlerDB = pgPromise(connection);
+const initOptions: IInitOptions<IExtensions> = {
+  extend(obj: IDatabase<IExtensions> & IExtensions, dc: any) {
+    obj.optionsRepo = new OptionsRepository(obj, pgp);
+  }
+}
+
+const pgp: IMain = pgPromise(initOptions);
+
+const db: IDatabase<IExtensions> & IExtensions = pgp(victorCredentials);
+
+export {db, pgp};

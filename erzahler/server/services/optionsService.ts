@@ -9,6 +9,8 @@ import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 import { UnitType } from "../../models/enumeration/unit-enum";
 import pgPromise from 'pg-promise'
+import { db } from "../../database/connection";
+import { OrderDisplay } from "../../models/enumeration/order-display-enum";
 
 export class OptionsService {
 
@@ -555,18 +557,8 @@ export class OptionsService {
   }
 
   async saveUnitOrderOptions(optionsContext: OptionsContext): Promise<any> {
-    // const pool = new Pool(victorCredentials); // needs pg promise pool ?
-    const pgp = pgPromise()
-    const db = pgp(victorCredentials);
-    const columns = new pgp.helpers.ColumnSet([
-      'unit_id',
-      'order_type',
-      'secondary_unit_id',
-      'destination_choices',
-      'turn_id'
-    ], {table: 'order_options'});
-
     const orderOptions: OrderOption[] = [];
+
     optionsContext.unitInfo.forEach((unit: UnitOptions) => {
       orderOptions.push(this.formatStandardMovement(unit, optionsContext.turnId));
       // orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
@@ -577,26 +569,14 @@ export class OptionsService {
       // orderOptions.push(this.formatNuke(unit, optionsContext.turnId));
     });
 
-    const orderOptionValues = orderOptions.map((option: OrderOption) => {
-      return {
-        unit_id: option.unitId,
-        order_type: option.orderType,
-        secondary_unit_id: option.secondaryUnitId,
-        destination_choices: option.destinationChoices,
-        turn_id: option.turnId
-      }
-    });
-
-    const up = pgp.helpers.insert(orderOptionValues, columns)
-    db.query(up);
-
+     db.optionsRepo.saveOrderOptions(orderOptions);
   }
 
   formatStandardMovement(unit: UnitOptions, turnId: number): OrderOption {
     const stdMovementDestinations: number[] = unit.adjacencies.map((adjacency: AdjacenctMovement) => adjacency.nodeId);
     const stdMovementOptions: OrderOption = {
       unitId: unit.unitId,
-      orderType: 'Move',
+      orderType: OrderDisplay.MOVE,
       secondaryUnitId: undefined,
       destinationChoices: stdMovementDestinations,
       turnId: turnId
