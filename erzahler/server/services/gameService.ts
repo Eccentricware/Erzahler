@@ -22,7 +22,7 @@ import { getRulesInGameQuery } from "../../database/queries/game/get-rules-in-ga
 import { checkUserGameAdminQuery } from "../../database/queries/game/check-user-game-admin-query";
 import { updateGameSettingsQuery } from "../../database/queries/game/update-game-settings-query";
 import { updateTurnQuery } from "../../database/queries/game/update-turn-query";
-import { SchedulerService } from "./schedulerService";
+import { SchedulerService } from "./scheduler-service";
 import { StartScheduleObject } from "../../models/objects/start-schedule-object";
 import { FormattingService } from "./formattingService";
 import { getGamesQuery } from "../../database/queries/game/get-games-query";
@@ -76,10 +76,6 @@ export class GameService {
             errors: this.errors
           }
         });
-
-      if (newGameResult.success) {
-        optionsService.saveOptionsForNextTurns(newGameResult.gameId);
-      }
 
       return newGameResult;
 
