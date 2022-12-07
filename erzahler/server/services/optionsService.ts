@@ -4,10 +4,11 @@ import { getGameStateQuery } from "../../database/queries/options/get-game-state
 import { getUnitAdjacentInfoQuery } from "../../database/queries/options/get-unit-adjacent-info-query";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, UnitAdjacencyInfo, UnitAdjacyInfoResult } from "../../models/objects/unit-adjacency-info-object";
+import { AdjacenctMovement, MoveSupport, UnitAdjacencyInfo, UnitAdjacyInfoResult } from "../../models/objects/unit-adjacency-info-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
 
 export class OptionsService {
+
   // Turns to be processed are pending or preliminary
   // Preliminaries for Fall Orders during Spring Retreats, and Adjustments during Fall retreats
     // If Adjustment preliminary, must also account for possible nomination
@@ -71,13 +72,18 @@ export class OptionsService {
   }
 
   async processSpringOrdersAndVotes(gameState: GameState) {
+    //Units
     this.processSpringUnitOrders(gameState);
+    // Tech
+    // Builds
+    // Votes
   }
 
   async processSpringOrders(gameState: GameState, preliminary: boolean) {  // During Votes
     this.processSpringUnitOrders(gameState);
   }
 
+  // Turn Types
   async processSpringRetreats(gameState: GameState) {}
   async processFallOrders(gameState: GameState, preliminary: boolean) {} // During Retreats
   async processFallRetreats(gameState: GameState) {}
@@ -86,11 +92,18 @@ export class OptionsService {
   async processNominations(gameState: GameState, preliminary: boolean) {} // During Adjustments
   async processVotes(gameState: GameState) {}
 
+  // Order Types
   async processSpringUnitOrders(gameState: GameState) {
+    const unitIdToIndexLibrary: any = {};
     const sharedAdjacentProvinces: any = {};
-    const unitInfo: UnitAdjacencyInfo[] = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId);
+    const transportPaths: any = {};
 
-    unitInfo.forEach((unit: UnitAdjacencyInfo) => {
+    // Holds can be pulled at get options
+    // Movement
+    const unitInfo = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId);
+
+    unitInfo.forEach((unit: UnitAdjacencyInfo, index: number) => {
+      unitIdToIndexLibrary[unit.unitId] = index;
       unit.adjacencies.forEach((adjacency: AdjacenctMovement) => {
         if (sharedAdjacentProvinces[adjacency.provinceId]) {
           sharedAdjacentProvinces[adjacency.provinceId].push({
@@ -106,8 +119,37 @@ export class OptionsService {
       });
     });
 
+    // Move Support
+    this.processMoveSupport(unitInfo, unitIdToIndexLibrary, sharedAdjacentProvinces);
+
     console.log('End of processSpringUnitOrders');
   }
+
+  processMoveSupport(unitInfo: UnitAdjacencyInfo[], unitIdToIndexLibrary: any, sharedAdjacentProvinces: any) {
+    for (let province in sharedAdjacentProvinces) {
+      if (sharedAdjacentProvinces[province].length > 1) {
+        let unitsInReach: {unitId: number, nodeId: number}[] = sharedAdjacentProvinces[province];
+
+        unitsInReach.forEach((commandedUnit: {unitId: number, nodeId: number}, commandIdx: number) => {
+          unitsInReach.forEach((supportedUnit: {unitId: number, nodeId: number}, supportIdx: number) => {
+            if (commandIdx !== supportIdx) {
+              const cmdUnitDetails = this.getDetailedUnit(unitInfo, unitIdToIndexLibrary, commandedUnit.unitId);
+              if (cmdUnitDetails.moveSupports[supportedUnit.unitId]) {
+                cmdUnitDetails.moveSupports[supportedUnit.unitId].push(supportedUnit.nodeId);
+              } else {
+                cmdUnitDetails.moveSupports[supportedUnit.unitId] = [supportedUnit.nodeId];
+              }
+            }
+          });
+        });
+      }
+    }
+  }
+
+  getDetailedUnit(unitInfo: UnitAdjacencyInfo[], unitIdToIndexLibrary: any, unitId: number): UnitAdjacencyInfo {
+    return unitInfo[unitIdToIndexLibrary[unitId]];
+  }
+
 
   findNextTurns(gameState: GameState): NextTurns {
     const nextTurns: NextTurns = { pending: '' };
@@ -268,7 +310,7 @@ export class OptionsService {
 
     const unitAdjacencyInfoResult: UnitAdjacencyInfo[] = await pool.query(getUnitAdjacentInfoQuery, [gameId, turnId])
     .then((results: QueryResult<any>) => {
-      return results.rows.map((result: UnitAdjacyInfoResult) => {
+      return results.rows.map((result: UnitAdjacyInfoResult, index: number) => {
         return <UnitAdjacencyInfo>{
           unitId: result.unit_id,
           unitName: result.unit_name,
@@ -279,10 +321,10 @@ export class OptionsService {
           provinceName: result.province_name,
           adjacencies: result.adjacencies.map((adjacency) => { return { nodeId: adjacency.node_id, provinceId: adjacency.province_id}}),
           holdSupports: result.hold_supports && result.hold_supports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
+          moveSupports: {},
           adjacentTransports: result.adjacent_transports && result.adjacent_transports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           adjacentTransportables: result.adjacent_transportables && result.adjacent_transportables.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
-          transportDestinations: result.transport_destinations && result.transport_destinations.map((province) => { return { provinceId: province.province_id, provinceName: province.province_name}}),
-          turnType: result.turn_type
+          transportDestinations: result.transport_destinations && result.transport_destinations.map((province) => { return { provinceId: province.province_id, provinceName: province.province_name}})
         }
       })
     });

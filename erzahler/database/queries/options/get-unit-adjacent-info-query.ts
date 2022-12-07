@@ -10,8 +10,7 @@ export const getUnitAdjacentInfoQuery = `
     hs.hold_supports,
     tu.adjacent_transports,
     tt.adjacent_transportables,
-    td.transport_destinations,
-    t.turn_type
+    td.transport_destinations
   FROM units u
   INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id
   INNER JOIN nodes n ON n.node_id = uh.node_id
