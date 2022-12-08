@@ -28,7 +28,6 @@ import { FormattingService } from "./formattingService";
 import { getGamesQuery } from "../../database/queries/game/get-games-query";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
-import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 import { startGameQuery } from "../../database/queries/game/start-game-query";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
@@ -41,6 +40,7 @@ import { setAssignmentsActiveQuery } from "../../database/queries/assignments/se
 import { OptionsService } from "./optionsService";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { insertCoalitionScheduleQuery } from "../../database/queries/game/insert-coalition-schedule-query";
+import { db } from "../../database/connection";
 
 export class GameService {
   gameData: any = {};
@@ -59,7 +59,6 @@ export class GameService {
 
       const newGameResult = await this.addNewGame(pool, this.gameData, this.user.timeZone)
         .then((newGameId: any) => {
-          pool.end();
           return {
             success: true,
             gameId: newGameId,
@@ -69,7 +68,6 @@ export class GameService {
         .catch((error: Error) => {
           console.log('Game Response Failure:', error.message)
           this.errors.push('New Game Error' + error.message);
-          pool.end();
           return {
             success: false,
             gameId: 0,
@@ -130,7 +128,7 @@ export class GameService {
       settings.skillRange[1]
     ];
 
-    return await pool.query(insertNewGameQuery, settingsArray)
+    return await db.gameRepo.insertGame(settingsArray)
       .then(async (results: QueryResult<any>) => {
         const newGame = results.rows[0];
         console.log('Game Row Added Successfully');
@@ -152,43 +150,15 @@ export class GameService {
   }
 
   async addCreatorAssignment(pool: Pool, userId: number): Promise<void> {
-    await pool.query(insertAssignmentQuery, [
-      userId,
-      null,
-      'Creator',
-      this.gameData.gameName
-    ])
-    .catch((error: Error) => {
-      console.log('New Assignment Error:', error.message);
-      this.errors.push('New Assignment Error:' + error.message);
-    });
+    await db.gameRepo.insertAssignment(userId, undefined, 'Creator', this.gameData.gameName);
   }
 
   async addCoalitionSchedule(pool: Pool): Promise<void> {
-    await pool.query(insertCoalitionScheduleQuery, [
-      50,
-      1,
-      undefined,
-      9,
-      6,
-      3,
-      1,
-      0,
-      undefined,
-      undefined,
-      undefined,
-      'ABB',
-      undefined,
-      this.gameData.gameName
-    ])
-    .catch((error: Error) => {
-      console.log('Add Coalition Error:', error.message);
-      this.errors.push('Add Coalition Error:' + error.message);
-    })
+    await db.gameRepo.insertCoalitionScheduleQuery(this.gameData.gameName);
   }
 
   async addTurn0(pool: Pool, schedule: StartScheduleObject): Promise<void> {
-    await pool.query(insertTurnQuery, [
+    await db.gameRepo.insertTurn([
       schedule.gameStart,
       0,
       `Winter ${this.gameData.stylizedStartYear}`,
@@ -208,7 +178,7 @@ export class GameService {
 
   async addTurn1(pool: Pool, schedule: StartScheduleObject): Promise<void> {
     console.log('trying turn 1');
-    await pool.query(insertTurnQuery, [
+    await db.gameRepo.insertTurn([
       schedule.firstTurnDeadline,
       1,
       `Spring ${this.gameData.stylizedStartYear + 1}`,
@@ -228,17 +198,10 @@ export class GameService {
   }
 
   async addRulesInGame(pool: Pool): Promise<any> {
-    const rulePromises: Promise<QueryResult<any>>[] = await this.gameData.rules.map(async (rule: any) => {
-      return await pool.query(insertRuleInGameQuery, [
-        this.gameData.gameName,
-        rule.key,
-        rule.enabled
-      ])
-      .catch((error: Error) => {
-        console.log('Rule In Games Error:', error.message);
-        this.errors.push('Error adding Rule In Game: ' + error.message);
-      });
-    });
+    const rulePromises: Promise<QueryResult<any>>[] = await db.gameRepo.insertRulesInGame(
+      this.gameData.rules,
+      this.gameData.gameName
+    );
 
     return Promise.all(rulePromises)
       .then((rules: any) => true)
@@ -249,26 +212,15 @@ export class GameService {
   }
 
   async addCountries(pool: Pool): Promise<void> {
-    const newCountryPromises: Promise<any>[] = [];
-
-    for (let countryName in this.gameData.dbRows.countries) {
-      newCountryPromises.push(pool.query(insertCountryQuery, [
-        this.gameData.dbRows.countries[countryName].name,
-        this.gameData.dbRows.countries[countryName].rank,
-        this.gameData.dbRows.countries[countryName].color,
-        this.gameData.dbRows.countries[countryName].keyName,
-        this.gameData.gameName
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Country Error:', error.message);
-        this.errors.push('Insert Country Error:' + error.message);
-      }));
-    }
+    const newCountryPromises: Promise<any>[] = await db.gameRepo.insertCountries(
+      this.gameData.dbRows.countries,
+      this.gameData.gameName
+    );
 
     // console.log('newCountryPromises', newCountryPromises);
 
     return await Promise.all(newCountryPromises)
-      .then(async () => {
+      .then(async (newCountryResolved) => {
         await this.addProvinces(pool);
         await this.addCountryInitialHistories(pool);
       })
@@ -279,24 +231,13 @@ export class GameService {
   }
 
   async addProvinces(pool: Pool): Promise<void> {
-    const provincePromises: Promise<any>[] = [];
-    for (let provinceName in this.gameData.dbRows.provinces) {
-      provincePromises.push(pool.query(insertProvinceQuery, [
-        this.gameData.dbRows.provinces[provinceName].name,
-        this.gameData.dbRows.provinces[provinceName].fullName,
-        this.gameData.dbRows.provinces[provinceName].type,
-        this.gameData.dbRows.provinces[provinceName].voteType,
-        this.gameData.dbRows.provinces[provinceName].cityLoc,
-        this.gameData.gameName
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Province Error:', error.message);
-        this.errors.push('Insert Province Error: ' + error.message);
-      }));
-    }
+    const provincePromises: Promise<any>[] = await db.gameRepo.insertProvinces(
+      this.gameData.dbRows.provinces,
+      this.gameData.gameName
+    );
 
     return await Promise.all(provincePromises)
-      .then(async (resolvedProvincePromises) => {
+      .then(async () => {
         console.log('Provinces Added');
         await this.addProvinceHistories(pool);
         await this.addTerrain(pool);
@@ -306,24 +247,10 @@ export class GameService {
   }
 
   async addProvinceHistories(pool: Pool): Promise<any> {
-    const provinceHistoryPromises: Promise<any>[] = [];
-
-    for (let provinceName in this.gameData.dbRows.provinces) {
-      provinceHistoryPromises.push(pool.query(insertInitialProvinceHistoryQuery, [
-        this.gameData.dbRows.provinces[provinceName].status,
-        this.gameData.dbRows.provinces[provinceName].voteColor,
-        this.gameData.dbRows.provinces[provinceName].statusColor,
-        this.gameData.dbRows.provinces[provinceName].strokeColor,
-        this.gameData.dbRows.provinces[provinceName].country,
-        this.gameData.dbRows.provinces[provinceName].owner,
-        this.gameData.gameName,
-        this.gameData.dbRows.provinces[provinceName].name
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Province History Error:', error.message);
-        this.errors.push('Insert Province History Error:' + error.message);
-      }));
-    }
+    const provinceHistoryPromises: Promise<any>[] = await db.gameRepo.insertProvinceHistories(
+      this.gameData.dbRows.provinces,
+      this.gameData.gameName
+    );
 
     return await Promise.all(provinceHistoryPromises)
       .catch((error: Error) => {
@@ -333,26 +260,10 @@ export class GameService {
   }
 
   async addTerrain(pool: Pool): Promise<any> {
-    const terrainPromises: Promise<QueryResult<any>>[] = await this.gameData.dbRows.terrain.map(async (terrain: any) => {
-      return await pool.query(insertTerrainQuery, [
-        terrain.type,
-        terrain.renderCategory,
-        terrain.points,
-        terrain.bounds.top,
-        terrain.bounds.left,
-        terrain.bounds.right,
-        terrain.bounds.bottom,
-        terrain.start,
-        terrain.end,
-        this.gameData.gameName,
-        terrain.province,
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Terrain Error:', error.message);
-        this.errors.push('Insert Terrain Error:' + error.message);
-      });
-    });
-
+    const terrainPromises: Promise<any>[] = await db.gameRepo.insertTerrain(
+      this.gameData.dbRows.terrain,
+      this.gameData.gameName
+    );
 
     return await Promise.all(terrainPromises)
       .catch((error: Error) => {
@@ -362,39 +273,14 @@ export class GameService {
   }
 
   async addLabels(pool: Pool): Promise<any> {
-    this.gameData.dbRows.labels.forEach(async (label: any) => {
-      await pool.query(insertLabelQuery, [
-        label.name,
-        label.type,
-        label.loc,
-        label.text,
-        label.fill,
-        this.gameData.gameName,
-        label.province
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Label Error:', error.message);
-        this.errors.push('Insert Label Error: ' + error.message);
-      });
-    });
+    db.gameRepo.insertLabels(this.gameData.dbRows.labels, this.gameData.gameName);
   }
 
   async addNodes(pool: Pool): Promise<any> {
-    const nodePromises: Promise<any>[] = [];
-
-    for (let nodeName in this.gameData.dbRows.nodes) {
-      nodePromises.push(pool.query(insertNodeQuery, [
-        this.gameData.dbRows.nodes[nodeName].name,
-        this.gameData.dbRows.nodes[nodeName].type,
-        this.gameData.dbRows.nodes[nodeName].loc,
-        this.gameData.gameName,
-        this.gameData.dbRows.nodes[nodeName].province
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Node Error:', error.message);
-        this.errors.push('Insert Node Error: ' + error.message);
-      }));
-    }
+    const nodePromises: Promise<any>[] = await db.gameRepo.insertNodes(
+      this.gameData.dbRows.nodes,
+      this.gameData.gameName
+    );
 
     return await Promise.all(nodePromises).then(async (nodes: any) => {
       await this.addNodeAdjacencies(pool);
@@ -403,18 +289,10 @@ export class GameService {
   }
 
   async addNodeAdjacencies(pool: Pool): Promise<any> {
-    const nodeAdjacencyPromises: Promise<any>[] = [];
-    for (let linkName in this.gameData.dbRows.links) {
-      nodeAdjacencyPromises.push(pool.query(insertNodeAdjacencyQuery, [
-        this.gameData.gameName,
-        this.gameData.dbRows.links[linkName].alpha.name,
-        this.gameData.dbRows.links[linkName].omega.name
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Node Adjacency Error:', error.message);
-        this.errors.push('Insert Node Adjacency Error: ' + error.message);
-      }))
-    }
+    const nodeAdjacencyPromises: Promise<any>[] = await db.gameRepo.insertNodeAdjacencies(
+      this.gameData.dbRows.links,
+      this.gameData.gameName
+    );
 
     return await Promise.all(nodeAdjacencyPromises)
       .catch((error: Error) => {
@@ -424,23 +302,10 @@ export class GameService {
   }
 
   async addCountryInitialHistories(pool: Pool): Promise<any> {
-    const countryHistoryPromises: Promise<any>[] = [];
-    for (let countryName in this.gameData.dbRows.countries) {
-      countryHistoryPromises.push(pool.query(insertCountryHistoryQuery, [
-        this.gameData.dbRows.countries[countryName].rank !== 'n' ? 'available' : 'npc',
-        this.gameData.dbRows.countries[countryName].cities.length,
-        this.gameData.dbRows.countries[countryName].units.length,
-        this.gameData.dbRows.countries[countryName].bankedBuilds,
-        this.gameData.dbRows.countries[countryName].nuke,
-        this.gameData.dbRows.countries[countryName].adjustments,
-        this.gameData.gameName,
-        this.gameData.dbRows.countries[countryName].name,
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Country History Error:', error.message);
-        this.errors.push('Insert Country History Error: ' + error.message);
-      }));
-    }
+    const countryHistoryPromises: Promise<any>[] = await db.gameRepo.insertCountryHistories(
+      this.gameData.dbRows.countries,
+      this.gameData.gameName
+    );
 
     return await Promise.all(countryHistoryPromises)
       .catch((error: Error) => {
@@ -450,19 +315,10 @@ export class GameService {
   }
 
   async addUnits(pool: Pool): Promise<any> {
-    const unitPromises: Promise<any>[] = [];
-    for (let unitName in this.gameData.dbRows.units) {
-      unitPromises.push(pool.query(insertUnitQuery, [
-        this.gameData.dbRows.units[unitName].fullName,
-        this.gameData.dbRows.units[unitName].type,
-        this.gameData.gameName,
-        this.gameData.dbRows.units[unitName].country
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Unit Error:', error.message);
-        this.errors.push('Insert Unit Error: ' + error.message);
-      }))
-    }
+    const unitPromises: Promise<any>[] = await db.gameRepo.insertUnits(
+      this.gameData.dbRows.units,
+      this.gameData.gameName
+    );
 
     return await Promise.all(unitPromises).then(async (units: any) => {
       await this.addInitialUnitHistories(pool);
@@ -470,19 +326,10 @@ export class GameService {
   }
 
   async addInitialUnitHistories(pool: Pool): Promise<any> {
-    const initialHistoryPromises: Promise<any>[] = [];
-    for (let unitName in this.gameData.dbRows.units) {
-      initialHistoryPromises.push(pool.query(insertUnitHistoryQuery, [
-        'Active',
-        this.gameData.gameName,
-        this.gameData.dbRows.units[unitName].fullName,
-        this.gameData.dbRows.units[unitName].node
-      ])
-      .catch((error: Error) => {
-        console.log('Insert Unit History Error:', error.message);
-        this.errors.push('Insert Unit History Error: ' + error.message);
-      }))
-    }
+    const initialHistoryPromises: Promise<any>[] = await db.gameRepo.insertUnitHistories(
+      this.gameData.dbRows.units,
+      this.gameData.gameName
+    );
 
     return await Promise.all(initialHistoryPromises)
       .catch((error: Error) => {
@@ -492,9 +339,7 @@ export class GameService {
   }
 
   async checkGameNameAvailability(gameName: string): Promise<boolean> {
-    const pool: Pool = new Pool(victorCredentials);
-
-    const gameNameResults: QueryResult<any> = await pool.query(checkGameNameAvailabilityQuery, [gameName]);
+    const gameNameResults: QueryResult<any> = await db.gameRepo.checkGameNameAvailable(gameName);
 
     return gameNameResults.rowCount === 0;
   }
@@ -503,7 +348,6 @@ export class GameService {
     const accountService: AccountService = new AccountService();
     const formattingService: FormattingService  = new FormattingService();
     const schedulerService: SchedulerService = new SchedulerService();
-    const pool: Pool = new Pool(victorCredentials);
     let userId = 0;
     let userTimeZone = 'Africa/Monrovia';
     let meridiemTime = false;
@@ -519,15 +363,7 @@ export class GameService {
       }
     }
 
-    const gameResults: any = await pool.query(getGamesQuery, [userTimeZone])
-      .then((gamesResults: QueryResult<any>) => {
-        return gamesResults.rows.map((game: GameSummaryQueryObject) => {
-          return new GameSummaryBuilder(game, userTimeZone, meridiemTime);
-        });
-      })
-      .catch((error: Error) => {
-        console.log('Get Games Query Error', error.message);
-      });
+    const gameResults: any = await db.gameRepo.getGames(userTimeZone, meridiemTime);
 
     return gameResults;
   }
@@ -552,23 +388,9 @@ export class GameService {
       }
     }
 
-    const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId, userTimeZone])
-      .then((gameDataResults: any) => {
-        return new GameDetailsBuilder(gameDataResults.rows[0], userTimeZone, meridiemTime);
-      })
-      .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
-
-    const ruleData: any = await pool.query(getRulesInGameQuery, [gameId])
-      .then((ruleDataResults: any) => {
-        return ruleDataResults.rows.map((rule: any) => formattingService.convertKeysSnakeToCamel(rule));
-      })
-      .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
-
-    const playerRegistration: any = await pool.query(getPlayerRegistrationStatus, [gameId, userId])
-      .then((playerRegistrationResults: any) => {
-        return playerRegistrationResults.rows.map((registrationType: any) => formattingService.convertKeysSnakeToCamel(registrationType));
-      })
-      .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
+    const gameData: any = await db.gameRepo.getGameDetails(gameId, userId, userTimeZone, meridiemTime);
+    const ruleData: any = await db.gameRepo.getRulesInGame(gameId);
+    const playerRegistration: any = await db.gameRepo.getPlayerRegistrationStatus(gameId, userId);
 
     gameData.rules = ruleData;
     gameData.playerRegistration = playerRegistration;
@@ -586,7 +408,7 @@ export class GameService {
     if (token.uid) {
       const pool: Pool = new Pool(victorCredentials);
 
-      const isAdmin = await pool.query(checkUserGameAdminQuery, [token.uid, gameData.gameId]);
+      const isAdmin = await db.gameRepo.isGameAdmin(token.uid, gameData.gameId);
       if (isAdmin) {
         this.user = await accountService.getUserProfile(idToken);
         const events = schedulerService.extractEvents(gameData, this.user.timeZone);
@@ -631,23 +453,9 @@ export class GameService {
         const errors: string[] = [];
 
         // console.log('Internal Game Data:', gameData);
-        const gameUpdate = await pool.query(updateGameSettingsQuery, gameSettings)
-        .catch((error: Error) => {
-          console.log('Update Game Error: ' + error.message);
-          errors.push('Update Game Error: ' + error.message);
-        });
-
-        const turn0Update = await pool.query(updateTurnQuery, [gameData.gameStart, 0, gameData.gameId])
-          .catch((error: Error) => {
-            console.log('Update Turn 0 Error: ' + error.message);
-            errors.push('Update Turn 0 Error: ' + error.message);
-          });
-
-        const turn1Update = await pool.query(updateTurnQuery, [gameData.firstTurnDeadline, 1, gameData.gameId])
-          .catch((error: Error) => {
-            console.log('Update Turn 1 Error: ' + error.message);
-            errors.push('Update Turn 1 Error: ' + error.message);
-          });
+        const gameUpdate = await db.gameRepo.updateGameSettings(gameSettings);
+        const turn0Update = await db.gameRepo.updateTurn(gameData.gameStart, 0, gameData.gameId);
+        const turn1Update = await db.gameRepo.updateTurn(gameData.firstTurnDeadline, 1, gameData.gameId);
 
         return Promise.all([gameUpdate, turn0Update, turn1Update])
           .then((result: any) => {

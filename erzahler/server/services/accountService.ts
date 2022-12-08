@@ -76,9 +76,7 @@ export class AccountService {
 
     const userAdded = await db.accountsRepo.getUserProfile(firebaseUser.uid);
 
-    console.log('userAdded rowcount', userAdded.rowCount);
-
-    if (userAdded.rowCount === 1) {
+    if (userAdded) {
       return { success: true };
     } else {
       return { success: false };
@@ -142,9 +140,9 @@ export class AccountService {
       const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
       await db.accountsRepo.syncProviderEmailState(firebaseUser);
 
-      const blitzkarteUser: UserProfile = await db.accountsRepo.getUserProfile(token.uid);
+      const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
 
-      if (blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
+      if (blitzkarteUser && blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
         await db.accountsRepo.lockUsername(firebaseUser.uid);
         await db.accountsRepo.clearVerificationDeadline(firebaseUser.uid);
       }

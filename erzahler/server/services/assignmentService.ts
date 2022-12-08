@@ -1,5 +1,5 @@
 import { Pool, QueryResult, } from "pg";
-import { getPlayerRegistrationStatus } from "../../database/queries/assignments/get-player-registration-status";
+import { getPlayerRegistrationStatusQuery } from "../../database/queries/assignments/get-player-registration-status";
 import { registerUserQuery } from "../../database/queries/assignments/register-user-query";
 import { unregisterUserQuery } from "../../database/queries/assignments/unregister-user-query";
 import { reregisterUserQuery } from "../../database/queries/assignments/reregister-user-query";
@@ -57,7 +57,7 @@ export class AssignmentService {
       })
       .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
 
-    const userStatus: any = await pool.query(getPlayerRegistrationStatus, [gameId, userId])
+    const userStatus: any = await pool.query(getPlayerRegistrationStatusQuery, [gameId, userId])
       .then((playerRegistrationResults: QueryResult<any>) => {
         return playerRegistrationResults.rows.map((registrationType: any) => formattingService.convertKeysSnakeToCamel(registrationType));
       })
@@ -99,7 +99,7 @@ export class AssignmentService {
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
-      const userAssignmentTypes = await pool.query(getPlayerRegistrationStatus, [
+      const userAssignmentTypes = await pool.query(getPlayerRegistrationStatusQuery, [
         gameId,
         this.user.userId
       ])
