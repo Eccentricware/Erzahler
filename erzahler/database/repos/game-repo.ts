@@ -359,7 +359,7 @@ export class GameRepository {
   }
 
   async getGameDetails(gameId: number, userId: number, timeZone: string, meridiemTime: boolean): Promise<any> {
-    return this.pool.query(getGameDetailsQuery, [gameId, userId, timeZone])
+    return await this.pool.query(getGameDetailsQuery, [gameId, userId, timeZone])
       .then((gameDataResults: any) => {
         return new GameDetailsBuilder(gameDataResults.rows[0], timeZone, meridiemTime);
       })

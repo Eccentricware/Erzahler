@@ -18,6 +18,7 @@ import { getGameDetailsQuery } from "../../database/queries/game/get-game-detail
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 import { lockAssignmentQuery } from "../../database/queries/assignments/lock-assignment-query";
 import { unlockAssignmentQuery } from "../../database/queries/assignments/unlock-assignment-query";
+import { db } from "../../database/connection";
 
 export class AssignmentService {
   user: any = undefined;
@@ -37,32 +38,10 @@ export class AssignmentService {
       }
     }
 
-    // console.log(`Get Game Assignments: idToken (${idToken ? true : false}) gameId ${gameId} and userId: ${userId}`);
-
-    const gameData: any = await pool.query(getGameDetailsQuery, [gameId, userId, 'America/Los_Angeles'])
-      .then((gameDataResults: any) => {
-        return new GameDetailsBuilder(gameDataResults.rows[0], 'America/Los_Angeles', true);
-      })
-      .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
-
-    const assignments: any = await pool.query(getAssignmentsQuery, [gameId, userId])
-      .then((assignmentDataResults: QueryResult<any>) => {
-        return assignmentDataResults.rows.map((assignment: any) => formattingService.convertKeysSnakeToCamel(assignment));
-      })
-      .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
-
-    const registeredUsers: any = await pool.query(getRegisteredPlayersQuery, [gameId])
-      .then((registeredUserResults: QueryResult<any>) => {
-        return registeredUserResults.rows.map((player: any) => formattingService.convertKeysSnakeToCamel(player));
-      })
-      .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
-
-    const userStatus: any = await pool.query(getPlayerRegistrationStatusQuery, [gameId, userId])
-      .then((playerRegistrationResults: QueryResult<any>) => {
-        return playerRegistrationResults.rows.map((registrationType: any) => formattingService.convertKeysSnakeToCamel(registrationType));
-      })
-      .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
-
+    const gameData: any = await db.gameRepo.getGameDetails(gameId, userId, 'America/Los_Angeles', this.user.meridiemTime);
+    const assignments: any = await db.assignmentRepo.getAssignments(gameId, userId);
+    const registeredUsers: any = await db.assignmentRepo.getRegisteredPlayers(gameId);
+    const userStatus: any = await db.assignmentRepo.getPlayerRegistrationStatus(gameId, userId);
     const userIsAdmin: boolean = await this.isPlayerAdmin(gameId, userId);
 
     const assignmentData: AssignmentDataObject = {
@@ -81,12 +60,7 @@ export class AssignmentService {
   async isPlayerAdmin(gameId: number, playerId: number): Promise<boolean> {
     const pool = new Pool(victorCredentials);
 
-    const gameAdmins = await pool.query(getGameAdminsQuery, [gameId])
-      .then((results: QueryResult) => results.rows )
-      .catch((error: Error) => {
-        console.log('Get Game Admins Query Error: ' + error.message);
-        return [];
-      });
+    const gameAdmins = await db.assignmentRepo.getGameAdmins(gameId);
 
     const playerAdmin = gameAdmins.filter((admin: any) => admin.user_id === playerId);
     return playerAdmin.length > 0;
@@ -99,12 +73,7 @@ export class AssignmentService {
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
-      const userAssignmentTypes = await pool.query(getPlayerRegistrationStatusQuery, [
-        gameId,
-        this.user.userId
-      ])
-      .then((results: any) => { return results.rows})
-      .catch((error: Error) => console.log('Get Player Registration Status Error: ' + error.message));
+      const userAssignmentTypes = await db.assignmentRepo.getPlayerRegistrationStatus(gameId, this.user.userId);
 
       const blockedStatuses = [AssignmentStatus.BANNED];
 
@@ -113,33 +82,9 @@ export class AssignmentService {
       });
 
       if (existingAssignment.length === 0 && !blockedStatuses.includes(existingAssignment.assignment_type)) {
-        return await pool.query(registerUserQuery, [
-          gameId,
-          this.user.userId,
-          assignmentType
-        ])
-        .then(() => { return {success: true }; })
-        .catch((error: Error) => {
-          console.log('Insert assignment error: ' + error.message);
-          return {
-            success: false,
-            message: error.message
-          }
-        });
+        return await db.assignmentRepo.saveRegisterUser(gameId, this.user.userId, assignmentType);
       } else if (existingAssignment[0].assignment_end !== null) {
-        return await pool.query(reregisterUserQuery, [
-          gameId,
-          this.user.userId,
-          assignmentType
-        ])
-        .then(() => { return {success: true }; })
-        .catch((error: Error) => {
-          console.log('Update assignment error: ' + error.message);
-          return {
-            success: false,
-            message: error.message
-          }
-        });
+        return await db.assignmentRepo.saveReregisterUser(gameId, this.user.userId, assignmentType);
       } else {
         console.log(`User is already registered as ${assignmentType}`);
         return {
@@ -164,13 +109,7 @@ export class AssignmentService {
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
-      return await pool.query(unregisterUserQuery, [
-        gameId,
-        this.user.userId,
-        assignmentType
-      ])
-      .then(() => { return {success: true }; })
-      .catch((error: Error) => { console.log('Unregister User Error: ' + error.message); });
+      return await db.assignmentRepo.saveUnregisterUser(gameId, this.user.userId, assignmentType);
     }
   }
 
@@ -183,16 +122,10 @@ export class AssignmentService {
       const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
 
       if (requestFromAdmin) {
-        await pool.query(clearCountryAssignmentsQuery, [gameId, countryId])
-          .catch((error: Error) => { console.log('Clear Country Assignments Error: ' + error.message)});
+        await db.assignmentRepo.clearCountryAssignments(gameId, countryId);
 
         if (playerId > 0) {
-          await pool.query(assignUserQuery, [
-            countryId,
-            gameId,
-            playerId
-          ])
-          .catch((error: Error) => { console.log('Assign User Error: ' + error.message)});
+          await db.assignmentRepo.assignPlayer(countryId, gameId, playerId);
         }
       }
     } else {
@@ -212,13 +145,13 @@ export class AssignmentService {
       const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
 
       if (requestFromAdmin) {
-        await pool.query(lockAssignmentQuery, [gameId, playerId]);
+        await db.assignmentRepo.saveLockAssignment(gameId, playerId);
       }
     } else {
       return {
         success: false,
         error: 'Invalid user'
-      }
+      };
     }
   }
 
@@ -231,7 +164,7 @@ export class AssignmentService {
       const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
 
       if (requestFromAdmin) {
-        await pool.query(unlockAssignmentQuery, [gameId, playerId]);
+        await db.assignmentRepo.saveUnlockAssignment(gameId, playerId);
       }
     } else {
       return {
