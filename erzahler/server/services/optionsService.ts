@@ -292,13 +292,33 @@ export class OptionsService {
     const orderOptions: OrderOption[] = [];
 
     optionsContext.unitInfo.forEach((unit: UnitOptions) => {
-      orderOptions.push(this.formatStandardMovement(unit, optionsContext.turnId));
-      orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
-      orderOptions.push(...this.formatSupportHold(unit, optionsContext.turnId));
-      orderOptions.push(...this.formatSupportMoveStandard(unit, optionsContext.turnId));
-      orderOptions.push(...this.formatSupportMoveTransported(unit, optionsContext.turnId));
-      orderOptions.push(...this.formatTransport(unit, optionsContext.turnId));
-      orderOptions.push(this.formatNuke(unit, optionsContext.turnId));
+      if (unit.adjacencies.length > 0) {
+        orderOptions.push(this.formatStandardMovement(unit, optionsContext.turnId));
+      }
+
+      if (unit.moveTransported.length > 0) {
+        orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
+      }
+
+      if (unit.holdSupports && unit.holdSupports.length > 0) {
+        orderOptions.push(...this.formatSupportHold(unit, optionsContext.turnId));
+      }
+
+      if (Object.keys(unit.moveSupports).length > 0) {
+        orderOptions.push(...this.formatSupportMoveStandard(unit, optionsContext.turnId));
+      }
+
+      if (Object.keys(unit.transportSupports).length > 0) {
+        orderOptions.push(...this.formatSupportMoveTransported(unit, optionsContext.turnId));
+      }
+
+      if (Object.keys(unit.allTransports).length > 0) {
+        orderOptions.push(...this.formatTransport(unit, optionsContext.turnId));
+      }
+
+      if (unit.nukeTargets.length > 0) {
+        orderOptions.push(this.formatNuke(unit, optionsContext.turnId));
+      }
     });
 
      db.optionsRepo.saveOrderOptions(orderOptions);
@@ -327,18 +347,15 @@ export class OptionsService {
   }
 
   formatSupportHold(unit: UnitOptions, turnId: number): OrderOption[] {
-    let holdSupportOptions: OrderOption[] = [];
-    if (unit.holdSupports) {
-      holdSupportOptions = unit.holdSupports.map((secondaryUnit: HoldSupport) => {
-        return {
-          unitId: unit.unitId,
-          orderType: OrderDisplay.SUPPORT,
-          secondaryUnitId: secondaryUnit.unitId,
-          turnId: turnId
-        }
-      });
-    }
-    return holdSupportOptions;
+
+    return unit.holdSupports.map((secondaryUnit: HoldSupport) => {
+      return {
+        unitId: unit.unitId,
+        orderType: OrderDisplay.SUPPORT,
+        secondaryUnitId: secondaryUnit.unitId,
+        turnId: turnId
+      }
+    });
   }
 
   formatSupportMoveStandard(unit: UnitOptions, turnId: number): OrderOption[] {
