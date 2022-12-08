@@ -22,6 +22,7 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { FormattingService } from './formattingService';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { GameState, NextTurns } from '../../models/objects/last-turn-info-object';
+import { db } from '../../database/connection';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -214,18 +215,7 @@ export class SchedulerService {
     const resolutionService: ResolutionService = new ResolutionService();
     const pool = new Pool(victorCredentials);
 
-    const pendingTurns = await pool.query(getUpcomingTurnsQuery, [])
-      .then((results: QueryResult<any>) => {
-        return results.rows.map((turn: any) => {
-          return {
-            gameId: turn.game_id,
-            turnId: turn.turn_id,
-            gameName: turn.game_name,
-            turnName: turn.turn_name,
-            deadline: turn.deadline
-          }
-        })
-      });
+    const pendingTurns = await db.schedulerRepo.getUpcomingTurns();
 
     pendingTurns.forEach((deadline: any) => {
       schedule.scheduleJob(
@@ -248,24 +238,18 @@ export class SchedulerService {
     const gameId = gameData.gameId;
     const startDetails: StartDetails = await this.lockStartDetails(gameId);
 
-    await pool.query(startGameQuery, [
+    await db.schedulerRepo.startGame([
       startDetails.gameStatus,
       startDetails.gameStart,
       gameId
     ]);
 
-    await pool.query(setAssignmentsActiveQuery, [gameId]);
+    await db.schedulerRepo.setAssignmentsActive(gameId);
 
     // Is this clunky?
-    await pool.query(updateTurnQuery, [startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId])
-      .then((turns: QueryResult<any>) => {
-        return turns.rows.map((turn: any) => { return formattingService.convertKeysSnakeToCamel(turn); })[0];
-      });
+    await db.schedulerRepo.updateTurn([startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId]);
 
-    const firstTurn = await pool.query(updateTurnQuery, [startDetails.firstTurn, TurnStatus.PENDING, 1, gameId])
-      .then((turns: QueryResult<any>) => {
-        return turns.rows.map((turn: any) => { return formattingService.convertKeysSnakeToCamel(turn); })[0];
-      });
+    const firstTurn = await db.schedulerRepo.updateTurn([startDetails.firstTurn, TurnStatus.PENDING, 1, gameId])
 
     if (startDetails.gameStatus === GameStatus.PLAYING) {
       resolutionService.startGame(gameId);
@@ -334,15 +318,7 @@ export class SchedulerService {
   async getGameScheduleSettings(gameId:number): Promise<any> {
     const pool = new Pool(victorCredentials);
 
-    return await pool.query(getScheduleSettingsQuery, [gameId])
-      .then((result: QueryResult<any>) => {
-        return result.rows.map((gameScheduleSettings: ScheduleSettingsQueryResult) => {
-          return new SchedulerSettingsBuilder(gameScheduleSettings);
-        })[0];
-      })
-      .catch((error: Error) => {
-        console.log('Get Schedule Settings Query Error: ' + error.message);
-      });
+    return await db.schedulerRepo.getScheduleSettings(gameId);
   }
 
   findNextOccurence(eventDay: string, eventTime: string): DateTime {
