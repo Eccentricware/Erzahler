@@ -1,4 +1,5 @@
 import express from "express";
+import { db } from "../../database/connection";
 import { AccountService } from "../services/accountService";
 
 export const userRouter = express.Router();
@@ -6,7 +7,7 @@ const accountService = new AccountService();
 
 userRouter.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
-  accountService.checkUsernameAvailable(username)
+  db.accountsRepo.checkUsernameAvailable(username)
     .then((usernameAvailable: any) => {
       response.send(usernameAvailable);
     })
@@ -40,7 +41,7 @@ userRouter.post('/register', (request, response) => {
 userRouter.post('/add-provider', (request, response) => {
   const { idToken, username } = request.body;
 
-  accountService.addProvider(idToken, username)
+  accountService.addAdditionalProvider(idToken, username)
     .then((result: any) => {
       response.send(result);
     })
