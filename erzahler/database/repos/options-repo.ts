@@ -1,12 +1,14 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OrderOption, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OrderOption, SavedOption, SavedOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
+import { getOrderOptionsQuery } from "../queries/options/get-order-options-query";
 import { getUnitAdjacentInfoQuery } from "../queries/options/get-unit-adjacent-info-query";
 
 export class OptionsRepository {
-  orderOptionsCols: ColumnSet<unknown>
+  orderOptionsCols: ColumnSet<unknown>;
+  pool: Pool = new Pool(victorCredentials);
   /**
    * @param db
    * @param pgp
@@ -86,9 +88,7 @@ export class OptionsRepository {
   }
 
   async getAirAdjacencies(gameId: number): Promise<AirAdjacency[]> {
-    const pool = new Pool(victorCredentials);
-
-    const airAdjArray: AirAdjacency[] = await pool.query(getAirAdjQuery, [gameId])
+    const airAdjArray: AirAdjacency[] = await this.pool.query(getAirAdjQuery, [gameId])
       .then((results: QueryResult<any>) => {
         return results.rows.map((result: any) => {
           return <AirAdjacency>{
@@ -106,5 +106,34 @@ export class OptionsRepository {
       });
 
     return airAdjArray;
+  }
+
+  /**
+   * Fetches options for a turn
+   * @param turnId    - Turn's ID
+   * @param countryId - Which country for which to restrict option turns
+   * @param getAll    - Toggles between all or just one country
+   * @returns Promise<SavedOption[]>
+   */
+  async getUnitOptions(turnId: number): Promise<SavedOption[]> {
+    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnId])
+      .then((result: QueryResult<any>) => {
+        return result.rows.map((result: SavedOptionResult) => {
+          return <SavedOption> {
+            unitId: result.unit_id,
+            unitType: result.unit_type,
+            provinceName: result.province_name,
+            canHold: result.can_hold,
+            orderType: result.order_type,
+            secondaryUnitId: result.secondary_unit_id,
+            secondaryUnitType: result.secondary_unit_type,
+            secondaryProvince: result.secondary_province,
+            secondaryOrderType: result.secondary_unit_type,
+            destinations: result.destinations
+          };
+        });
+      });
+
+      return savedOptions;
   }
 }

@@ -2,12 +2,16 @@ import { Pool, QueryResult } from "pg";
 import { getGameStateQuery } from "../../database/queries/options/get-game-state-query";
 import { getAirAdjQuery } from "../../database/queries/options/get-air-adj-query";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionsContext, OrderOption, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionsContext, OrderOption, SavedOption, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 import { UnitType } from "../../models/enumeration/unit-enum";
 import { db } from "../../database/connection";
 import { OrderDisplay } from "../../models/enumeration/order-display-enum";
+import { AccountService } from "./accountService";
+import { AssignmentService } from "./assignmentService";
+import { SchedulerService } from "./scheduler-service";
+import { TurnOptions, UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
 
 export class OptionsService {
 
@@ -432,5 +436,33 @@ export class OptionsService {
       destinations: unit.nukeTargets,
       turnId: turnId
     }
+  }
+
+  async getOrderOptions(idToken: string, gameId: number): Promise<TurnOptions> {
+    const accountService = new AccountService();
+
+    const userId = await accountService.getUserIdFromToken(idToken);
+    const countryId = await db.assignmentRepo.getCountryAssignment(gameId, userId);
+
+    let pendingTurn: UpcomingTurn | undefined = undefined;
+    let preliminaryTurn: UpcomingTurn | undefined = undefined;
+
+    const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
+    if (upcomingTurns.length === 0) {
+      console.log(`GameId ${gameId} has no upcoming turns!`);
+    } else if (upcomingTurns.length > 0) {
+      pendingTurn = upcomingTurns[0];
+    } else if (upcomingTurns.length === 2) {
+      preliminaryTurn = upcomingTurns[1];
+    } else if (upcomingTurns.length > 2) {
+      console.log(`GameId ${gameId} has too many turns! (${upcomingTurns.length})`);
+    }
+
+    const turnOptions: TurnOptions = { pending: {} };
+
+    /////
+    const savedOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(countryId, );
+
+    return turnOptions;
   }
 }

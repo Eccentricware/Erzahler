@@ -4,6 +4,7 @@ import { victorCredentials } from "../../secrets/dbCredentials";
 import { FormattingService } from "../../server/services/formattingService";
 import { assignUserQuery } from "../queries/assignments/assign-user-query";
 import { clearCountryAssignmentsQuery } from "../queries/assignments/clear-country-assignments-query";
+import { getPlayerCountryQuery } from "../queries/assignments/get-player-country-query";
 import { getPlayerRegistrationStatusQuery } from "../queries/assignments/get-player-registration-status";
 import { lockAssignmentQuery } from "../queries/assignments/lock-assignment-query";
 import { registerUserQuery } from "../queries/assignments/register-user-query";
@@ -101,5 +102,12 @@ export class AssignmentRepository {
 
   async saveUnlockAssignment(gameId: number, playerId: number): Promise<void> {
     await this.pool.query(unlockAssignmentQuery, [gameId, playerId]);
+  }
+
+  async getCountryAssignment(gameId: number, userId: number): Promise<number> {
+    const countryIds = await this.pool.query(getPlayerCountryQuery, [gameId, userId])
+      .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: any) => result.country_id ));
+
+    return countryIds.length > 0 ? countryIds[0] : 0;
   }
 }

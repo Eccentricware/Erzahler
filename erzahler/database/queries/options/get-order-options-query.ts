@@ -38,9 +38,7 @@ export const getOrderOptionsQuery = `
   LEFT JOIN nodes dn ON dn.node_id = any(oo.destinations)
   LEFT JOIN provinces pn ON pn.province_id = dn.province_id
   LEFT JOIN nodes en ON en.province_id = p.province_id AND en.node_type = 'event'
-  WHERE t.turn_id = 59
-    AND CASE WHEN false = true
-      THEN u.country_id = 2 ELSE true END
+  WHERE t.turn_id = $1
   GROUP BY oo.unit_id,
     u.unit_type,
     p.province_name,

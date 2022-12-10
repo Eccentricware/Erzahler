@@ -26,11 +26,15 @@ export class AccountService {
       })
       .catch((error: Error) => {
         console.log(error.message);
+        return {
+          uid: 0,
+          valid: false
+        }
       });
   }
 
   async attemptAddUserToDatabase(idToken: string, username: string): Promise<any> {
-    const token: DecodedIdToken = await this.validateToken(idToken);
+    const token: any = await this.validateToken(idToken);
     const usernameAvailable: boolean = await db.accountsRepo.checkUsernameAvailable(username);
 
     if (token.uid && usernameAvailable) {
@@ -174,8 +178,6 @@ export class AccountService {
     const token = await this.validateToken(idToken);
 
     if (token.uid) {
-      const pool = new Pool(victorCredentials);
-
       const blitzkarteUser: UserProfile = await this.getUserProfile(idToken);
       return db.accountsRepo.updatePlayerSettings(
         data.timeZone,
@@ -183,5 +185,17 @@ export class AccountService {
         blitzkarteUser.userId
       );
     }
+  }
+
+  async getUserIdFromToken(idToken: string): Promise<number> {
+    const token = await this.validateToken(idToken);
+    let userId = 0;
+
+    if (token.uid) {
+      const user: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
+      userId = user ? user.userId : 0;
+    }
+
+    return userId;
   }
 }
