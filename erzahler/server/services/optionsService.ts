@@ -1,10 +1,10 @@
 import { createHash } from "crypto";
-import { Pool, QueryResult, QueryResultRow } from "pg";
+import { Pool, QueryResult } from "pg";
 import { getGameStateQuery } from "../../database/queries/options/get-game-state-query";
 import { getUnitAdjacentInfoQuery } from "../../database/queries/options/get-unit-adjacent-info-query";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, MoveSupport, UnitAdjacencyInfo, UnitAdjacyInfoResult } from "../../models/objects/unit-adjacency-info-object";
+import { AdjacenctMovement, OptionsContext, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 
 export class OptionsService {
@@ -94,24 +94,26 @@ export class OptionsService {
 
   // Order Types
   async processSpringUnitOrders(gameState: GameState) {
-    const unitIdToIndexLibrary: any = {};
-    const sharedAdjacentProvinces: any = {};
-    const transportPaths: any = {};
+    const optionsCtx: OptionsContext = {
+      unitInfo: await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId),
+      unitIdToIndexLib: {},
+      sharedAdjProvinces: {},
+      transportPaths: {},
+      transports: {}
+    }
 
     // Holds can be pulled at get options
-    // Movement
-    const unitInfo = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId);
-
-    unitInfo.forEach((unit: UnitAdjacencyInfo, index: number) => {
-      unitIdToIndexLibrary[unit.unitId] = index;
+    // Organizes data for all ops, but completes adjacency options
+    optionsCtx.unitInfo.forEach((unit: UnitOptions, index: number) => {
+      optionsCtx.unitIdToIndexLib[unit.unitId] = index;
       unit.adjacencies.forEach((adjacency: AdjacenctMovement) => {
-        if (sharedAdjacentProvinces[adjacency.provinceId]) {
-          sharedAdjacentProvinces[adjacency.provinceId].push({
+        if (optionsCtx.sharedAdjProvinces[adjacency.provinceId]) {
+          optionsCtx.sharedAdjProvinces[adjacency.provinceId].push({
             unitId: unit.unitId,
             nodeId: adjacency.nodeId
           });
         } else {
-          sharedAdjacentProvinces[adjacency.provinceId] = [{
+          optionsCtx.sharedAdjProvinces[adjacency.provinceId] = [{
             unitId: unit.unitId,
             nodeId: adjacency.nodeId
           }];
@@ -120,20 +122,20 @@ export class OptionsService {
     });
 
     // Move Support
-    this.processMoveSupport(unitInfo, unitIdToIndexLibrary, sharedAdjacentProvinces);
+    this.processMoveSupport(optionsCtx);
 
     console.log('End of processSpringUnitOrders');
   }
 
-  processMoveSupport(unitInfo: UnitAdjacencyInfo[], unitIdToIndexLibrary: any, sharedAdjacentProvinces: any) {
-    for (let province in sharedAdjacentProvinces) {
-      if (sharedAdjacentProvinces[province].length > 1) {
-        let unitsInReach: {unitId: number, nodeId: number}[] = sharedAdjacentProvinces[province];
+  processMoveSupport(optionsCtx: OptionsContext) {
+    for (let province in optionsCtx.sharedAdjProvinces) {
+      if (optionsCtx.sharedAdjProvinces[province].length > 1) {
+        let unitsInReach: {unitId: number, nodeId: number}[] = optionsCtx.sharedAdjProvinces[province];
 
         unitsInReach.forEach((commandedUnit: {unitId: number, nodeId: number}, commandIdx: number) => {
           unitsInReach.forEach((supportedUnit: {unitId: number, nodeId: number}, supportIdx: number) => {
             if (commandIdx !== supportIdx) {
-              const cmdUnitDetails = this.getDetailedUnit(unitInfo, unitIdToIndexLibrary, commandedUnit.unitId);
+              const cmdUnitDetails = this.getDetailedUnit(optionsCtx, commandedUnit.unitId);
               if (cmdUnitDetails.moveSupports[supportedUnit.unitId]) {
                 cmdUnitDetails.moveSupports[supportedUnit.unitId].push(supportedUnit.nodeId);
               } else {
@@ -146,8 +148,8 @@ export class OptionsService {
     }
   }
 
-  getDetailedUnit(unitInfo: UnitAdjacencyInfo[], unitIdToIndexLibrary: any, unitId: number): UnitAdjacencyInfo {
-    return unitInfo[unitIdToIndexLibrary[unitId]];
+  getDetailedUnit(optionsCtx: OptionsContext, unitId: number): UnitOptions {
+    return optionsCtx.unitInfo[optionsCtx.unitIdToIndexLib[unitId]];
   }
 
 
@@ -305,13 +307,13 @@ export class OptionsService {
     return gameState;
   }
 
-  async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitAdjacencyInfo[]> {
+  async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitOptions[]> {
     const pool = new Pool(victorCredentials);
 
-    const unitAdjacencyInfoResult: UnitAdjacencyInfo[] = await pool.query(getUnitAdjacentInfoQuery, [gameId, turnId])
+    const unitAdjacencyInfoResult: UnitOptions[] = await pool.query(getUnitAdjacentInfoQuery, [gameId, turnId])
     .then((results: QueryResult<any>) => {
-      return results.rows.map((result: UnitAdjacyInfoResult, index: number) => {
-        return <UnitAdjacencyInfo>{
+      return results.rows.map((result: UnitAdjacyInfoResult) => {
+        return <UnitOptions>{
           unitId: result.unit_id,
           unitName: result.unit_name,
           unitType: result.unit_type,
