@@ -18,7 +18,11 @@ import { getUpcomingTurnsQuery } from "../queries/scheduler/get-upcoming-turns-q
 export class SchedulerRepository {
   pool = new Pool(victorCredentials);
   formattingService = new FormattingService();
-
+  // "lint": "eslint --cache --fix . && prettier --ignore-path .prettierignore --write ."
+  // eslinst ^7.24
+  // eslint-config-prettier: ^8.2
+  // eslint-plugin-prettier: ^3.3.1
+  // prettier: ^2.2.1
   constructor(private db: IDatabase<any>, private pgp: IMain) {}
 
   async getScheduleSettings(gameId: number): Promise<any> {

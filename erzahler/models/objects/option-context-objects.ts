@@ -1,9 +1,10 @@
 export interface OrderOption {
+  turnId: number;
   unitId: number;
   orderType: string;
   secondaryUnitId?: number | undefined;
-  destinationChoices?: number[];
-  turnId: number;
+  secondaryOrderType?: string;
+  destinations?: number[];
 }
 
 export interface OptionsContext {
@@ -128,4 +129,30 @@ export interface AirAdjacency {
   nodeId: number;
   provinceName: string;
   adjacencies: any[]
+}
+
+export interface SavedOptionResult {
+  unit_id: number;
+  unit_type: string;
+  province_name: string;
+  can_hold: boolean;
+  order_type: string;
+  secondary_unit_id?: number;
+  secondary_unit_type?: string;
+  secondary_province?: string;
+  secondary_order_type?: string;
+  destinations?: any[];
+}
+
+export interface SavedOption {
+  unitId: number;
+  unitType: string;
+  provinceName: string;
+  canHold: boolean;
+  orderType: string;
+  secondaryUnitId?: number;
+  secondaryUnitType?: string;
+  secondaryProvince?: string;
+  secondaryOrderType?: string;
+  destinations?: any[];
 }

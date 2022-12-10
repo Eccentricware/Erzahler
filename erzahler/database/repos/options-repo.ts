@@ -16,7 +16,8 @@ export class OptionsRepository {
       'unit_id',
       'order_type',
       'secondary_unit_id',
-      'destination_choices',
+      'secondary_order_type',
+      'destinations',
       'turn_id'
     ], {table: 'order_options'});
   }
@@ -74,7 +75,8 @@ export class OptionsRepository {
         unit_id: option.unitId,
         order_type: option.orderType,
         secondary_unit_id: option.secondaryUnitId,
-        destination_choices: option.destinationChoices,
+        secondary_order_type: option.secondaryOrderType,
+        destinations: option.destinations,
         turn_id: option.turnId
       }
     });

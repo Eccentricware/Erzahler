@@ -364,7 +364,6 @@ export class GameRepository {
         return new GameDetailsBuilder(gameDataResults.rows[0], timeZone, meridiemTime);
       })
       .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
-
   }
 
   async getRulesInGame(gameId: number): Promise<any> {

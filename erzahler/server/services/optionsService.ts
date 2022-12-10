@@ -18,11 +18,15 @@ export class OptionsService {
   // Only one turn pending at a time
   // Adjustments/Nominations can be logically co-preliminary
 
-  async saveOptionsForNextTurn(gameId: number): Promise<void> {
+  async saveOptionsForNextTurn(gameId: number, turnId?: number): Promise<void> {
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
 
     const optionsContext: OptionsContext = await this.processUnitOrderOptions(gameState);
-    await this.saveUnitOrderOptions(optionsContext);
+
+    await this.saveUnitOrderOptions(
+      optionsContext,
+      turnId ? turnId : optionsContext.turnId
+    );
   }
 
   async processUnitOrderOptions(gameState: GameState): Promise<OptionsContext> {
@@ -288,20 +292,48 @@ export class OptionsService {
     });
   }
 
-  async saveUnitOrderOptions(optionsContext: OptionsContext): Promise<any> {
+  /**
+   * Takes a finalized OptionsContext and assigned it to the provided turnId
+   *
+   * @param optionsContext
+   * @param turnId
+   */
+  async saveUnitOrderOptions(optionsContext: OptionsContext, turnId: number): Promise<any> {
     const orderOptions: OrderOption[] = [];
 
     optionsContext.unitInfo.forEach((unit: UnitOptions) => {
-      orderOptions.push(this.formatStandardMovement(unit, optionsContext.turnId));
-      orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
-      orderOptions.push(...this.formatSupportHold(unit, optionsContext.turnId));
-      orderOptions.push(...this.formatSupportMoveStandard(unit, optionsContext.turnId));
-      orderOptions.push(...this.formatSupportMoveTransported(unit, optionsContext.turnId));
-      orderOptions.push(...this.formatTransport(unit, optionsContext.turnId));
-      orderOptions.push(this.formatNuke(unit, optionsContext.turnId));
+      if (unit.adjacencies.length > 0) {
+        orderOptions.push(this.formatStandardMovement(unit, optionsContext.turnId));
+      }
+
+      if (unit.moveTransported.length > 0) {
+        orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
+      }
+
+      if (unit.holdSupports && unit.holdSupports.length > 0) {
+        orderOptions.push(...this.formatSupportHold(unit, optionsContext.turnId));
+      }
+
+      if (Object.keys(unit.moveSupports).length > 0) {
+        orderOptions.push(...this.formatSupportMoveStandard(unit, optionsContext.turnId));
+      }
+
+      if (Object.keys(unit.transportSupports).length > 0) {
+        orderOptions.push(...this.formatSupportMoveTransported(unit, optionsContext.turnId));
+      }
+
+      if (Object.keys(unit.allTransports).length > 0) {
+        orderOptions.push(...this.formatTransport(unit, optionsContext.turnId));
+      }
+
+      if (unit.nukeTargets.length > 0) {
+        orderOptions.push(this.formatNuke(unit, optionsContext.turnId));
+      }
     });
 
-     db.optionsRepo.saveOrderOptions(orderOptions);
+    if (orderOptions.length > 0) {
+      db.optionsRepo.saveOrderOptions(orderOptions);
+    }
   }
 
   formatStandardMovement(unit: UnitOptions, turnId: number): OrderOption {
@@ -310,7 +342,7 @@ export class OptionsService {
       unitId: unit.unitId,
       orderType: OrderDisplay.MOVE,
       secondaryUnitId: undefined,
-      destinationChoices: stdMovementDestinations,
+      destinations: stdMovementDestinations,
       turnId: turnId
     }
 
@@ -321,7 +353,7 @@ export class OptionsService {
     return {
       unitId: unit.unitId,
       orderType: OrderDisplay.MOVE_CONVOYED,
-      destinationChoices: unit.moveTransported,
+      destinations: unit.moveTransported,
       turnId: turnId
     };
   }
@@ -334,6 +366,7 @@ export class OptionsService {
           unitId: unit.unitId,
           orderType: OrderDisplay.SUPPORT,
           secondaryUnitId: secondaryUnit.unitId,
+          secondaryOrderType: OrderDisplay.HOLD,
           turnId: turnId
         }
       });
@@ -349,7 +382,8 @@ export class OptionsService {
         unitId: unit.unitId,
         orderType: OrderDisplay.SUPPORT,
         secondaryUnitId: Number(supportedId),
-        destinationChoices: unit.moveSupports[supportedId],
+        secondaryOrderType: OrderDisplay.MOVE,
+        destinations: unit.moveSupports[supportedId],
         turnId: turnId
       });
     }
@@ -365,7 +399,8 @@ export class OptionsService {
         unitId: unit.unitId,
         orderType: OrderDisplay.SUPPORT,
         secondaryUnitId: Number(supportedId),
-        destinationChoices: unit.transportSupports[supportedId],
+        secondaryOrderType: OrderDisplay.MOVE,
+        destinations: unit.transportSupports[supportedId],
         turnId: turnId
       });
     }
@@ -381,7 +416,8 @@ export class OptionsService {
         unitId: unit.unitId,
         orderType: unit.unitType === UnitType.FLEET ? OrderDisplay.CONVOY : OrderDisplay.AIRLIFT,
         secondaryUnitId: Number(transportedId),
-        destinationChoices: unit.allTransports[transportedId],
+        secondaryOrderType: OrderDisplay.MOVE,
+        destinations: unit.allTransports[transportedId],
         turnId: turnId
       });
     }
@@ -393,7 +429,7 @@ export class OptionsService {
     return {
       unitId: unit.unitId,
       orderType: OrderDisplay.DETONATE,
-      destinationChoices: unit.nukeTargets,
+      destinations: unit.nukeTargets,
       turnId: turnId
     }
   }
