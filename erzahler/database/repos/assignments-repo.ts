@@ -104,10 +104,17 @@ export class AssignmentRepository {
     await this.pool.query(unlockAssignmentQuery, [gameId, playerId]);
   }
 
-  async getCountryAssignment(gameId: number, userId: number): Promise<number> {
-    const countryIds = await this.pool.query(getPlayerCountryQuery, [gameId, userId])
-      .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: any) => result.country_id ));
+  async getCountryAssignment(gameId: number, userId: number): Promise<{ countryId: number, countryName: string }> {
+    const countries = await this.pool.query(getPlayerCountryQuery, [gameId, userId])
+      .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: any) => {
+        return {
+          countryId: result.country_id,
+          countryName: result.country_name
+        };
+      } ));
 
-    return countryIds.length > 0 ? countryIds[0] : 0;
+    return countries.length > 0
+      ? countries[0]
+      : { countryId: 0, countryName: '' };
   }
 }

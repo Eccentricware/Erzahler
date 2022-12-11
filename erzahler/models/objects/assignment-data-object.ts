@@ -1,4 +1,5 @@
 export interface AssignmentDataObject {
+  gameId: number;
   assignments: any[];
   registrants: any[];
   userStatus: any[];

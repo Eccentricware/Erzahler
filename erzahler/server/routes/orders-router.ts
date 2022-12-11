@@ -15,6 +15,8 @@ ordersRouter.get(`/:gameId`, (request, response) => {
       response.send(options);
     })
     .catch((error: Error) => {
-      response.send('Get Orders Options Error: ' + error.message);
+      response.send({
+        error: 'Get Orders Options Error: ' + error.message
+      });
     });
 });

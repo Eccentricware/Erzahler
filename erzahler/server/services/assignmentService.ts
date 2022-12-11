@@ -45,6 +45,7 @@ export class AssignmentService {
     const userIsAdmin: boolean = await this.isPlayerAdmin(gameId, userId);
 
     const assignmentData: AssignmentDataObject = {
+      gameId: gameId,
       assignments: assignments,
       registrants: registeredUsers,
       userStatus: userStatus,

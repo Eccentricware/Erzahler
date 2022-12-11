@@ -115,25 +115,29 @@ export class OptionsRepository {
    * @param turnId    - Turn's ID
    * @returns Promise<SavedOption[]>
    */
-  async getUnitOptions(turnId: number): Promise<SavedOption[]> {
-    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnId])
+  async getUnitOptions(turnId: number, orderTurnId: number): Promise<SavedOption[]> {
+    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnId, orderTurnId])
       .then((result: QueryResult<any>) => {
         return result.rows.map((result: SavedOptionResult) => {
           return <SavedOption> {
             unitId: result.unit_id,
             unitType: result.unit_type,
+            unitCountryId: result.unit_country_id,
+            unitCountryName: result.unit_country_name,
+            unitCountryRank: result.unit_country_rank,
+            unitCountryFlagKey: result.unit_country_flag_key,
             provinceName: result.province_name,
             canHold: result.can_hold,
             orderType: result.order_type,
             secondaryUnitId: result.secondary_unit_id,
             secondaryUnitType: result.secondary_unit_type,
-            secondaryProvince: result.secondary_province,
-            secondaryOrderType: result.secondary_unit_type,
+            secondaryProvinceName: result.secondary_province_name,
+            secondaryOrderType: result.secondary_order_type,
             destinations: result.destinations
           };
         });
       });
 
-      return savedOptions;
+    return savedOptions;
   }
 }

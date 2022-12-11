@@ -454,11 +454,7 @@ export class GameService {
         const errors: string[] = [];
 
         // console.log('Internal Game Data:', gameData);
-        const gameUpdate = await db.gameRepo.updateGameSettings(gameSettings);
-        const turn0Update = await db.gameRepo.updateTurn(gameData.gameStart, 0, gameData.gameId);
-        const turn1Update = await db.gameRepo.updateTurn(gameData.firstTurnDeadline, 1, gameData.gameId);
-
-        return Promise.all([gameUpdate, turn0Update, turn1Update])
+        await db.gameRepo.updateGameSettings(gameSettings)
           .then((result: any) => {
             return {
               success: true,
@@ -473,6 +469,7 @@ export class GameService {
               errors: errors
             };
           });
+
       } else {
         return 'Not admin!';
       }
@@ -494,8 +491,8 @@ export class GameService {
 
     const gameData = await this.getGameData(idToken, gameId);
 
-    // TO-DO Restore to registration clause after troubleshooting
-    if (gameData.isAdmin && gameData.gameStatus === GameStatus.REGISTRATION) {
+    // TO-DO Restore to registration clause after troubleshooting && gameData.gameStatus === GameStatus.REGISTRATION
+    if (gameData.isAdmin ) {
       await schedulerService.prepareGameStart(gameData);
     }
   }
