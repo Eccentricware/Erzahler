@@ -334,7 +334,7 @@ export class GameRepository {
   async updateTurn(gameStart: any, turnNumber: number, gameId: number): Promise<void> {
     await this.pool.query(updateTurnQuery, [gameStart, turnNumber, gameId])
     .catch((error: Error) => {
-      console.log('Update Turn 0 Error: ' + error.message);
+      console.log('Update Turn Error: ' + error.message);
     });
   }
 

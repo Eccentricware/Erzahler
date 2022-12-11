@@ -21,13 +21,29 @@ export class OptionsRepository {
       'secondary_order_type',
       'destinations',
       'turn_id'
-    ], {table: 'order_options'});
+    ], { table: 'order_options' });
   }
 
-  async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitOptions[]> {
-    const pool = new Pool(victorCredentials);
+  saveOrderOptions(orderOptions: OrderOption[], turnId: number): Promise<void> {
+    const orderOptionValues = orderOptions.map((option: OrderOption) => {
+      return {
+        unit_id: option.unitId,
+        order_type: option.orderType,
+        secondary_unit_id: option.secondaryUnitId,
+        secondary_order_type: option.secondaryOrderType,
+        destinations: option.destinations,
+        turn_id: turnId
+      }
+    });
 
-    const unitAdjacencyInfoResult: UnitOptions[] = await pool.query(getUnitAdjacentInfoQuery, [gameId, turnId])
+    const query = this.pgp.helpers.insert(orderOptionValues, this.orderOptionsCols);
+    return this.db.query(query);
+  }
+
+  //// Legacy Functions ////
+
+  async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitOptions[]> {
+    const unitAdjacencyInfoResult: UnitOptions[] = await this.pool.query(getUnitAdjacentInfoQuery, [gameId, turnId])
       .then((results: QueryResult<any>) => {
         return results.rows.map((result: UnitAdjacyInfoResult) => {
           return <UnitOptions>{
@@ -71,21 +87,7 @@ export class OptionsRepository {
     return unitAdjacencyInfoResult;
   }
 
-  saveOrderOptions(orderOptions: OrderOption[]): Promise<void> {
-    const orderOptionValues = orderOptions.map((option: OrderOption) => {
-      return {
-        unit_id: option.unitId,
-        order_type: option.orderType,
-        secondary_unit_id: option.secondaryUnitId,
-        secondary_order_type: option.secondaryOrderType,
-        destinations: option.destinations,
-        turn_id: option.turnId
-      }
-    });
 
-    const query = this.pgp.helpers.insert(orderOptionValues, this.orderOptionsCols)
-    return this.db.query(query);
-  }
 
   async getAirAdjacencies(gameId: number): Promise<AirAdjacency[]> {
     const airAdjArray: AirAdjacency[] = await this.pool.query(getAirAdjQuery, [gameId])
@@ -111,8 +113,6 @@ export class OptionsRepository {
   /**
    * Fetches options for a turn
    * @param turnId    - Turn's ID
-   * @param countryId - Which country for which to restrict option turns
-   * @param getAll    - Toggles between all or just one country
    * @returns Promise<SavedOption[]>
    */
   async getUnitOptions(turnId: number): Promise<SavedOption[]> {

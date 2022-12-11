@@ -1,5 +1,5 @@
 import express from "express";
-import { GameService } from "../services/gameService";
+import { GameService } from "../services/game-service";
 
 export const gameRouter = express.Router();
 const gameService = new GameService();

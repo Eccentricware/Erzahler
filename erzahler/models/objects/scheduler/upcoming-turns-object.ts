@@ -1,3 +1,5 @@
+import { TurnStatus } from "../../enumeration/turn-status-enum";
+import { TurnType } from "../../enumeration/turn-type-enum";
 import { SavedOption } from "../option-context-objects";
 
 export interface UpcomingTurn {
@@ -5,8 +7,8 @@ export interface UpcomingTurn {
   turnId: number;
   gameName: string;
   turnName: string;
-  turnType: string;
-  turnStatus: string;
+  turnType: TurnType;
+  turnStatus: TurnStatus;
   deadline: string | Date;
 }
 

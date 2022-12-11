@@ -1,4 +1,4 @@
-export enum SchedulingType {
+export enum DeadlineSchedule {
   DAILY = 'Daily',
   INTERVAL = 'Interval',
   MANUAL = 'Manual',
