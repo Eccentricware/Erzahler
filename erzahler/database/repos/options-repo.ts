@@ -1,6 +1,6 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OrderOption, SavedOption, SavedOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, DestinationResult, OrderOption, SavedDestination, SavedOption, SavedOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
 import { getOrderOptionsQuery } from "../queries/options/get-order-options-query";
@@ -115,8 +115,8 @@ export class OptionsRepository {
    * @param turnId    - Turn's ID
    * @returns Promise<SavedOption[]>
    */
-  async getUnitOptions(turnId: number, orderTurnId: number): Promise<SavedOption[]> {
-    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnId, orderTurnId])
+  async getUnitOptions(turnTurnId: number, orderTurnId: number, playerOnly: boolean, countryId: number): Promise<SavedOption[]> {
+    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnTurnId, orderTurnId, playerOnly, countryId])
       .then((result: QueryResult<any>) => {
         return result.rows.map((result: SavedOptionResult) => {
           return <SavedOption> {
@@ -125,19 +125,36 @@ export class OptionsRepository {
             unitCountryId: result.unit_country_id,
             unitCountryName: result.unit_country_name,
             unitCountryRank: result.unit_country_rank,
-            unitCountryFlagKey: result.unit_country_flag_key,
+            unitFlagKey: result.unit_flag_key,
             provinceName: result.province_name,
+            unitLoc: result.unit_loc,
             canHold: result.can_hold,
             orderType: result.order_type,
             secondaryUnitId: result.secondary_unit_id,
             secondaryUnitType: result.secondary_unit_type,
+            secondaryUnitCountryName: result.secondary_unit_country_name,
+            secondaryUnitFlagKey: result.secondary_unit_flag_key,
             secondaryProvinceName: result.secondary_province_name,
+            secondaryUnitLoc: result.secondary_unit_loc,
             secondaryOrderType: result.secondary_order_type,
-            destinations: result.destinations
+            destinations: result.destinations[0] !== null
+              ? result.destinations.map((destination: DestinationResult) => {
+                return <SavedDestination> {
+                  nodeId: destination.node_id,
+                  nodeName: this.formatDestinationNodeName(destination.node_name),
+                  loc: destination.loc
+                };
+              })
+              : undefined
           };
         });
       });
 
     return savedOptions;
+  }
+
+  formatDestinationNodeName(nodeName: string): string {
+    const nameSplit: string[] = nodeName.toUpperCase().split('_');
+    return nameSplit.length === 3 ? nameSplit[0] + nameSplit[2] : nameSplit[0];
   }
 }

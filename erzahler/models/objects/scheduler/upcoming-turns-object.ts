@@ -1,6 +1,6 @@
 import { TurnStatus } from "../../enumeration/turn-status-enum";
 import { TurnType } from "../../enumeration/turn-type-enum";
-import { SavedOption } from "../option-context-objects";
+import { UnitOptionsFinalized } from "../option-context-objects";
 
 export interface UpcomingTurn {
   gameId: number;
@@ -26,8 +26,8 @@ export interface TurnOptions {
   playerId: number;
   countryId: number;
   countryName: string;
-  pending: {
-    units?: SavedOption[]; // If (spring orders/retreats or fall orders/retreats)
+  pending?: {
+    units?: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)
     tech?: any;            // If (spring or rule override)
     buildTransfer?: any;   // If (spring or rule override)
     adjustments?: any;
@@ -35,7 +35,7 @@ export interface TurnOptions {
     votes?: any;
   },
   preliminary?: {
-    units?: SavedOption[]; // If (voting and vote/spring split) or (spring retreats and not in retreat)
+    units?: UnitOptionsFinalized[]; // If (voting and vote/spring split) or (spring retreats and not in retreat)
     buildTransfer?: any;   // If (voting and vote/spring split)
     adjustments?: any;     // If (fall retreats and not in retreat)
     nominations?: any;     // If (adjustments and adjustments/nominations split)

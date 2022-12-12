@@ -14,9 +14,9 @@ ordersRouter.get(`/:gameId`, (request, response) => {
     .then((options: TurnOptions) => {
       response.send(options);
     })
-    .catch((error: Error) => {
-      response.send({
-        error: 'Get Orders Options Error: ' + error.message
-      });
-    });
+    // .catch((error: Error) => {
+    //   response.send({
+    //     error: 'Get Orders Options Error: ' + error.message
+    //   });
+    // });
 });
