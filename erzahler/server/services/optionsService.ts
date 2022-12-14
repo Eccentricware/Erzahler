@@ -685,7 +685,7 @@ export class OptionsService {
   newSecondaryUnit(option: SavedOption): SecondaryUnit {
     return {
       id: option.secondaryUnitId,
-      displayName: `${option.unitType} ${option.secondaryProvinceName}`,
+      displayName: `${option.secondaryUnitType} ${option.secondaryProvinceName}`,
       loc: option.secondaryUnitLoc
     }
   }

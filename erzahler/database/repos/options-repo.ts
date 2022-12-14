@@ -1,9 +1,12 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, DestinationResult, OrderOption, SavedDestination, SavedOption, SavedOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, OrderOption, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
+import { getAtRiskUnitsQuery } from "../queries/options/get-at-risk-units-query";
+import { getEmptySupplyCentersQuery } from "../queries/options/get-empty-supply-centers-query";
 import { getOrderOptionsQuery } from "../queries/options/get-order-options-query";
+import { getTransferOptionsQuery } from "../queries/options/get-transfer-options-query";
 import { getUnitAdjacentInfoQuery } from "../queries/options/get-unit-adjacent-info-query";
 
 export class OptionsRepository {
@@ -151,6 +154,75 @@ export class OptionsRepository {
       });
 
     return savedOptions;
+  }
+
+  async getTransferOptions(gameId: number, turnId: number, countryId: number): Promise<TransferOption[]> {
+    const transferOptions: TransferOption[] = await this.pool.query(getTransferOptionsQuery, [gameId, turnId, countryId])
+      .then((result: QueryResult<any>) => {
+        return result.rows.map((game: TransferOptionResult) => {
+          return <TransferOption> {
+            gameId: game.game_id,
+            giveTech: game.give_tech.map((country: TransferCountryResult) => {
+              return <TransferCountry> {
+                countryId: country.country_id,
+                countryName: country.country_name
+              }
+            }),
+            receiveTech: game.receive_tech.map((country: TransferCountryResult) => {
+              return <TransferCountry> {
+                countryId: country.country_id,
+                countryName: country.country_name
+              }
+            }),
+            receiveBuild: game.receive_build.map((country: TransferCountryResult) => {
+              return <TransferCountry> {
+                countryId: country.country_id,
+                countryName: country.country_name
+              }
+            })
+          }
+        })
+      });
+
+    return transferOptions;
+  }
+
+  async getAvailableBuildLocs(gameId: number, turnId: number, countryId: number = 0): Promise<BuildLoc[]> {
+    const buildLocs: BuildLoc[] = await this.pool.query(getEmptySupplyCentersQuery, [gameId, turnId, countryId])
+      .then((result: QueryResult<any>) => result.rows.map((province: BuildLocResult) => {
+        return <BuildLoc> {
+          countryId: province.country_id,
+          countryName: province.country_name,
+          provinceName: province.province_name,
+          cityLoc: province.city_loc,
+          landNodeId: province.land_node_id,
+          landNodeLoc: province.land_node_loc,
+          seaNodeId: province.sea_node_id,
+          seaNodeLoc: province.sea_node_loc,
+          seaNodeName: province.sea_node_name,
+          airNodeId: province.air_node_id,
+          airNodeLoc: province.air_node_loc
+        };
+      }));
+
+    return buildLocs;
+  }
+
+  async getAtRiskUnits(turnId: number, countryId: number = 0): Promise<AtRiskUnit[]> {
+    const atRiskUnits: AtRiskUnit[] = await this.pool.query(getAtRiskUnitsQuery, [turnId, countryId])
+      .then((result: QueryResult<any>) => result.rows.map((unit: AtRiskUnitResult) => {
+        return <AtRiskUnit> {
+          unitId: unit.unit_id,
+          unitType: unit.unit_type,
+          loc: unit.loc,
+          countryId: unit.country_id,
+          countryName: unit.country_name,
+          rank: unit.rank,
+          flagKey: unit.flag_key
+        }
+      }));
+
+      return atRiskUnits;
   }
 
   formatDestinationNodeName(nodeName: string): string {

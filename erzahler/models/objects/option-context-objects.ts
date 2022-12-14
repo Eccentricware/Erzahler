@@ -217,3 +217,76 @@ export interface OptionDestination {
   nodeName: string;
   loc: number[];
 }
+
+export interface TransferOption {
+  gameId: number;
+  giveTech: TransferCountry[];
+  receiveTech: TransferCountry[];
+  receiveBuild: TransferCountry[];
+}
+
+export interface TransferCountry {
+  countryId: number;
+  countryName: string;
+}
+
+export interface TransferOptionResult {
+  game_id: number;
+  give_tech: TransferCountryResult[];
+  receive_tech: TransferCountryResult[];
+  receive_build: TransferCountryResult[];
+}
+
+export interface TransferCountryResult {
+  country_id: number;
+  country_name: string;
+}
+
+export interface BuildLocResult {
+  country_id: number;
+  country_name: string;
+  province_name: string;
+  city_loc: number[];
+  land_node_id: number;
+  land_node_loc: number[];
+  sea_node_id: number;
+  sea_node_loc: number[];
+  sea_node_name: string;
+  air_node_id: number;
+  air_node_loc: number[];
+}
+
+export interface BuildLoc {
+  countryId: number;
+  countryName: string;
+  provinceName: string;
+  cityLoc: number[];
+  landNodeId: number;
+  landNodeLoc: number[];
+  seaNodeId: number;
+  seaNodeLoc: number[];
+  seaNodeName: string;
+  airNodeId: number;
+  airNodeLoc: number[];
+}
+
+export interface AtRiskUnitResult {
+  country_id: number;
+	country_name: string;
+	rank: string;
+	flag_key: string;
+	unit_id: number;
+	unit_type: string;
+	province_name: string;
+	loc: number[];
+}
+export interface AtRiskUnit {
+  countryId: number;
+	countryName: string;
+	rank: string;
+	flagKey: string;
+	unitId: number;
+	unitType: string;
+	provinceName: string;
+	loc: number[];
+}
