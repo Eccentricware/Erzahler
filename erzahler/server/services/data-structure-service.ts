@@ -14,3 +14,13 @@ export function subtractArray(filterArray: any[], removeArray: any[]): any[] {
   }
   return filterArray.filter((element: any) => !removeArray.includes(element));
 }
+
+export function copyObjectOfArrays(object: any): Object {
+  let copy: any = {};
+
+  for (let key in object) {
+    copy[key] = object[key].slice();
+  }
+
+  return copy;
+}

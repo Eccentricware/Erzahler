@@ -6,7 +6,7 @@ import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
 import { AdjacenctMovement, OptionsContext, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
-import { mergeArrays, subtractArray } from "./data-structure-service";
+import { copyObjectOfArrays, mergeArrays, subtractArray } from "./data-structure-service";
 
 export class OptionsService {
 
@@ -193,35 +193,46 @@ export class OptionsService {
 
   startPaths(optionsCtx: OptionsContext) {
     for (let transportableId in optionsCtx.transportables) {
-      optionsCtx.transportPaths[transportableId] = {
-        transportsSoFar: [],
-        destinationsSoFar: [],
+
+      let firstPathLink: TransportPathLink = {
+        transports: [],
+        destinations: [],
+        contributions: {},
         transportOptions: optionsCtx.transports[transportableId],
         nextTransportLink: {}
-      }
+      };
+
+      optionsCtx.transportPaths[transportableId] = firstPathLink;
     }
   }
 
   extendPath(optionsCtx: OptionsContext, currentPathLink: TransportPathLink) {
     currentPathLink.transportOptions.forEach((transportId: number) => {
-      const nextTransportsSoFar: number[] = currentPathLink.destinationsSoFar.slice();
-      nextTransportsSoFar.push(transportId);
+      const nextTransports: number[] = currentPathLink.destinations.slice();
+      nextTransports.push(transportId);
 
-      const nextDestinationsSoFar: number[] = currentPathLink.destinationsSoFar.slice();
-      nextDestinationsSoFar.push(...optionsCtx.transportDestinations[transportId]);
+      const nextDestinations: number[] = currentPathLink.destinations.slice();
+      nextDestinations.push(...optionsCtx.transportDestinations[transportId]);
 
       let nextTransportOptions: number[] = [];
       if (optionsCtx.transports[transportId]) {
         nextTransportOptions = optionsCtx.transports[transportId].filter((optionId: number) =>
-          !nextTransportsSoFar.includes(optionId)
+          !nextTransports.includes(optionId)
         );
       }
 
+      const nextContributions: any = copyObjectOfArrays(currentPathLink.contributions);
+      for (let transport in nextContributions) {
+        nextContributions[transport].push(...optionsCtx.transportDestinations[transportId]);
+      };
+      nextContributions[transportId] = optionsCtx.transportDestinations[transportId].slice();
+
       const nextTransportLink: TransportPathLink = {
-        destinationsSoFar: nextDestinationsSoFar,
+        destinations: nextDestinations,
         nextTransportLink: {},
         transportOptions: nextTransportOptions,
-        transportsSoFar: nextTransportsSoFar
+        transports: nextTransports,
+        contributions: nextContributions
       };
 
       currentPathLink.nextTransportLink[transportId] = nextTransportLink;
