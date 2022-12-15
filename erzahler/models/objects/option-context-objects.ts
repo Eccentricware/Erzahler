@@ -290,3 +290,29 @@ export interface AtRiskUnit {
 	provinceName: string;
 	loc: number[];
 }
+
+export interface NominatableCountryResult {
+  country_id: number;
+  country_name: string;
+  rank: string;
+}
+
+export interface NominatableCountry {
+  countryId: number;
+  countryName: string;
+  rank: string;
+}
+
+export interface NominationResult {
+  nomination_id: number;
+	rank_signature: string;
+	countries: NominatableCountryResult[];
+	votes_required: number;
+}
+
+export interface Nomination {
+  nominationId: number;
+	rankSignature: string;
+	countries: NominatableCountry[];
+	votesRequired: number;
+}

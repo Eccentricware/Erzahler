@@ -2,7 +2,7 @@ import { Pool, QueryResult } from "pg";
 import { getGameStateQuery } from "../../database/queries/options/get-game-state-query";
 import { getAirAdjQuery } from "../../database/queries/options/get-air-adj-query";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionDestination, OptionsContext, OrderOption, SavedDestination, SavedOption, SecondaryUnit, TransportPathLink, UnitAdjacyInfoResult, UnitOptionsFinalized, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionDestination, OptionsContext, OrderOption, SavedDestination, SavedOption, SecondaryUnit, TransportPathLink, UnitAdjacyInfoResult, UnitOptionsFinalized, UnitOptions, TransferOption, BuildLoc, AtRiskUnit, NominatableCountry, Nomination } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 import { UnitType } from "../../models/enumeration/unit-enum";
@@ -469,13 +469,14 @@ export class OptionsService {
       countryName: playerCountry.countryName
     };
 
-    let pendingUnitResults: SavedOption[] | undefined;
-    let preliminaryUnitResults: SavedOption[] | undefined;
+    let pendingUnitOptions: SavedOption[] | undefined;
+    let preliminaryUnitOptions: SavedOption[] | undefined;
 
     let pendingUnitOptionsFormatted: any = {};
 
     if (pendingTurn) {
       turnOptions.pending = {};
+      // Units
       if ([
         TurnType.SPRING_ORDERS,
         TurnType.ORDERS_AND_VOTES,
@@ -483,7 +484,7 @@ export class OptionsService {
         TurnType.FALL_ORDERS,
         TurnType.FALL_RETREATS
       ].includes(pendingTurn.turnType)) {
-        pendingUnitResults = await db.optionsRepo.getUnitOptions(
+        pendingUnitOptions = await db.optionsRepo.getUnitOptions(
           gameState.turnId,
           pendingTurn.turnId,
           true,
@@ -491,25 +492,29 @@ export class OptionsService {
         );
       }
 
+      // Transfers
       if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-        // Fetch nuke tech trade options
-        // Fetch Build transfers options
+        const pendingTransferOptions: TransferOption[] = await db.optionsRepo.getTransferOptions(gameId, gameState.turnId);
       }
 
+      // Adjustments
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-        // Fetch Adjustment options
+        const pendingBuildLocs: BuildLoc[] = await db.optionsRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
+        const pendingAtRiskUnits: AtRiskUnit[] = await db.optionsRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
       }
 
+      // Nominations
       if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-        // Fech nomination options
+        const pendingNominatableCountries: NominatableCountry[] = await db.optionsRepo.getNominatableCountries(gameState.turnId);
       }
 
+      // Votes
       if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-        // Fetch votes
+        const pendingNominations: Nomination[] = await db.optionsRepo.getNominations(gameState.turnId);
       }
 
-      if (pendingUnitResults) {
-        turnOptions.pending.units = this.finalizeUnitOptions(pendingUnitResults);
+      if (pendingUnitOptions) {
+        turnOptions.pending.units = this.finalizeUnitOptions(pendingUnitOptions);
       }
     }
 
