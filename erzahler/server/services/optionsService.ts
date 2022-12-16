@@ -6,7 +6,7 @@ import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
 import { AdjacenctMovement, OptionsContext, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
-import { copyObjectOfArrays, mergeArrays, subtractArray } from "./data-structure-service";
+import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 
 export class OptionsService {
 
@@ -103,7 +103,7 @@ export class OptionsService {
       transports: {},
       transportables: {},
       transportDestinations: {}
-    }
+    };
 
     this.sortAdjacencyInfo(optionsCtx);
     this.processMoveSupport(optionsCtx);
@@ -186,8 +186,8 @@ export class OptionsService {
 
   processTransportPaths(optionsCtx: OptionsContext) {
     this. startPaths(optionsCtx);
-    for (let path in optionsCtx.transportPaths) {
-      this.extendPath(optionsCtx, optionsCtx.transportPaths[path]);
+    for (let transportedUnitId in optionsCtx.transportPaths) {
+      this.extendPath(optionsCtx, optionsCtx.transportPaths[transportedUnitId], Number(transportedUnitId));
     }
   }
 
@@ -206,7 +206,7 @@ export class OptionsService {
     }
   }
 
-  extendPath(optionsCtx: OptionsContext, currentPathLink: TransportPathLink) {
+  extendPath(optionsCtx: OptionsContext, currentPathLink: TransportPathLink, transportedUnitId: number) {
     currentPathLink.transportOptions.forEach((transportId: number) => {
       const nextTransports: number[] = currentPathLink.destinations.slice();
       nextTransports.push(transportId);
@@ -235,8 +235,22 @@ export class OptionsService {
         contributions: nextContributions
       };
 
-      currentPathLink.nextTransportLink[transportId] = nextTransportLink;
-      this.extendPath(optionsCtx, currentPathLink.nextTransportLink[transportId]);
+      if (nextTransportOptions.length > 0) {
+        currentPathLink.nextTransportLink[transportId] = nextTransportLink;
+        this.extendPath(optionsCtx, currentPathLink.nextTransportLink[transportId], transportedUnitId);
+      } else {
+        const transportedUnit = this.getDetailedUnit(optionsCtx, transportedUnitId)
+        mergeArrays(transportedUnit.moveTransported, nextDestinations);
+
+        for (let transportId in nextContributions) {
+          const transportingUnit = this.getDetailedUnit(optionsCtx, Number(transportId));
+          if (transportedUnit.allTransports[transportedUnitId]) {
+            mergeArrays(transportingUnit.allTransports[transportedUnitId], nextContributions[transportId]);
+          } else {
+            transportingUnit.allTransports[transportedUnitId] = [...nextContributions[transportId]];
+          }
+        }
+      }
     });
   }
 
@@ -414,9 +428,11 @@ export class OptionsService {
           provinceId: result.province_id,
           provinceName: result.province_name,
           adjacencies: result.adjacencies.map((adjacency) => { return { nodeId: adjacency.node_id, provinceId: adjacency.province_id}}),
+          moveTransported: [],
           holdSupports: result.hold_supports && result.hold_supports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           moveSupports: {},
           adjacentTransports: result.adjacent_transports && result.adjacent_transports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
+          allTransports: {},
           adjacentTransportables: result.adjacent_transportables && result.adjacent_transportables.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           transportDestinations: result.transport_destinations && result.transport_destinations.map((node) => { return { nodeId: node.node_id, nodeName: node.node_name}})
         }
