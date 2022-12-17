@@ -99,6 +99,8 @@ export class OptionsService {
       unitInfo: await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId),
       unitIdToIndexLib: {},
       sharedAdjProvinces: {},
+      potentialConvoyProvinces: {},
+      validConvoyAssistProvinces: [],
       transportPaths: {},
       transports: {},
       transportables: {},
@@ -106,8 +108,8 @@ export class OptionsService {
     };
 
     this.sortAdjacencyInfo(optionsCtx);
-    this.processMoveSupport(optionsCtx);
     this.processTransportPaths(optionsCtx);
+    this.processMoveSupport(optionsCtx);
 
     console.log('End of processSpringUnitOrders');
   }
@@ -123,12 +125,14 @@ export class OptionsService {
         if (optionsCtx.sharedAdjProvinces[adjacency.provinceId]) {
           optionsCtx.sharedAdjProvinces[adjacency.provinceId].push({
             unitId: unit.unitId,
-            nodeId: adjacency.nodeId
+            nodeId: adjacency.nodeId,
+            transported: false
           });
         } else {
           optionsCtx.sharedAdjProvinces[adjacency.provinceId] = [{
             unitId: unit.unitId,
-            nodeId: adjacency.nodeId
+            nodeId: adjacency.nodeId,
+            transported: false
           }];
         }
       });
@@ -159,6 +163,15 @@ export class OptionsService {
           = unit.transportDestinations.map((destination: any) => {
             return destination.nodeId;
           });
+
+        unit.transportDestinations.forEach((destination: AdjacenctMovement) => {
+          if (!optionsCtx.potentialConvoyProvinces[destination.nodeId]) {
+            optionsCtx.potentialConvoyProvinces[destination.nodeId] = {
+              provinceId: unit.provinceId,
+              nodeId: destination.nodeId
+            };
+          }
+        });
       }
     });
   }
@@ -166,16 +179,24 @@ export class OptionsService {
   processMoveSupport(optionsCtx: OptionsContext) {
     for (let province in optionsCtx.sharedAdjProvinces) {
       if (optionsCtx.sharedAdjProvinces[province].length > 1) {
-        let unitsInReach: {unitId: number, nodeId: number}[] = optionsCtx.sharedAdjProvinces[province];
+        let unitsInReach: {unitId: number, nodeId: number, transported: boolean }[] = optionsCtx.sharedAdjProvinces[province];
 
-        unitsInReach.forEach((commandedUnit: {unitId: number, nodeId: number}, commandIdx: number) => {
-          unitsInReach.forEach((supportedUnit: {unitId: number, nodeId: number}, supportIdx: number) => {
+        unitsInReach.forEach((commandedUnit: {unitId: number, nodeId: number, transported: boolean }, commandIdx: number) => {
+          unitsInReach.forEach((supportedUnit: {unitId: number, nodeId: number, transported: boolean }, supportIdx: number) => {
             if (commandIdx !== supportIdx) {
               const cmdUnitDetails = this.getDetailedUnit(optionsCtx, commandedUnit.unitId);
-              if (cmdUnitDetails.moveSupports[supportedUnit.unitId]) {
-                cmdUnitDetails.moveSupports[supportedUnit.unitId].push(supportedUnit.nodeId);
+              if (supportedUnit.transported) {
+                if (cmdUnitDetails.transportSupports[supportedUnit.unitId]) {
+                  cmdUnitDetails.transportSupports[supportedUnit.unitId].push(supportedUnit.nodeId);
+                } else {
+                  cmdUnitDetails.transportSupports[supportedUnit.unitId] = [supportedUnit.nodeId];
+                }
               } else {
-                cmdUnitDetails.moveSupports[supportedUnit.unitId] = [supportedUnit.nodeId];
+                if (cmdUnitDetails.moveSupports[supportedUnit.unitId]) {
+                  cmdUnitDetails.moveSupports[supportedUnit.unitId].push(supportedUnit.nodeId);
+                } else {
+                  cmdUnitDetails.moveSupports[supportedUnit.unitId] = [supportedUnit.nodeId];
+                }
               }
             }
           });
@@ -244,14 +265,38 @@ export class OptionsService {
 
         for (let transportId in nextContributions) {
           const transportingUnit = this.getDetailedUnit(optionsCtx, Number(transportId));
+
           if (transportedUnit.allTransports[transportedUnitId]) {
             mergeArrays(transportingUnit.allTransports[transportedUnitId], nextContributions[transportId]);
           } else {
             transportingUnit.allTransports[transportedUnitId] = [...nextContributions[transportId]];
           }
+
+          this.addConvoysToSharedAdjProvinces(optionsCtx, nextContributions[transportId], transportedUnitId);
         }
       }
     });
+  }
+
+  addConvoysToSharedAdjProvinces(optionsCtx: OptionsContext, contributions: number[], transportedUnitId: number) {
+    contributions.forEach((contributionId: number) => {
+      const convoyProvince = optionsCtx.potentialConvoyProvinces[contributionId];
+      const adjProvince = optionsCtx.sharedAdjProvinces[convoyProvince.provinceId];
+
+      const doesNotHaveUnit = adjProvince.filter((adjProvince: any) =>
+        adjProvince.unitId === transportedUnitId
+      ).length === 0;
+
+      if (doesNotHaveUnit) {
+        optionsCtx.sharedAdjProvinces[convoyProvince.provinceId].push({
+          nodeId: contributionId,
+          unitId: transportedUnitId,
+          transported: true
+        });
+      }
+    });
+
+    console.log('And here we go');
   }
 
   getDetailedUnit(optionsCtx: OptionsContext, unitId: number): UnitOptions {
@@ -431,10 +476,17 @@ export class OptionsService {
           moveTransported: [],
           holdSupports: result.hold_supports && result.hold_supports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           moveSupports: {},
+          transportSupports: {},
           adjacentTransports: result.adjacent_transports && result.adjacent_transports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           allTransports: {},
           adjacentTransportables: result.adjacent_transportables && result.adjacent_transportables.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
-          transportDestinations: result.transport_destinations && result.transport_destinations.map((node) => { return { nodeId: node.node_id, nodeName: node.node_name}})
+          transportDestinations: result.transport_destinations && result.transport_destinations.map((destination) => {
+            return {
+              nodeId: destination.node_id,
+              nodeName: destination.node_name,
+              provinceId: destination.province_id
+            }
+          })
         }
       })
     });

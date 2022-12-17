@@ -2,6 +2,8 @@ export interface OptionsContext {
   unitInfo: UnitOptions[]
   unitIdToIndexLib: any;
   sharedAdjProvinces: any;
+  potentialConvoyProvinces: any;
+  validConvoyAssistProvinces: []
   transportPaths: any;
   transports: any;
   transportables: any;
@@ -20,6 +22,7 @@ export interface UnitOptions {
   moveTransported: number[];
   holdSupports: HoldSupport[];
   moveSupports: any;
+  transportSupports: any;
   allTransports: any;
   adjacentTransports: AdjacentTransport[] | undefined;
   adjacentTransportables: AdjacentTransportable[] | undefined;
@@ -55,6 +58,7 @@ interface AdjacentTransportable {
 interface TransportDestination {
   nodeId: number;
   nodeName: string;
+  provinceId: number;
 }
 
 export interface UnitAdjacyInfoResult {
@@ -96,6 +100,7 @@ interface AdjacentTransportableResult {
 interface TransportDestinationResult {
   node_id: number;
   node_name: string;
+  province_id: number;
 }
 
 export interface TransportPathLink {
