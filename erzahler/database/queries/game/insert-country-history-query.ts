@@ -20,7 +20,7 @@ export const insertCountryHistoryQuery = `
     $6
   FROM countries c
   INNER JOIN games g ON g.game_id = c.game_id
-  INNER JOIN turns T ON t.game_id = g.game_id
+  INNER JOIN turns t ON t.game_id = g.game_id
   WHERE g.game_name = $7
     AND t.turn_number = 0
     AND c.country_name = $8
