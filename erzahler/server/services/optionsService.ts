@@ -1,13 +1,14 @@
 import { createHash } from "crypto";
 import { Pool, QueryResult } from "pg";
 import { getGameStateQuery } from "../../database/queries/options/get-game-state-query";
-import { getNukeAdjQuery } from "../../database/queries/options/get-nuke-adj-query";
+import { getAirAdjQuery } from "../../database/queries/options/get-air-adj-query";
 import { getUnitAdjacentInfoQuery } from "../../database/queries/options/get-unit-adjacent-info-query";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, AdjacenctMovementResult, OptionsContext, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OptionsContext, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
+import { UnitType } from "../../models/enumeration/unit-enum";
 
 export class OptionsService {
 
@@ -166,7 +167,7 @@ export class OptionsService {
             return destination.nodeId;
           });
 
-        unit.transportDestinations.forEach((destination: AdjacenctMovement) => {
+        unit.transportDestinations.forEach((destination: any) => {
           if (!optionsCtx.potentialConvoyProvinces[destination.nodeId]) {
             optionsCtx.potentialConvoyProvinces[destination.nodeId] = {
               provinceId: unit.provinceId,
@@ -474,13 +475,19 @@ export class OptionsService {
           nodeName: result.node_name,
           provinceId: result.province_id,
           provinceName: result.province_name,
-          adjacencies: result.adjacencies.map((adjacency) => { return { nodeId: adjacency.node_id, provinceId: adjacency.province_id}}),
+          adjacencies: result.adjacencies.map((adjacency) => { return {
+            nodeId: adjacency.node_id,
+            provinceId: adjacency.province_id,
+            provinceName: adjacency.province_name
+          }}),
           moveTransported: [],
           holdSupports: result.hold_supports && result.hold_supports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           moveSupports: {},
           transportSupports: {},
+          nukeTargets: [],
           adjacentTransports: result.adjacent_transports && result.adjacent_transports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           allTransports: {},
+          nukeRange: result.nuke_range,
           adjacentTransportables: result.adjacent_transportables && result.adjacent_transportables.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
           transportDestinations: result.transport_destinations && result.transport_destinations.map((destination) => {
             return {
@@ -499,22 +506,61 @@ export class OptionsService {
   async processNukeOptions(gameState: GameState, optionsCtx: OptionsContext): Promise<void> {
     const pool = new Pool(victorCredentials);
 
-    const nukeAdjArray: {nodeId: number, adjacencies: any }[] = await pool.query(getNukeAdjQuery, [gameState.gameId])
+    const airAdjArray: AirAdjacency[] = await pool.query(getAirAdjQuery, [gameState.gameId])
       .then((results: QueryResult<any>) => {
         return results.rows.map((result: any) => {
-          return {
+          return <AirAdjacency>{
             nodeId: result.node_id,
-            adjacencies: result.adjacencies
+            adjacencies: result.adjacencies.map((adjacency: AdjacenctMovementResult) => {
+              return <AdjacenctMovement>{
+                nodeId: adjacency.node_id,
+                provinceId: adjacency.province_id,
+                provinceName: adjacency.province_name
+              }
+            }),
+            provinceName: result.province_name
           }
         });
-      })
-      .catch((error: Error) => {
-        console.log('getNukeAdjQuery Error: ' + error.message)
-        return [{nodeId: 0, adjacencies: undefined}]
       });
-    const nukeNodeIdToIndex: any = {};
+    const nukeTargetLib: any = {};
+    const unlimitedRangeTargets: string[] = [];
 
-    nukeAdjArray.forEach((nukeTarget: any) => {})
+    airAdjArray.forEach((nukeTarget: AirAdjacency, index: number) => {
+      nukeTargetLib[nukeTarget.provinceName] = index;
+      unlimitedRangeTargets.push(nukeTarget.provinceName);
+    });
+
+    optionsCtx.unitInfo.filter((unit: UnitOptions) => unit.unitType === UnitType.NUKE)
+      .forEach((unit: UnitOptions) => {
+        if (unit.nukeRange === 0) {
+          unit.nukeTargets = unlimitedRangeTargets;
+        } else if (unit.nukeRange) {
+          unit.nukeTargets = this.processLimitedNukeTargets(airAdjArray, nukeTargetLib, unit);
+        }
+      });
+  }
+
+  processLimitedNukeTargets(airAdjArray: AirAdjacency[], nukeTargetLib: any, unit: UnitOptions): string[] {
+    const nukeTargets: string[] =
+      airAdjArray[nukeTargetLib[unit.provinceName]].adjacencies
+        .map((target: AdjacenctMovement) => {
+          return target.provinceName
+        });
+
+    let rangeProcessed = 1;
+    while (rangeProcessed < unit.nukeRange && nukeTargets.length < airAdjArray.length) {
+      let targetsToAdd: string[] = [];
+      nukeTargets.forEach((target: string) => {
+        mergeArrays(
+          targetsToAdd,
+          airAdjArray[nukeTargetLib[target]].adjacencies.map((target: AdjacenctMovement) => target.provinceName)
+        );
+      });
+      mergeArrays(nukeTargets, targetsToAdd);
+      rangeProcessed++;
+    }
+
+    return nukeTargets;
   }
 
   async processMovementStandard(): Promise<void> {
