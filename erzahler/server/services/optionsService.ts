@@ -523,11 +523,11 @@ export class OptionsService {
         });
       });
     const nukeTargetLib: any = {};
-    const unlimitedRangeTargets: string[] = [];
+    const unlimitedRangeTargets: number[] = [];
 
     airAdjArray.forEach((nukeTarget: AirAdjacency, index: number) => {
       nukeTargetLib[nukeTarget.provinceName] = index;
-      unlimitedRangeTargets.push(nukeTarget.provinceName);
+      unlimitedRangeTargets.push(nukeTarget.nodeId);
     });
 
     optionsCtx.unitInfo.filter((unit: UnitOptions) => unit.unitType === UnitType.NUKE)
@@ -540,7 +540,7 @@ export class OptionsService {
       });
   }
 
-  processLimitedNukeTargets(airAdjArray: AirAdjacency[], nukeTargetLib: any, unit: UnitOptions): string[] {
+  processLimitedNukeTargets(airAdjArray: AirAdjacency[], nukeTargetLib: any, unit: UnitOptions): number[] {
     const nukeTargets: string[] =
       airAdjArray[nukeTargetLib[unit.provinceName]].adjacencies
         .map((target: AdjacenctMovement) => {
@@ -560,7 +560,9 @@ export class OptionsService {
       rangeProcessed++;
     }
 
-    return nukeTargets;
+    return nukeTargets.map((target: string) => {
+      return airAdjArray[nukeTargetLib[target]].nodeId
+    });
   }
 
   async processMovementStandard(): Promise<void> {

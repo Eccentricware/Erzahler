@@ -23,7 +23,7 @@ export interface UnitOptions {
   holdSupports: HoldSupport[];
   moveSupports: any;
   transportSupports: any;
-  nukeTargets: string[];
+  nukeTargets: number[];
   allTransports: any;
   adjacentTransports: AdjacentTransport[] | undefined;
   adjacentTransportables: AdjacentTransportable[] | undefined;
