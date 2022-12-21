@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS labels(
 );
 
 \echo 'Attempting to create label_lines table'
-CREATE TABLE IF NOT EXISTS label_lines(
+CREATE TABLE IF NOT EXISTS label_lines( -- NOT USED?!
   label_line_id SERIAL,
   province_id INTEGER NOT NULL,
   label_line_name VARCHAR(20) NOT NULL,
@@ -263,7 +263,7 @@ CREATE TABLE IF NOT EXISTS province_histories(
   controller_id INTEGER,
   capital_owner_id INTEGER,
   province_status VARCHAR NOT NULL,
-  valid_retreat BOOLEAN,
+  valid_retreat BOOLEAN NOT NULL default true,
   vote_color VARCHAR(10),
   status_color VARCHAR(10),
   stroke_color VARCHAR(10),
@@ -623,3 +623,39 @@ CREATE TABLE IF NOT EXISTS orders(
   FOREIGN KEY(destination_id)
     REFERENCES nodes(node_id)
 );
+
+-- CREATE INDEX games ON games(games); -- Top level table
+CREATE INDEX coalition_game_idx ON coalition_schedules(game_id);
+CREATE INDEX rule_game_idx ON rules(game_id);
+CREATE INDEX rule_in_game_core_idx ON rules_in_games(rule_id);
+CREATE INDEX turn_game_idx ON turns(game_id);
+CREATE INDEX country_game_idx ON countries (game_id);
+CREATE INDEX country_history_core_idx ON country_histories(country_id);
+CREATE INDEX alert_game_idx ON alerts(game_id);
+CREATE INDEX alert_read_receipt_alert_idx ON alert_read_receipts(alert_id);
+CREATE INDEX province_game_idx ON provinces(game_id);
+CREATE INDEX terrain_province_idx ON terrain(province_id);
+CREATE INDEX label_province_idx ON labels(province_id);
+CREATE INDEX label_lines ON label_lines(province_id); -- No label lines in use
+CREATE INDEX province_history_core_idx ON province_histories(province_id);
+CREATE INDEX node_province_idx ON nodes(province_id);
+CREATE INDEX node_adjacency_core_idx ON node_adjacencies(node_id);
+CREATE INDEX nomination_turn_idx ON nominations(turn_id);
+CREATE INDEX vote_nomination_idx ON votes(nomination_id);
+CREATE INDEX unit_country_idx ON units(country_id);
+CREATE INDEX unit_history_core_idx ON unit_histories(unit_id);
+-- CREATE INDEX users ON users(users); -- Top level table
+CREATE INDEX provider_user_idx ON providers(user_id);
+CREATE INDEX user_rating_core_idx ON user_ratings(user_id);
+CREATE INDEX user_relationships_core_idx ON user_relationships(user_id);
+CREATE INDEX watched_country_idx ON watched_countries(user_id);
+CREATE INDEX user_report_core_idx ON user_reports(user_id);
+CREATE INDEX assignment_user_idx ON assignments(user_id);
+-- CREATE INDEX message_groups ON message_groups(message_groups); -- Top Level Table
+CREATE INDEX message_group_member_idx ON message_group_members(message_group_id);
+CREATE INDEX message_group_idx ON messages(message_group_id);
+CREATE INDEX message_read_receipt_core_idx ON message_read_receipts(message_id);
+CREATE INDEX order_option_unit_idx ON order_options(unit_id);
+CREATE INDEX mad_condition_country_idx ON mad_conditions(country_id);
+CREATE INDEX order_set_country_idx ON order_sets(country_id);
+CREATE INDEX order_set_idx ON orders(order_set_id);

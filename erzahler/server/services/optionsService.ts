@@ -9,6 +9,7 @@ import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OptionsContex
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 import { UnitType } from "../../models/enumeration/unit-enum";
+import { error } from "console";
 
 export class OptionsService {
 
@@ -465,40 +466,45 @@ export class OptionsService {
     const pool = new Pool(victorCredentials);
 
     const unitAdjacencyInfoResult: UnitOptions[] = await pool.query(getUnitAdjacentInfoQuery, [gameId, turnId])
-    .then((results: QueryResult<any>) => {
-      return results.rows.map((result: UnitAdjacyInfoResult) => {
-        return <UnitOptions>{
-          unitId: result.unit_id,
-          unitName: result.unit_name,
-          unitType: result.unit_type,
-          nodeId: result.node_id,
-          nodeName: result.node_name,
-          provinceId: result.province_id,
-          provinceName: result.province_name,
-          adjacencies: result.adjacencies.map((adjacency) => { return {
-            nodeId: adjacency.node_id,
-            provinceId: adjacency.province_id,
-            provinceName: adjacency.province_name
-          }}),
-          moveTransported: [],
-          holdSupports: result.hold_supports && result.hold_supports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
-          moveSupports: {},
-          transportSupports: {},
-          nukeTargets: [],
-          adjacentTransports: result.adjacent_transports && result.adjacent_transports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
-          allTransports: {},
-          nukeRange: result.nuke_range,
-          adjacentTransportables: result.adjacent_transportables && result.adjacent_transportables.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
-          transportDestinations: result.transport_destinations && result.transport_destinations.map((destination) => {
-            return {
-              nodeId: destination.node_id,
-              nodeName: destination.node_name,
-              provinceId: destination.province_id
-            }
-          })
-        }
+      .then((results: QueryResult<any>) => {
+        return results.rows.map((result: UnitAdjacyInfoResult) => {
+          return <UnitOptions>{
+            unitId: result.unit_id,
+            unitName: result.unit_name,
+            unitType: result.unit_type,
+            nodeId: result.node_id,
+            nodeName: result.node_name,
+            provinceId: result.province_id,
+            provinceName: result.province_name,
+            adjacencies: result.adjacencies.map((adjacency) => { return {
+              nodeId: adjacency.node_id,
+              provinceId: adjacency.province_id,
+              provinceName: adjacency.province_name
+            }}),
+            moveTransported: [],
+            holdSupports: result.hold_supports && result.hold_supports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
+            moveSupports: {},
+            transportSupports: {},
+            nukeTargets: [],
+            adjacentTransports: result.adjacent_transports && result.adjacent_transports.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
+            allTransports: {},
+            nukeRange: result.nuke_range,
+            adjacentTransportables: result.adjacent_transportables && result.adjacent_transportables.map((unit) => { return { unitId: unit.unit_id, unitName: unit.unit_name }}),
+            transportDestinations: result.transport_destinations && result.transport_destinations.map((destination) => {
+              return {
+                nodeId: destination.node_id,
+                nodeName: destination.node_name,
+                provinceId: destination.province_id
+              }
+            })
+          }
+        })
       })
-    });
+      .catch((error: Error) => {
+        console.log('unitAdjacencyInfoResultError: ' + error.message);
+        const dud: UnitOptions[] = []
+        return dud;
+      });
 
     return unitAdjacencyInfoResult;
   }
