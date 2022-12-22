@@ -528,8 +528,6 @@ CREATE TABLE IF NOT EXISTS messages(
     REFERENCES users(user_id),
   FOREIGN KEY(sending_country_id)
     REFERENCES countries(country_id),
-  FOREIGN KEY(sending_country_id)
-    REFERENCES countries(country_id),
   FOREIGN KEY(receiving_country_id)
     REFERENCES countries(country_id),
   FOREIGN KEY(message_group_id)
@@ -566,22 +564,6 @@ CREATE TABLE IF NOT EXISTS order_options(
     REFERENCES units(unit_id)
 );
 
-\echo 'Attempting to create mad_conditions table'
-CREATE TABLE IF NOT EXISTS mad_conditions(
-  mad_condition_id SERIAL,
-  issuing_country_id INTEGER NOT NULL,
-  launching_country_id INTEGER NOT NULL,
-  targeted_country_id INTEGER NOT NULL,
-  condition_priority INTEGER NOT NULL,
-  PRIMARY KEY(mad_condition_id),
-  FOREIGN KEY(issuing_country_id)
-    REFERENCES countries(country_id),
-  FOREIGN KEY(launching_country_id)
-    REFERENCES countries(country_id),
-  FOREIGN KEY(targeted_country_id)
-    REFERENCES countries(country_id)
-);
-
 \echo 'Attempting to create order_sets table'
 CREATE TABLE IF NOT EXISTS order_sets(
   order_set_id SERIAL,
@@ -591,16 +573,13 @@ CREATE TABLE IF NOT EXISTS order_sets(
   submission_time TIMESTAMP NOT NULL,
   order_set_type VARCHAR(15) NOT NULL,
   order_set_name VARCHAR(25),
-  mad_condition_id INTEGER,
   PRIMARY KEY(order_set_id),
   FOREIGN KEY(country_id)
     REFERENCES countries(country_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
   FOREIGN KEY(message_id)
-    REFERENCES messages(message_id),
-  FOREIGN KEY(mad_condition_id)
-    REFERENCES mad_conditions(mad_condition_id)
+    REFERENCES messages(message_id)
 );
 
 \echo 'Attempting to create orders table'
@@ -624,38 +603,90 @@ CREATE TABLE IF NOT EXISTS orders(
     REFERENCES nodes(node_id)
 );
 
--- CREATE INDEX games ON games(games); -- Top level table
+\echo 'Attempting to create mad_conditions table'
+CREATE TABLE IF NOT EXISTS mad_conditions(
+  mad_condition_id SERIAL,
+  order_set_id INTEGER NOT NULL,
+  issuing_country_id INTEGER NOT NULL,
+  launching_country_id INTEGER NOT NULL,
+  targeted_country_id INTEGER NOT NULL,
+  condition_priority INTEGER NOT NULL,
+  PRIMARY KEY(mad_condition_id),
+  FOREIGN KEY(order_set_id)
+    REFERENCES order_sets(order_set_id),
+  FOREIGN KEY(issuing_country_id)
+    REFERENCES countries(country_id),
+  FOREIGN KEY(launching_country_id)
+    REFERENCES countries(country_id),
+  FOREIGN KEY(targeted_country_id)
+    REFERENCES countries(country_id)
+);
+
 CREATE INDEX coalition_game_idx ON coalition_schedules(game_id);
-CREATE INDEX rule_game_idx ON rules(game_id);
 CREATE INDEX rule_in_game_core_idx ON rules_in_games(rule_id);
+CREATE INDEX rule_in_game_game_idx ON rules_in_games(game_id);
 CREATE INDEX turn_game_idx ON turns(game_id);
 CREATE INDEX country_game_idx ON countries (game_id);
 CREATE INDEX country_history_core_idx ON country_histories(country_id);
 CREATE INDEX alert_game_idx ON alerts(game_id);
-CREATE INDEX alert_read_receipt_alert_idx ON alert_read_receipts(alert_id);
+CREATE INDEX alert_read_receipt_core_idx ON alert_read_receipts(alert_id);
+CREATE INDEX alert_read_receipt_country_idx ON alert_read_receipts(country_id);
 CREATE INDEX province_game_idx ON provinces(game_id);
 CREATE INDEX terrain_province_idx ON terrain(province_id);
+CREATE INDEX terrain_bridge_start_idx ON terrain(province_id);
+CREATE INDEX terrain_bridge_end_idx ON terrain(province_id);
 CREATE INDEX label_province_idx ON labels(province_id);
-CREATE INDEX label_lines ON label_lines(province_id); -- No label lines in use
+CREATE INDEX label_line_province_idx ON label_lines(province_id); -- No label lines in use
 CREATE INDEX province_history_core_idx ON province_histories(province_id);
+CREATE INDEX province_history_turn_idx ON province_histories(turn_id);
+CREATE INDEX province_history_controller_idx ON province_histories(controller_id);
+CREATE INDEX province_history_capital_owner_idx ON province_histories(capital_owner_id);
 CREATE INDEX node_province_idx ON nodes(province_id);
-CREATE INDEX node_adjacency_core_idx ON node_adjacencies(node_id);
+CREATE INDEX node_adjacency_core_1_idx ON node_adjacencies(node_1_id);
+CREATE INDEX node_adjacency_core_2_idx ON node_adjacencies(node_2_id);
 CREATE INDEX nomination_turn_idx ON nominations(turn_id);
+CREATE INDEX nomination_country_1_idx ON nominations(country_1_id);
+CREATE INDEX nomination_country_2_idx ON nominations(country_2_id);
+CREATE INDEX nomination_country_3_idx ON nominations(country_3_id);
 CREATE INDEX vote_nomination_idx ON votes(nomination_id);
+CREATE INDEX vote_country_idx ON votes(voting_country_id);
 CREATE INDEX unit_country_idx ON units(country_id);
 CREATE INDEX unit_history_core_idx ON unit_histories(unit_id);
--- CREATE INDEX users ON users(users); -- Top level table
+CREATE INDEX unit_history_turn_idx ON unit_histories(turn_id);
+CREATE INDEX unit_history_node_idx ON unit_histories(node_id);
 CREATE INDEX provider_user_idx ON providers(user_id);
-CREATE INDEX user_rating_core_idx ON user_ratings(user_id);
+CREATE INDEX ratings_rated_idx ON user_ratings(rated_user_id);
+CREATE INDEX ratings_rating_idx ON user_ratings(rating_user_id);
 CREATE INDEX user_relationships_core_idx ON user_relationships(user_id);
-CREATE INDEX watched_country_idx ON watched_countries(user_id);
-CREATE INDEX user_report_core_idx ON user_reports(user_id);
+CREATE INDEX user_relationships_related_idx ON user_relationships(related_user_id);
+CREATE INDEX watched_country_user_idx ON watched_countries(user_id);
+CREATE INDEX watched_country_country_idx ON watched_countries(country_id);
+CREATE INDEX user_report_reporting_idx ON user_reports(reporting_user_id);
+CREATE INDEX user_report_reported_idx ON user_reports(reported_user_id);
 CREATE INDEX assignment_user_idx ON assignments(user_id);
--- CREATE INDEX message_groups ON message_groups(message_groups); -- Top Level Table
-CREATE INDEX message_group_member_idx ON message_group_members(message_group_id);
+CREATE INDEX assignment_game_idx ON assignments(game_id);
+CREATE INDEX assignment_country_idx ON assignments(country_id);
+CREATE INDEX message_group_member_group_idx ON message_group_members(message_group_id);
+CREATE INDEX message_group_member_country_idx ON message_group_members(country_id);
+CREATE INDEX message_sending_user_idx ON messages(sending_user_id);
+CREATE INDEX message_receiving_user_idx ON messages(receiving_user_id);
+CREATE INDEX message_sending_country_idx ON messages(sending_country_id);
+CREATE INDEX message_receiving_country_idx ON messages(receiving_country_id);
 CREATE INDEX message_group_idx ON messages(message_group_id);
 CREATE INDEX message_read_receipt_core_idx ON message_read_receipts(message_id);
+CREATE INDEX message_read_receipt_user_idx ON message_read_receipts(user_id);
 CREATE INDEX order_option_unit_idx ON order_options(unit_id);
-CREATE INDEX mad_condition_country_idx ON mad_conditions(country_id);
+CREATE INDEX order_option_turn_idx ON order_options(turn_id);
+CREATE INDEX order_option_secondary_idx ON order_options(secondary_unit_id);
 CREATE INDEX order_set_country_idx ON order_sets(country_id);
+CREATE INDEX order_set_turn_idx ON order_sets(turn_id);
+CREATE INDEX order_set_message_idx ON order_sets(message_id);
 CREATE INDEX order_set_idx ON orders(order_set_id);
+CREATE INDEX order_unit_idx ON orders(ordered_unit_id);
+CREATE INDEX order_secondary_idx ON orders(secondary_unit_id);
+CREATE INDEX order_destination_idx ON orders(destination_id);
+CREATE INDEX mad_condition_order_set_idx ON mad_conditions(order_set_id);
+CREATE INDEX mad_condition_issuing_idx ON mad_conditions(issuing_country_id);
+CREATE INDEX mad_condition_launched_idx ON mad_conditions(launching_country_id);
+CREATE INDEX mad_condition_targeted_idx ON mad_conditions(targeted_country_id);
+
