@@ -8,6 +8,8 @@ import { assignmentRouter } from './routes/assignment-router';
 import cors from 'cors';
 import { SchedulerService } from './services/schedulerService';
 import { OptionsService } from './services/optionsService';
+import pgp from 'pg-promise'
+import { victorCredentials } from '../secrets/dbCredentials';
 
 const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 const erzhaler = express();

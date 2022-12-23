@@ -1,3 +1,11 @@
+export interface OrderOption {
+  unitId: number;
+  orderType: string;
+  secondaryUnitId: number | undefined;
+  destinationChoices: number[];
+  turnId: number;
+}
+
 export interface OptionsContext {
   unitInfo: UnitOptions[]
   unitIdToIndexLib: any;
@@ -8,6 +16,7 @@ export interface OptionsContext {
   transports: any;
   transportables: any;
   transportDestinations: any;
+  turnId: number;
 }
 
 export interface UnitOptions {
@@ -36,7 +45,6 @@ export interface AdjacenctMovement {
   provinceId: number;
   provinceName: string;
 }
-
 
 interface HoldSupport {
   unitId: number;
