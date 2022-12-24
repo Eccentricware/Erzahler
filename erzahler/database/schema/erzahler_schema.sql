@@ -550,11 +550,11 @@ CREATE TABLE IF NOT EXISTS message_read_receipts(
 \echo 'Attempting to create order_options table'
 CREATE TABLE IF NOT EXISTS order_options(
   order_option_id SERIAL,
-  unit_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
+  unit_id INTEGER NOT NULL,
+  order_type VARCHAR(15) NOT NULL,
   secondary_unit_id INTEGER,
   destination_choices INTEGER[],
-  order_type VARCHAR(15) NOT NULL,
   PRIMARY KEY(order_option_id),
   FOREIGN KEY(unit_id)
     REFERENCES units(unit_id),

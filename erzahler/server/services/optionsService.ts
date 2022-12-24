@@ -4,7 +4,7 @@ import { getAirAdjQuery } from "../../database/queries/options/get-air-adj-query
 import { getUnitAdjacentInfoQuery } from "../../database/queries/options/get-unit-adjacent-info-query";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OptionsContext, OrderOption, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionsContext, OrderOption, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 import { UnitType } from "../../models/enumeration/unit-enum";
@@ -21,7 +21,7 @@ export class OptionsService {
   // Only one turn pending at a time
   // Adjustments/Nominations can be logically co-preliminary
 
-  async saveOptionsForNextTurns(gameId: number): Promise<void> {
+  async saveOptionsForNextTurn(gameId: number): Promise<void> {
     const gameState: GameState = await this.getGameState(gameId);
     const nextTurns: NextTurns = this.findNextTurns(gameState);
 
@@ -561,12 +561,12 @@ export class OptionsService {
 
     optionsContext.unitInfo.forEach((unit: UnitOptions) => {
       orderOptions.push(this.formatStandardMovement(unit, optionsContext.turnId));
-      // orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
-      // orderOptions.push(this.formatSupportHold(unit, optionsContext.turnId));
-      // orderOptions.push(this.formatSupportMoveStandard(unit, optionsContext.turnId));
-      // orderOptions.push(this.formatSupportMoveTransported(unit, optionsContext.turnId));
-      // orderOptions.push(this.formatTransport(unit, optionsContext.turnId));
-      // orderOptions.push(this.formatNuke(unit, optionsContext.turnId));
+      orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
+      orderOptions.push(...this.formatSupportHold(unit, optionsContext.turnId));
+      orderOptions.push(...this.formatSupportMoveStandard(unit, optionsContext.turnId));
+      orderOptions.push(...this.formatSupportMoveTransported(unit, optionsContext.turnId));
+      orderOptions.push(...this.formatTransport(unit, optionsContext.turnId));
+      orderOptions.push(this.formatNuke(unit, optionsContext.turnId));
     });
 
      db.optionsRepo.saveOrderOptions(orderOptions);
@@ -585,10 +585,84 @@ export class OptionsService {
     return stdMovementOptions;
   }
 
-  // formatTransportedMovement(unit: UnitOptions, turnId: number): OrderOption {}
-  // formatSupportHold(unit: UnitOptions, turnId: number): OrderOption {}
-  // formatSupportMoveStandard(unit: UnitOptions, turnId: number): OrderOption {}
-  // formatSupportMoveTransported(unit: UnitOptions, turnId: number): OrderOption {}
-  // formatTransport(unit: UnitOptions, turnId: number): OrderOption {}
-  // formatNuke(unit: UnitOptions, turnId: number): OrderOption {}
+  formatTransportedMovement(unit: UnitOptions, turnId: number): OrderOption {
+    return {
+      unitId: unit.unitId,
+      orderType: OrderDisplay.MOVE_CONVOYED,
+      destinationChoices: unit.moveTransported,
+      turnId: turnId
+    };
+  }
+
+  formatSupportHold(unit: UnitOptions, turnId: number): OrderOption[] {
+    let holdSupportOptions: OrderOption[] = [];
+    if (unit.holdSupports) {
+      holdSupportOptions = unit.holdSupports.map((secondaryUnit: HoldSupport) => {
+        return {
+          unitId: unit.unitId,
+          orderType: OrderDisplay.SUPPORT,
+          secondaryUnitId: secondaryUnit.unitId,
+          turnId: turnId
+        }
+      });
+    }
+    return holdSupportOptions;
+  }
+
+  formatSupportMoveStandard(unit: UnitOptions, turnId: number): OrderOption[] {
+    const moveSupports: OrderOption[] = [];
+
+    for (let supportedId in unit.moveSupports) {
+      moveSupports.push({
+        unitId: unit.unitId,
+        orderType: OrderDisplay.SUPPORT,
+        secondaryUnitId: Number(supportedId),
+        destinationChoices: unit.moveSupports[supportedId],
+        turnId: turnId
+      });
+    }
+
+    return moveSupports;
+  }
+
+  formatSupportMoveTransported(unit: UnitOptions, turnId: number): OrderOption[] {
+    const moveConvoyedSupport: OrderOption[] = [];
+
+    for (let supportedId in unit.transportSupports) {
+      moveConvoyedSupport.push({
+        unitId: unit.unitId,
+        orderType: OrderDisplay.SUPPORT,
+        secondaryUnitId: Number(supportedId),
+        destinationChoices: unit.transportSupports[supportedId],
+        turnId: turnId
+      });
+    }
+
+    return moveConvoyedSupport;
+  }
+
+  formatTransport(unit: UnitOptions, turnId: number): OrderOption[] {
+    const transportOptions: OrderOption[] = [];
+
+    for (let transportedId in unit.allTransports) {
+      transportOptions.push({
+        unitId: unit.unitId,
+        orderType: unit.unitType === UnitType.FLEET ? OrderDisplay.CONVOY : OrderDisplay.AIRLIFT,
+        secondaryUnitId: Number(transportedId),
+        destinationChoices: unit.allTransports[transportedId],
+        turnId: turnId
+      });
+    }
+
+    return transportOptions;
+  }
+
+  formatNuke(unit: UnitOptions, turnId: number): OrderOption {
+    return {
+      unitId: unit.unitId,
+      orderType: OrderDisplay.DETONATE,
+      destinationChoices: unit.nukeTargets,
+      turnId: turnId
+    }
+  }
 }
