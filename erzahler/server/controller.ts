@@ -6,7 +6,7 @@ import { gameRouter } from './routes/game-router';
 import { userRouter } from './routes/user-router';
 import { assignmentRouter } from './routes/assignment-router';
 import cors from 'cors';
-import { SchedulerService } from './services/schedulerService';
+import { SchedulerService } from './services/scheduler-service';
 import { OptionsService } from './services/optionsService';
 import pgp from 'pg-promise'
 import { victorCredentials } from '../secrets/dbCredentials';
@@ -15,9 +15,6 @@ const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler
 const erzhaler = express();
 const port: number = 8000;
 const schedulerService: SchedulerService = new SchedulerService();
-
-const optionsService: OptionsService = new OptionsService();
-optionsService.saveOptionsForNextTurn(14);
 
 erzhaler.use(cors());
 erzhaler.use(bodyParser.json({limit: '5mb'}));

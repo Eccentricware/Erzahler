@@ -20,6 +20,8 @@ import { startGameQuery } from '../../database/queries/game/start-game-query';
 import { updateTurnQuery } from '../../database/queries/game/update-turn-query';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { FormattingService } from './formattingService';
+import { TurnType } from '../../models/enumeration/turn-type-enum';
+import { GameState, NextTurns } from '../../models/objects/last-turn-info-object';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -388,5 +390,179 @@ export class SchedulerService {
     }
 
     return true;
+  }
+
+
+  findNextTurns(gameState: GameState): NextTurns {
+    const nextTurns: NextTurns = { pending: '' };
+    const nominationsStarted = this.checkNominationsStarted(gameState);
+    const nominateDuringAdjustments = gameState.nominateDuringAdjustments;
+    const voteDuringSpring = gameState.voteDuringSpring;
+
+    // (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
+    if (gameState.turnType === TurnType.ORDERS_AND_VOTES) {
+      if (gameState.unitsInRetreat) {
+        nextTurns.pending = TurnType.SPRING_RETREATS;
+        nextTurns.preliminary = TurnType.FALL_ORDERS;
+      } else {
+        nextTurns.pending = TurnType.FALL_ORDERS;
+      }
+    }
+
+    // Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> Votes ->
+    if (gameState.turnType === TurnType.SPRING_ORDERS) {
+      if (gameState.unitsInRetreat) {
+        nextTurns.pending = TurnType.SPRING_RETREATS;
+        nextTurns.preliminary = TurnType.FALL_ORDERS;
+      } else {
+        nextTurns.pending = TurnType.FALL_ORDERS;
+      }
+    }
+
+    // Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) ->
+    if (gameState.turnType === TurnType.SPRING_RETREATS) {
+      nextTurns.pending = TurnType.FALL_ORDERS;
+    }
+
+    // Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats ->
+    if (gameState.turnType === TurnType.FALL_ORDERS) {
+      if (gameState.unitsInRetreat) {
+        nextTurns.pending = TurnType.FALL_RETREATS;
+
+        if (nominationsStarted && nominateDuringAdjustments) {
+          nextTurns.preliminary = TurnType.ADJ_AND_NOM;
+        } else  {
+          nextTurns.preliminary = TurnType.ADJUSTMENTS;
+        }
+      } else {
+        if (nominationsStarted && nominateDuringAdjustments) {
+          nextTurns.pending = TurnType.ADJ_AND_NOM;
+        } else  {
+          nextTurns.pending = TurnType.ADJUSTMENTS;
+        }
+      }
+    }
+
+    // Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders ->
+    if (gameState.turnType === TurnType.FALL_RETREATS) {
+      if (nominationsStarted && nominateDuringAdjustments) {
+        nextTurns.pending = TurnType.ADJ_AND_NOM;
+      } else if (nominationsStarted && !nominateDuringAdjustments) {
+        nextTurns.pending = TurnType.ADJUSTMENTS;
+        nextTurns.preliminary = TurnType.NOMINATIONS;
+      } else {
+        nextTurns.pending = TurnType.ADJUSTMENTS;
+      }
+    }
+
+    // Adjustments -> Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
+    if (gameState.turnType === TurnType.ADJUSTMENTS) { // nominateDuringAdjustments === false
+      if (nominationsStarted) {
+        nextTurns.pending = TurnType.NOMINATIONS;
+      } else {
+        nextTurns.pending = TurnType.SPRING_ORDERS;
+      }
+    }
+
+    // (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
+    if (gameState.turnType === TurnType.ADJ_AND_NOM) {
+      if (nominationsStarted && voteDuringSpring) {
+        nextTurns.pending = TurnType.ORDERS_AND_VOTES;
+      } else {
+        nextTurns.pending = TurnType.SPRING_ORDERS;
+      }
+    }
+
+    // Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> Adjustments ->
+    if (gameState.turnType === TurnType.NOMINATIONS) { // nominationsStarted === true && nominateDuringAdjustments === false
+      if (voteDuringSpring) {
+        nextTurns.pending = TurnType.ORDERS_AND_VOTES;
+      } else {
+        nextTurns.pending = TurnType.VOTES;
+        nextTurns.preliminary = TurnType.SPRING_ORDERS;
+      }
+    }
+
+    // Votes -> Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
+    if (gameState.turnType === TurnType.VOTES) {
+      nextTurns.pending = TurnType.SPRING_ORDERS;
+    }
+
+    return nextTurns;
+  }
+
+  checkNominationsStarted(gameState: GameState): boolean {
+    if (gameState.nominationTiming === 'set' && gameState.nominationYear) {
+      if (gameState.currentYear > gameState.nominationYear) {
+        return true;
+      }
+
+      if (gameState.currentYear === gameState.nominationYear) {
+        const impactedTurns = [
+          TurnType.FALL_RETREATS, // Next: ADJUSTMENTS or [ADJ_AND_NOM]
+          TurnType.ADJUSTMENTS,   // Next: [NOMINATIONS]
+          TurnType.ADJ_AND_NOM,   // Next: [VOTES] or [ORDERS_AND_VOTES]
+          TurnType.NOMINATIONS   // Next: [VOTES] or [ORDERS_AND_VOTES]
+        ];
+
+        if (impactedTurns.includes(gameState.turnType)
+          || (gameState.turnType === TurnType.FALL_ORDERS && !gameState.unitsInRetreat)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  checkCallOrders() {
+    // switch(nextTurns.pending) {
+    //   case TurnType.ORDERS_AND_VOTES:
+    //     await this.processSpringOrdersAndVotes(gameState);
+    //     break;
+    //   case TurnType.SPRING_ORDERS:
+    //     await this.processSpringOrders(gameState, false);
+    //     break;
+    //   case TurnType.SPRING_RETREATS:
+    //     await this.processSpringRetreats(gameState);
+    //     break;
+    //   case TurnType.FALL_ORDERS:
+    //     await this.processFallOrders(gameState, false);
+    //     break;
+    //   case TurnType.FALL_RETREATS:
+    //     await this.processFallRetreats(gameState);
+    //     break;
+
+    //   case TurnType.ADJUSTMENTS:
+    //     await this.processAdjustments(gameState, false);
+    //     break;
+    //   case TurnType.ADJ_AND_NOM:
+    //     await this.processAdjustmentsAndNominations(gameState, false);
+    //     break;
+    //   case TurnType.NOMINATIONS:
+    //     await this.processNominations(gameState, false);
+    //     break;
+    //   case TurnType.VOTES:
+    //     await this.processVotes(gameState);
+    // }
+
+    // if (nextTurns.preliminary) {
+    //   switch(nextTurns.preliminary) {
+    //     case TurnType.SPRING_ORDERS:
+    //       await this.processSpringOrders(gameState, true);
+    //       break;
+    //     case TurnType.FALL_ORDERS:
+    //       await this.processFallOrders(gameState, true);
+    //       break;
+    //     case TurnType.ADJUSTMENTS:
+    //       await this.processAdjustments(gameState, true);
+    //       break;
+    //     case TurnType.ADJ_AND_NOM:
+    //       await this.processAdjustmentsAndNominations(gameState, true);
+    //       break;
+    //     case TurnType.NOMINATIONS:
+    //       await this.processNominations(gameState, true);
+    //   }
+    // }
   }
 }

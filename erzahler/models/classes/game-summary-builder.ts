@@ -1,4 +1,4 @@
-import { SchedulerService } from "../../server/services/schedulerService";
+import { SchedulerService } from "../../server/services/scheduler-service";
 import { GameSummaryQueryObject } from "../objects/game-summary-query-object";
 
 export class GameSummaryBuilder {
