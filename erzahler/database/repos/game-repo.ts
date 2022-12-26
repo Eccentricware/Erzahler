@@ -1,7 +1,9 @@
 import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain } from "pg-promise";
 import { GameState, GameStateResult } from "../../models/objects/last-turn-info-object";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
+import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
 import { getGameStateQuery } from "../queries/options/get-game-state-query";
 
 export class GameRepository {
@@ -38,4 +40,6 @@ export class GameRepository {
 
     return gameState;
   }
+
+
 }

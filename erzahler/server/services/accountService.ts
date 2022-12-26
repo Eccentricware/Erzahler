@@ -12,18 +12,9 @@ import { clearVerficiationDeadlineQuery } from '../../database/queries/accounts/
 import { UserProfileObject } from '../../models/objects/user-profile-object';
 import { FormattingService } from './formattingService';
 import { updatePlayerSettings } from '../../database/queries/dashboard/update-user-query';
+import { db } from '../../database/connection';
 
 export class AccountService {
-  async checkUsernameAvailable(username: string): Promise<any> {
-    const pool: Pool = new Pool(victorCredentials);
-
-    return pool.query(getUserIdQuery, [username])
-      .then((usernameCountResponse: any) => {
-        return usernameCountResponse.rows.length === 0;
-      })
-      .catch((error: Error) => console.error(error.message));
-  }
-
   async validateToken(idToken: string): Promise<any> {
     return getAuth()
       .verifyIdToken(idToken, true)
@@ -40,7 +31,7 @@ export class AccountService {
 
   async attemptAddUserToDatabase(idToken: string, username: string): Promise<any> {
     const token: DecodedIdToken = await this.validateToken(idToken);
-    const usernameAvailable: boolean = await this.checkUsernameAvailable(username);
+    const usernameAvailable: boolean = await db.accountsRepo.checkUsernameAvailable(username);
 
     if (token.uid && usernameAvailable) {
       const firebaseUser = await this.getFirebaseUser(token.uid);
@@ -72,36 +63,20 @@ export class AccountService {
         });
     }
 
-    return await this.runAddUserQuery(firebaseUser, username, addUserArgs);
+    return await this.addUser(firebaseUser, username, addUserArgs);
   }
 
-  async runAddUserQuery(firebaseUser: UserRecord, username: string, providerDependentArgs: any[]): Promise<any> {
-    const pool = new Pool(victorCredentials);
+  async addUser(firebaseUser: UserRecord, username: string, providerDependentArgs: any[]): Promise<any> {
+    await db.accountsRepo.createUser(providerDependentArgs);
 
-    await pool.query(createUserQuery, providerDependentArgs)
-      .then((result: any) => { console.log(`Add user success:`, Boolean(result.rowCount)); })
-      .catch((error: Error) => {
-        console.log('Create User Query Error:', error.message);
-      });
+    const userId: number = await db.accountsRepo.getUserId(username);
+    const providerArgs = this.createProviderArgs(userId, firebaseUser);
 
-    const userId: number = await this.getUserId(username);
-    const createProviderArgs = this.createProviderArgs(userId, firebaseUser);
+    await db.accountsRepo.createProvider(providerArgs);
 
-    await pool.query(createProviderQuery, createProviderArgs)
-      .then((result: any) => {
-        console.log(`Provider added`, Boolean(result.rowCount));
-      })
-      .catch((error: Error) => {
-        console.log('Create Provider Query Error:', error.message);
-      });
+    const userAdded = await db.accountsRepo.getUserProfile(firebaseUser.uid);
 
-    const userAdded = await pool.query(getUserProfileQuery, [firebaseUser.uid])
-      .then((result: any) => result )
-      .catch((error: Error) => {
-        console.log('User Added Query Error', error.message);
-      });
-
-      console.log('userAdded rowcount', userAdded.rowCount);
+    console.log('userAdded rowcount', userAdded.rowCount);
 
     if (userAdded.rowCount === 1) {
       return { success: true };
@@ -141,17 +116,6 @@ export class AccountService {
     ];
   }
 
-  async getUserId(username: string): Promise<any> {
-    const pool = new Pool(victorCredentials);
-
-    return pool.query(getUserIdQuery, [username])
-      .then((userResult: any) => {
-        console.log('userResult.user_id:', userResult.rows[0].user_id);
-        return userResult.rows[0].user_id;
-      })
-      .catch((error: Error) => console.error(error.message));
-  }
-
   async getFirebaseUser(uid: string): Promise<any> {
     return getAuth()
       .getUser(uid)
@@ -168,27 +132,16 @@ export class AccountService {
     const token: DecodedIdToken = await this.validateToken(idToken);
 
     if (token.uid) {
-      const pool = new Pool(victorCredentials);
+
 
       const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
-      await pool.query(syncProviderEmailStateQuery, [
-        firebaseUser.email,
-        firebaseUser.emailVerified,
-        firebaseUser.metadata.lastSignInTime,
-        firebaseUser.uid
-      ]);
+      await db.accountsRepo.syncProviderEmailState(firebaseUser);
 
-      const blitzkarteUser: UserProfileObject = await pool.query(getUserProfileQuery, [token.uid])
-        .then((userResults: any) => formattingService.convertKeysSnakeToCamel(userResults.rows[0]))
-        .catch((error: Error) => console.log('User Profile Query Error:', error.message));
+      const blitzkarteUser: UserProfileObject = await db.accountsRepo.getUserProfile(token.uid);
 
       if (blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
-        await pool.query(lockUsernameQuery, [firebaseUser.uid])
-          .then((result: any) => { console.log('Username Locked'); })
-          .catch((error: Error) => { console.log(error.message); });
-        await pool.query(clearVerficiationDeadlineQuery, [firebaseUser.uid])
-          .then((result: any) => { console.log('Timer disabled'); })
-          .catch((error: Error) => { console.log(error.message); });
+        await db.accountsRepo.lockUsername(firebaseUser.uid);
+        await db.accountsRepo.clearVerificationDeadline(firebaseUser.uid);
       }
 
       return blitzkarteUser;
@@ -197,26 +150,17 @@ export class AccountService {
     }
   }
 
-  async addProvider(idToken: string, username: string) {
+  async addAdditionalProvider(idToken: string, username: string) {
     const token: DecodedIdToken = await this.validateToken(idToken);
 
     if (token.uid) {
-      const pool = new Pool(victorCredentials);
-
       const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
-      const providerInDB: any = await pool.query(getExistingProviderQuery, [
-        token.uid,
-        username
-      ])
-      .then((results: any) => Boolean(results.rowCount))
-      .catch((error: Error) => { console.log(error.message); });
+      const providerInDB: any = await db.accountsRepo.checkProviderInDB(token.uid, username);
 
       if (!providerInDB) {
-        const userId: number = await this.getUserId(username);
-        const createProviderArgs: any = this.createProviderArgs(userId, firebaseUser);
-        await pool.query(createProviderQuery, createProviderArgs)
-          .then((result: any) => { console.log('Successfully added provider'); })
-          .catch((error: Error) => { console.log(error.message); });
+        const userId: number = await db.accountsRepo.getUserId(username);
+        const providerArgs: any = this.createProviderArgs(userId, firebaseUser);
+        await db.accountsRepo.createProvider(providerArgs);
       } else {
         console.log('Provider in Database');
       }
@@ -224,28 +168,17 @@ export class AccountService {
   }
 
   async updateUserSettings(idToken: string, data: any) {
-    // console.log('idToken', idToken)
     const token = await this.validateToken(idToken);
-    // console.log(token);
 
     if (token.uid) {
       const pool = new Pool(victorCredentials);
 
       const blitzkarteUser: UserProfileObject = await this.getUserProfile(idToken);
-      // console.log('Data', data);
-      // console.log('User', blitzkarteUser);
-      return pool.query(updatePlayerSettings, [
+      return db.accountsRepo.updatePlayerSettings(
         data.timeZone,
         data.meridiemTime,
         blitzkarteUser.userId
-      ])
-      .then(() => { success: true})
-      .catch((error: Error) => {
-        return {
-          success: false,
-          error: 'Update Profile Query Error: ' + error.message
-        }
-      });
+      )
     }
   }
 }
