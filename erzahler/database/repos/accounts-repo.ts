@@ -1,6 +1,7 @@
 import { UserRecord } from "firebase-admin/auth";
-import { Pool } from "pg";
+import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain } from "pg-promise";
+import { UserProfile, UserProfileResult } from "../../models/objects/user-profile-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { clearVerficiationDeadlineQuery } from "../queries/accounts/clear-verification-deadline-query";
 import { createProviderQuery } from "../queries/accounts/create-provider-query";
@@ -47,11 +48,40 @@ export class AccountsRepository {
       });
   }
 
-  async getUserProfile(uid: string) {
+  async getUserProfile(uid: string): Promise<UserProfile | void> {
     const pool = new Pool(victorCredentials);
 
     return pool.query(getUserProfileQuery, [uid])
-      .then((result: any) => result )
+      .then((result: QueryResult<UserProfileResult>) => {
+        const user = result.rows[0];
+
+        return <UserProfile | void> {
+          userId: user.user_id,
+          username: user.username,
+          usernameLocked: user.username_locked,
+          userStatus: user.user_status,
+          classicUnitRender: user.classic_unit_render,
+          cityRenderSize: user.city_render_size,
+          labelRenderSize: user.label_render_size,
+          unitRenderSize: user.unit_render_size,
+          nmrTotal: user.nmr_total,
+          nmrOrders: user.nmr_orders,
+          nmrRetreats: user.nmr_retreats,
+          nmrAdjustments: user.nmr_adjustments,
+          dropouts: user.dropouts,
+          colorTheme: user.color_theme,
+          displayPresence: user.display_presence,
+          realName: user.real_name,
+          displayRealName: user.display_real_name,
+          uid: user.uid,
+          providerType: user.provider_type,
+          email: user.email,
+          emailVerified: user.email_verified,
+          verificationDeadline: user.verification_deadline,
+          timeZone: user.time_zone,
+          meridiemTime: user.meridiem_time
+        }
+      } )
       .catch((error: Error) => {
         console.log('User Added Query Error', error.message);
       });

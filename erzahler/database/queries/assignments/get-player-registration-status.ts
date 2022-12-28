@@ -1,4 +1,4 @@
-export const getPlayerRegistrationStatus = `
+export const getPlayerRegistrationStatusQuery = `
   SELECT a.assignment_type,
     a.assignment_end
   FROM assignments a

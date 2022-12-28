@@ -9,7 +9,7 @@ import { createProviderQuery } from '../../database/queries/accounts/create-prov
 import { syncProviderEmailStateQuery } from '../../database/queries/accounts/sync-provider-email-state-query';
 import { lockUsernameQuery } from '../../database/queries/accounts/lock-username-query';
 import { clearVerficiationDeadlineQuery } from '../../database/queries/accounts/clear-verification-deadline-query';
-import { UserProfileObject } from '../../models/objects/user-profile-object';
+import { UserProfile } from '../../models/objects/user-profile-object';
 import { FormattingService } from './formattingService';
 import { updatePlayerSettings } from '../../database/queries/dashboard/update-user-query';
 import { db } from '../../database/connection';
@@ -76,9 +76,7 @@ export class AccountService {
 
     const userAdded = await db.accountsRepo.getUserProfile(firebaseUser.uid);
 
-    console.log('userAdded rowcount', userAdded.rowCount);
-
-    if (userAdded.rowCount === 1) {
+    if (userAdded) {
       return { success: true };
     } else {
       return { success: false };
@@ -127,7 +125,12 @@ export class AccountService {
       });
   }
 
-  async getUserProfile(idToken: string): Promise<UserProfileObject | any> {
+  /**
+   * Returns the User profile given an unforgable idToken
+   * @param idToken
+   * @returns Promise<UserProfile | any>
+   */
+  async getUserProfile(idToken: string): Promise<UserProfile | any> {
     const formattingService: FormattingService = new FormattingService();
     const token: DecodedIdToken = await this.validateToken(idToken);
 
@@ -137,9 +140,9 @@ export class AccountService {
       const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
       await db.accountsRepo.syncProviderEmailState(firebaseUser);
 
-      const blitzkarteUser: UserProfileObject = await db.accountsRepo.getUserProfile(token.uid);
+      const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
 
-      if (blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
+      if (blitzkarteUser && blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
         await db.accountsRepo.lockUsername(firebaseUser.uid);
         await db.accountsRepo.clearVerificationDeadline(firebaseUser.uid);
       }
@@ -173,7 +176,7 @@ export class AccountService {
     if (token.uid) {
       const pool = new Pool(victorCredentials);
 
-      const blitzkarteUser: UserProfileObject = await this.getUserProfile(idToken);
+      const blitzkarteUser: UserProfile = await this.getUserProfile(idToken);
       return db.accountsRepo.updatePlayerSettings(
         data.timeZone,
         data.meridiemTime,

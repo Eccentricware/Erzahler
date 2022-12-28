@@ -1,12 +1,37 @@
 import { Pool, QueryResult } from "pg";
-import { ColumnSet, IDatabase, IMain } from "pg-promise";
-import { GameStatus } from "../../models/enumeration/game-status-enum";
+import { IDatabase, IMain } from "pg-promise";
+import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
+import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
+import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { GameState, GameStateResult } from "../../models/objects/last-turn-info-object";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
 import { StartScheduleObject } from "../../models/objects/start-schedule-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
-import { SchedulerService } from "../../server/services/scheduler-service";
+import { FormattingService } from "../../server/services/formattingService";
+import { getPlayerRegistrationStatusQuery } from "../queries/assignments/get-player-registration-status";
+import { checkGameNameAvailabilityQuery } from "../queries/game/check-game-name-availability-query";
+import { checkUserGameAdminQuery } from "../queries/game/check-user-game-admin-query";
+import { getGameDetailsQuery } from "../queries/game/get-game-details-query";
+import { getGamesQuery } from "../queries/game/get-games-query";
+import { getRulesInGameQuery } from "../queries/game/get-rules-in-game-query";
+import { insertAssignmentQuery } from "../queries/game/insert-assignment-query";
+import { insertCoalitionScheduleQuery } from "../queries/game/insert-coalition-schedule-query";
+import { insertCountryHistoryQuery } from "../queries/game/insert-country-history-query";
+import { insertCountryQuery } from "../queries/game/insert-country-query";
 import { insertNewGameQuery } from "../queries/game/insert-game-query";
+import { insertInitialProvinceHistoryQuery } from "../queries/game/insert-initial-province-history-query";
+import { insertLabelQuery } from "../queries/game/insert-label-query";
+import { insertNodeAdjacencyQuery } from "../queries/game/insert-node-adjacency-query";
+import { insertNodeQuery } from "../queries/game/insert-node-query";
+import { insertProvinceQuery } from "../queries/game/insert-province-query";
+import { insertRuleInGameQuery } from "../queries/game/insert-rule-in-game-query";
+import { insertTerrainQuery } from "../queries/game/insert-terrain-query";
+import { insertTurnQuery } from "../queries/game/insert-turn-query";
+import { insertUnitHistoryQuery } from "../queries/game/insert-unit-history-query";
+import { insertUnitQuery } from "../queries/game/insert-unit-query";
+import { updateGameSettingsQuery } from "../queries/game/update-game-settings-query";
+import { updateTurnQuery } from "../queries/game/update-turn-query";
+import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
 import { getGameStateQuery } from "../queries/options/get-game-state-query";
 
 const gamesCols: string[] = [
@@ -47,16 +72,12 @@ const gamesCols: string[] = [
   'skill_max'
 ]
 export class GameRepository {
-  gamesCols: ColumnSet<unknown>;
-
-  constructor(private db: IDatabase<any>, private pgp: IMain) {
-    this.gamesCols = new pgp.helpers.ColumnSet(gamesCols, { table: 'games' });
-  }
+  formattingService = new FormattingService();
+  pool = new Pool(victorCredentials);
+  constructor(private db: IDatabase<any>, private pgp: IMain) {}
 
   async getGameState(gameId: number): Promise<any> {
-    const pool = new Pool(victorCredentials);
-
-    const gameState: GameState = await pool.query(getGameStateQuery, [gameId])
+    const gameState: GameState = await this.pool.query(getGameStateQuery, [gameId])
       .then((result: QueryResult<any>) => {
         return result.rows.map((gameStateResult: GameStateResult) => {
           return <GameState> {
@@ -85,46 +106,318 @@ export class GameRepository {
     return gameState;
   }
 
-  async insertNewGameQuery(settings: any, schedule: StartScheduleObject): Promise<any> {
-    const gameValues = {
-      game_name: settings.gameName,
-      game_status: GameStatus.REGISTRATION,
-      assignment_method: settings.assignmentMethod,
-      stylized_start_year: settings.stylizedStartYear,
-      current_year: 0,
-      turn_1_timing: settings.turn1Timing,
-      deadline_type: settings.deadlineType,
-      start_time: schedule.gameStart,
-      observe_dst: settings.observeDst,
-      orders_day: schedule.orders.day,
-      orders_time: schedule.orders.time,
-      retreats_day: schedule.retreats.day,
-      retreats_time: schedule.retreats.time,
-      adjustments_day: schedule.adjustments.day,
-      adjustments_time: schedule.adjustments.time,
-      nominations_day: schedule.nominations.day,
-      nominations_time: schedule.nominations.time,
-      votes_day: schedule.votes.day,
-      votes_time: schedule.votes.time,
-      nmr_tolerance_total: settings.nmrTolerance,
-      concurrent_games_limit: settings.concurrentGamesLimit,
-      private_game: settings.privateGame,
-      hidden_game: settings.hiddenGame,
-      blind_administrators: settings.blindAdministrators,
-      final_readiness_check: settings.finalReadinessCheck,
-      vote_delay_enabled: settings.voteDelayEnabled,
-      partial_roster_start: settings.partialRosterStart,
-      nomination_timing: settings.nominationTiming,
-      nomination_year: settings.nominationYear,
-      automatic_assignments: settings.automaticAssignments,
-      rating_limits_enabled: settings.ratingLimits,
-      fun_min: settings.funRange[0],
-      fun_max: settings.funRange[1],
-      skill_min: settings.skillRange[0],
-      skill_max: settings.skillRange[1]
-    };
+  async insertGame(settingsArray: any[]): Promise<any> {
+    return this.pool.query(insertNewGameQuery, settingsArray);
+  }
 
-    const insertGameQuery = this.pgp.helpers.insert(gameValues, this.gamesCols);
-    return this.db.any(insertGameQuery);
+  async insertRulesInGame(rules: any, gameName: string): Promise<any[]> {
+    return rules.map(async (rule: any) => {
+      return await this.pool.query(insertRuleInGameQuery, [
+        gameName,
+        rule.key,
+        rule.enabled
+      ])
+      .catch((error: Error) => {
+        console.log('Rule In Games Error:', error.message);
+      });
+    });
+
+  }
+
+  async insertCoalitionScheduleQuery(gameName: string): Promise<void> {
+    await this.pool.query(insertCoalitionScheduleQuery, [
+      50,
+      1,
+      undefined,
+      9,
+      6,
+      3,
+      1,
+      0,
+      undefined,
+      undefined,
+      undefined,
+      'ABB',
+      undefined,
+      gameName
+    ])
+    .catch((error: Error) => {
+      console.log('Add Coalition Error:', error.message);
+    });
+  }
+
+  async insertAssignment(
+    userId: number,
+    countryId: number | undefined,
+    assignmentType: string,
+    gameName: string
+  ): Promise<void> {
+    await this.pool.query(insertAssignmentQuery, [
+      userId,
+      null,
+      'Creator',
+      gameName
+    ])
+    .catch((error: Error) => {
+      console.log('New Assignment Error:', error.message);
+    });
+  }
+
+  async insertTurn(turnArgs: any[]): Promise<any> {
+    return this.pool.query(insertTurnQuery, turnArgs);
+  }
+
+  async insertProvinces(provinces: any, gameName: string): Promise<any[]> {
+   const provincePromises: Promise<any>[] = [];
+
+    for (let provinceName in provinces) {
+      provincePromises.push(this.pool.query(insertProvinceQuery, [
+        provinces[provinceName].name,
+        provinces[provinceName].fullName,
+        provinces[provinceName].type,
+        provinces[provinceName].voteType,
+        provinces[provinceName].cityLoc,
+        gameName
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Province Error:', error.message);
+      }));
+    }
+
+    return provincePromises;
+  }
+
+  async insertProvinceHistories(provinces: any, gameName: string): Promise<any[]> {
+   const provinceHistoryPromises: Promise<any>[] = [];
+
+    for (let provinceName in provinces) {
+      provinceHistoryPromises.push(this.pool.query(insertInitialProvinceHistoryQuery, [
+        provinces[provinceName].status,
+        provinces[provinceName].voteColor,
+        provinces[provinceName].statusColor,
+        provinces[provinceName].strokeColor,
+        provinces[provinceName].country,
+        provinces[provinceName].owner,
+        gameName,
+        provinces[provinceName].name
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Province History Error:', error.message);
+      }));
+    }
+
+    return provinceHistoryPromises;
+  }
+
+  async insertTerrain(terrain: any[], gameName: string): Promise<any[]> {
+   return terrain.map(async (terrain: any) => {
+      return this.pool.query(insertTerrainQuery, [
+        terrain.type,
+        terrain.renderCategory,
+        terrain.points,
+        terrain.bounds.top,
+        terrain.bounds.left,
+        terrain.bounds.right,
+        terrain.bounds.bottom,
+        terrain.start,
+        terrain.end,
+        gameName,
+        terrain.province,
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Terrain Error:', error.message);
+      });
+    });
+  }
+
+  async insertNodes(nodes: any, gameName: string): Promise<any[]> {
+   const nodePromises: Promise<any>[] = [];
+
+    for (let nodeName in nodes) {
+      nodePromises.push(this.pool.query(insertNodeQuery, [
+        nodes[nodeName].name,
+        nodes[nodeName].type,
+        nodes[nodeName].loc,
+        gameName,
+        nodes[nodeName].province
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Node Error:', error.message);
+      }));
+    }
+
+    return nodePromises;
+  }
+
+  async insertNodeAdjacencies(links: any, gameName: string): Promise<any[]> {
+   const nodeAdjacencyPromises: Promise<any>[] = [];
+
+    for (let linkName in links) {
+      nodeAdjacencyPromises.push(this.pool.query(insertNodeAdjacencyQuery, [
+        gameName,
+        links[linkName].alpha.name,
+        links[linkName].omega.name
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Node Adjacency Error:', error.message);
+      }));
+    }
+
+    return nodeAdjacencyPromises;
+  }
+
+  async insertCountries(countries: any, gameName: string): Promise<any[]> {
+   const newCountryPromises: Promise<any>[] = [];
+
+    for (let countryName in countries) {
+      newCountryPromises.push(this.pool.query(insertCountryQuery, [
+        countries[countryName].name,
+        countries[countryName].rank,
+        countries[countryName].color,
+        countries[countryName].keyName,
+        gameName
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Country Error:', error.message);
+      }));
+    }
+
+    return newCountryPromises;
+  }
+
+  async insertCountryHistories(countries: any, gameName: string): Promise<any> {
+   const countryHistoryPromises: Promise<any>[] = [];
+
+    for (let countryName in countries) {
+      countryHistoryPromises.push(this.pool.query(insertCountryHistoryQuery, [
+        countries[countryName].rank !== 'n' ? 'available' : 'npc',
+        countries[countryName].cities.length,
+        countries[countryName].units.length,
+        countries[countryName].bankedBuilds,
+        countries[countryName].nuke,
+        countries[countryName].adjustments,
+        gameName,
+        countries[countryName].name,
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Country History Error:', error.message);
+      }));
+    }
+
+    return countryHistoryPromises;
+  }
+
+
+  async insertUnits(units: any, gameName: string): Promise<any[]> {
+    const pool: Pool = new Pool(victorCredentials);
+
+    const unitPromises: Promise<any>[] = [];
+    for (let unitName in units) {
+      unitPromises.push(this.pool.query(insertUnitQuery, [
+        units[unitName].fullName,
+        units[unitName].type,
+        gameName,
+        units[unitName].country
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Unit Error:', error.message);
+      }));
+    }
+
+    return unitPromises;
+  }
+
+  async insertUnitHistories(units: any, gameName: string): Promise<any> {
+   const initialHistoryPromises: Promise<any>[] = [];
+
+    for (let unitName in units) {
+      initialHistoryPromises.push(this.pool.query(insertUnitHistoryQuery, [
+        'Active',
+        gameName,
+        units[unitName].fullName,
+        units[unitName].node
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Unit History Error:', error.message);
+      }));
+    }
+
+    return initialHistoryPromises;
+  }
+
+  async insertLabels(labels: any, gameName: string): Promise<void> {
+    labels.forEach(async (label: any) => {
+      await this.pool.query(insertLabelQuery, [
+        label.name,
+        label.type,
+        label.loc,
+        label.text,
+        label.fill,
+        gameName,
+        label.province
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Label Error:', error.message);
+      });
+    });
+  }
+
+  async updateGameSettings(gameSettings: any[]): Promise<void> {
+    await this.pool.query(updateGameSettingsQuery, gameSettings)
+      .catch((error: Error) => {
+        console.log('Update Game Error: ' + error.message);
+      });
+  }
+
+  async updateTurn(gameStart: any, turnNumber: number, gameId: number): Promise<void> {
+    await this.pool.query(updateTurnQuery, [gameStart, turnNumber, gameId])
+    .catch((error: Error) => {
+      console.log('Update Turn 0 Error: ' + error.message);
+    });
+  }
+
+  async checkGameNameAvailable(gameName: string): Promise<any> {
+    return await this.pool.query(checkGameNameAvailabilityQuery, [gameName]);
+  }
+
+  async getGames(timeZone: string, meridiemTime: boolean): Promise<any> {
+    return await this.pool.query(getGamesQuery, [timeZone])
+      .then((gamesResults: QueryResult<any>) => {
+        return gamesResults.rows.map((game: GameSummaryQueryObject) => {
+          return new GameSummaryBuilder(game, timeZone, meridiemTime);
+        });
+      })
+      .catch((error: Error) => {
+        console.log('Get Games Query Error', error.message);
+      });
+  }
+
+  async isGameAdmin(uid: string, gameId: number): Promise<boolean> {
+   return (await this.pool.query(checkUserGameAdminQuery, [uid, gameId])).rows.length > 0;
+  }
+
+  async getGameDetails(gameId: number, userId: number, timeZone: string, meridiemTime: boolean): Promise<any> {
+    return this.pool.query(getGameDetailsQuery, [gameId, userId, timeZone])
+      .then((gameDataResults: any) => {
+        return new GameDetailsBuilder(gameDataResults.rows[0], timeZone, meridiemTime);
+      })
+      .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
+
+  }
+
+  async getRulesInGame(gameId: number): Promise<any> {
+    return await this.pool.query(getRulesInGameQuery, [gameId])
+      .then((ruleDataResults: any) => {
+        return ruleDataResults.rows.map((rule: any) => this.formattingService.convertKeysSnakeToCamel(rule));
+      })
+      .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
+  }
+
+  async getPlayerRegistrationStatus(gameId: number, userId: number): Promise<any> {
+    return await this.pool.query(getPlayerRegistrationStatusQuery, [gameId, userId])
+      .then((playerRegistrationResults: any) => {
+        return playerRegistrationResults.rows.map((registrationType: any) => this.formattingService.convertKeysSnakeToCamel(registrationType));
+      })
+      .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
   }
 }
