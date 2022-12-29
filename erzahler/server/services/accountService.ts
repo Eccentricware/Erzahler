@@ -181,7 +181,7 @@ export class AccountService {
         data.timeZone,
         data.meridiemTime,
         blitzkarteUser.userId
-      )
+      );
     }
   }
 }
