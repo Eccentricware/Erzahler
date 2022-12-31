@@ -50,7 +50,8 @@ export class GameService {
       this.gameData = gameData;
 
       const newGameResult = await this.addNewGame(pool, this.gameData, this.user.timeZone)
-        .then((newGameId: any) => {
+        .then(async (newGameId: any) => {
+          await optionsService.saveOptionsForNextTurn(newGameId);
           return {
             success: true,
             gameId: newGameId,
@@ -160,7 +161,7 @@ export class GameService {
     ])
     .then(async (result: any) => {
       console.log('Turn 0 Added Successfully');
-      await this.addTurn1(pool, schedule);
+      await this.addCountries(pool);
     })
     .catch((error: Error) => {
       console.log('Turn 0 Error: ', error.message);
@@ -178,9 +179,9 @@ export class GameService {
       TurnStatus.PAUSED,
       this.gameData.gameName
     ])
-    .then(async (result: any) => {
+    .then(async (result: QueryResult<any>) => {
       console.log('Turn 1 Added Successfully');
-      await this.addCountries(pool);
+      return result.rows[0].turn_id;
     })
     .catch((error: Error) => {
       console.log('Turn 1 Error: ', error.message);

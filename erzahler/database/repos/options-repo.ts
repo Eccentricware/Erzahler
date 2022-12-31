@@ -10,14 +10,13 @@ export class OptionsRepository {
 
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.orderOptionsCols = new pgp.helpers.ColumnSet([
-        'unit_id',
-        'order_type',
-        'secondary_unit_id',
-        'destination_choices',
-        'turn_id'
-      ],
-      { table: 'order_options' }
-    );
+      'unit_id',
+      'order_type',
+      'secondary_unit_id',
+      'secondary_order_type',
+      'destinations',
+      'turn_id'
+    ], {table: 'order_options'});
   }
 
   async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitOptions[]> {
@@ -73,7 +72,8 @@ export class OptionsRepository {
         unit_id: option.unitId,
         order_type: option.orderType,
         secondary_unit_id: option.secondaryUnitId,
-        destination_choices: option.destinationChoices,
+        secondary_order_type: option.secondaryOrderType,
+        destinations: option.destinations,
         turn_id: option.turnId
       }
     });

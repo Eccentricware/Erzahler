@@ -5,8 +5,8 @@
 
 CREATE OR REPLACE FUNCTION get_node_adjacencies(
   INTEGER, -- game_id
-  INTEGER
-) --game_id, air_nodes_only
+  INTEGER  -- turn_id
+)
 RETURNS TABLE(node_id INTEGER, province_name VARCHAR(15), adjacencies JSON)
 AS $$
   SELECT n.node_id,
