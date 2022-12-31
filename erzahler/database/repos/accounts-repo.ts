@@ -133,11 +133,11 @@ export class AccountsRepository {
       .catch((error: Error) => { console.log(error.message); });
   }
 
-  updatePlayerSettings(timeZone: string, meridiemTime: boolean, userId: number) {
+  async updatePlayerSettings(timeZone: string, meridiemTime: boolean, userId: number) {
     const pool = new Pool(victorCredentials);
 
     return pool.query(updatePlayerSettings, [timeZone, meridiemTime, userId])
-      .then(() => { success: true})
+      .then(() => { return { success: true }; })
       .catch((error: Error) => {
         return {
           success: false,

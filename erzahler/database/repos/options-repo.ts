@@ -6,11 +6,8 @@ import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
 import { getUnitAdjacentInfoQuery } from "../queries/options/get-unit-adjacent-info-query";
 
 export class OptionsRepository {
-  orderOptionsCols: ColumnSet<unknown>
-  /**
-   * @param db
-   * @param pgp
-   */
+  orderOptionsCols: ColumnSet<unknown>;
+
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.orderOptionsCols = new pgp.helpers.ColumnSet([
       'unit_id',
@@ -69,7 +66,7 @@ export class OptionsRepository {
     return unitAdjacencyInfoResult;
   }
 
-  saveOrderOptions(orderOptions: OrderOption[]): Promise<void> {
+  async saveOrderOptions(orderOptions: OrderOption[]): Promise<void> {
     const orderOptionValues = orderOptions.map((option: OrderOption) => {
       return {
         unit_id: option.unitId,
@@ -81,8 +78,15 @@ export class OptionsRepository {
       }
     });
 
-    const query = this.pgp.helpers.insert(orderOptionValues, this.orderOptionsCols)
-    return this.db.query(query);
+
+    const bulkOrderOptionsQuery = this.pgp.helpers.insert(orderOptionValues, this.orderOptionsCols) + 'RETURNING unit_id, order_type';
+    const results = await this.db.map(bulkOrderOptionsQuery, [], (result: any) => {
+      return {
+        unitId: result.unit_id,
+        orderType: result.order_type
+      };
+    });
+    console.log('Whoa kay', results);
   }
 
   async getAirAdjacencies(gameId: number): Promise<AirAdjacency[]> {
