@@ -1,6 +1,6 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain, queryResult } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, OrderOption, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/options/get-at-risk-units-query";
@@ -10,8 +10,12 @@ import { getNominationsQuery } from "../queries/options/get-nominations-query";
 import { getOrderOptionsQuery } from "../queries/options/get-order-options-query";
 import { getTransferOptionsQuery } from "../queries/options/get-transfer-options-query";
 import { getUnitAdjacentInfoQuery } from "../queries/options/get-unit-adjacent-info-query";
+import { insertTurnOrderSetsQuery } from "../queries/options/insert-turn-order-sets";
+import { setTurnDefaultsPreparedQuery } from "../queries/options/set-turn-defaults-prepared-query";
 
 export class OptionsRepository {
+  orderSetCols: ColumnSet<unknown>;
+  orderCols: ColumnSet<unknown>;
   orderOptionsCols: ColumnSet<unknown>;
   pool: Pool = new Pool(victorCredentials);
   /**
@@ -19,6 +23,25 @@ export class OptionsRepository {
    * @param pgp
    */
   constructor(private db: IDatabase<any>, private pgp: IMain) {
+    this.orderSetCols = new pgp.helpers.ColumnSet([
+      'country_id',
+      'turn_id',
+      'message_id',
+      'submission_time',
+      'order_set_type',
+      'order_set_name'
+    ], { table: 'order_sets' });
+
+    this.orderCols = new pgp.helpers.ColumnSet([
+      'order_set_id',
+      'order_type',
+      'ordered_unit_id',
+      'secondary_unit_id',
+      'destination_id',
+      'order_status',
+      'order_success'
+    ], { table: 'orders' });
+
     this.orderOptionsCols = new pgp.helpers.ColumnSet([
       'unit_id',
       'order_type',
@@ -29,7 +52,7 @@ export class OptionsRepository {
     ], { table: 'order_options' });
   }
 
-  saveOrderOptions(orderOptions: OrderOption[], turnId: number): Promise<void> {
+  async saveOrderOptions(orderOptions: OrderOption[], turnId: number): Promise<void> {
     const orderOptionValues = orderOptions.map((option: OrderOption) => {
       return {
         unit_id: option.unitId,
@@ -43,6 +66,27 @@ export class OptionsRepository {
 
     const query = this.pgp.helpers.insert(orderOptionValues, this.orderOptionsCols);
     return this.db.query(query);
+  }
+
+  async saveDefaultOrders(defaultOrders: Order[]): Promise<void> {
+    const orderValues = defaultOrders.map((order: Order) => {
+      return {
+        order_set_id: order.orderSetId,
+        order_type: order.orderType,
+        ordered_unit_id: order.unitId,
+        destination_id: order.destinationId,
+        secondary_unit_id: undefined,
+        order_status: 'Default',
+        order_success: undefined
+      }
+    });
+
+    const query = this.pgp.helpers.insert(orderValues, this.orderCols);
+    return this.db.query(query);
+  }
+
+  async setTurnDefaultsPrepped(turnId: number): Promise<void> {
+    await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
   }
 
   //// Legacy Functions ////
@@ -120,8 +164,8 @@ export class OptionsRepository {
    * @param turnId    - Turn's ID
    * @returns Promise<SavedOption[]>
    */
-  async getUnitOptions(turnTurnId: number, orderTurnId: number, playerOnly: boolean, countryId: number): Promise<SavedOption[]> {
-    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnTurnId, orderTurnId, playerOnly, countryId])
+  async getUnitOptions(turnTurnId: number, orderTurnId: number, countryId: number = 0): Promise<SavedOption[]> {
+    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnTurnId, orderTurnId, countryId])
       .then((result: QueryResult<any>) => {
         return result.rows.map((result: SavedOptionResult) => {
           return <SavedOption> {
@@ -176,7 +220,7 @@ export class OptionsRepository {
                 countryName: country.country_name
               }
             }),
-            receiveBuild: game.receive_build.map((country: TransferCountryResult) => {
+            receiveBuilds: game.receive_builds.map((country: TransferCountryResult) => {
               return <TransferCountry> {
                 countryId: country.country_id,
                 countryName: country.country_name
@@ -213,7 +257,7 @@ export class OptionsRepository {
       .catch((error: Error) => {
         console.log('getAvailableBuildLocs Error: ' + error.message);
         return [];
-      });;
+      });
 
     return buildLocs;
   }
@@ -234,7 +278,7 @@ export class OptionsRepository {
       .catch((error: Error) => {
         console.log('getAtRiskUnits Error: ' + error.message);
         return [];
-      });;
+      });
 
       return atRiskUnits;
   }
@@ -252,7 +296,7 @@ export class OptionsRepository {
         .catch((error: Error) => {
           console.log('getNominatableCountries Error: ' + error.message);
           return [];
-        });;
+        });
 
     return nominatableCountries;
   }
@@ -276,7 +320,7 @@ export class OptionsRepository {
       .catch((error: Error) => {
         console.log('getNominations Error: ' + error.message);
         return [];
-      });;
+      });
 
     return nominations;
   }
@@ -284,5 +328,18 @@ export class OptionsRepository {
   formatDestinationNodeName(nodeName: string): string {
     const nameSplit: string[] = nodeName.toUpperCase().split('_');
     return nameSplit.length === 3 ? nameSplit[0] + nameSplit[2] : nameSplit[0];
+  }
+
+  async insertTurnOrderSets(currentTurnId: number, nextTurnId: number): Promise<OrderSet[]> {
+    const orderSets: OrderSet[] = await this.pool.query(insertTurnOrderSetsQuery, [nextTurnId, currentTurnId])
+      .then((result: QueryResult<any>) => result.rows.map((result: OrderSetResult) => {
+        return <OrderSet> {
+          orderSetId: result.order_set_id,
+          countryId: result.country_id,
+          turnId: nextTurnId
+        }
+      }));
+
+    return orderSets;
   }
 }

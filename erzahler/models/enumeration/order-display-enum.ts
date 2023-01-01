@@ -14,3 +14,9 @@ export enum OrderDisplay {
   TARGET = 'Target',
   TRANSFER = 'Transfer To'
 }
+
+export enum OrderSetType {
+  ORDERS = 'Orders',
+  PREDICTION = 'Prediction',
+  SUGGESTION = 'Suggestion'
+}

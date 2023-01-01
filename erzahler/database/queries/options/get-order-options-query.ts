@@ -49,7 +49,7 @@ export const getOrderOptionsQuery = `
   WHERE t.turn_id = $1
     AND oo.turn_id = $2
     AND CASE
-      WHEN $3 = true THEN u.country_id = $4
+      WHEN 0 != $3 THEN u.country_id = $3
       ELSE true
     END
   GROUP BY oo.unit_id,

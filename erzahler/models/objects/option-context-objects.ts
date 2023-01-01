@@ -1,5 +1,4 @@
-import { OrderDisplay } from "../enumeration/order-display-enum";
-import { UnitType } from "../enumeration/unit-enum";
+import { OrderDisplay, OrderSetType } from "../enumeration/order-display-enum";
 
 export interface OrderOption {
   turnId: number;
@@ -11,6 +10,7 @@ export interface OrderOption {
 }
 
 export interface OptionsContext {
+  gameId: number;
   unitInfo: UnitOptions[]
   unitIdToIndexLib: any;
   sharedAdjProvinces: any;
@@ -222,7 +222,7 @@ export interface TransferOption {
   gameId: number;
   giveTech: TransferCountry[];
   receiveTech: TransferCountry[];
-  receiveBuild: TransferCountry[];
+  receiveBuilds: TransferCountry[];
 }
 
 export interface TransferCountry {
@@ -234,7 +234,7 @@ export interface TransferOptionResult {
   game_id: number;
   give_tech: TransferCountryResult[];
   receive_tech: TransferCountryResult[];
-  receive_build: TransferCountryResult[];
+  receive_builds: TransferCountryResult[];
 }
 
 export interface TransferCountryResult {
@@ -315,4 +315,37 @@ export interface Nomination {
 	rankSignature: string;
 	countries: NominatableCountry[];
 	votesRequired: number;
+}
+
+export interface OrderSetResult {
+  order_set_id: number;
+  country_id: number;
+}
+
+export interface OrderSet {
+  orderSetId: number;
+  countryId: number;
+  turnId?: number;
+  messageId?: number;
+  submissionTime?: Date | string;
+  orderSetType?: OrderSetType | string;
+  orderSetName?: string;
+}
+
+export interface Order {
+  orderSetId: number;
+  unitId: number;
+  orderType: string;
+  secondaryUnitId?: number | undefined;
+  secondaryOrderType?: string;
+  destinationId?: number;
+}
+
+export interface OrderPrepping {
+  countryId: number;
+  unitId: number;
+  orderType: string;
+  secondaryUnitId?: number | undefined;
+  secondaryOrderType?: string;
+  destinationId?: number;
 }

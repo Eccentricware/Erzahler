@@ -115,6 +115,6 @@ export class AssignmentRepository {
 
     return countries.length > 0
       ? countries[0]
-      : { countryId: 0, countryName: '' };
+      : { countryId: 0, countryName: 'Spectator' };
   }
 }

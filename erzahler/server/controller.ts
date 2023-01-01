@@ -15,8 +15,8 @@ const erzhaler = express();
 const port: number = 8000;
 const schedulerService: SchedulerService = new SchedulerService();
 
-// const optionsService: OptionsService = new OptionsService();
-// optionsService.saveOptionsForNextTurn(30);
+const optionsService: OptionsService = new OptionsService();
+optionsService.saveOptionsForNextTurn(33);
 
 erzhaler.use(cors());
 erzhaler.use(bodyParser.json({limit: '5mb'}));

@@ -10,6 +10,7 @@ export interface UpcomingTurn {
   turnType: TurnType;
   turnStatus: TurnStatus;
   deadline: string | Date;
+  defaultsReady: boolean;
 }
 
 export interface UpcomingTurnResult {
@@ -20,25 +21,25 @@ export interface UpcomingTurnResult {
   turn_type: string;
   turn_status: string;
   deadline: string | Date;
+  defaults_ready: boolean;
 }
 
 export interface TurnOptions {
   playerId: number;
   countryId: number;
   countryName: string;
-  pending?: {
-    units?: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)
-    tech?: any;            // If (spring or rule override)
-    buildTransfer?: any;   // If (spring or rule override)
-    adjustments?: any;
-    nominations?: any;
-    votes?: any;
-  },
-  preliminary?: {
-    units?: UnitOptionsFinalized[]; // If (voting and vote/spring split) or (spring retreats and not in retreat)
-    buildTransfer?: any;   // If (voting and vote/spring split)
-    adjustments?: any;     // If (fall retreats and not in retreat)
-    nominations?: any;     // If (adjustments and adjustments/nominations split)
-    tech?: any;            // If (voting and vote/spring split)
-  }
+  pending?: SingleTurnOptions,
+  preliminary?: SingleTurnOptions
+}
+
+interface SingleTurnOptions {
+  turnType: string;
+  name: string;
+  deadline: Date | string;
+  units?: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)
+  transfers?: any;
+  builds?: any;
+  disbands?: any;
+  nominations?: any;
+  votes?: any;
 }
