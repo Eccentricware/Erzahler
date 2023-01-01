@@ -43,6 +43,12 @@ export interface GameStateResult {
 }
 
 export interface NextTurns {
-  pending: string;
-  preliminary?: string;
+  pending: {
+    type: TurnType,
+    id?: number;
+  };
+  preliminary?: {
+    type: TurnType,
+    id?: number
+  };
 }

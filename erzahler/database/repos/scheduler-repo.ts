@@ -1,9 +1,11 @@
+import { error } from "console";
 import { DateTime } from "luxon";
 import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain } from "pg-promise";
 import { SchedulerSettingsBuilder } from "../../models/classes/schedule-settings-builder";
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { ScheduleSettingsQueryResult } from "../../models/objects/schedule-settings-query-object";
+import { UpcomingTurn, UpcomingTurnResult } from "../../models/objects/scheduler/upcoming-turns-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { FormattingService } from "../../server/services/formattingService";
 import { setAssignmentsActiveQuery } from "../queries/assignments/set-assignments-active-query";
@@ -37,19 +39,25 @@ export class SchedulerRepository {
       });
   }
 
-  async getUpcomingTurns(): Promise<any> {
-    return await this.pool.query(getUpcomingTurnsQuery, [])
-    .then((results: QueryResult<any>) => {
-      return results.rows.map((turn: any) => {
-        return {
-          gameId: turn.game_id,
-          turnId: turn.turn_id,
-          gameName: turn.game_name,
-          turnName: turn.turn_name,
-          deadline: turn.deadline
-        }
+  async getUpcomingTurns(gameId: number = 0): Promise<UpcomingTurn[]> {
+    return await this.pool.query(getUpcomingTurnsQuery, [gameId])
+      .then((results: QueryResult<any>) => {
+        return results.rows.map((turn: UpcomingTurnResult) => {
+          return <UpcomingTurn> {
+            gameId: turn.game_id,
+            turnId: turn.turn_id,
+            gameName: turn.game_name,
+            turnName: turn.turn_name,
+            turnType: turn.turn_type,
+            turnStatus: turn.turn_status,
+            deadline: turn.deadline
+          }
+        })
       })
-    });
+      .catch((error: Error) => {
+        console.log('getUpcomingTurns Error: ' + error);
+        return [];
+      });
   }
 
   async startGame(startGameArgs: any[]): Promise<any> {

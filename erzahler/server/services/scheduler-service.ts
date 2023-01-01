@@ -215,7 +215,7 @@ export class SchedulerService {
     const resolutionService: ResolutionService = new ResolutionService();
     const pool = new Pool(victorCredentials);
 
-    const pendingTurns = await db.schedulerRepo.getUpcomingTurns();
+    const pendingTurns = await db.schedulerRepo.getUpcomingTurns(0);
 
     pendingTurns.forEach((deadline: any) => {
       schedule.scheduleJob(
@@ -370,7 +370,7 @@ export class SchedulerService {
 
 
   findNextTurns(gameState: GameState): NextTurns {
-    const nextTurns: NextTurns = { pending: '' };
+    const nextTurns: NextTurns = { pending: { type: TurnType.SPRING_ORDERS } };
     const nominationsStarted = this.checkNominationsStarted(gameState);
     const nominateDuringAdjustments = gameState.nominateDuringAdjustments;
     const voteDuringSpring = gameState.voteDuringSpring;
@@ -378,43 +378,43 @@ export class SchedulerService {
     // (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
     if (gameState.turnType === TurnType.ORDERS_AND_VOTES) {
       if (gameState.unitsInRetreat) {
-        nextTurns.pending = TurnType.SPRING_RETREATS;
-        nextTurns.preliminary = TurnType.FALL_ORDERS;
+        nextTurns.pending.type = TurnType.SPRING_RETREATS;
+        nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
       } else {
-        nextTurns.pending = TurnType.FALL_ORDERS;
+        nextTurns.pending.type = TurnType.FALL_ORDERS;
       }
     }
 
     // Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> Votes ->
     if (gameState.turnType === TurnType.SPRING_ORDERS) {
       if (gameState.unitsInRetreat) {
-        nextTurns.pending = TurnType.SPRING_RETREATS;
-        nextTurns.preliminary = TurnType.FALL_ORDERS;
+        nextTurns.pending.type = TurnType.SPRING_RETREATS;
+        nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
       } else {
-        nextTurns.pending = TurnType.FALL_ORDERS;
+        nextTurns.pending.type = TurnType.FALL_ORDERS;
       }
     }
 
     // Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) ->
     if (gameState.turnType === TurnType.SPRING_RETREATS) {
-      nextTurns.pending = TurnType.FALL_ORDERS;
+      nextTurns.pending.type = TurnType.FALL_ORDERS;
     }
 
     // Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats ->
     if (gameState.turnType === TurnType.FALL_ORDERS) {
       if (gameState.unitsInRetreat) {
-        nextTurns.pending = TurnType.FALL_RETREATS;
+        nextTurns.pending.type = TurnType.FALL_RETREATS;
 
         if (nominationsStarted && nominateDuringAdjustments) {
-          nextTurns.preliminary = TurnType.ADJ_AND_NOM;
+          nextTurns.preliminary = { type: TurnType.ADJ_AND_NOM };
         } else  {
-          nextTurns.preliminary = TurnType.ADJUSTMENTS;
+          nextTurns.preliminary = { type: TurnType.ADJUSTMENTS };
         }
       } else {
         if (nominationsStarted && nominateDuringAdjustments) {
-          nextTurns.pending = TurnType.ADJ_AND_NOM;
+          nextTurns.pending.type = TurnType.ADJ_AND_NOM;
         } else  {
-          nextTurns.pending = TurnType.ADJUSTMENTS;
+          nextTurns.pending.type = TurnType.ADJUSTMENTS;
         }
       }
     }
@@ -422,46 +422,46 @@ export class SchedulerService {
     // Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders ->
     if (gameState.turnType === TurnType.FALL_RETREATS) {
       if (nominationsStarted && nominateDuringAdjustments) {
-        nextTurns.pending = TurnType.ADJ_AND_NOM;
+        nextTurns.pending.type = TurnType.ADJ_AND_NOM;
       } else if (nominationsStarted && !nominateDuringAdjustments) {
-        nextTurns.pending = TurnType.ADJUSTMENTS;
-        nextTurns.preliminary = TurnType.NOMINATIONS;
+        nextTurns.pending.type = TurnType.ADJUSTMENTS;
+        nextTurns.preliminary = { type: TurnType.NOMINATIONS };
       } else {
-        nextTurns.pending = TurnType.ADJUSTMENTS;
+        nextTurns.pending.type = TurnType.ADJUSTMENTS;
       }
     }
 
     // Adjustments -> Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
     if (gameState.turnType === TurnType.ADJUSTMENTS) { // nominateDuringAdjustments === false
       if (nominationsStarted) {
-        nextTurns.pending = TurnType.NOMINATIONS;
+        nextTurns.pending.type = TurnType.NOMINATIONS;
       } else {
-        nextTurns.pending = TurnType.SPRING_ORDERS;
+        nextTurns.pending.type = TurnType.SPRING_ORDERS;
       }
     }
 
     // (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
     if (gameState.turnType === TurnType.ADJ_AND_NOM) {
       if (nominationsStarted && voteDuringSpring) {
-        nextTurns.pending = TurnType.ORDERS_AND_VOTES;
+        nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
       } else {
-        nextTurns.pending = TurnType.SPRING_ORDERS;
+        nextTurns.pending.type = TurnType.SPRING_ORDERS;
       }
     }
 
     // Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> Adjustments ->
     if (gameState.turnType === TurnType.NOMINATIONS) { // nominationsStarted === true && nominateDuringAdjustments === false
       if (voteDuringSpring) {
-        nextTurns.pending = TurnType.ORDERS_AND_VOTES;
+        nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
       } else {
-        nextTurns.pending = TurnType.VOTES;
-        nextTurns.preliminary = TurnType.SPRING_ORDERS;
+        nextTurns.pending.type = TurnType.VOTES;
+        nextTurns.preliminary = { type: TurnType.SPRING_ORDERS };
       }
     }
 
     // Votes -> Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
     if (gameState.turnType === TurnType.VOTES) {
-      nextTurns.pending = TurnType.SPRING_ORDERS;
+      nextTurns.pending.type = TurnType.SPRING_ORDERS;
     }
 
     return nextTurns;
