@@ -3,7 +3,7 @@ import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { TurnTS } from "../../models/objects/database-objects";
 import { StartDetails } from "../../models/objects/initial-times-object";
-import { OptionsService } from "./optionsService";
+import { OptionsService } from "./orders-service";
 
 export class ResolutionService {
   async startGame(gameData: any, startDetails: StartDetails): Promise<void> {

@@ -1,22 +1,17 @@
 import express from "express";
 import { SavedOption } from "../../models/objects/option-context-objects";
-import { TurnOptions } from "../../models/objects/scheduler/upcoming-turns-object";
-import { OptionsService } from "../services/optionsService";
+import { TurnOrders } from "../../models/objects/scheduler/upcoming-turns-object";
+import { OrdersService } from "../services/orders-service";
 
 export const ordersRouter = express.Router();
-const optionsService = new OptionsService();
+const ordersService = new OrdersService();
 
 ordersRouter.get(`/:gameId`, (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const gameId = Number(request.params.gameId);
 
-  optionsService.getOrderOptions(idToken, gameId)
-    .then((options: TurnOptions) => {
+  ordersService.getOrders(idToken, gameId)
+    .then((options: TurnOrders) => {
       response.send(options);
-    })
-    // .catch((error: Error) => {
-    //   response.send({
-    //     error: 'Get Orders Options Error: ' + error.message
-    //   });
-    // });
+    });
 });

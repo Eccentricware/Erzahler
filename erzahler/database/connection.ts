@@ -3,14 +3,14 @@ import { victorCredentials } from "../secrets/dbCredentials";
 import { AccountsRepository } from "./repos/accounts-repo";
 import { AssignmentRepository } from "./repos/assignments-repo";
 import { GameRepository } from "./repos/game-repo";
-import { OptionsRepository } from "./repos/options-repo";
+import { OrdersRepository } from "./repos/orders-repo";
 import { SchedulerRepository } from "./repos/scheduler-repo";
 
 interface IExtensions {
   accountsRepo: AccountsRepository;
   assignmentRepo: AssignmentRepository;
   gameRepo: GameRepository;
-  optionsRepo: OptionsRepository;
+  ordersRepo: OrdersRepository;
   schedulerRepo: SchedulerRepository;
 }
 
@@ -19,7 +19,7 @@ const initOptions: IInitOptions<IExtensions> = {
     obj.accountsRepo = new AccountsRepository(obj, pgp);
     obj.assignmentRepo = new AssignmentRepository(obj, pgp);
     obj.gameRepo = new GameRepository(obj, pgp);
-    obj.optionsRepo = new OptionsRepository(obj, pgp);
+    obj.ordersRepo = new OrdersRepository(obj, pgp);
     obj.schedulerRepo = new SchedulerRepository(obj, pgp);
   }
 }
