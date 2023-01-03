@@ -336,19 +336,26 @@ export interface OrderResult {
   order_id: number;
   order_set_id: number;
   ordered_unit_id: number;
+  ordered_unit_loc: number[];
   order_type: string;
   secondary_unit_id?: number | undefined;
+  secondary_unit_loc?: number[];
   destination_id?: number;
+  event_loc?: number[];
+  order_status?: string;
 }
 
 export interface Order {
   orderId?: number;
   orderSetId: number;
   orderedUnitId: number;
+  orderedUnitLoc?: number[];
   orderType: string;
   secondaryUnitId?: number | undefined;
-  secondaryOrderType?: string;
+  secondaryUnitLoc?: number[];
   destinationId?: number;
+  eventLoc?: number[];
+  orderStatus?: string;
 }
 
 export interface OrderPrepping {

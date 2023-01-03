@@ -345,16 +345,20 @@ export class OrdersRepository {
     await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
   }
 
-  async getTurnUnitOrders(countryId: number, turnId: number): Promise<Order[]> {
-    const orders: Order[] = await this.pool.query(getTurnUnitOrdersQuery, [countryId, turnId])
+  async getTurnUnitOrders(countryId: number, orderTurnId: number, historyTurnId: number): Promise<Order[]> {
+    const orders: Order[] = await this.pool.query(getTurnUnitOrdersQuery, [countryId, orderTurnId, historyTurnId])
       .then((result: QueryResult<any>) => result.rows.map((orderResult: OrderResult) => {
         return <Order> {
           orderId: orderResult.order_id,
           orderSetId: orderResult.order_set_id,
           orderedUnitId: orderResult.ordered_unit_id,
+          orderedUnitLoc: orderResult.ordered_unit_loc,
           orderType: orderResult.order_type,
           secondaryUnitId: orderResult.secondary_unit_id,
-          destinationId: orderResult.destination_id
+          secondaryUnitLoc: orderResult.secondary_unit_loc,
+          destinationId: orderResult.destination_id,
+          eventLoc: orderResult.event_loc,
+          orderStatus: orderResult.order_status
         }
       }));
 

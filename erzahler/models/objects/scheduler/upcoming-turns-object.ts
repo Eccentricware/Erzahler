@@ -24,32 +24,42 @@ export interface UpcomingTurnResult {
   defaults_ready: boolean;
 }
 
-export interface TurnOrders {
+export interface TurnOptions {
   playerId: number;
-  countryId: number;
-  countryName: string;
-  pending?: SingleTurnOrders,
-  preliminary?: SingleTurnOrders
+  countryId?: number;
+  countryName?: string;
+  pending?: SingleTurnOptions,
+  preliminary?: SingleTurnOptions
 }
 
-interface SingleTurnOrders {
+interface SingleTurnOptions {
   turnType: string;
   name: string;
   deadline: Date | string;
-  options: {
-    units?: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)
-    transfers?: any;
-    builds?: any;
-    disbands?: any;
-    nominations?: any;
-    votes?: any;
-  }
-  orders: {
-    units?: Order[]; // If (spring orders/retreats or fall orders/retreats)
-    transfers?: any;
-    builds?: any;
-    disbands?: any;
-    nominations?: any;
-    votes?: any;
-  }
+  units?: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)
+  transfers?: any;
+  builds?: any;
+  disbands?: any;
+  nominations?: any;
+  votes?: any;
+}
+
+export interface TurnOrders {
+  userId: number;
+  role?: string;
+  countryId?: number;
+  countryName?: string;
+  turnType?: string;
+  message?: string;
+  pending?: SingleTurnOrders;
+  preliminary?: SingleTurnOrders;
+}
+
+export interface SingleTurnOrders {
+  units?: any[]; // If (spring orders/retreats or fall orders/retreats)
+  transfers?: any[];
+  builds?: any[];
+  disbands?: any[];
+  nomination?: any;
+  votes?: any[];
 }

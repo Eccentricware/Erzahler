@@ -6,7 +6,7 @@ import { reregisterUserQuery } from "../../database/queries/assignments/reregist
 import { getAssignmentsQuery } from "../../database/queries/game/get-assignments-query";
 import { getRegisteredPlayersQuery } from "../../database/queries/game/get-registered-players-query";
 import { AssignmentStatus } from "../../models/enumeration/assignment-status-enum";
-import { AssignmentDataObject } from "../../models/objects/assignment-data-object";
+import { AssignmentDataObject } from "../../models/objects/assignment-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { AccountService } from "./accountService";
 import { FormattingService } from "./formattingService";
