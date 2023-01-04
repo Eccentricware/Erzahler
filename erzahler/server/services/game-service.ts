@@ -35,6 +35,8 @@ import { GameStatus } from "../../models/enumeration/game-status-enum";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { insertCoalitionScheduleQuery } from "../../database/queries/game/insert-coalition-schedule-query";
 import { db } from "../../database/connection";
+import { StartTiming } from "../../models/enumeration/start-timing-enum";
+import { NewGameData } from "../../models/objects/games/new-game-data-object";
 
 export class GameService {
   gameData: any = {};
@@ -51,7 +53,6 @@ export class GameService {
 
       const newGameResult = await this.addNewGame(pool, this.gameData, this.user.timeZone)
         .then(async (newGameId: any) => {
-          await optionsService.saveOptionsForNextTurn(newGameId);
           return {
             success: true,
             gameId: newGameId,
@@ -471,17 +472,24 @@ export class GameService {
     }
   }
 
+  /**
+   * Top level route handler at the request of a game administrator.
+   * Initializes a game into an actionable state.
+   * Adds first turn, processes and saves unit options.
+   * Sets time for game start and assignments reveal.
+   * Sets time for first turn orders deadline.
+   *
+   * @param idToken
+   * @param gameId
+   */
   async declareReady(idToken: string, gameId: number): Promise<any> {
-    const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
 
-    this.user = await accountService.getUserProfile(idToken);
-    if (!this.user.error) {
-      const gameData = await this.getGameData(idToken, gameId);
+    const gameData = await this.getGameData(idToken, gameId);
 
-      if (gameData.displayAsAdmin && gameData.gameStatus === GameStatus.REGISTRATION) {
-        await schedulerService.prepareGameStart(gameData);
-      }
+    // TO-DO Restore to registration clause after troubleshooting
+    if (gameData.isAdmin && gameData.gameStatus === GameStatus.REGISTRATION) {
+      await schedulerService.prepareGameStart(gameData);
     }
   }
 }

@@ -49,7 +49,7 @@ export class GameDetailsBuilder {
   funMax: number;
   skillMin: number;
   skillMax: number;
-  displayAsAdmin: boolean;
+  isAdmin: boolean;
 
   constructor(rawGame: GameDetailsQueryObject, localTimeZoneName: string, meridiemTime: boolean) {
     this.gameId = rawGame.game_id;
@@ -138,7 +138,7 @@ export class GameDetailsBuilder {
     this.funMax = rawGame.fun_max;
     this.skillMin = rawGame.skill_min;
     this.skillMax = rawGame.skill_max;
-    this.displayAsAdmin = rawGame.display_as_admin;
+    this.isAdmin = rawGame.display_as_admin;
   }
 
 }

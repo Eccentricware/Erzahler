@@ -12,6 +12,7 @@ import { AccountService } from "./accountService";
 import { AssignmentService } from "./assignmentService";
 import { SchedulerService } from "./scheduler-service";
 import { TurnOptions, UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
+import { TurnType } from "../../models/enumeration/turn-type-enum";
 
 export class OptionsService {
 
@@ -336,7 +337,7 @@ export class OptionsService {
     });
 
     if (orderOptions.length > 0) {
-      db.optionsRepo.saveOrderOptions(orderOptions);
+      db.optionsRepo.saveOrderOptions(orderOptions, turnId);
     }
   }
 
@@ -452,7 +453,9 @@ export class OptionsService {
       console.log(`GameId ${gameId} has no upcoming turns!`);
     } else if (upcomingTurns.length > 0) {
       pendingTurn = upcomingTurns[0];
-    } else if (upcomingTurns.length === 2) {
+    }
+
+    if (upcomingTurns.length === 2) {
       preliminaryTurn = upcomingTurns[1];
     } else if (upcomingTurns.length > 2) {
       console.log(`GameId ${gameId} has too many turns! (${upcomingTurns.length})`);
@@ -460,8 +463,34 @@ export class OptionsService {
 
     const turnOptions: TurnOptions = { pending: {} };
 
-    /////
-    const savedOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(countryId, );
+    if (pendingTurn) {
+      if ([
+        TurnType.SPRING_ORDERS,
+        TurnType.ORDERS_AND_VOTES,
+        TurnType.SPRING_RETREATS,
+        TurnType.FALL_ORDERS,
+        TurnType.FALL_RETREATS
+      ].includes(pendingTurn.turnType)) {
+        turnOptions.pending.units = await db.optionsRepo.getUnitOptions(pendingTurn.turnId);
+      }
+
+      if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
+        // Fetch nuke tech trade options
+        // Fetch Build transfers options
+      }
+
+      if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
+        // Fetch Adjustment options
+      }
+
+      if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
+        // Fech nomination options
+      }
+
+      if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
+        // Fetch votes
+      }
+    }
 
     return turnOptions;
   }

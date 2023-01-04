@@ -231,9 +231,7 @@ export class SchedulerService {
   }
 
   async prepareGameStart(gameData: any): Promise<void> {
-    const formattingService: FormattingService = new FormattingService();
     const resolutionService: ResolutionService = new ResolutionService();
-    const pool = new Pool(victorCredentials);
 
     const gameId = gameData.gameId;
     const startDetails: StartDetails = await this.lockStartDetails(gameId);
@@ -246,30 +244,20 @@ export class SchedulerService {
 
     await db.schedulerRepo.setAssignmentsActive(gameId);
 
-    // Is this clunky?
+    // Is this clunky? Turn creation delayed until actual start
     await db.schedulerRepo.updateTurn([startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId]);
 
-    const firstTurn = await db.schedulerRepo.updateTurn([startDetails.firstTurn, TurnStatus.PENDING, 1, gameId])
-
     if (startDetails.gameStatus === GameStatus.PLAYING) {
-      resolutionService.startGame(gameId);
+      resolutionService.startGame(gameData, startDetails);
     } else {
       schedule.scheduleJob(
         `${gameData.gameName} - Game Start`,
         startDetails.gameStart,
         () => {
-          resolutionService.startGame(gameId);
+          resolutionService.startGame(gameData, startDetails);
         }
       )
     }
-
-    schedule.scheduleJob(
-      `${gameData.gameName} - ${firstTurn.turnName}`,
-      startDetails.firstTurn,
-      () => {
-        resolutionService.resolveTurn(firstTurn.turnId);
-      }
-    );
   }
 
   async lockStartDetails(gameId: number): Promise<StartDetails> {
