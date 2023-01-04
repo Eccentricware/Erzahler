@@ -29,12 +29,8 @@ import { getGamesQuery } from "../../database/queries/game/get-games-query";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
-import { startGameQuery } from "../../database/queries/game/start-game-query";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
-import schedule from 'node-schedule';
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
-import { StartDetails } from "../../models/objects/initial-times-object";
-import { ResolutionService } from "./resolutionService";
 import { GameStatus } from "../../models/enumeration/game-status-enum";
 import { setAssignmentsActiveQuery } from "../../database/queries/assignments/set-assignments-active-query";
 import { OrdersService } from "./orders-service";
@@ -42,17 +38,17 @@ import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { insertCoalitionScheduleQuery } from "../../database/queries/game/insert-coalition-schedule-query";
 import { db } from "../../database/connection";
 import { StartTiming } from "../../models/enumeration/start-timing-enum";
+import { NewGameData } from "../../models/objects/games/new-game-data-object";
 
 export class GameService {
   gameData: any = {};
   user: any = undefined;
   errors: string[] = [];
 
-  async newGame(gameData: any, idToken: string): Promise<any> {
+  async newGame(gameData: NewGameData, idToken: string): Promise<any> {
     const accountService: AccountService = new AccountService();
     const optionsService: OrdersService = new OrdersService();
 
-    // const token: DecodedIdToken = await accountService.validateToken(idToken);
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
       const pool: Pool = new Pool(victorCredentials);
