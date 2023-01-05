@@ -9,6 +9,7 @@ import cors from 'cors';
 import { SchedulerService } from './services/scheduler-service';
 import { OrdersService } from './services/orders-service';
 import { ordersRouter } from './routes/orders-router';
+import { mapRouter } from './routes/maps-router';
 
 const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 const erzhaler = express();
@@ -23,10 +24,11 @@ erzhaler.use(bodyParser.json({limit: '5mb'}));
 initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
-erzhaler.use('/games', gameRouter);
-erzhaler.use('/user', userRouter);
 erzhaler.use('/assignments', assignmentRouter);
+erzhaler.use('/games', gameRouter);
+erzhaler.use('/maps/', mapRouter);
 erzhaler.use('/orders', ordersRouter);
+erzhaler.use('/user', userRouter);
 
 erzhaler.get('/check-status', (request, response) => {
   response.send(true);

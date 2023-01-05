@@ -15,7 +15,7 @@ assignmentRouter.get(`/:gameId`, (request, response) => {
     .catch((error: Error) => {
       response.send({error: error.message});
     });
-})
+});
 
 assignmentRouter.post('/register', (request, response) => {
   const idToken = <string>request.headers.idtoken;
