@@ -443,7 +443,8 @@ export class OptionsService {
     const accountService = new AccountService();
 
     const userId = await accountService.getUserIdFromToken(idToken);
-    const countryId = await db.assignmentRepo.getCountryAssignment(gameId, userId);
+    const gameState = await db.gameRepo.getGameState(gameId);
+    const country = await db.assignmentRepo.getCountryAssignment(gameId, userId);
 
     let pendingTurn: UpcomingTurn | undefined = undefined;
     let preliminaryTurn: UpcomingTurn | undefined = undefined;
@@ -461,7 +462,12 @@ export class OptionsService {
       console.log(`GameId ${gameId} has too many turns! (${upcomingTurns.length})`);
     }
 
-    const turnOptions: TurnOptions = { pending: {} };
+    const turnOptions: TurnOptions = {
+      playerId: userId,
+      countryId: country.countryId,
+      countryName: country.countryName,
+      pending: {}
+    };
 
     if (pendingTurn) {
       if ([
@@ -471,7 +477,7 @@ export class OptionsService {
         TurnType.FALL_ORDERS,
         TurnType.FALL_RETREATS
       ].includes(pendingTurn.turnType)) {
-        turnOptions.pending.units = await db.optionsRepo.getUnitOptions(pendingTurn.turnId);
+        turnOptions.pending.units = await db.optionsRepo.getUnitOptions(gameState.turnId, pendingTurn.turnId);
       }
 
       if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {

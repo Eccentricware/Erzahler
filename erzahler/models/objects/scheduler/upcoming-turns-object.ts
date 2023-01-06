@@ -23,6 +23,9 @@ export interface UpcomingTurnResult {
 }
 
 export interface TurnOptions {
+  playerId: number;
+  countryId: number;
+  countryName: string;
   pending: {
     units?: SavedOption[]; // If (spring orders/retreats or fall orders/retreats)
     tech?: any;            // If (spring or rule override)

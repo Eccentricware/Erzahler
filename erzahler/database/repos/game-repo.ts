@@ -2,6 +2,7 @@ import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain } from "pg-promise";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
+import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { GameState, GameStateResult } from "../../models/objects/last-turn-info-object";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
@@ -369,8 +370,8 @@ export class GameRepository {
       });
   }
 
-  async updateTurn(gameStart: any, turnNumber: number, gameId: number): Promise<void> {
-    await this.pool.query(updateTurnQuery, [gameStart, turnNumber, gameId])
+  async updateTurn(gameStart: any, turnStatus: TurnStatus, turnNumber: number, gameId: number): Promise<void> {
+    await this.pool.query(updateTurnQuery, [gameStart, turnStatus, turnNumber, gameId])
     .catch((error: Error) => {
       console.log('Update Turn Error: ' + error.message);
     });

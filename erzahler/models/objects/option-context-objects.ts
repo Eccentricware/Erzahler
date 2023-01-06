@@ -134,12 +134,19 @@ export interface AirAdjacency {
 export interface SavedOptionResult {
   unit_id: number;
   unit_type: string;
+  unit_country_id: string;
+  unit_country_name: string;
+  unit_country_rank: string;
+  unit_country_flag_key: string;
   province_name: string;
   can_hold: boolean;
   order_type: string;
   secondary_unit_id?: number;
   secondary_unit_type?: string;
-  secondary_province?: string;
+  secondary_unit_country?: string;
+  secondary_unit_country_id?: string;
+  secondary_unit_country_key?: string;
+  secondary_province_name?: string;
   secondary_order_type?: string;
   destinations?: any[];
 }
@@ -147,12 +154,19 @@ export interface SavedOptionResult {
 export interface SavedOption {
   unitId: number;
   unitType: string;
+  unitCountryId: string;
+  unitCountryName: string;
+  unitCountryRank: string;
+  unitCountryFlagKey: string;
   provinceName: string;
   canHold: boolean;
   orderType: string;
   secondaryUnitId?: number;
   secondaryUnitType?: string;
-  secondaryProvince?: string;
+  secondaryUnitCountryId?: string;
+  secondaryUnitCountryName?: string;
+  secondaryUnitCountryKey?: string;
+  secondaryProvinceName?: string;
   secondaryOrderType?: string;
   destinations?: any[];
 }
