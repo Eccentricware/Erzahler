@@ -1,10 +1,10 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, OrderOption, SavedOption, SavedOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, DestinationResult, OptionDestination, OrderOption, SavedOption, SavedOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
-import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
-import { getOrderOptionsQuery } from "../queries/options/get-order-options-query";
-import { getUnitAdjacentInfoQuery } from "../queries/options/get-unit-adjacent-info-query";
+import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
+import { getOrderOptionsQuery } from "../queries/orders/get-order-options-query";
+import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-info-query";
 
 export class OptionsRepository {
   orderOptionsCols: ColumnSet<unknown>;
@@ -129,14 +129,25 @@ export class OptionsRepository {
           return <SavedOption> {
             unitId: result.unit_id,
             unitType: result.unit_type,
+            unitCountryId: result.unit_country_id,
+            unitCountryName: result.unit_country_name,
+            unitCountryRank: result.unit_country_rank,
+            unitFlagKey: result.unit_flag_key,
+            unitLoc: result.unit_loc,
             provinceName: result.province_name,
             canHold: result.can_hold,
             orderType: result.order_type,
             secondaryUnitId: result.secondary_unit_id,
             secondaryUnitType: result.secondary_unit_type,
-            secondaryProvince: result.secondary_province,
+            secondaryProvince: result.secondary_province_name,
             secondaryOrderType: result.secondary_unit_type,
-            destinations: result.destinations
+            destinations: result.destinations.map((destinationResult: DestinationResult) => {
+              return <OptionDestination> {
+                nodeId: destinationResult.node_id,
+                nodeName: destinationResult.node_name,
+                loc: destinationResult.loc
+              }
+            })
           };
         });
       });

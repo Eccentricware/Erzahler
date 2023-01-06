@@ -1,5 +1,6 @@
 export const getTerrainQuery = `
   SELECT
+    p.province_name,
     t.render_category,
     t.terrain_type,
     t.top_bound,

@@ -267,7 +267,7 @@ CREATE TABLE IF NOT EXISTS province_histories(
   valid_retreat BOOLEAN NOT NULL DEFAULT true,
   vote_color VARCHAR(10),
   status_color VARCHAR(10),
-  stroke_color VARCHAR(10),
+  stroke_color VARCHAR(10) DEFAULT 'black',
   PRIMARY KEY(province_history_id),
   FOREIGN KEY(province_id)
     REFERENCES provinces(province_id),
