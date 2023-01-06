@@ -19,6 +19,7 @@ export class MapService {
     const votingCenters = cities.filter((city: City) => city.voteColor !== null);
 
     const labels = await db.mapRepo.getLabels(gameId);
+    const labelLines = await db.mapRepo.getLabelLines(gameId);
 
     return {
       terrain: {
@@ -32,7 +33,7 @@ export class MapService {
         votingCenters: votingCenters
       },
       labels: labels,
-      labelLines: [],
+      labelLines: labelLines,
       units: []
     };
   }

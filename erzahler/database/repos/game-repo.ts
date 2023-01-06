@@ -1,3 +1,4 @@
+import { error } from "console";
 import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain } from "pg-promise";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
@@ -22,6 +23,7 @@ import { insertCountryHistoryQuery } from "../queries/game/insert-country-histor
 import { insertCountryQuery } from "../queries/game/insert-country-query";
 import { insertNewGameQuery } from "../queries/game/insert-game-query";
 import { insertInitialProvinceHistoryQuery } from "../queries/game/insert-initial-province-history-query";
+import { insertLabelLineQuery } from "../queries/game/insert-label-line-query";
 import { insertLabelQuery } from "../queries/game/insert-label-query";
 import { insertNodeAdjacencyQuery } from "../queries/game/insert-node-adjacency-query";
 import { insertNodeQuery } from "../queries/game/insert-node-query";
@@ -360,6 +362,24 @@ export class GameRepository {
       ])
       .catch((error: Error) => {
         console.log('Insert Label Error:', error.message);
+      });
+    });
+  }
+
+  async insertLabelLines(labelLines: any, gameName: string): Promise<void> {
+    labelLines.forEach(async (labelLine: any) => {
+      await this.pool.query(insertLabelLineQuery, [
+        labelLine.name,
+        labelLine.x1,
+        labelLine.x2,
+        labelLine.y1,
+        labelLine.y2,
+        labelLine.stroke,
+        gameName,
+        labelLine.province
+      ])
+      .catch((error: Error) => {
+        console.log('Insert Label Line Error:', error.message);
       });
     });
   }
