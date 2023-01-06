@@ -42,3 +42,20 @@ export interface City {
   name: string;
   status: string;
 }
+
+export interface LabelResult {
+  label_name: string;
+  label_type: string;
+  loc: number[];
+  label_text: string;
+  fill: string;
+  province_name: string;
+}
+export interface Label {
+  name: string;
+  type: string;
+  loc: number[];
+  text: string;
+  fill: string;
+  province: string;
+}
