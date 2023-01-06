@@ -21,6 +21,8 @@ export class MapService {
     const labels = await db.mapRepo.getLabels(gameId);
     const labelLines = await db.mapRepo.getLabelLines(gameId);
 
+    const units = await db.mapRepo.getUnits(gameId, gameState.turnId);
+
     return {
       terrain: {
         sea: seaTerrain,
@@ -34,7 +36,7 @@ export class MapService {
       },
       labels: labels,
       labelLines: labelLines,
-      units: []
+      units: units
     };
   }
 }
