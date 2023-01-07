@@ -2,6 +2,7 @@ import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain } from "pg-promise";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
+import { CountryRank, CountryStatus } from "../../models/enumeration/country-enum";
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { GameState, GameStateResult } from "../../models/objects/last-turn-info-object";
@@ -291,7 +292,7 @@ export class GameRepository {
 
     for (let countryName in countries) {
       countryHistoryPromises.push(this.pool.query(insertCountryHistoryQuery, [
-        countries[countryName].rank !== 'n' ? 'available' : 'npc',
+        countries[countryName].rank !== CountryRank.N ? CountryStatus.ACTIVE : CountryStatus.NPC,
         countries[countryName].cities.length,
         countries[countryName].units.length,
         countries[countryName].bankedBuilds,

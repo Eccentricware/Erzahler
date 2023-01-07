@@ -8,8 +8,9 @@ export enum OrderDisplay {
   MOVE_CONVOYED = 'Move Convoyed',
   OFFER_TECH = 'Offer Nuke Tech',
   RECEIVE_TECH = 'Receive Nuke Tech From',
-  SUPPORT = 'Support',
   RUSH_BUILD = 'Rush Build',
+  SUPPORT = 'Support',
+  SUPPORT_CONVOYED = 'Support Convoyed',
   TARGET = 'Target',
   TRANSFER = 'Transfer To'
 }

@@ -2,7 +2,7 @@ import { Pool, QueryResult } from "pg";
 import { getGameStateQuery } from "../../database/queries/options/get-game-state-query";
 import { getAirAdjQuery } from "../../database/queries/options/get-air-adj-query";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionsContext, OrderOption, SavedOption, TransportPathLink, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionDestination, OptionsContext, OrderOption, SavedDestination, SavedOption, SecondaryUnit, TransportPathLink, UnitAdjacyInfoResult, UnitOptionsFinalized, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 import { UnitType } from "../../models/enumeration/unit-enum";
@@ -13,6 +13,7 @@ import { AssignmentService } from "./assignmentService";
 import { SchedulerService } from "./scheduler-service";
 import { TurnOptions, UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
+import { assert } from "console";
 
 export class OptionsService {
 
@@ -402,9 +403,9 @@ export class OptionsService {
     for (let supportedId in unit.transportSupports) {
       moveConvoyedSupport.push({
         unitId: unit.unitId,
-        orderType: OrderDisplay.SUPPORT,
+        orderType: OrderDisplay.SUPPORT_CONVOYED,
         secondaryUnitId: Number(supportedId),
-        secondaryOrderType: OrderDisplay.MOVE,
+        secondaryOrderType: OrderDisplay.MOVE_CONVOYED,
         destinations: unit.transportSupports[supportedId],
         turnId: turnId
       });
@@ -444,7 +445,7 @@ export class OptionsService {
 
     const userId = await accountService.getUserIdFromToken(idToken);
     const gameState = await db.gameRepo.getGameState(gameId);
-    const country = await db.assignmentRepo.getCountryAssignment(gameId, userId);
+    const playerCountry = await db.assignmentRepo.getCountryAssignment(gameId, userId);
 
     let pendingTurn: UpcomingTurn | undefined = undefined;
     let preliminaryTurn: UpcomingTurn | undefined = undefined;
@@ -464,12 +465,17 @@ export class OptionsService {
 
     const turnOptions: TurnOptions = {
       playerId: userId,
-      countryId: country.countryId,
-      countryName: country.countryName,
-      pending: {}
+      countryId: playerCountry.countryId,
+      countryName: playerCountry.countryName
     };
 
+    let pendingUnitResults: SavedOption[] | undefined;
+    let preliminaryUnitResults: SavedOption[] | undefined;
+
+    let pendingUnitOptionsFormatted: any = {};
+
     if (pendingTurn) {
+      turnOptions.pending = {};
       if ([
         TurnType.SPRING_ORDERS,
         TurnType.ORDERS_AND_VOTES,
@@ -477,7 +483,12 @@ export class OptionsService {
         TurnType.FALL_ORDERS,
         TurnType.FALL_RETREATS
       ].includes(pendingTurn.turnType)) {
-        turnOptions.pending.units = await db.optionsRepo.getUnitOptions(gameState.turnId, pendingTurn.turnId);
+        pendingUnitResults = await db.optionsRepo.getUnitOptions(
+          gameState.turnId,
+          pendingTurn.turnId,
+          true,
+          playerCountry.countryId
+        );
       }
 
       if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
@@ -496,8 +507,302 @@ export class OptionsService {
       if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
         // Fetch votes
       }
+
+      if (pendingUnitResults) {
+        turnOptions.pending.units = this.finalizeUnitOptions(pendingUnitResults);
+      }
     }
 
     return turnOptions;
+  }
+
+  finalizeUnitOptions(options: SavedOption[]): UnitOptionsFinalized[] {
+    const unitOptionsLibrary: Record<string, UnitOptionsFinalized> = {};
+    const unitOptionsFormatted: UnitOptionsFinalized[] = [];
+
+    options.forEach((option: SavedOption) => {
+      if (!unitOptionsLibrary[option.unitId]) {
+        unitOptionsLibrary[option.unitId] = this.newUnitEssentialsKit(option);
+      }
+
+      const unit = unitOptionsLibrary[option.unitId];
+
+      if (option.orderType === OrderDisplay.MOVE) {
+        this.finalizeStandardMovement(option, unit);
+      }
+
+      if (option.orderType === OrderDisplay.MOVE_CONVOYED) {
+        this.finalizeTransportedMovement(option, unit);
+      }
+
+      if (option.orderType === OrderDisplay.SUPPORT) {
+        if (!unit.orderTypes.includes(OrderDisplay.SUPPORT)) {
+          unit.orderTypes.push(OrderDisplay.SUPPORT);
+        }
+
+        if (!option.destinations) {
+          this.finalizeHoldSupport(option, unit);
+        } else {
+          this.finalizeMoveSupport(option, unit);
+        }
+      }
+
+      if (option.orderType === OrderDisplay.SUPPORT_CONVOYED) {
+        this.finalizeMoveConvoyedSupport(option, unit);
+      }
+
+      if (option.orderType === OrderDisplay.CONVOY) {
+        this.finalizeConvoys(option, unit);
+      }
+
+      if (option.orderType === OrderDisplay.AIRLIFT) {
+        this.finalizeAirlifts(option, unit);
+      }
+
+      if (option.orderType === OrderDisplay.DETONATE) {
+        this.finalizeNukeTargets(option, unit);
+      }
+
+    });
+
+    this.transposeUnitOptions(unitOptionsLibrary, unitOptionsFormatted);
+
+    return unitOptionsFormatted;
+  }
+
+  finalizeStandardMovement(option: SavedOption, unit: UnitOptionsFinalized): void {
+    unit.orderTypes.push(OrderDisplay.MOVE);
+    unit.moveDestinations = this.sortDestinations(option.destinations);
+  }
+
+  finalizeTransportedMovement(option: SavedOption, unit: UnitOptionsFinalized): void {
+    unit.orderTypes.push(OrderDisplay.MOVE_CONVOYED);
+    unit.moveTransportedDestinations = this.sortDestinations(option.destinations);
+  }
+
+  finalizeNukeTargets(option: SavedOption, unit: UnitOptionsFinalized): void {
+    unit.orderTypes.push(OrderDisplay.DETONATE);
+    unit.nukeTargets = this.sortDestinations(option.destinations);
+  }
+
+  finalizeHoldSupport(option: SavedOption, unit: UnitOptionsFinalized): void {
+    if (option.secondaryUnitId && option.secondaryUnitLoc) {
+
+      if (unit.supportStandardDestinations[option.secondaryUnitId]) {
+        unit.supportStandardDestinations[option.secondaryUnitId].unshift(this.newUnitHoldNode(option.secondaryUnitLoc));
+
+      } else {
+        unit.supportStandardUnits.push(this.newSecondaryUnit(option));
+        unit.supportStandardDestinations[option.secondaryUnitId] = [this.newUnitHoldNode(option.secondaryUnitLoc)];
+      }
+
+    } else {
+      console.log(`Unit ${option.unitId} is attempting a support an invalid secondaryUnit: `
+      + `ID: ${option.secondaryUnitId} | loc: ${option.secondaryUnitLoc}`);
+    }
+  }
+
+  finalizeMoveSupport(option: SavedOption, unit: UnitOptionsFinalized): void {
+    if (option.secondaryUnitId && option.secondaryUnitLoc) {
+
+      if (unit.supportStandardDestinations[option.secondaryUnitId]) {
+        unit.supportStandardDestinations[option.secondaryUnitId].push(...this.sortDestinations(option.destinations));
+      } else {
+        unit.supportStandardUnits.push(this.newSecondaryUnit(option));
+        unit.supportStandardDestinations[option.secondaryUnitId] = this.sortDestinations(option.destinations);
+      }
+
+    } else {
+      console.log(`Unit ${option.unitId} is attempting a support an invalid secondaryUnit: `
+        + `ID: ${option.secondaryUnitId} | loc: ${option.secondaryUnitLoc}`);
+    }
+  }
+
+  finalizeMoveConvoyedSupport(option: SavedOption, unit: UnitOptionsFinalized): void {
+    if (option.secondaryUnitId && option.secondaryUnitLoc) {
+
+      if (!unit.orderTypes.includes(OrderDisplay.SUPPORT_CONVOYED)) {
+        unit.orderTypes.push(OrderDisplay.SUPPORT_CONVOYED);
+      }
+      unit.supportTransportedUnits.push(this.newSecondaryUnit(option));
+      unit.supportTransportedDestinations[option.secondaryUnitId] = this.sortDestinations(option.destinations);
+
+    } else {
+      console.log(`Unit ${option.unitId} is attempting a convoyed support an invalid secondaryUnit: `
+        + `ID: ${option.secondaryUnitId} | loc: ${option.secondaryUnitLoc}`);
+    }
+  }
+
+  finalizeConvoys(option: SavedOption, unit: UnitOptionsFinalized): void {
+    if (option.secondaryUnitId && option.secondaryUnitLoc) {
+
+      if (!unit.orderTypes.includes(OrderDisplay.CONVOY)) {
+        unit.orderTypes.push(OrderDisplay.CONVOY);
+      }
+      unit.transportableUnits.push(this.newSecondaryUnit(option));
+      unit.transportDestinations[option.secondaryUnitId] = this.sortDestinations(option.destinations);
+
+    } else {
+      console.log(`Unit ${option.unitId} is attempting a convoyed support an invalid secondaryUnit: `
+        + `ID: ${option.secondaryUnitId} | loc: ${option.secondaryUnitLoc}`);
+    }
+  }
+
+  finalizeAirlifts(option: SavedOption, unit: UnitOptionsFinalized): void {
+    if (option.secondaryUnitId && option.secondaryUnitLoc) {
+
+      if (!unit.orderTypes.includes(OrderDisplay.AIRLIFT)) {
+        unit.orderTypes.push(OrderDisplay.AIRLIFT);
+      }
+      unit.transportableUnits.push(this.newSecondaryUnit(option));
+      unit.transportDestinations[option.secondaryUnitId] = this.sortDestinations(option.destinations);
+
+    } else {
+      console.log(`Unit ${option.unitId} is attempting a convoyed support an invalid secondaryUnit: `
+        + `ID: ${option.secondaryUnitId} | loc: ${option.secondaryUnitLoc}`);
+    }
+  }
+
+  newUnitEssentialsKit(option: SavedOption): UnitOptionsFinalized {
+    return {
+      unitId: option.unitId,
+      unitType: option.unitType,
+      unitDisplay: `${option.unitType} ${option.provinceName}`,
+      unitLoc: option.unitLoc,
+      orderTypes: option.canHold ? [OrderDisplay.HOLD] : [],
+      moveDestinations: [],
+      moveTransportedDestinations: [],
+      nukeTargets: [],
+      supportStandardUnits: [],
+      supportStandardDestinations: {},
+      supportTransportedUnits: [],
+      supportTransportedDestinations: {},
+      transportableUnits: [],
+      transportDestinations: {}
+    }
+  }
+
+  newSecondaryUnit(option: SavedOption): SecondaryUnit {
+    return {
+      id: option.secondaryUnitId,
+      displayName: `${option.secondaryUnitType} ${option.secondaryProvinceName}`,
+      loc: option.secondaryUnitLoc
+    }
+  }
+
+  /**
+   * Returns {
+   *   nodeId: 0,
+   *   nodeName: OrderDisplay.HOLD,
+   *   loc: loc
+   * }
+   * @param loc
+   * @returns
+   */
+  newUnitHoldNode(loc: number[]): OptionDestination {
+    return {
+      nodeId: 0,
+      nodeName: OrderDisplay.HOLD,
+      loc: loc
+    }
+  }
+
+  sortActions(unit: UnitOptionsFinalized): void {
+    const orderTypes: OrderDisplay[] = [];
+
+    if (unit.orderTypes.includes(OrderDisplay.HOLD)) {
+      orderTypes.push(OrderDisplay.HOLD);
+    }
+
+    if (unit.orderTypes.includes(OrderDisplay.MOVE)) {
+      orderTypes.push(OrderDisplay.MOVE);
+    }
+
+    if (unit.orderTypes.includes(OrderDisplay.MOVE_CONVOYED)) {
+      orderTypes.push(OrderDisplay.MOVE_CONVOYED);
+    }
+
+    if (unit.orderTypes.includes(OrderDisplay.SUPPORT)) {
+      orderTypes.push(OrderDisplay.SUPPORT);
+    }
+
+    if (unit.orderTypes.includes(OrderDisplay.SUPPORT_CONVOYED)) {
+      orderTypes.push(OrderDisplay.SUPPORT_CONVOYED);
+    }
+
+    if (unit.orderTypes.includes(OrderDisplay.CONVOY)) {
+      orderTypes.push(OrderDisplay.CONVOY);
+    }
+
+    if (unit.orderTypes.includes(OrderDisplay.AIRLIFT)) {
+      orderTypes.push(OrderDisplay.AIRLIFT);
+    }
+
+    if (unit.orderTypes.includes(OrderDisplay.DETONATE)) {
+      orderTypes.push(OrderDisplay.DETONATE);
+    }
+
+    if (unit.orderTypes.includes(OrderDisplay.DISBAND)) {
+      orderTypes.push(OrderDisplay.DISBAND);
+    }
+
+    unit.orderTypes = orderTypes;
+  }
+
+  sortSecondaryUnits(units: SecondaryUnit[]): SecondaryUnit[] {
+    const nameToIndex: Record<string, number> = {};
+    const sortArray = units.map((unit: SecondaryUnit, index: number) => {
+      nameToIndex[unit.displayName] = index;
+      return unit.displayName.split(' ')[1];
+    });
+    const sortedArray: SecondaryUnit[] = [];
+    sortArray.sort().forEach((province: string) => {
+      sortedArray.push(units[nameToIndex[province]]);
+    });
+    return sortedArray;
+  }
+
+  sortDestinations(destinations: OptionDestination[]): OptionDestination[] {
+    const nameToIndex: Record<string, number> = {};
+    let hasHold = false;
+    let holdNodeLoc: number[] = [];
+    const sortArray = destinations.map((destination: OptionDestination, index: number) => {
+      if (destination.nodeId === 0) {
+        hasHold = true;
+        holdNodeLoc = destination.loc;
+      }
+      nameToIndex[destination.nodeName] = index;
+      return destination.nodeName;
+    });
+
+    const sortedArray: OptionDestination[] = [];
+    if (hasHold) {
+      sortedArray.push(this.newUnitHoldNode(holdNodeLoc));
+    }
+    sortArray.sort().forEach((nodeName: string) => {
+      if (nodeName !== OrderDisplay.HOLD) {
+        sortedArray.push(destinations[nameToIndex[nodeName]]);
+      }
+    });
+    return sortedArray;
+  }
+
+  transposeUnitOptions(unitOptionsLibrary: Record<string, UnitOptionsFinalized>, unitOptionsFormatted: UnitOptionsFinalized[]): void {
+    let sortArray: string[] = [];
+    let nameToIndex: Record<string, number> = {};
+
+    for (let unitId in unitOptionsLibrary) {
+      this.sortActions(unitOptionsLibrary[unitId]);
+
+      const province = unitOptionsLibrary[unitId].unitDisplay.split(' ')[1];
+
+      sortArray.push(province);
+      nameToIndex[province] = Number(unitId);
+    }
+
+    sortArray.sort();
+    sortArray.forEach((provinceName: string) => {
+      unitOptionsFormatted.push(unitOptionsLibrary[nameToIndex[provinceName]]);
+    });
   }
 }

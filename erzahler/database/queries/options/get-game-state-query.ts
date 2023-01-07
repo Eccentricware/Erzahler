@@ -17,7 +17,7 @@ export const getGameStateQuery = `
     c.highest_ranked_req,
     c.all_votes_controlled,
     CASE
-      WHEN uh.unit_status = 'retreating'
+      WHEN uh.unit_status = 'Retreat'
       THEN true ELSE false
     END AS units_in_retreat
   FROM games g

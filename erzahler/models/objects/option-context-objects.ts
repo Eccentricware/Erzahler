@@ -1,3 +1,6 @@
+import { OrderDisplay } from "../enumeration/order-display-enum";
+import { UnitType } from "../enumeration/unit-enum";
+
 export interface OrderOption {
   turnId: number;
   unitId: number;
@@ -137,18 +140,25 @@ export interface SavedOptionResult {
   unit_country_id: string;
   unit_country_name: string;
   unit_country_rank: string;
-  unit_country_flag_key: string;
+  unit_flag_key: string;
   province_name: string;
+  unit_loc: number[];
   can_hold: boolean;
   order_type: string;
   secondary_unit_id?: number;
   secondary_unit_type?: string;
-  secondary_unit_country?: string;
-  secondary_unit_country_id?: string;
-  secondary_unit_country_key?: string;
+  secondary_unit_country_name?: string;
+  secondary_unit_flag_key?: string;
   secondary_province_name?: string;
+  secondary_unit_loc?: number[];
   secondary_order_type?: string;
-  destinations?: any[];
+  destinations: DestinationResult[];
+}
+
+export interface DestinationResult {
+  node_id: number;
+  node_name: string;
+  loc: number[]
 }
 
 export interface SavedOption {
@@ -157,16 +167,126 @@ export interface SavedOption {
   unitCountryId: string;
   unitCountryName: string;
   unitCountryRank: string;
-  unitCountryFlagKey: string;
+  unitFlagKey: string;
   provinceName: string;
+  unitLoc: number[];
   canHold: boolean;
-  orderType: string;
+  orderType: OrderDisplay;
   secondaryUnitId?: number;
   secondaryUnitType?: string;
   secondaryUnitCountryId?: string;
   secondaryUnitCountryName?: string;
-  secondaryUnitCountryKey?: string;
+  secondaryUnitFlagKey?: string;
   secondaryProvinceName?: string;
+  secondaryUnitLoc?: number[];
   secondaryOrderType?: string;
-  destinations?: any[];
+  destinations: OptionDestination[];
+}
+
+export interface SavedDestination {
+  nodeId: number;
+  nodeName: string;
+  loc: number[]
+}
+
+export interface UnitOptionsFinalized {
+  unitId: number;
+  unitType: string;
+  unitDisplay: string;
+  unitLoc: number[];
+  orderTypes: OrderDisplay[];
+  moveDestinations: OptionDestination[];
+  moveTransportedDestinations: OptionDestination[];
+  nukeTargets: OptionDestination[];
+  supportStandardUnits: SecondaryUnit[];
+  supportStandardDestinations: Record<string, OptionDestination[]>;
+  supportTransportedUnits: SecondaryUnit[];
+  supportTransportedDestinations: Record<string, OptionDestination[]>;
+  transportableUnits: SecondaryUnit[];
+  transportDestinations: Record<string, OptionDestination[]>;
+}
+
+export interface SecondaryUnit {
+  id: number | undefined;
+  displayName: string;
+  loc: number[] | undefined;
+}
+
+export interface OptionDestination {
+  nodeId: number;
+  nodeName: string;
+  loc: number[];
+}
+
+export interface TransferOption {
+  gameId: number;
+  giveTech: TransferCountry[];
+  receiveTech: TransferCountry[];
+  receiveBuild: TransferCountry[];
+}
+
+export interface TransferCountry {
+  countryId: number;
+  countryName: string;
+}
+
+export interface TransferOptionResult {
+  game_id: number;
+  give_tech: TransferCountryResult[];
+  receive_tech: TransferCountryResult[];
+  receive_build: TransferCountryResult[];
+}
+
+export interface TransferCountryResult {
+  country_id: number;
+  country_name: string;
+}
+
+export interface BuildLocResult {
+  country_id: number;
+  country_name: string;
+  province_name: string;
+  city_loc: number[];
+  land_node_id: number;
+  land_node_loc: number[];
+  sea_node_id: number;
+  sea_node_loc: number[];
+  sea_node_name: string;
+  air_node_id: number;
+  air_node_loc: number[];
+}
+
+export interface BuildLoc {
+  countryId: number;
+  countryName: string;
+  provinceName: string;
+  cityLoc: number[];
+  landNodeId: number;
+  landNodeLoc: number[];
+  seaNodeId: number;
+  seaNodeLoc: number[];
+  seaNodeName: string;
+  airNodeId: number;
+  airNodeLoc: number[];
+}
+
+export interface AtRiskUnitResult {
+  country_id: number;
+	country_name: string;
+	rank: string;
+	flag_key: string;
+	unit_id: number;
+	unit_type: string;
+	province_name: string;
+	loc: number[];
+}
+export interface AtRiskUnit {
+  countryId: number;
+	countryName: string;
+	rank: string;
+	flagKey: string;
+	unitId: number;
+	unitType: string;
+	provinceName: string;
+	loc: number[];
 }
