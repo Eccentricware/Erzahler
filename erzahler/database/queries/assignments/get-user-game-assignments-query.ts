@@ -4,6 +4,7 @@ export const getUserGameAssignmentsQuery = `
     c.country_id,
     c.country_name,
     ch.country_status,
+    ch.nuke_range,
     g.blind_administrators
   FROM users u
   LEFT JOIN assignments a ON a.user_id = u.user_id

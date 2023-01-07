@@ -1,5 +1,6 @@
 export const getTurnUnitOrdersQuery = `
-  SELECT o.order_id,
+  SELECT
+    o.order_id,
     o.order_set_id,
     o.ordered_unit_id,
     un.loc ordered_unit_loc,

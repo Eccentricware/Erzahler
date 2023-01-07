@@ -17,6 +17,7 @@ export interface UserAssignmentResult {
   country_id?: number;
   country_name?: string;
   country_status?: string;
+  nuke_range?: number | null;
   blind_administrators?: boolean;
 }
 
@@ -26,5 +27,6 @@ export interface UserAssignment {
   countryId: number;
   countryName?: string;
   countryStatus?: string;
+  nukeTech?: boolean;
   blindAdministrators?: boolean;
 }
