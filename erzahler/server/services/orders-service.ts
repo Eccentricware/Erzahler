@@ -18,6 +18,7 @@ import { stringify } from "querystring";
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { UserAssignment } from "../../models/objects/assignment-objects";
 import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
+import { CountryStatus } from "../../models/enumeration/country-enum";
 
 export class OrdersService {
 
@@ -680,7 +681,10 @@ export class OrdersService {
 
     const adminVision = adminAssignments.length > 0;
 
-    const orders: TurnOrders = { userId: userId };
+    const orders: TurnOrders = {
+      userId: userId,
+      render: 'pending'
+    };
 
     if (playerCountries.length > 0 || adminVision) {
       const playerCountry = playerCountries[0] ? playerCountries[0] : adminAssignments[0];
@@ -715,9 +719,13 @@ export class OrdersService {
 
         // Retreating Unit Movement
         if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType)) {
-          // turnOptions.pending.units = this.finalizeUnitOptions(
-          //   await db.ordersRepo.getUnitOptions(gameState.turnId, pendingTurn.turnId, playerCountry.countryId)
-          // );
+          if (playerCountry.countryStatus === CountryStatus.RETREAT) {
+            // turnOptions.pending.units = this.finalizeUnitOptions(
+            //   await db.ordersRepo.getUnitOptions(gameState.turnId, pendingTurn.turnId, playerCountry.countryId)
+            // );
+          } else {
+            orders.render === 'preliminary';
+          }
         }
 
         // Transfers
@@ -747,9 +755,7 @@ export class OrdersService {
         if ([
           TurnType.SPRING_ORDERS,
           TurnType.ORDERS_AND_VOTES,
-          TurnType.SPRING_RETREATS,
           TurnType.FALL_ORDERS,
-          TurnType.FALL_RETREATS
         ].includes(preliminaryTurn.turnType)) {
           // turnOptions.preliminary.units = this.finalizeUnitOptions(
           //   await db.ordersRepo.getUnitOptions(gameState.turnId, preliminaryTurn.turnId, playerCountry.countryId)

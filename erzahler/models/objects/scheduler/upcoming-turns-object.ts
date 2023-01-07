@@ -53,6 +53,7 @@ export interface TurnOrders {
   message?: string;
   pending?: SingleTurnOrders;
   preliminary?: SingleTurnOrders;
+  render?: string;
 }
 
 export interface SingleTurnOrders {

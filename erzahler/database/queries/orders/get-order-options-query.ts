@@ -45,7 +45,7 @@ export const getOrderOptionsQuery = `
   LEFT JOIN provinces sup ON sup.province_id = sun.province_id
   LEFT JOIN nodes dn ON dn.node_id = any(oo.destinations)
   LEFT JOIN provinces pn ON pn.province_id = dn.province_id
-  LEFT JOIN nodes en ON en.province_id = p.province_id AND en.node_type = 'event'
+  LEFT JOIN nodes en ON en.province_id = pn.province_id AND en.node_type = 'event'
   WHERE t.turn_id = $1
     AND oo.turn_id = $2
     AND CASE
