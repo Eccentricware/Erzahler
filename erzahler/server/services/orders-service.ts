@@ -19,6 +19,8 @@ import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { UserAssignment } from "../../models/objects/assignment-objects";
 import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { CountryStatus } from "../../models/enumeration/country-enum";
+import { CountryState } from "../../models/objects/games/country-state-objects";
+import { OptionsFinal } from "../../models/objects/options-objects";
 
 export class OrdersService {
 
@@ -541,13 +543,21 @@ export class OrdersService {
       );
   }
 
-  async getTurnOptions(idToken: string, gameId: number): Promise<TurnOptions> {
+  async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal | string> {
     const accountService = new AccountService();
-
     const userId = await accountService.getUserIdFromToken(idToken);
-    const gameState = await db.gameRepo.getGameState(gameId);
-    const playerCountries = await db.assignmentRepo.getUserAssignments(gameId, userId);
-    const playerCountry = playerCountries[0];
+
+    const gameState: GameState = await db.gameRepo.getGameState(gameId);
+    let playerCountry: CountryState | undefined = undefined;
+    const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
+    if (playerCountries.length > 0) {
+      const countryStates = await db.gameRepo.getCountryState(playerCountries[0].countryId);
+      playerCountry = countryStates[0];
+    }
+
+    if (playerCountry === undefined) {
+      return 'User is not assigned an active country';
+    }
 
     let pendingTurn: UpcomingTurn | undefined = undefined;
     let preliminaryTurn: UpcomingTurn | undefined = undefined;
@@ -565,10 +575,10 @@ export class OrdersService {
       console.log(`GameId ${gameId} has too many turns! (${upcomingTurns.length})`);
     }
 
-    const turnOptions: TurnOptions = {
+    const turnOptions: OptionsFinal = {
       playerId: userId,
-      countryId: playerCountry.countryId,
-      countryName: playerCountry.countryName
+      countryId: playerCountry.id,
+      countryName: playerCountry.name
     };
 
     let pendingUnitOptions: SavedOption[] | undefined;
@@ -578,8 +588,8 @@ export class OrdersService {
 
     if (pendingTurn) {
       turnOptions.pending = {
+        id: pendingTurn.turnId,
         name: pendingTurn.turnName,
-        turnType: 'Pending Turn',
         deadline: pendingTurn.deadline
       };
       // Units
@@ -590,66 +600,135 @@ export class OrdersService {
         TurnType.FALL_ORDERS,
         TurnType.FALL_RETREATS
       ].includes(pendingTurn.turnType)) {
-        turnOptions.pending.units = this.finalizeUnitOptions(
-          await db.ordersRepo.getUnitOptions(gameState.turnId, pendingTurn.turnId, playerCountry.countryId)
-        );
+        turnOptions.units = {
+          turnStatus: TurnStatus.PENDING,
+          options: this.finalizeUnitOptions(
+            await db.ordersRepo.getUnitOptions(gameState.turnId, pendingTurn.turnId, playerCountry.id)
+          )
+        }
       }
 
       // Transfers
       if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-        turnOptions.pending.transfers = await db.ordersRepo.getTransferOptions(gameId, gameState.turnId);
+        if (playerCountry.builds > 0) {
+          turnOptions.buildTransfers = {
+            turnStatus: TurnStatus.PENDING,
+            options: await db.ordersRepo.getBuildTransferOptions(gameId, gameState.turnId)
+          }
+        }
+
+        if (playerCountry.nukeRange) {
+          turnOptions.receiveTechOptions = {
+            turnStatus: TurnStatus.PENDING,
+            options: await db.ordersRepo.getTechReceiveOptions(gameId, gameState.turnId)
+          }
+        } else {
+          turnOptions.offerTechOptions = {
+            turnStatus: TurnStatus.PENDING,
+            options: await db.ordersRepo.getTechOfferOptions(gameId, gameState.turnId)
+          }
+        }
       }
 
       // Adjustments
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-        const pendingBuildLocs: BuildLoc[] = await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
-        const pendingAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
+        if (playerCountry.adjustments > 0) {
+          turnOptions.builds = {
+            turnStatus: TurnStatus.PENDING,
+            options: await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.id)
+          }
+        }
+
+        if (playerCountry.adjustments < 0) {
+          turnOptions.disbands = {
+            turnStatus: TurnStatus.PENDING,
+            options: await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.id)
+          }
+        }
       }
 
       // Nominations
       if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-        const pendingNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.turnId);
+        turnOptions.nominations = {
+          turnStatus: TurnStatus.PENDING,
+          options: await db.ordersRepo.getNominatableCountries(gameState.turnId)
+        }
       }
 
       // Votes
       if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-        const pendingNominations: Nomination[] = await db.ordersRepo.getNominations(gameState.turnId);
+        turnOptions.votes = {
+          turnStatus: TurnStatus.PENDING,
+          options: await db.ordersRepo.getNominations(gameState.turnId)
+        }
       }
     }
 
     if (preliminaryTurn) {
       turnOptions.preliminary = {
+        id: preliminaryTurn.turnId,
         name: preliminaryTurn.turnName,
-        turnType: 'Preliminary Turn',
         deadline: preliminaryTurn.deadline
       };
       // Units
       if ([
         TurnType.SPRING_ORDERS,
         TurnType.ORDERS_AND_VOTES,
-        TurnType.SPRING_RETREATS,
         TurnType.FALL_ORDERS,
-        TurnType.FALL_RETREATS
       ].includes(preliminaryTurn.turnType)) {
-        turnOptions.preliminary.units = this.finalizeUnitOptions(
-          await db.ordersRepo.getUnitOptions(gameState.turnId, preliminaryTurn.turnId, playerCountry.countryId)
-        );
+        turnOptions.units = {
+          turnStatus: TurnStatus.PRELIMINARY,
+          options: this.finalizeUnitOptions(
+            await db.ordersRepo.getUnitOptions(gameState.turnId, preliminaryTurn.turnId, playerCountry.id)
+          )
+        }
       }
 
       // Transfers
       if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
-        turnOptions.preliminary.transfers = await db.ordersRepo.getTransferOptions(gameId, gameState.turnId);
+        if (playerCountry.builds > 0) {
+          turnOptions.buildTransfers = {
+            turnStatus: TurnStatus.PRELIMINARY,
+            options: await db.ordersRepo.getBuildTransferOptions(gameId, gameState.turnId)
+          }
+        }
+
+        if (playerCountry.nukeRange) {
+          turnOptions.offerTechOptions = {
+            turnStatus: TurnStatus.PRELIMINARY,
+            options: await db.ordersRepo.getTechOfferOptions(gameId, gameState.turnId)
+          }
+        } else {
+          turnOptions.offerTechOptions = {
+            turnStatus: TurnStatus.PRELIMINARY,
+            options: await db.ordersRepo.getTechReceiveOptions(gameId, gameState.turnId)
+          }
+        }
       }
 
       // Adjustments
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-        const preliminaryBuildLocs: BuildLoc[] = await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
-        const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
+        if (playerCountry.adjustments > 0) {
+          turnOptions.builds = {
+            turnStatus: TurnStatus.PRELIMINARY,
+            options: await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.id)
+          }
+        }
+
+        if (playerCountry.adjustments < 0) {
+          turnOptions.disbands = {
+            turnStatus: TurnStatus.PRELIMINARY,
+            options: await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.id)
+          }
+        }
       }
 
       // Nominations
       if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-        const preliminaryNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.turnId);
+        turnOptions.nominations = {
+          turnStatus: TurnStatus.PRELIMINARY,
+          options: await db.ordersRepo.getNominatableCountries(gameState.turnId)
+        }
       }
     }
 
