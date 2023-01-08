@@ -308,10 +308,11 @@ CREATE TABLE IF NOT EXISTS nominations(
   turn_id INTEGER NOT NULL,
   nominator_id INTEGER NOT NULL,
   nomination_type VARCHAR(15) NOT NULL,
-  country_1_id INTEGER,
-  country_2_id INTEGER,
-  country_3_id INTEGER,
-  deadline TIMESTAMP NOT NULL,
+  country_1_id INTEGER NOT NULL,
+  country_2_id INTEGER NOT NULL,
+  country_3_id INTEGER NOT NULL,
+  rank_signature VARCHAR(3) NOT NULL,
+  votes_required INTEGER NOT NULL,
   PRIMARY KEY(nomination_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
@@ -322,6 +323,18 @@ CREATE TABLE IF NOT EXISTS nominations(
   FOREIGN KEY(country_2_id)
     REFERENCES countries(country_id),
   FOREIGN KEY(country_3_id)
+    REFERENCES countries(country_id)
+);
+
+\echo 'Attempting to create countries_in_nominations table'
+CREATE TABLE IF NOT EXISTS countries_in_nominations(
+  country_in_nomination_id SERIAL,
+  nomination_id INTEGER NOT NULL,
+  country_id INTEGER NOT NULL,
+  PRIMARY KEY(country_in_nomination_id),
+  FOREIGN KEY(nomination_id)
+    REFERENCES nominations(nomination_id),
+  FOREIGN KEY(country_id)
     REFERENCES countries(country_id)
 );
 
@@ -624,6 +637,7 @@ CREATE TABLE IF NOT EXISTS mad_conditions(
     REFERENCES countries(country_id)
 );
 
+\echo 'Attempting to create indices'
 CREATE INDEX coalition_game_idx ON coalition_schedules(game_id);
 CREATE INDEX rule_in_game_core_idx ON rules_in_games(rule_id);
 CREATE INDEX rule_in_game_game_idx ON rules_in_games(game_id);
@@ -647,9 +661,8 @@ CREATE INDEX node_province_idx ON nodes(province_id);
 CREATE INDEX node_adjacency_core_1_idx ON node_adjacencies(node_1_id);
 CREATE INDEX node_adjacency_core_2_idx ON node_adjacencies(node_2_id);
 CREATE INDEX nomination_turn_idx ON nominations(turn_id);
-CREATE INDEX nomination_country_1_idx ON nominations(country_1_id);
-CREATE INDEX nomination_country_2_idx ON nominations(country_2_id);
-CREATE INDEX nomination_country_3_idx ON nominations(country_3_id);
+CREATE INDEX nomination_core_idx ON countries_in_nominations(nomination_id);
+CREATE INDEX nomination_country_idx ON countries_in_nominations(country_id);
 CREATE INDEX vote_nomination_idx ON votes(nomination_id);
 CREATE INDEX vote_country_idx ON votes(voting_country_id);
 CREATE INDEX unit_country_idx ON units(country_id);
@@ -691,4 +704,3 @@ CREATE INDEX mad_condition_order_set_idx ON mad_conditions(order_set_id);
 CREATE INDEX mad_condition_issuing_idx ON mad_conditions(issuing_country_id);
 CREATE INDEX mad_condition_launched_idx ON mad_conditions(launching_country_id);
 CREATE INDEX mad_condition_targeted_idx ON mad_conditions(targeted_country_id);
-

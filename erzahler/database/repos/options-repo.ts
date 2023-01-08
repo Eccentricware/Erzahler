@@ -1,10 +1,12 @@
 import { Pool, QueryResult } from "pg";
-import { ColumnSet, IDatabase, IMain } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, OrderOption, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { ColumnSet, IDatabase, IMain, queryResult } from "pg-promise";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, OrderOption, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/options/get-at-risk-units-query";
 import { getEmptySupplyCentersQuery } from "../queries/options/get-empty-supply-centers-query";
+import { getNominatableCountriesQuery } from "../queries/options/get-nominatable-countries-query";
+import { getNominationsQuery } from "../queries/options/get-nominations-query";
 import { getOrderOptionsQuery } from "../queries/options/get-order-options-query";
 import { getTransferOptionsQuery } from "../queries/options/get-transfer-options-query";
 import { getUnitAdjacentInfoQuery } from "../queries/options/get-unit-adjacent-info-query";
@@ -181,8 +183,8 @@ export class OptionsRepository {
     return savedOptions;
   }
 
-  async getTransferOptions(gameId: number, turnId: number, countryId: number): Promise<TransferOption[]> {
-    const transferOptions: TransferOption[] = await this.pool.query(getTransferOptionsQuery, [gameId, turnId, countryId])
+  async getTransferOptions(gameId: number, turnId: number): Promise<TransferOption[]> {
+    const transferOptions: TransferOption[] = await this.pool.query(getTransferOptionsQuery, [gameId, turnId])
       .then((result: QueryResult<any>) => {
         return result.rows.map((game: TransferOptionResult) => {
           return <TransferOption> {
@@ -207,6 +209,10 @@ export class OptionsRepository {
             })
           }
         })
+      })
+      .catch((error: Error) => {
+        console.log('getTransferOptions Error: ' + error.message);
+        return [];
       });
 
     return transferOptions;
@@ -228,7 +234,11 @@ export class OptionsRepository {
           airNodeId: province.air_node_id,
           airNodeLoc: province.air_node_loc
         };
-      }));
+      }))
+      .catch((error: Error) => {
+        console.log('getAvailableBuildLocs Error: ' + error.message);
+        return [];
+      });;
 
     return buildLocs;
   }
@@ -245,9 +255,55 @@ export class OptionsRepository {
           rank: unit.rank,
           flagKey: unit.flag_key
         }
-      }));
+      }))
+      .catch((error: Error) => {
+        console.log('getAtRiskUnits Error: ' + error.message);
+        return [];
+      });;
 
       return atRiskUnits;
+  }
+
+  async getNominatableCountries(turnId: number): Promise<NominatableCountry[]> {
+    const nominatableCountries: NominatableCountry[]
+      = await this.pool.query(getNominatableCountriesQuery, [turnId])
+        .then((result: QueryResult) => result.rows.map((country: NominatableCountryResult) => {
+          return <NominatableCountry> {
+            countryId: country.country_id,
+            countryName: country.country_name,
+            rank: country.rank
+          };
+        }))
+        .catch((error: Error) => {
+          console.log('getNominatableCountries Error: ' + error.message);
+          return [];
+        });;
+
+    return nominatableCountries;
+  }
+
+  async getNominations(turnId: number): Promise<Nomination[]> {
+    const nominations: Nomination[] = await this.pool.query(getNominationsQuery, [turnId])
+      .then((result: QueryResult<any>) => result.rows.map((nomination: NominationResult) => {
+        return <Nomination> {
+          nominationId: nomination.nomination_id,
+          rankSignature: nomination.rank_signature,
+          countries: nomination.countries.map((country: NominatableCountryResult) => {
+            return <NominatableCountry> {
+              countryId: country.country_id,
+              countryName: country.country_name,
+              rank: country.rank
+            };
+          }),
+          votesRequired: nomination.votes_required
+        };
+      }))
+      .catch((error: Error) => {
+        console.log('getNominations Error: ' + error.message);
+        return [];
+      });;
+
+    return nominations;
   }
 
   formatDestinationNodeName(nodeName: string): string {
