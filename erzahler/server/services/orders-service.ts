@@ -791,10 +791,12 @@ export class OrdersService {
       }
 
       if (pendingTurn) {
-        orders.pending = {};
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
-          orders.pending.units = await db.ordersRepo.getTurnUnitOrders(playerCountry.countryId, pendingTurn.turnId, gameState.turnId);
+          orders.units = await db.ordersRepo.getTurnUnitOrders(playerCountry.countryId, pendingTurn.turnId, gameState.turnId);
+          if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
+            orders.pendingDefault = false;
+          }
         }
 
         // Retreating Unit Movement
@@ -837,9 +839,10 @@ export class OrdersService {
           TurnType.ORDERS_AND_VOTES,
           TurnType.FALL_ORDERS,
         ].includes(preliminaryTurn.turnType)) {
-          // turnOptions.preliminary.units = this.finalizeUnitOptions(
-          //   await db.ordersRepo.getUnitOptions(gameState.turnId, preliminaryTurn.turnId, playerCountry.countryId)
-          // );
+          orders.units = await db.ordersRepo.getTurnUnitOrders(playerCountry.countryId, preliminaryTurn.turnId, gameState.turnId);
+          if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
+            orders.preliminaryDefault = false;
+          }
         }
 
         // Transfers

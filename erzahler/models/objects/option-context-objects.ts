@@ -320,9 +320,9 @@ export interface NominationResult {
 
 export interface Nomination {
   nominationId: number;
-	rankSignature: string;
-	countries: NominatableCountry[];
-	votesRequired: number;
+  rankSignature: string;
+  countries: NominatableCountry[];
+  votesRequired: number;
 }
 
 export interface OrderSetResult {

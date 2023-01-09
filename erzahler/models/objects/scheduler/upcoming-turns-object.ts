@@ -52,9 +52,15 @@ export interface TurnOrders {
   countryName?: string;
   turnType?: string;
   message?: string;
-  pending?: SingleTurnOrders;
-  preliminary?: SingleTurnOrders;
+  pendingDefault?: boolean;
+  preliminaryDefault?: boolean;
   render?: string;
+  units?: any[];
+  transfers?: any[];
+  builds?: any[];
+  disbands?: any[];
+  nomination?: any;
+  votes?: any[];
 }
 
 export interface SingleTurnOrders {
