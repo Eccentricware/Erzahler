@@ -1,5 +1,5 @@
 import { error } from "console";
-import { Pool, QueryResult } from "pg";
+import { Pool, Query, QueryResult } from "pg";
 import { IDatabase, IMain, queryResult } from "pg-promise";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
@@ -7,6 +7,7 @@ import { CountryRank, CountryStatus } from "../../models/enumeration/country-enu
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { CountryState, CountryStateResult } from "../../models/objects/games/country-state-objects";
+import { CountryStats, CountryStatsResult } from "../../models/objects/games/country-stats-objects";
 import { GameState, GameStateResult } from "../../models/objects/last-turn-info-object";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
 import { StartScheduleObject } from "../../models/objects/start-schedule-object";
@@ -17,6 +18,7 @@ import { checkGameNameAvailabilityQuery } from "../queries/game/check-game-name-
 import { checkUserGameAdminQuery } from "../queries/game/check-user-game-admin-query";
 import { getCountryStateQuery } from "../queries/game/get-country-state-query";
 import { getGameDetailsQuery } from "../queries/game/get-game-details-query";
+import { getGameStatsQuery } from "../queries/game/get-game-stats-query";
 import { getGamesQuery } from "../queries/game/get-games-query";
 import { getRulesInGameQuery } from "../queries/game/get-rules-in-game-query";
 import { insertAssignmentQuery } from "../queries/game/insert-assignment-query";
@@ -454,6 +456,22 @@ export class GameRepository {
           builds: countryResult.banked_builds,
           nukeRange: countryResult.nuke_range,
           adjustments: countryResult.adjustments
+        };
+      }));
+  }
+
+  async getGameStats(gameId: number, turnId: number): Promise<CountryStats[]> {
+    return await this.pool.query(getGameStatsQuery, [gameId, turnId])
+      .then((queryResult: QueryResult<any>) => queryResult.rows.map((country: CountryStatsResult) => {
+        return <CountryStats> {
+          id: country.country_id,
+          name: country.country_name,
+          rank: country.rank,
+          cityCount: country.city_count,
+          votes: country.vote_count,
+          bankedBuilds: country.banked_builds,
+          nuke: country.nuke_range,
+          adjustments: country.adjustments
         };
       }));
   }

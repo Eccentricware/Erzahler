@@ -39,6 +39,7 @@ import { insertCoalitionScheduleQuery } from "../../database/queries/game/insert
 import { db } from "../../database/connection";
 import { StartTiming } from "../../models/enumeration/start-timing-enum";
 import { NewGameData } from "../../models/objects/games/new-game-data-object";
+import { CountryStats } from "../../models/objects/games/country-stats-objects";
 
 export class GameService {
   gameData: any = {};
@@ -496,5 +497,11 @@ export class GameService {
     if (gameData.isAdmin ) {
       await schedulerService.prepareGameStart(gameData);
     }
+  }
+
+  async getGameStats(gameId: number): Promise<any> {
+    const gameState = await db.gameRepo.getGameState(gameId);
+    const countryStats = await db.gameRepo.getGameStats(gameId, gameState.turnId);
+    return { countries: countryStats };
   }
 }
