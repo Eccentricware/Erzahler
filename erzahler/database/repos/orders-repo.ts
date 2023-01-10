@@ -1,6 +1,7 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain, queryResult } from "pg-promise";
 import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderResult, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { OrderSetFinal, OrderSetFinalResult, TransferBuildsCountry, TransferTechCountry } from "../../models/objects/scheduler/upcoming-turns-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
@@ -8,6 +9,7 @@ import { getEmptySupplyCentersQuery } from "../queries/orders/get-empty-supply-c
 import { getNominatableCountriesQuery } from "../queries/orders/get-nominatable-countries-query";
 import { getNominationsQuery } from "../queries/orders/get-nominations-query";
 import { getOrderOptionsQuery } from "../queries/orders/get-order-options-query";
+import { getOrderSetQuery } from "../queries/orders/get-order-set-query";
 import { getTransferBuildOptionsQuery } from "../queries/orders/get-transfer-build-options-query";
 import { getTransferOptionsQuery } from "../queries/orders/get-transfer-options-query";
 import { getTechOfferOptionsQuery } from "../queries/orders/get-transfer-tech-offer-options-query";
@@ -402,5 +404,39 @@ export class OrdersRepository {
       }));
 
     return orders;
+  }
+
+  async getTurnOrderSet(countryId: number, turnId: number): Promise<OrderSetFinal> {
+    const orderSet: OrderSetFinal[] = await this.pool.query(getOrderSetQuery, [turnId, countryId])
+      .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: OrderSetFinalResult) => {
+
+        const buildTransfers: TransferBuildsCountry[] = result.build_transfer_recipients.map(
+          (country: any, index: number) => {
+            return <TransferBuildsCountry>{
+              countryId: country.country_id,
+              countryName: country.country_name,
+              builds: result.build_transfer_amounts[index]
+            };
+        });
+
+        return <OrderSetFinal> {
+          orderSetId: result.order_set_id,
+          countryId: result.country_id,
+          countryName: result.country_name,
+          defaultOrders: result.default_orders,
+          techPartnerId: result.tech_partner_id,
+          newUnitTypes: result.new_unit_types,
+          newUnitLocs: result.new_unit_locs,
+          unitsDisbanding: result.units_disbanding,
+          buildTransfers: buildTransfers
+        };
+
+      }))
+      .catch((error: Error) => {
+        console.log('getTurnOrderSet Error:', error.message);
+        return [];
+      });
+
+      return orderSet[0];
   }
 }

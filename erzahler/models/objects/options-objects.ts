@@ -21,6 +21,7 @@ export interface OptionsFinal {
   buildTransfers?: {
     turnStatus: string;
     options: TransferCountry[];
+    builds: number;
   };
   offerTechOptions?: {
     turnStatus: string;
