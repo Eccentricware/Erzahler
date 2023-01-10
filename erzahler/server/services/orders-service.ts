@@ -621,8 +621,8 @@ export class OrdersService {
           }
         }
 
-        if (playerCountry.nukeRange) {
-          const techTransferOptions: TransferCountry[] = await db.ordersRepo.getTechReceiveOptions(gameId, gameState.turnId);
+        if (playerCountry.nukeRange !== null) {
+          const techTransferOptions: TransferCountry[] = await db.ordersRepo.getTechOfferOptions(gameId, gameState.turnId);
           techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Offer Tech--'});
 
           turnOptions.receiveTechOptions = {
@@ -630,7 +630,7 @@ export class OrdersService {
             options: techTransferOptions
           }
         } else {
-          const techTransferOptions: TransferCountry[] = await db.ordersRepo.getTechOfferOptions(gameId, gameState.turnId);
+          const techTransferOptions: TransferCountry[] = await db.ordersRepo.getTechReceiveOptions(gameId, gameState.turnId);
           techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Request Tech--'});
 
           turnOptions.offerTechOptions = {
