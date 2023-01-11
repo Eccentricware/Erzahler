@@ -5,7 +5,8 @@ export const getUpcomingTurnsQuery = `
     t.turn_name,
     t.turn_type,
     t.turn_status,
-    t.deadline
+    t.deadline,
+    t.defaults_ready
   FROM games g
   INNER JOIN turns t ON t.game_id = g.game_id
   WHERE t.turn_status IN ('Pending', 'Preliminary')

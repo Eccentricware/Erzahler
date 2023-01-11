@@ -2,7 +2,7 @@ import { Pool, QueryResult } from "pg";
 import { getGameStateQuery } from "../../database/queries/options/get-game-state-query";
 import { getAirAdjQuery } from "../../database/queries/options/get-air-adj-query";
 import { GameState, GameStateResult, NextTurns } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionDestination, OptionsContext, OrderOption, SavedDestination, SavedOption, SecondaryUnit, TransportPathLink, UnitAdjacyInfoResult, UnitOptionsFinalized, UnitOptions, TransferOption, BuildLoc, AtRiskUnit, NominatableCountry, Nomination } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionDestination, OptionsContext, OrderOption, SavedDestination, SavedOption, SecondaryUnit, TransportPathLink, UnitAdjacyInfoResult, UnitOptionsFinalized, UnitOptions, TransferOption, BuildLoc, AtRiskUnit, NominatableCountry, Nomination, OrderPrepping, OrderSet, Order } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
 import { UnitType } from "../../models/enumeration/unit-enum";
@@ -14,6 +14,8 @@ import { SchedulerService } from "./scheduler-service";
 import { TurnOptions, UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { assert } from "console";
+import { stringify } from "querystring";
+import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 
 export class OptionsService {
 
@@ -39,6 +41,7 @@ export class OptionsService {
     const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId);
 
     const optionsCtx: OptionsContext = {
+      gameId: gameState.gameId,
       unitInfo: unitInfo,
       unitIdToIndexLib: {},
       sharedAdjProvinces: {},
@@ -338,7 +341,8 @@ export class OptionsService {
     });
 
     if (orderOptions.length > 0) {
-      db.optionsRepo.saveOrderOptions(orderOptions, turnId);
+      // await db.optionsRepo.saveOrderOptions(orderOptions, turnId);
+      this.saveDefaultOrders(optionsContext.gameId);
     }
   }
 
@@ -440,6 +444,101 @@ export class OptionsService {
     }
   }
 
+  async saveDefaultOrders(gameId: number): Promise<void> {
+    const gameState = await db.gameRepo.getGameState(gameId);
+
+    const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
+
+    let pendingTurn: UpcomingTurn | undefined = upcomingTurns.filter((turn: UpcomingTurn) =>
+      turn.turnStatus === TurnStatus.PENDING
+    )[0];
+    const pendingTurnId = pendingTurn.turnId;
+
+    let preliminaryTurn: UpcomingTurn | undefined = upcomingTurns.filter((turn: UpcomingTurn) =>
+      turn.turnStatus === TurnStatus.PRELIMINARY
+    )[0];
+
+    if (pendingTurn && !pendingTurn.defaultsReady) {
+      this.saveTurnDefaults(pendingTurn, gameState.turnId);
+    }
+
+    if (preliminaryTurn && !preliminaryTurn.defaultsReady) {
+      this.saveTurnDefaults(preliminaryTurn, gameState.turnId);
+    }
+  }
+
+  async saveTurnDefaults(upcomingTurn: UpcomingTurn, currentTurnId: number): Promise<void> {
+    const orderSetLibrary: Record<string, number> = {};
+      const newOrderSets = await db.optionsRepo.insertTurnOrderSets(currentTurnId, upcomingTurn.turnId);
+      newOrderSets.forEach((orderSet: OrderSet) => orderSetLibrary[orderSet.countryId] = orderSet.orderSetId);
+      const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(currentTurnId, upcomingTurn.turnId);
+      const preppedOrderLibrary: Record<string, OrderPrepping> = {};
+      const defaultOrders: Order[] = [];
+
+      if([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(upcomingTurn.turnType)) {
+        unitOptions.forEach((option: SavedOption) => {
+          if (!preppedOrderLibrary[option.unitId]) {
+            preppedOrderLibrary[option.unitId] = {
+              unitId: option.unitId,
+              orderType: OrderDisplay.HOLD,
+              destinationId: undefined,
+              countryId: Number(option.unitCountryId)
+            }
+          }
+        });
+
+      } else if (upcomingTurn.turnType === TurnType.FALL_ORDERS) {
+        unitOptions.forEach((option: SavedOption) => {
+          if (!preppedOrderLibrary[option.unitId]) {
+            if (option.canHold) {
+              preppedOrderLibrary[option.unitId] = {
+                unitId: option.unitId,
+                orderType: OrderDisplay.HOLD,
+                destinationId: undefined,
+                countryId: Number(option.unitCountryId)
+              }
+            } else if (option.orderType === OrderDisplay.MOVE) {
+              preppedOrderLibrary[option.unitId] =  {
+                unitId: option.unitId,
+                orderType: OrderDisplay.MOVE,
+                destinationId: option.destinations[0].nodeId,
+                countryId: Number(option.unitCountryId)
+              }
+            }
+          }
+        });
+
+      } else if([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)) {
+        // Basic retreats for testing, may be necessary to flesh out in detail later
+        unitOptions.forEach((option: SavedOption) => {
+          if (!preppedOrderLibrary[option.unitId]) {
+            if (option.orderType === OrderDisplay.MOVE) {
+              preppedOrderLibrary[option.unitId] = {
+                unitId: option.unitId,
+                orderType: OrderDisplay.MOVE,
+                destinationId: option.destinations[0].nodeId,
+                countryId: Number(option.unitCountryId)
+              }
+            }
+          }
+        });
+      }
+
+      for (let unitId in preppedOrderLibrary) {
+        defaultOrders.push({
+          orderSetId: orderSetLibrary[preppedOrderLibrary[unitId].countryId],
+          unitId: preppedOrderLibrary[unitId].unitId,
+          orderType: preppedOrderLibrary[unitId].orderType,
+          destinationId: preppedOrderLibrary[unitId].destinationId
+        });
+      }
+      db.optionsRepo.saveDefaultOrders(defaultOrders)
+        .then((success: any) =>  {
+          db.optionsRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
+        }
+      );
+  }
+
   async getOrderOptions(idToken: string, gameId: number): Promise<TurnOptions> {
     const accountService = new AccountService();
 
@@ -475,7 +574,11 @@ export class OptionsService {
     let pendingUnitOptionsFormatted: any = {};
 
     if (pendingTurn) {
-      turnOptions.pending = {};
+      turnOptions.pending = {
+        name: pendingTurn.turnName,
+        turnType: 'Pending Turn',
+        deadline: pendingTurn.deadline
+      };
       // Units
       if ([
         TurnType.SPRING_ORDERS,
@@ -484,17 +587,14 @@ export class OptionsService {
         TurnType.FALL_ORDERS,
         TurnType.FALL_RETREATS
       ].includes(pendingTurn.turnType)) {
-        pendingUnitOptions = await db.optionsRepo.getUnitOptions(
-          gameState.turnId,
-          pendingTurn.turnId,
-          true,
-          playerCountry.countryId
+        turnOptions.pending.units = this.finalizeUnitOptions(
+          await db.optionsRepo.getUnitOptions(gameState.turnId, pendingTurn.turnId, playerCountry.countryId)
         );
       }
 
       // Transfers
       if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-        const pendingTransferOptions: TransferOption[] = await db.optionsRepo.getTransferOptions(gameId, gameState.turnId);
+        turnOptions.pending.transfers = await db.optionsRepo.getTransferOptions(gameId, gameState.turnId);
       }
 
       // Adjustments
@@ -512,9 +612,41 @@ export class OptionsService {
       if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
         const pendingNominations: Nomination[] = await db.optionsRepo.getNominations(gameState.turnId);
       }
+    }
 
-      if (pendingUnitOptions) {
-        turnOptions.pending.units = this.finalizeUnitOptions(pendingUnitOptions);
+    if (preliminaryTurn) {
+      turnOptions.preliminary = {
+        name: preliminaryTurn.turnName,
+        turnType: 'Preliminary Turn',
+        deadline: preliminaryTurn.deadline
+      };
+      // Units
+      if ([
+        TurnType.SPRING_ORDERS,
+        TurnType.ORDERS_AND_VOTES,
+        TurnType.SPRING_RETREATS,
+        TurnType.FALL_ORDERS,
+        TurnType.FALL_RETREATS
+      ].includes(preliminaryTurn.turnType)) {
+        turnOptions.preliminary.units = this.finalizeUnitOptions(
+          await db.optionsRepo.getUnitOptions(gameState.turnId, preliminaryTurn.turnId, playerCountry.countryId)
+        );
+      }
+
+      // Transfers
+      if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
+        turnOptions.preliminary.transfers = await db.optionsRepo.getTransferOptions(gameId, gameState.turnId);
+      }
+
+      // Adjustments
+      if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
+        const preliminaryBuildLocs: BuildLoc[] = await db.optionsRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
+        const preliminaryAtRiskUnits: AtRiskUnit[] = await db.optionsRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
+      }
+
+      // Nominations
+      if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
+        const preliminaryNominatableCountries: NominatableCountry[] = await db.optionsRepo.getNominatableCountries(gameState.turnId);
       }
     }
 

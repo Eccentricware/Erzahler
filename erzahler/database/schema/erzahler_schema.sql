@@ -125,7 +125,8 @@ CREATE TABLE IF NOT EXISTS turns(
   turn_status VARCHAR(15) NOT NULL,
   deadline TIMESTAMP NOT NULL,
   resolved_time TIMESTAMP,
-  deadline_missed BOOLEAN
+  deadline_missed BOOLEAN,
+  defaults_ready BOOLEAN DEFAULT false,
   PRIMARY KEY(turn_id),
   FOREIGN KEY(game_id)
     REFERENCES games(game_id)
@@ -307,22 +308,12 @@ CREATE TABLE IF NOT EXISTS nominations(
   nomination_id SERIAL,
   turn_id INTEGER NOT NULL,
   nominator_id INTEGER NOT NULL,
-  nomination_type VARCHAR(15) NOT NULL,
-  country_1_id INTEGER NOT NULL,
-  country_2_id INTEGER NOT NULL,
-  country_3_id INTEGER NOT NULL,
   rank_signature VARCHAR(3) NOT NULL,
   votes_required INTEGER NOT NULL,
   PRIMARY KEY(nomination_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
   FOREIGN KEY(nominator_id)
-    REFERENCES countries(country_id),
-  FOREIGN KEY(country_1_id)
-    REFERENCES countries(country_id),
-  FOREIGN KEY(country_2_id)
-    REFERENCES countries(country_id),
-  FOREIGN KEY(country_3_id)
     REFERENCES countries(country_id)
 );
 
@@ -588,6 +579,7 @@ CREATE TABLE IF NOT EXISTS order_sets(
   submission_time TIMESTAMP NOT NULL,
   order_set_type VARCHAR(15) NOT NULL,
   order_set_name VARCHAR(25),
+  default_orders DEFAULT true,
   PRIMARY KEY(order_set_id),
   FOREIGN KEY(country_id)
     REFERENCES countries(country_id),
@@ -600,7 +592,7 @@ CREATE TABLE IF NOT EXISTS order_sets(
 \echo 'Attempting to create orders table'
 CREATE TABLE IF NOT EXISTS orders(
   order_id SERIAL,
-  order_set_id INTEGER NOT NULL,
+  order_set_id INTEGER,
   order_type VARCHAR(15) NOT NULL,
   ordered_unit_id INTEGER NOT NULL,
   secondary_unit_id INTEGER,

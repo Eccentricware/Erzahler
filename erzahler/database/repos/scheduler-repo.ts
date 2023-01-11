@@ -90,7 +90,8 @@ export class SchedulerRepository {
             turnName: turn.turn_name,
             turnType: turn.turn_type,
             turnStatus: turn.turn_status,
-            deadline: turn.deadline
+            deadline: turn.deadline,
+            defaultsReady: turn.defaults_ready
           }
         })
       })
