@@ -25,15 +25,16 @@ export interface OptionsFinal {
   };
   offerTechOptions?: {
     turnStatus: string;
-    options: TransferCountry[];
+    options: TransferTechCountry[];
   };
   receiveTechOptions?: {
     turnStatus: string;
-    options: TransferCountry[];
+    options: TransferTechCountry[];
   };
   builds?: {
     turnStatus: string;
-    options: BuildLoc[];
+    builds: number;
+    locations: BuildOptions;
   }
   disbands?: {
     turnStatus: string;
@@ -47,4 +48,20 @@ export interface OptionsFinal {
     turnStatus: string;
     options: Nomination[];
   }
+}
+
+export interface BuildOptions {
+  land: BuildLoc[],
+  sea: BuildLoc[],
+  air: BuildLoc[]
+};
+
+export interface TransferTechCountry {
+  countryId: number;
+  countryName: string;
+}
+export interface TransferBuildsCountry {
+  countryId: number;
+  countryName: string;
+  builds: number;
 }

@@ -56,9 +56,9 @@ export interface TurnOrders {
   preliminaryDefault?: boolean;
   render?: string;
   units?: any[];
-  buildTransfers?: TransferTechCountry[];
-  techTransfer?: number;
-  builds?: any[];
+  buildTransfers?: TransferBuildOrder[];
+  techTransfers?: TransferTechOrder[];
+  builds?: BuildOrder[];
   disbands?: any[];
   nomination?: any;
   votes?: any[];
@@ -95,12 +95,44 @@ export interface OrderSetFinal {
   newUnitTypes: string[];
   newUnitLocs: number[];
   unitsDisbanding: number[];
-  buildTransfers: TransferTechCountry[];
+  buildTransfers: TransferCountry[];
 }
-export interface TransferTechCountry {
+
+export interface TransferCountry {
   countryId: number;
   countryName: string;
 }
-export interface TransferBuildsCountry extends TransferTechCountry {
+export interface TransferBuildOrdersResults {
+  build_transfer_recipients: TransferCountryResult[];
+  build_transfer_tuples: number[];
+}
+
+export interface TransferCountryResult {
+  country_id: number;
+  country_name: string;
+}
+
+export interface TransferBuildOrder {
+  countryId: number;
+  countryName: string;
   builds: number;
+}
+
+export interface TransferTechOrderResult {
+  country_id: number,
+  country_name: string;
+  tech_partner_id: number;
+  tech_partner_name: string;
+  has_nukes: boolean;
+}
+export interface TransferTechOrder {
+  countryId: number,
+  countryName: string;
+  techPartnerId: number;
+  techPartnerName: string;
+  hasNukes: boolean;
+}
+
+export interface BuildOrder {
+
 }
