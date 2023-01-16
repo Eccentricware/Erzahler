@@ -1,8 +1,9 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain, queryResult } from "pg-promise";
+import { BuildType, UnitType } from "../../models/enumeration/unit-enum";
 import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderResult, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { TransferBuildsCountry } from "../../models/objects/options-objects";
-import { OrderSetFinal, OrderSetFinalResult, TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult } from "../../models/objects/scheduler/upcoming-turns-object";
+import { TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult, BuildOrder, BuildOrderResult, BuildLocationResult, Build } from "../../models/objects/order-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
@@ -18,7 +19,8 @@ import { getTechReceiveOptionsQuery } from "../queries/orders/get-transfer-tech-
 import { getTurnUnitOrdersQuery } from "../queries/orders/get-turn-unit-orders";
 import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-info-query";
 import { insertTurnOrderSetsQuery } from "../queries/orders/insert-turn-order-sets";
-import { getBuildTransferOrdersQuery } from "../queries/orders/orders-final/get-build-orders-query";
+import { getBuildOrdersQuery } from "../queries/orders/orders-final/get-build-orders-query";
+import { getBuildTransferOrdersQuery } from "../queries/orders/orders-final/get-build-transfer-orders-query";
 import { getTechTransferOrderQuery } from "../queries/orders/orders-final/get-tech-transfer-order-query";
 import { setTurnDefaultsPreparedQuery } from "../queries/orders/set-turn-defaults-prepared-query";
 
@@ -409,38 +411,14 @@ export class OrdersRepository {
     return orders;
   }
 
-  // async getTurnOrderSet(countryId: number, turnId: number): Promise<OrderSetFinalIntermediary> {
-  //   const orderSet: OrderSetFinalIntermediary[] = await this.pool.query(getOrderSetQuery, [turnId, countryId])
-  //     .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: OrderSetFinalResult) => {
-  //       return <OrderSetFinalIntermediary> {
-  //         orderSetId: result.order_set_id,
-  //         countryId: result.country_id,
-  //         countryName: result.country_name,
-  //         defaultOrders: result.default_orders,
-  //         techPartnerId: result.tech_partner_id,
-  //         newUnitTypes: result.new_unit_types,
-  //         newUnitLocs: result.new_unit_locs,
-  //         unitsDisbanding: result.units_disbanding,
-  //         buildTransferRecipients: result.build_transfer_recipients,
-  //         buildTransferAmountTouplets: result.build_transfer_amounts
-  //       };
-  //     }))
-  //     .catch((error: Error) => {
-  //       console.log('getTurnOrderSet Error:', error.message);
-  //       return [];
-  //     });
-
-  //     return orderSet[0];
-  // }
-
   async getBuildTransferOrders(countryId: number, turnId: number): Promise<TransferBuildOrder[]> {
     const transferBuildOrderResults: TransferBuildOrdersResults[] = await this.pool.query(getBuildTransferOrdersQuery, [turnId, countryId])
       .then((result: QueryResult) => result.rows);
 
-      const transferBuildOrders: TransferBuildOrder[] = [];
-    if (transferBuildOrderResults.length > 0) {
-      const tuples = transferBuildOrderResults[0].build_transfer_tuples;
-      const recipients = transferBuildOrderResults[0].build_transfer_recipients;
+    const transferBuildOrders: TransferBuildOrder[] = [];
+    transferBuildOrderResults.forEach((result: TransferBuildOrdersResults) => {
+      const tuples = result.build_transfer_tuples;
+      const recipients: TransferCountryResult[] = result.build_transfer_recipients;
 
       for (let index = 0; index < tuples.length; index += 2) {
         let recipient = recipients.find((country: TransferCountryResult) => country.country_id === tuples[index]);
@@ -452,7 +430,7 @@ export class OrdersRepository {
           });
         }
       }
-    }
+    });
 
     return transferBuildOrders;
   }
@@ -468,5 +446,85 @@ export class OrdersRepository {
         hasNukes: order.has_nukes
       };
      }));
+  }
+
+  async getBuildOrders(nextTurnId: number, currentTurnId: number, countryId: number): Promise<BuildOrder[]> {
+    const buildOrdersResults: BuildOrderResult[] = await this.pool.query(getBuildOrdersQuery, [nextTurnId, currentTurnId, countryId])
+      .then((result: QueryResult) => result.rows);
+
+    const buildOrders: BuildOrder[] = [];
+    buildOrdersResults.forEach((result: BuildOrderResult) => {
+      const builds: Build[] = [];
+      if (result.build_tuples?.length > 0) {
+        const buildTuples: number[] = result.build_tuples;
+        const buildLocs: BuildLocationResult[] = result.build_locs;
+
+        for (let index = 0; index < buildTuples.length; index += 2) {
+          const buildLoc = buildLocs.find((loc: BuildLocationResult) => loc.node_id === buildTuples[index]);
+          const buildTypeId = buildTuples[index + 1];
+          let buildType = this.resolveBuildType(buildTypeId);
+
+          if (buildLoc) {
+            builds.push({
+              typeId: buildTypeId,
+              buildType: buildType,
+              nodeId: buildLoc.node_id,
+              nodeName: buildLoc.node_name,
+              provinceName: buildLoc.province_name,
+              loc: buildLoc.loc
+            });
+          };
+        }
+      }
+
+      const nukes: Build[] = [];
+      if (result.build_tuples?.length > 0) {
+        const nukeTuples: number[] = result.nuke_tuples;
+        const nukeLocs: BuildLocationResult[] = result.nuke_locs;
+
+        for (let index = 0; index < nukeTuples.length; index += 2) {
+          const nukeLoc = nukeLocs.find((loc: BuildLocationResult) => loc.node_id === nukeTuples[index]);
+          const buildTypeId = nukeTuples[index + 1];
+          let buildType = this.resolveBuildType(buildTypeId);
+
+          nukes.push({
+            typeId: buildTypeId,
+            buildType: buildType,
+            nodeId: nukeLoc ? nukeLoc.node_id : 0,
+            nodeName: nukeLoc ? nukeLoc.node_name : '',
+            provinceName: nukeLoc ? nukeLoc.province_name : '',
+            loc: nukeLoc ? nukeLoc.loc : [0,0]
+          });
+        }
+      }
+
+      buildOrders.push({
+        countryId: result.country_id,
+        countryName: result.country_name,
+        bankedBuilds: result.banked_builds,
+        buildCount: result.builds,
+        nukeRange: result.nuke_range,
+        increaseRange: result.increase_range,
+        builds: builds,
+        nukesReady: nukes
+      });
+    })
+
+    return buildOrders;
+  }
+
+  resolveBuildType(buildTypeId: number): BuildType {
+    switch(buildTypeId) {
+      case -3: return BuildType.NUKE_START
+      case -2: return BuildType.RANGE;
+      case -1: return BuildType.DISBAND;
+      case  0: return BuildType.BUILD;
+      case  1: return BuildType.ARMY;
+      case  2: return BuildType.FLEET;
+      case  3: return BuildType.WING;
+      case  4: return BuildType.NUKE_RUSH;
+      case  5: return BuildType.NUKE_FINISH;
+      default: return BuildType.BUILD;
+    }
   }
 };

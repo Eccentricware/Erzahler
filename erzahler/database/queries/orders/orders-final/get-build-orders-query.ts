@@ -1,18 +1,46 @@
-export const getBuildTransferOrdersQuery = `
+export const getBuildOrdersQuery = `
   SELECT
+    c.country_id,
+    c.country_name,
+    ch.banked_builds,
+    ch.adjustments builds,
     json_agg(
       json_build_object(
-        'country_id', rc.country_id,
-        'country_name', rc.country_name
+        'node_id', nn.node_id,
+        'node_name', nn.node_name,
+        'province_name', np.province_name,
+        'loc', nn.loc
       )
-    ) AS build_transfer_recipients,
-    os.build_transfer_tuples
+    ) AS nuke_locs,
+    os.nuke_tuples,
+    json_agg(
+      json_build_object(
+        'node_id', n.node_id,
+        'node_name', n.node_name,
+        'province_name', p.province_name,
+        'loc', n.loc
+      )
+    ) AS build_locs,
+    os.build_tuples,
+    ch.nuke_range,
+    os.increase_range
   FROM order_sets os
-  INNER JOIN countries pc ON pc.country_id = os.country_id
-  INNER JOIN countries rc ON rc.country_id = any(os.build_transfer_recipients)
-  WHERE turn_id = $1
+  INNER JOIN nodes n ON n.node_id = any(os.build_locs)
+  INNER JOIN provinces p ON p.province_id = n.province_id
+  INNER JOIN countries c ON c.country_id = os.country_id
+  INNER JOIN country_histories ch ON ch.country_id = c.country_id
+  LEFT JOIN nodes nn ON nn.node_id = any(os.nuke_locs)
+  LEFT JOIN provinces np ON np.province_id = nn.province_id
+  WHERE os.turn_id = $1
+    AND ch.turn_id = $2
     AND order_set_type = 'Orders'
-    AND pc.country_id = $2
-    AND CASE WHEN 0 = $2 THEN true ELSE pc.country_id = $2 END
-  GROUP BY os.order_set_id
+    AND CASE WHEN 0 = $3 THEN true ELSE os.country_id = $3 END
+  GROUP BY  c.country_id,
+    c.country_name,
+    ch.banked_builds,
+    ch.adjustments,
+    os.nuke_tuples,
+    os.build_tuples,
+    ch.nuke_range,
+    os.increase_range
 `;
