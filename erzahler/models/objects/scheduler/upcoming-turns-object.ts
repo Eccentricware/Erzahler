@@ -1,6 +1,6 @@
 import { TurnStatus } from "../../enumeration/turn-status-enum";
 import { TurnType } from "../../enumeration/turn-type-enum";
-import { UnitOptionsFinalized } from "../option-context-objects";
+import { Order, UnitOptionsFinalized } from "../option-context-objects";
 
 export interface UpcomingTurn {
   gameId: number;
@@ -24,22 +24,32 @@ export interface UpcomingTurnResult {
   defaults_ready: boolean;
 }
 
-export interface TurnOptions {
+export interface TurnOrders {
   playerId: number;
   countryId: number;
   countryName: string;
-  pending?: SingleTurnOptions,
-  preliminary?: SingleTurnOptions
+  pending?: SingleTurnOrders,
+  preliminary?: SingleTurnOrders
 }
 
-interface SingleTurnOptions {
+interface SingleTurnOrders {
   turnType: string;
   name: string;
   deadline: Date | string;
-  units?: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)
-  transfers?: any;
-  builds?: any;
-  disbands?: any;
-  nominations?: any;
-  votes?: any;
+  options: {
+    units?: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)
+    transfers?: any;
+    builds?: any;
+    disbands?: any;
+    nominations?: any;
+    votes?: any;
+  }
+  orders: {
+    units?: Order[]; // If (spring orders/retreats or fall orders/retreats)
+    transfers?: any;
+    builds?: any;
+    disbands?: any;
+    nominations?: any;
+    votes?: any;
+  }
 }

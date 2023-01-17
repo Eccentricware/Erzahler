@@ -1,19 +1,20 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain, queryResult } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderResult, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
-import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
-import { getAtRiskUnitsQuery } from "../queries/options/get-at-risk-units-query";
-import { getEmptySupplyCentersQuery } from "../queries/options/get-empty-supply-centers-query";
-import { getNominatableCountriesQuery } from "../queries/options/get-nominatable-countries-query";
-import { getNominationsQuery } from "../queries/options/get-nominations-query";
-import { getOrderOptionsQuery } from "../queries/options/get-order-options-query";
-import { getTransferOptionsQuery } from "../queries/options/get-transfer-options-query";
-import { getUnitAdjacentInfoQuery } from "../queries/options/get-unit-adjacent-info-query";
-import { insertTurnOrderSetsQuery } from "../queries/options/insert-turn-order-sets";
-import { setTurnDefaultsPreparedQuery } from "../queries/options/set-turn-defaults-prepared-query";
+import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
+import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
+import { getEmptySupplyCentersQuery } from "../queries/orders/get-empty-supply-centers-query";
+import { getNominatableCountriesQuery } from "../queries/orders/get-nominatable-countries-query";
+import { getNominationsQuery } from "../queries/orders/get-nominations-query";
+import { getOrderOptionsQuery } from "../queries/orders/get-order-options-query";
+import { getTransferOptionsQuery } from "../queries/orders/get-transfer-options-query";
+import { getTurnUnitOrdersQuery } from "../queries/orders/get-turn-unit-orders";
+import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-info-query";
+import { insertTurnOrderSetsQuery } from "../queries/orders/insert-turn-order-sets";
+import { setTurnDefaultsPreparedQuery } from "../queries/orders/set-turn-defaults-prepared-query";
 
-export class OptionsRepository {
+export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
   orderCols: ColumnSet<unknown>;
   orderOptionsCols: ColumnSet<unknown>;
@@ -73,7 +74,7 @@ export class OptionsRepository {
       return {
         order_set_id: order.orderSetId,
         order_type: order.orderType,
-        ordered_unit_id: order.unitId,
+        ordered_unit_id: order.orderedUnitId,
         destination_id: order.destinationId,
         secondary_unit_id: undefined,
         order_status: 'Default',
@@ -85,9 +86,6 @@ export class OptionsRepository {
     return this.db.query(query);
   }
 
-  async setTurnDefaultsPrepped(turnId: number): Promise<void> {
-    await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
-  }
 
   //// Legacy Functions ////
 
@@ -357,14 +355,34 @@ export class OptionsRepository {
 
   async insertTurnOrderSets(currentTurnId: number, nextTurnId: number): Promise<OrderSet[]> {
     const orderSets: OrderSet[] = await this.pool.query(insertTurnOrderSetsQuery, [nextTurnId, currentTurnId])
-      .then((result: QueryResult<any>) => result.rows.map((result: OrderSetResult) => {
+      .then((result: QueryResult<any>) => result.rows.map((orderSetResult: OrderSetResult) => {
         return <OrderSet> {
-          orderSetId: result.order_set_id,
-          countryId: result.country_id,
+          orderSetId: orderSetResult.order_set_id,
+          countryId: orderSetResult.country_id,
           turnId: nextTurnId
         }
       }));
 
     return orderSets;
+  }
+
+  async setTurnDefaultsPrepped(turnId: number): Promise<void> {
+    await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
+  }
+
+  async getTurnUnitOrders(countryId: number, turnId: number): Promise<Order[]> {
+    const orders: Order[] = await this.pool.query(getTurnUnitOrdersQuery, [countryId, turnId])
+      .then((result: QueryResult<any>) => result.rows.map((orderResult: OrderResult) => {
+        return <Order> {
+          orderId: orderResult.order_id,
+          orderSetId: orderResult.order_set_id,
+          orderedUnitId: orderResult.ordered_unit_id,
+          orderType: orderResult.order_type,
+          secondaryUnitId: orderResult.secondary_unit_id,
+          destinationId: orderResult.destination_id
+        }
+      }));
+
+    return orders;
   }
 }

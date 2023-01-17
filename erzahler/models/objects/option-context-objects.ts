@@ -332,9 +332,19 @@ export interface OrderSet {
   orderSetName?: string;
 }
 
+export interface OrderResult {
+  order_id: number;
+  order_set_id: number;
+  ordered_unit_id: number;
+  order_type: string;
+  secondary_unit_id?: number | undefined;
+  destination_id?: number;
+}
+
 export interface Order {
+  orderId?: number;
   orderSetId: number;
-  unitId: number;
+  orderedUnitId: number;
   orderType: string;
   secondaryUnitId?: number | undefined;
   secondaryOrderType?: string;
