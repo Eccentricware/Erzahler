@@ -1,3 +1,4 @@
+import { error } from "console";
 import express from "express";
 import { db } from "../../database/connection";
 import { SavedOption } from "../../models/objects/option-context-objects";
@@ -33,8 +34,11 @@ ordersRouter.get(`/:gameId/orders`, (request, response) => {
 ordersRouter.post(`/submit`, (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const orders = request.body.orders;
-  console.log(orders);
 
-
-  response.send({sucess: true});
+  ordersService.saveOrders(idToken, orders)
+    .then(() => response.send({success: true}))
+    .catch((error: Error) => response.send({
+      success: false,
+      error: error.message
+    }));
 });

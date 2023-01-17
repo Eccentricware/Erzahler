@@ -846,14 +846,15 @@ export class OrdersService {
     const orders: TurnOrders = {
       gameId: gameId,
       userId: userId,
-      render: 'pending'
+      render: 'pending',
+      countryId: 0
     };
 
     if (playerCountries.length > 0) {
-
       orders.role === 'player';
       const countryStates = await db.gameRepo.getCountryState(playerCountries[0].countryId);
       let playerCountry: CountryState = countryStates[0];
+      orders.countryId = playerCountry.countryId;
 
       let pendingTurn: UpcomingTurn | undefined = undefined;
       let preliminaryTurn: UpcomingTurn | undefined = undefined;
@@ -1394,5 +1395,17 @@ export class OrdersService {
     sortArray.forEach((provinceName: string) => {
       unitOptionsFormatted.push(unitOptionsLibrary[nameToIndex[provinceName]]);
     });
+  }
+
+  async saveOrders(idToken: string, orders: TurnOrders): Promise<any> {
+    // Identify user
+    const accountService = new AccountService();
+
+    const userId = await accountService.getUserIdFromToken(idToken);
+    const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
+    if (userAssigned) {
+
+    }
+
   }
 }

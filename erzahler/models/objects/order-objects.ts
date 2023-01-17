@@ -1,6 +1,7 @@
 export interface TurnOrders {
   gameId: number;
   userId: number;
+  countryId: number;
   pending?: {
     orderSetId?: number;
     default?: boolean;
@@ -12,7 +13,6 @@ export interface TurnOrders {
     default?: number;
   }
   role?: string;
-  countryId?: number;
   countryName?: string;
   turnType?: string;
   message?: string;
