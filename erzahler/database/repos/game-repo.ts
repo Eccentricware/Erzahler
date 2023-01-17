@@ -6,7 +6,8 @@ import { CountryRank, CountryStatus } from "../../models/enumeration/country-enu
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
 import { GameState, GameStateResult } from "../../models/objects/last-turn-info-object";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency } from "../../models/objects/option-context-objects";
+import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
+import { StartScheduleObject } from "../../models/objects/start-schedule-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { FormattingService } from "../../server/services/formattingService";
 import { getPlayerRegistrationStatusQuery } from "../queries/assignments/get-player-registration-status";
@@ -35,6 +36,43 @@ import { updateTurnQuery } from "../queries/game/update-turn-query";
 import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
 import { getGameStateQuery } from "../queries/options/get-game-state-query";
 
+const gamesCols: string[] = [
+  'game_name',
+  'game_status',
+  'assignment_method',
+  'stylized_start_year',
+  'current_year',
+  'turn_1_timing',
+  'deadline_type',
+  'start_time',
+  'observe_dst',
+  'orders_day',
+  'orders_time',
+  'retreats_day',
+  'retreats_time',
+  'adjustments_day',
+  'adjustments_time',
+  'nominations_day',
+  'nominations_time',
+  'votes_day',
+  'votes_time',
+  'nmr_tolerance_total',
+  'concurrent_games_limit',
+  'private_game',
+  'hidden_game',
+  'blind_administrators',
+  'final_readiness_check',
+  'vote_delay_enabled',
+  'partial_roster_start',
+  'nomination_timing',
+  'nomination_year',
+  'automatic_assignments',
+  'rating_limits_enabled',
+  'fun_min',
+  'fun_max',
+  'skill_min',
+  'skill_max'
+]
 export class GameRepository {
   formattingService = new FormattingService();
   pool = new Pool(victorCredentials);
