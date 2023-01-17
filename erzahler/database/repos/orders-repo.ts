@@ -3,7 +3,7 @@ import { ColumnSet, IDatabase, IMain, queryResult } from "pg-promise";
 import { BuildType, UnitType } from "../../models/enumeration/unit-enum";
 import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderResult, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { TransferBuildsCountry } from "../../models/objects/options-objects";
-import { TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult, BuildOrder, BuildOrderResult, BuildLocationResult, Build } from "../../models/objects/order-objects";
+import { TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult, BuildOrders, BuildOrdersResult, BuildLocationResult, Build } from "../../models/objects/order-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
@@ -21,6 +21,7 @@ import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-in
 import { insertTurnOrderSetsQuery } from "../queries/orders/insert-turn-order-sets";
 import { getBuildOrdersQuery } from "../queries/orders/orders-final/get-build-orders-query";
 import { getBuildTransferOrdersQuery } from "../queries/orders/orders-final/get-build-transfer-orders-query";
+import { getOrderSetIdQuery } from "../queries/orders/orders-final/get-order-set-id-query";
 import { getTechTransferOrderQuery } from "../queries/orders/orders-final/get-tech-transfer-order-query";
 import { setTurnDefaultsPreparedQuery } from "../queries/orders/set-turn-defaults-prepared-query";
 
@@ -391,6 +392,13 @@ export class OrdersRepository {
     await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
   }
 
+  async getOrderSetId(turnId: number, countryId: number): Promise<number> {
+    const orderSetIds = await this.pool.query(getOrderSetIdQuery, [turnId, countryId])
+      .then((result: QueryResult) => result.rows );
+
+    return orderSetIds[0] ? orderSetIds[0].orser_set_id : 0;
+  }
+
   async getTurnUnitOrders(countryId: number, orderTurnId: number, historyTurnId: number): Promise<Order[]> {
     const orders: Order[] = await this.pool.query(getTurnUnitOrdersQuery, [countryId, orderTurnId, historyTurnId])
       .then((result: QueryResult<any>) => result.rows.map((orderResult: OrderResult) => {
@@ -448,12 +456,12 @@ export class OrdersRepository {
      }));
   }
 
-  async getBuildOrders(nextTurnId: number, currentTurnId: number, countryId: number): Promise<BuildOrder[]> {
-    const buildOrdersResults: BuildOrderResult[] = await this.pool.query(getBuildOrdersQuery, [nextTurnId, currentTurnId, countryId])
+  async getBuildOrders(nextTurnId: number, currentTurnId: number, countryId: number): Promise<BuildOrders[]> {
+    const buildOrdersResults: BuildOrdersResult[] = await this.pool.query(getBuildOrdersQuery, [nextTurnId, currentTurnId, countryId])
       .then((result: QueryResult) => result.rows);
 
-    const buildOrders: BuildOrder[] = [];
-    buildOrdersResults.forEach((result: BuildOrderResult) => {
+    const buildOrders: BuildOrders[] = [];
+    buildOrdersResults.forEach((result: BuildOrdersResult) => {
       const builds: Build[] = [];
       if (result.build_tuples?.length > 0) {
         const buildTuples: number[] = result.build_tuples;

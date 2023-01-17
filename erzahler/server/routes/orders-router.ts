@@ -2,7 +2,7 @@ import express from "express";
 import { db } from "../../database/connection";
 import { SavedOption } from "../../models/objects/option-context-objects";
 import { OptionsFinal } from "../../models/objects/options-objects";
-import { TurnOptions, TurnOrders } from "../../models/objects/scheduler/upcoming-turns-object";
+import { TurnOrders } from "../../models/objects/order-objects";
 import { AccountService } from "../services/accountService";
 import { AssignmentService } from "../services/assignmentService";
 import { OrdersService } from "../services/orders-service";
@@ -34,4 +34,7 @@ ordersRouter.post(`/submit`, (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const orders = request.body.orders;
   console.log(orders);
-})
+
+
+  response.send({sucess: true});
+});

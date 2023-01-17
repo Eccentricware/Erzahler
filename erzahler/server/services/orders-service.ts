@@ -21,7 +21,8 @@ import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { CountryStatus } from "../../models/enumeration/country-enum";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { BuildOptions, OptionsFinal, TransferBuildsCountry } from "../../models/objects/options-objects";
-import { BuildOrder, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
+import { BuildOrders, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
+import { getOrderSetQuery } from "../../database/queries/orders/get-order-set-query";
 
 export class OrdersService {
 
@@ -848,7 +849,130 @@ export class OrdersService {
       render: 'pending'
     };
 
-    if (playerCountries.length > 0 || adminVision) {
+    if (playerCountries.length > 0) {
+
+      orders.role === 'player';
+      const countryStates = await db.gameRepo.getCountryState(playerCountries[0].countryId);
+      let playerCountry: CountryState = countryStates[0];
+
+      let pendingTurn: UpcomingTurn | undefined = undefined;
+      let preliminaryTurn: UpcomingTurn | undefined = undefined;
+
+      const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
+
+      if (upcomingTurns.length === 0) {
+        console.log(`GameId ${gameId} has no upcoming turns!`);
+      }
+
+      if (upcomingTurns.length > 0) {
+        pendingTurn = upcomingTurns[0];
+      }
+
+      if (upcomingTurns.length === 2) {
+        preliminaryTurn = upcomingTurns[1];
+      }
+
+      if (upcomingTurns.length > 2) {
+        console.log(`GameId ${gameId} has too many upcoming turns! (${upcomingTurns.length})`);
+      }
+
+      if (pendingTurn) {
+        // Remove after UI Dev
+        const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
+        orders.builds = pendingBuildOrders[0];
+        ////
+
+        // Standard Unit Movement
+        if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
+
+          orders.units = await db.ordersRepo.getTurnUnitOrders(playerCountry.countryId, pendingTurn.turnId, gameState.turnId);
+          if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
+            orders.pendingDefault = false;
+          } else {
+            orders.pendingDefault = true;
+          }
+        }
+
+        // Retreating Unit Movement
+        if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType)) {
+          if (playerCountry.countryStatus === CountryStatus.RETREAT) {
+            orders.units = await db.ordersRepo.getTurnUnitOrders(playerCountry.countryId, pendingTurn.turnId, gameState.turnId);
+            if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
+              orders.pendingDefault = false;
+            } else {
+              orders.pendingDefault = true;
+            }
+          } else {
+            orders.render === 'preliminary';
+          }
+        }
+
+        // Transfers
+        if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
+          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
+          orders.techTransfers = techTransferOrders
+
+          const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, pendingTurn.turnId);
+          orders.buildTransfers = pendingBuildTransferOrders;
+        }
+
+        // Adjustments
+        if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
+          if (playerCountry.adjustments > 0) {
+            const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
+            orders.builds = pendingBuildOrders[0];
+          }
+          // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
+        }
+
+        // Nominations
+        if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
+          // const pendingNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.turnId);
+        }
+
+        // Votes
+        if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
+          // const pendingNominations: Nomination[] = await db.ordersRepo.getNominations(gameState.turnId);
+        }
+      }
+
+      if (preliminaryTurn) {
+        // Units
+        if ([
+          TurnType.SPRING_ORDERS,
+          TurnType.ORDERS_AND_VOTES,
+          TurnType.FALL_ORDERS,
+        ].includes(preliminaryTurn.turnType)) {
+          orders.units = await db.ordersRepo.getTurnUnitOrders(playerCountry.countryId, preliminaryTurn.turnId, gameState.turnId);
+          if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
+            orders.preliminaryDefault = false;
+          } else {
+            orders.preliminaryDefault = true;
+          }
+        }
+
+        // Transfers
+        if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
+          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(preliminaryTurn.turnId, gameState.turnId, playerCountry.countryId);
+          orders.techTransfers = techTransferOrders
+
+          const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, preliminaryTurn.turnId);
+          orders.buildTransfers = pendingBuildTransferOrders;
+        }
+
+        // Adjustments
+        if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
+          // const preliminaryBuildLocs: BuildLoc[] = await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
+          // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
+        }
+
+        // Nominations
+        if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
+          // const preliminaryNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.turnId);
+        }
+      }
+    }
+    else if (adminVision)  {
       let playerCountry: CountryState;
       if (playerCountries[0]) {
         const countryStates = await db.gameRepo.getCountryState(playerCountries[0].countryId);
@@ -887,8 +1011,8 @@ export class OrdersService {
       }
 
       if (pendingTurn) {
-        const pendingBuildOrders: BuildOrder[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
-        orders.builds = pendingBuildOrders;
+        const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
+        orders.builds = pendingBuildOrders[0];
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
           orders.units = await db.ordersRepo.getTurnUnitOrders(playerCountry.countryId, pendingTurn.turnId, gameState.turnId);
@@ -925,8 +1049,8 @@ export class OrdersService {
         // Adjustments
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
           if (playerCountry.adjustments > 0) {
-            const pendingBuildOrders: BuildOrder[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
-            orders.builds = pendingBuildOrders;
+            const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
+            orders.builds = pendingBuildOrders[0];
           }
           // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
         }

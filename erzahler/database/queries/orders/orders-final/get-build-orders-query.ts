@@ -35,7 +35,8 @@ export const getBuildOrdersQuery = `
     AND ch.turn_id = $2
     AND order_set_type = 'Orders'
     AND CASE WHEN 0 = $3 THEN true ELSE os.country_id = $3 END
-  GROUP BY  c.country_id,
+  GROUP BY
+    c.country_id,
     c.country_name,
     ch.banked_builds,
     ch.adjustments,
