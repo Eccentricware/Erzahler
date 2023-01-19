@@ -97,6 +97,10 @@ export class GameRepository {
             turnType: gameStateResult.turn_type,
             turnStatus: gameStateResult.turn_status,
             resolvedTime: gameStateResult.resolved_time,
+            pendingTurnId: gameStateResult.pending_turn_id,
+            pendingTurnType: gameStateResult.pending_turn_type,
+            preliminaryTurnId: gameStateResult.preliminary_turn_id,
+            preliminaryTurnType: gameStateResult.preliminary_turn_type,
             deadlineMissed: gameStateResult.deadline_missed,
             nominateDuringAdjustments: gameStateResult.nominate_during_adjustments,
             voteDuringSpring: gameStateResult.vote_during_spring,
@@ -446,8 +450,8 @@ export class GameRepository {
       .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
   }
 
-  async getCountryState(countryId: number): Promise<CountryState[]> {
-    return await this.pool.query(getCountryStateQuery, [countryId])
+  async getCountryState(gameId: number, countryId: number): Promise<CountryState[]> {
+    return await this.pool.query(getCountryStateQuery, [gameId, countryId])
       .then((queryResult: QueryResult<any>) => queryResult.rows.map((countryResult: CountryStateResult) => {
         return <CountryState> {
           countryId: countryResult.country_id,

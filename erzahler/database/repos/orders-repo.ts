@@ -1,9 +1,11 @@
+import { error } from "console";
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain, queryResult } from "pg-promise";
 import { BuildType, UnitType } from "../../models/enumeration/unit-enum";
 import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderResult, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
-import { TransferBuildsCountry } from "../../models/objects/options-objects";
+import { TransferBuildsCountry, TransferTechCountry } from "../../models/objects/options-objects";
 import { TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult, BuildOrders, BuildOrdersResult, BuildLocationResult, Build } from "../../models/objects/order-objects";
+import { CountryOrderSet, CountryOrderSetsResult } from "../../models/objects/orders/expected-order-types-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
@@ -21,8 +23,10 @@ import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-in
 import { insertTurnOrderSetsQuery } from "../queries/orders/insert-turn-order-sets";
 import { getBuildOrdersQuery } from "../queries/orders/orders-final/get-build-orders-query";
 import { getBuildTransferOrdersQuery } from "../queries/orders/orders-final/get-build-transfer-orders-query";
-import { getOrderSetIdQuery } from "../queries/orders/orders-final/get-order-set-id-query";
+import { getCountryOrderSets } from "../queries/orders/orders-final/get-country-order-sets-query";
 import { getTechTransferOrderQuery } from "../queries/orders/orders-final/get-tech-transfer-order-query";
+import { saveTransferOrdersQuery } from "../queries/orders/orders-final/save-transfer-orders-query";
+import { saveUnitOrderQuery } from "../queries/orders/orders-final/save-unit-order-query";
 import { setTurnDefaultsPreparedQuery } from "../queries/orders/set-turn-defaults-prepared-query";
 
 export class OrdersRepository {
@@ -392,13 +396,6 @@ export class OrdersRepository {
     await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
   }
 
-  async getOrderSetId(turnId: number, countryId: number): Promise<number> {
-    const orderSetIds = await this.pool.query(getOrderSetIdQuery, [turnId, countryId])
-      .then((result: QueryResult) => result.rows );
-
-    return orderSetIds[0] ? orderSetIds[0].orser_set_id : 0;
-  }
-
   async getTurnUnitOrders(countryId: number, orderTurnId: number, historyTurnId: number): Promise<Order[]> {
     const orders: Order[] = await this.pool.query(getTurnUnitOrdersQuery, [countryId, orderTurnId, historyTurnId])
       .then((result: QueryResult<any>) => result.rows.map((orderResult: OrderResult) => {
@@ -534,5 +531,55 @@ export class OrdersRepository {
       case  5: return BuildType.NUKE_FINISH;
       default: return BuildType.BUILD;
     }
+  }
+
+  async getCountryOrderSets(
+    gameId: number,
+    turnId: number,
+    countryId: number
+  ): Promise<CountryOrderSet[]> {
+    return await this.pool.query(getCountryOrderSets, [gameId, turnId, countryId])
+      .then((result: QueryResult) => result.rows.map((orderSet: CountryOrderSetsResult) => {
+        return <CountryOrderSet> {
+          orderSetId: orderSet.order_set_id,
+          turnStatus: orderSet.turn_status,
+          turnType: orderSet.turn_type,
+          adjustments: orderSet.adjustments,
+          inRetreat: orderSet.in_retreat
+        }
+      }));
+  }
+
+  async saveUnitOrder(orderSetId: number, unit: Order): Promise<void> {
+    await this.pool.query(saveUnitOrderQuery, [
+      unit.orderType,
+      unit.secondaryUnitId,
+      unit.destinationId,
+      'Submitted',
+      orderSetId,
+      unit.orderedUnitId
+    ]);
+  }
+
+  async saveTransfers(
+    orderSetId: number,
+    techTransfer: TransferTechOrder,
+    buildTransfers: TransferBuildsCountry[]
+  ): Promise<void> {
+    const buildRecipients: number[] = [];
+    const tupleizedBuildRecipients: number[] = [];
+
+    buildTransfers.forEach((transfer: TransferBuildsCountry) => {
+      buildRecipients.push(transfer.countryId);
+      tupleizedBuildRecipients.push(transfer.countryId, transfer.builds);
+    });
+
+    await this.pool.query(saveTransferOrdersQuery, [
+      techTransfer.techPartnerId,
+      buildRecipients,
+      tupleizedBuildRecipients,
+      orderSetId
+    ])
+    .catch((error: Error) => console.log('saveTransfers error: ' + error.message));
   }
 };
