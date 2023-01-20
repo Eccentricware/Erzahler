@@ -3,11 +3,11 @@ import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { TurnTS } from "../../models/objects/database-objects";
 import { StartDetails } from "../../models/objects/initial-times-object";
-import { OptionsService } from "./orders-service";
+import { OrdersService } from "./orders-service";
 
 export class ResolutionService {
   async startGame(gameData: any, startDetails: StartDetails): Promise<void> {
-    const optionsService = new OptionsService();
+    const ordersService = new OrdersService();
     const firstTurn: TurnTS = {
       gameId: gameData.gameId,
       turnNumber: 1,
@@ -20,7 +20,7 @@ export class ResolutionService {
     const nextTurn: TurnTS = await db.schedulerRepo.insertTurn(firstTurn);
 
     if (nextTurn.turnId) {
-      await optionsService.saveOptionsForNextTurn(gameData.gameId, nextTurn.turnId);
+      await ordersService.saveOptionsForNextTurn(gameData.gameId, nextTurn.turnId);
     }
     // Alert service call
   }

@@ -33,8 +33,8 @@ import { insertUnitHistoryQuery } from "../queries/game/insert-unit-history-quer
 import { insertUnitQuery } from "../queries/game/insert-unit-query";
 import { updateGameSettingsQuery } from "../queries/game/update-game-settings-query";
 import { updateTurnQuery } from "../queries/game/update-turn-query";
-import { getAirAdjQuery } from "../queries/options/get-air-adj-query";
-import { getGameStateQuery } from "../queries/options/get-game-state-query";
+import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
+import { getGameStateQuery } from "../queries/orders/get-game-state-query";
 
 const gamesCols: string[] = [
   'game_name',

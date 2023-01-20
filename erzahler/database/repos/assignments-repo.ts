@@ -4,7 +4,7 @@ import { victorCredentials } from "../../secrets/dbCredentials";
 import { FormattingService } from "../../server/services/formattingService";
 import { assignUserQuery } from "../queries/assignments/assign-user-query";
 import { clearCountryAssignmentsQuery } from "../queries/assignments/clear-country-assignments-query";
-import { getPlayerCountryQuery } from "../queries/assignments/get-player-country-query";
+import { getUserGameAssignmentsQuery } from "../queries/assignments/get-user-game-assignments-query";
 import { getPlayerRegistrationStatusQuery } from "../queries/assignments/get-player-registration-status";
 import { lockAssignmentQuery } from "../queries/assignments/lock-assignment-query";
 import { registerUserQuery } from "../queries/assignments/register-user-query";
@@ -14,6 +14,7 @@ import { unregisterUserQuery } from "../queries/assignments/unregister-user-quer
 import { getAssignmentsQuery } from "../queries/game/get-assignments-query";
 import { getGameAdminsQuery } from "../queries/game/get-game-admins-query";
 import { getRegisteredPlayersQuery } from "../queries/game/get-registered-players-query";
+import { UserAssignment, UserAssignmentResult } from "../../models/objects/assignment-objects";
 
 /**
  * Handles DB updates involving user associations with games.
@@ -104,17 +105,23 @@ export class AssignmentRepository {
     await this.pool.query(unlockAssignmentQuery, [gameId, playerId]);
   }
 
-  async getCountryAssignment(gameId: number, userId: number): Promise<{ countryId: number, countryName: string }> {
-    const countries = await this.pool.query(getPlayerCountryQuery, [gameId, userId])
-      .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: any) => {
-        return {
-          countryId: result.country_id,
-          countryName: result.country_name
+  async getUserAssignments(gameId: number, userId: number): Promise<UserAssignment[]> {
+    const assignments = await this.pool.query(getUserGameAssignmentsQuery, [gameId, userId])
+      .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: UserAssignmentResult) => {
+        return <UserAssignment> {
+          username: result.username,
+          assignmentType: result.assignment_type,
+          countryId: result.country_id ? result.country_id : 0,
+          countryName: result.country_name,
+          countryStatus: result.country_status,
+          blindAdministrators: result.blind_administrators
         };
-      } ));
+      }))
+      .catch((error: Error) => {
+        console.log('getUserAssignments Error: ' + error.message);
+        return [];
+      });
 
-    return countries.length > 0
-      ? countries[0]
-      : { countryId: 0, countryName: 'Spectator' };
+    return assignments;
   }
 }

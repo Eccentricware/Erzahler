@@ -134,33 +134,6 @@ export class OrdersRepository {
     return unitAdjacencyInfoResult;
   }
 
-<<<<<<< HEAD
-
-=======
-  async saveOrderOptions(orderOptions: OrderOption[]): Promise<void> {
-    const orderOptionValues = orderOptions.map((option: OrderOption) => {
-      return {
-        unit_id: option.unitId,
-        order_type: option.orderType,
-        secondary_unit_id: option.secondaryUnitId,
-        secondary_order_type: option.secondaryOrderType,
-        destinations: option.destinations,
-        turn_id: option.turnId
-      }
-    });
-
-
-    const bulkOrderOptionsQuery = this.pgp.helpers.insert(orderOptionValues, this.orderOptionsCols) + 'RETURNING unit_id, order_type';
-    const results = await this.db.map(bulkOrderOptionsQuery, [], (result: any) => {
-      return {
-        unitId: result.unit_id,
-        orderType: result.order_type
-      };
-    });
-    console.log('Whoa kay', results);
-  }
->>>>>>> main
-
   async getAirAdjacencies(gameId: number): Promise<AirAdjacency[]> {
     const airAdjArray: AirAdjacency[] = await this.pool.query(getAirAdjQuery, [gameId])
       .then((results: QueryResult<any>) => {
@@ -370,16 +343,20 @@ export class OrdersRepository {
     await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
   }
 
-  async getTurnUnitOrders(countryId: number, turnId: number): Promise<Order[]> {
-    const orders: Order[] = await this.pool.query(getTurnUnitOrdersQuery, [countryId, turnId])
+  async getTurnUnitOrders(countryId: number, orderTurnId: number, historyTurnId: number): Promise<Order[]> {
+    const orders: Order[] = await this.pool.query(getTurnUnitOrdersQuery, [countryId, orderTurnId, historyTurnId])
       .then((result: QueryResult<any>) => result.rows.map((orderResult: OrderResult) => {
         return <Order> {
           orderId: orderResult.order_id,
           orderSetId: orderResult.order_set_id,
           orderedUnitId: orderResult.ordered_unit_id,
+          orderedUnitLoc: orderResult.ordered_unit_loc,
           orderType: orderResult.order_type,
           secondaryUnitId: orderResult.secondary_unit_id,
-          destinationId: orderResult.destination_id
+          secondaryUnitLoc: orderResult.secondary_unit_loc,
+          destinationId: orderResult.destination_id,
+          eventLoc: orderResult.event_loc,
+          orderStatus: orderResult.order_status
         }
       }));
 

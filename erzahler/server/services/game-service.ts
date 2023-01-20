@@ -45,6 +45,7 @@ export class GameService {
 
   async newGame(gameData: NewGameData, idToken: string): Promise<any> {
     const accountService: AccountService = new AccountService();
+    const optionsService: OrdersService = new OrdersService();
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
