@@ -588,7 +588,6 @@ CREATE TABLE IF NOT EXISTS order_sets(
   build_transfer_recipients INTEGER[],
   build_tuples INTEGER[],
   build_locs INTEGER[],
-  nuke_tuples INTEGER[],
   nuke_locs INTEGER[],
   increase_range INTEGER,
   units_disbanding INTEGER[],
