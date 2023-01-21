@@ -16,10 +16,10 @@ export const getBuildOrdersQuery = `
     ch.nuke_range,
     os.increase_range
   FROM order_sets os
-  INNER JOIN nodes n ON n.node_id = any(os.build_locs)
-  INNER JOIN provinces p ON p.province_id = n.province_id
-  INNER JOIN countries c ON c.country_id = os.country_id
-  INNER JOIN country_histories ch ON ch.country_id = c.country_id
+  LEFT JOIN nodes n ON n.node_id = any(os.build_locs)
+  LEFT JOIN provinces p ON p.province_id = n.province_id
+  LEFT JOIN countries c ON c.country_id = os.country_id
+  LEFT JOIN country_histories ch ON ch.country_id = c.country_id
   LEFT JOIN nodes nn ON nn.node_id = any(os.nuke_locs)
   LEFT JOIN provinces np ON np.province_id = nn.province_id
   WHERE os.turn_id = $1

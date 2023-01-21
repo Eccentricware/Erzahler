@@ -1,9 +1,17 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, DestinationResult, OptionDestination, OrderOption, SavedOption, SavedOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, OptionDestination, OrderOption, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
+import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
+import { getEmptySupplyCentersQuery } from "../queries/orders/get-empty-supply-centers-query";
+import { getNominatableCountriesQuery } from "../queries/orders/get-nominatable-countries-query";
+import { getNominationsQuery } from "../queries/orders/get-nominations-query";
 import { getOrderOptionsQuery } from "../queries/orders/get-order-options-query";
+import { getTransferBuildOptionsQuery } from "../queries/orders/get-transfer-build-options-query";
+import { getTransferOptionsQuery } from "../queries/orders/get-transfer-options-query";
+import { getTechOfferOptionsQuery } from "../queries/orders/get-transfer-tech-offer-options-query";
+import { getTechReceiveOptionsQuery } from "../queries/orders/get-transfer-tech-receive-options-query";
 import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-info-query";
 
 export class OptionsRepository {
@@ -24,10 +32,10 @@ export class OptionsRepository {
     ], {table: 'order_options'});
   }
 
-  async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitOptions[]> {
-    const pool = new Pool(victorCredentials);
+  //// Legacy Functions ////
 
-    const unitAdjacencyInfoResult: UnitOptions[] = await pool.query(getUnitAdjacentInfoQuery, [gameId, turnId])
+  async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitOptions[]> {
+    const unitAdjacencyInfoResult: UnitOptions[] = await this.pool.query(getUnitAdjacentInfoQuery, [gameId, turnId])
       .then((results: QueryResult<any>) => {
         return results.rows.map((result: UnitAdjacyInfoResult) => {
           return <UnitOptions>{
@@ -71,28 +79,7 @@ export class OptionsRepository {
     return unitAdjacencyInfoResult;
   }
 
-  async saveOrderOptions(orderOptions: OrderOption[]): Promise<void> {
-    const orderOptionValues = orderOptions.map((option: OrderOption) => {
-      return {
-        unit_id: option.unitId,
-        order_type: option.orderType,
-        secondary_unit_id: option.secondaryUnitId,
-        secondary_order_type: option.secondaryOrderType,
-        destinations: option.destinations,
-        turn_id: option.turnId
-      }
-    });
 
-
-    const bulkOrderOptionsQuery = this.pgp.helpers.insert(orderOptionValues, this.orderOptionsCols) + 'RETURNING unit_id, order_type';
-    const results = await this.db.map(bulkOrderOptionsQuery, [], (result: any) => {
-      return {
-        unitId: result.unit_id,
-        orderType: result.order_type
-      };
-    });
-    console.log('Whoa kay', results);
-  }
 
   async getAirAdjacencies(gameId: number): Promise<AirAdjacency[]> {
     const airAdjArray: AirAdjacency[] = await this.pool.query(getAirAdjQuery, [gameId])
@@ -118,12 +105,10 @@ export class OptionsRepository {
   /**
    * Fetches options for a turn
    * @param turnId    - Turn's ID
-   * @param countryId - Which country for which to restrict option turns
-   * @param getAll    - Toggles between all or just one country
    * @returns Promise<SavedOption[]>
    */
-  async getUnitOptions(turnId: number): Promise<SavedOption[]> {
-    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnId])
+  async getUnitOptions(turnTurnId: number, orderTurnId: number, countryId: number = 0): Promise<SavedOption[]> {
+    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnTurnId, orderTurnId, countryId])
       .then((result: QueryResult<any>) => {
         return result.rows.map((result: SavedOptionResult) => {
           return <SavedOption> {
@@ -133,25 +118,191 @@ export class OptionsRepository {
             unitCountryName: result.unit_country_name,
             unitCountryRank: result.unit_country_rank,
             unitFlagKey: result.unit_flag_key,
-            unitLoc: result.unit_loc,
             provinceName: result.province_name,
+            unitLoc: result.unit_loc,
             canHold: result.can_hold,
             orderType: result.order_type,
             secondaryUnitId: result.secondary_unit_id,
             secondaryUnitType: result.secondary_unit_type,
-            secondaryProvince: result.secondary_province_name,
-            secondaryOrderType: result.secondary_unit_type,
-            destinations: result.destinations.map((destinationResult: DestinationResult) => {
-              return <OptionDestination> {
-                nodeId: destinationResult.node_id,
-                nodeName: destinationResult.node_name,
-                loc: destinationResult.loc
-              }
-            })
+            secondaryUnitCountryName: result.secondary_unit_country_name,
+            secondaryUnitFlagKey: result.secondary_unit_flag_key,
+            secondaryProvinceName: result.secondary_province_name,
+            secondaryUnitLoc: result.secondary_unit_loc,
+            secondaryOrderType: result.secondary_order_type,
+            destinations: result.destinations[0] !== null
+              ? result.destinations.map((destination: DestinationResult) => {
+                return <SavedDestination> {
+                  nodeId: destination.node_id,
+                  nodeName: this.formatDestinationNodeName(destination.node_name),
+                  loc: destination.loc
+                };
+              })
+              : undefined
           };
         });
       });
 
-      return savedOptions;
+    return savedOptions;
+  }
+
+  async getBuildTransferOptions(gameId: number, turnId: number): Promise<TransferCountry[]> {
+    const transferOptions: TransferCountry[] = await this.pool.query(getTransferBuildOptionsQuery, [gameId, turnId])
+      .then((result: QueryResult<any>) => result.rows.map((countryResult: TransferCountryResult) => {
+        return <TransferCountry> {
+          countryId: countryResult.country_id,
+          countryName: countryResult.country_name
+        };
+      }))
+
+    return transferOptions;
+  }
+
+  async getTechOfferOptions(gameId: number, turnId: number): Promise<TransferCountry[]> {
+    const transferOptions: TransferCountry[] = await this.pool.query(getTechOfferOptionsQuery, [gameId, turnId])
+      .then((result: QueryResult<any>) => result.rows.map((countryResult: TransferCountryResult) => {
+        return <TransferCountry> {
+          countryId: countryResult.country_id,
+          countryName: countryResult.country_name
+        };
+      }))
+
+    return transferOptions;
+  }
+
+  async getTechReceiveOptions(gameId: number, turnId: number): Promise<TransferCountry[]> {
+    const transferOptions: TransferCountry[] = await this.pool.query(getTechReceiveOptionsQuery, [gameId, turnId])
+      .then((result: QueryResult<any>) => result.rows.map((countryResult: TransferCountryResult) => {
+        return <TransferCountry> {
+          countryId: countryResult.country_id,
+          countryName: countryResult.country_name
+        };
+      }))
+
+    return transferOptions;
+  }
+
+  async getTransferOptions(gameId: number, turnId: number): Promise<TransferOption[]> {
+    const transferOptions: TransferOption[] = await this.pool.query(getTransferOptionsQuery, [gameId, turnId])
+      .then((result: QueryResult<any>) => {
+        return result.rows.map((game: TransferOptionResult) => {
+          return <TransferOption> {
+            gameId: game.game_id,
+            giveTech: game.give_tech.map((country: TransferCountryResult) => {
+              return <TransferCountry> {
+                countryId: country.country_id,
+                countryName: country.country_name
+              }
+            }),
+            receiveTech: game.receive_tech.map((country: TransferCountryResult) => {
+              return <TransferCountry> {
+                countryId: country.country_id,
+                countryName: country.country_name
+              }
+            }),
+            receiveBuilds: game.receive_builds.map((country: TransferCountryResult) => {
+              return <TransferCountry> {
+                countryId: country.country_id,
+                countryName: country.country_name
+              }
+            })
+          }
+        })
+      })
+      .catch((error: Error) => {
+        console.log('getTransferOptions Error: ' + error.message);
+        return [];
+      });
+
+    return transferOptions;
+  }
+
+  async getAvailableBuildLocs(gameId: number, turnId: number, countryId: number = 0): Promise<BuildLocResult[]> {
+    const buildLocs: BuildLocResult[] = await this.pool.query(getEmptySupplyCentersQuery, [gameId, turnId, countryId])
+      .then((result: QueryResult<any>) => result.rows.map((province: BuildLocResult) => {
+        return <BuildLocResult> {
+          countryId: province.country_id,
+          countryName: province.country_name,
+          provinceName: province.province_name,
+          cityLoc: province.city_loc,
+          landNodeId: province.land_node_id,
+          landNodeLoc: province.land_node_loc,
+          seaNodeId: province.sea_node_id,
+          seaNodeLoc: province.sea_node_loc,
+          seaNodeName: province.sea_node_name,
+          airNodeId: province.air_node_id,
+          airNodeLoc: province.air_node_loc
+        };
+      }))
+      .catch((error: Error) => {
+        console.log('getAvailableBuildLocs Error: ' + error.message);
+        return [];
+      });
+
+    return buildLocs;
+  }
+
+  async getAtRiskUnits(turnId: number, countryId: number): Promise<AtRiskUnit[]> {
+    const atRiskUnits: AtRiskUnit[] = await this.pool.query(getAtRiskUnitsQuery, [turnId, countryId])
+      .then((result: QueryResult<any>) => result.rows.map((unit: AtRiskUnitResult) => {
+        return <AtRiskUnit> {
+          unitId: unit.unit_id,
+          unitType: unit.unit_type,
+          loc: unit.loc,
+          provinceName: unit.province_name
+        };
+      }))
+      .catch((error: Error) => {
+        console.log('getAtRiskUnits Error: ' + error.message);
+        return [];
+      });
+
+    return atRiskUnits;
+  }
+
+  async getNominatableCountries(turnId: number): Promise<NominatableCountry[]> {
+    const nominatableCountries: NominatableCountry[]
+      = await this.pool.query(getNominatableCountriesQuery, [turnId])
+        .then((result: QueryResult) => result.rows.map((country: NominatableCountryResult) => {
+          return <NominatableCountry> {
+            countryId: country.country_id,
+            countryName: country.country_name,
+            rank: country.rank
+          };
+        }))
+        .catch((error: Error) => {
+          console.log('getNominatableCountries Error: ' + error.message);
+          return [];
+        });
+
+    return nominatableCountries;
+  }
+
+  async getNominations(turnId: number): Promise<Nomination[]> {
+    const nominations: Nomination[] = await this.pool.query(getNominationsQuery, [turnId])
+      .then((result: QueryResult<any>) => result.rows.map((nomination: NominationResult) => {
+        return <Nomination> {
+          nominationId: nomination.nomination_id,
+          rankSignature: nomination.rank_signature,
+          countries: nomination.countries.map((country: NominatableCountryResult) => {
+            return <NominatableCountry> {
+              countryId: country.country_id,
+              countryName: country.country_name,
+              rank: country.rank
+            };
+          }),
+          votesRequired: nomination.votes_required
+        };
+      }))
+      .catch((error: Error) => {
+        console.log('getNominations Error: ' + error.message);
+        return [];
+      });
+
+    return nominations;
+  }
+
+  formatDestinationNodeName(nodeName: string): string {
+    const nameSplit: string[] = nodeName.toUpperCase().split('_');
+    return nameSplit.length === 3 ? nameSplit[0] + nameSplit[2] : nameSplit[0];
   }
 }
