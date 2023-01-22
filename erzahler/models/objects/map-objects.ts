@@ -1,4 +1,5 @@
 export interface TerrainResult {
+  province_name: string;
   render_category: string;
   terrain_type: string;
   top_bound: number;
@@ -10,6 +11,7 @@ export interface TerrainResult {
 }
 
 export interface Terrain {
+  province: string;
   renderCategory: string;
   type: string;
   fill: string;
@@ -20,4 +22,23 @@ export interface Terrain {
     right: number;
     bottom: number;
   }
+}
+
+export interface CityResult {
+  vote_type: string;
+  city_loc: number[];
+  vote_color: string;
+  status_color: string;
+  stroke_color: string;
+  province_name: string;
+  province_status: string;
+}
+export interface City {
+  type: string;
+  loc: number[];
+  voteColor: string;
+  statusColor: string;
+  strokeColor: string;
+  name: string;
+  status: string;
 }
