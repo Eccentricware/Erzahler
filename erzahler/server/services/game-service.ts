@@ -32,8 +32,6 @@ import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { GameStatus } from "../../models/enumeration/game-status-enum";
-import { setAssignmentsActiveQuery } from "../../database/queries/assignments/set-assignments-active-query";
-import { OrdersService } from "./orders-service";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { insertCoalitionScheduleQuery } from "../../database/queries/game/insert-coalition-schedule-query";
 import { db } from "../../database/connection";
