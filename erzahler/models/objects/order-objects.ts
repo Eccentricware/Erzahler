@@ -145,22 +145,23 @@ export interface DisbandOrdersResult {
   country_name: string;
   banked_builds: number;
   disbands: number;
-  units_disbanding: number[];
-	nuke_locs: number[];
-  nuke_loc_details: BuildLocationResult[];
+  unit_disbanding_detailed: DisbandingUnitDetailResult[];
+  nuke_locs: number[];
   nuke_range: number;
   increase_range: number;
+  units_disbanding: number[];
 }
 export interface DisbandOrders {
   countryId: number;
   countryName: string;
   bankedBuilds: number;
-  unitsDisbanding: number[];
   disbands: number;
-	nukeLocs: number[];
-  nukeBuildDetails: NukeBuildInDisband[];
+  unitDisbandingDetailed: DisbandingUnitDetail[];
+  nukeLocs: number[];
+  nukeBuildDetails?: NukeBuildInDisband[];
   nukeRange: number;
   increaseRange: number;
+  unitsDisbanding: number[];
 }
 
 export interface NukeBuildInDisband extends BuildLoc {

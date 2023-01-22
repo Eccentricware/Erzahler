@@ -5,7 +5,7 @@ import { BuildType, UnitType } from "../../models/enumeration/unit-enum";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderResult, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { TransferBuildsCountry, TransferTechCountry } from "../../models/objects/options-objects";
-import { TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult, BuildOrders, BuildOrdersResult, BuildLocationResult, Build, DisbandOrders, DisbandOrdersResult, NukeBuildInDisband } from "../../models/objects/order-objects";
+import { TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult, BuildOrders, BuildOrdersResult, BuildLocationResult, Build, DisbandOrders, DisbandOrdersResult, NukeBuildInDisband, DisbandingUnitDetail, DisbandingUnitDetailResult } from "../../models/objects/order-objects";
 import { CountryOrderSet, CountryOrderSetsResult } from "../../models/objects/orders/expected-order-types-object";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
@@ -29,6 +29,7 @@ import { getDisbandOrdersQuery } from "../queries/orders/orders-final/get-disban
 import { getFinishedNukesOrdersQuery } from "../queries/orders/orders-final/get-finished-nuke-orders-query";
 import { getTechTransferOrderQuery } from "../queries/orders/orders-final/get-tech-transfer-order-query";
 import { saveBuildOrdersQuery } from "../queries/orders/orders-final/save-build-orders-query";
+import { saveDisbandOrdersQuery } from "../queries/orders/orders-final/save-disband-orders-query";
 import { saveTransferOrdersQuery } from "../queries/orders/orders-final/save-transfer-orders-query";
 import { saveUnitOrderQuery } from "../queries/orders/orders-final/save-unit-order-query";
 import { setTurnDefaultsPreparedQuery } from "../queries/orders/set-turn-defaults-prepared-query";
@@ -240,7 +241,7 @@ export class OrdersRepository {
   }
 
   async getDisbandOrders(currentTurnId: number, nextTurnId: number, countryId: number): Promise<DisbandOrders> {
-    const disbandOrders: DisbandOrders[] = await this.pool.query(getDisbandOrdersQuery, [nextTurnId, currentTurnId, countryId])
+    const disbandOrders: DisbandOrders[] = await this.pool.query(getDisbandOrdersQuery, [currentTurnId, nextTurnId, countryId])
       .then((result: QueryResult) => result.rows.map((orderSet: DisbandOrdersResult) => {
         return <DisbandOrders> {
           countryId: orderSet.country_id,
@@ -249,13 +250,12 @@ export class OrdersRepository {
           disbands: orderSet.disbands,
           unitsDisbanding: orderSet.units_disbanding,
           nukeLocs: orderSet.nuke_locs,
-          nukeBuildDetails: orderSet.nuke_loc_details.map((loc: BuildLocationResult, index: number) => {
-            return <NukeBuildInDisband> {
-              unitId: index * (-1),
-              nodeId: loc.node_id,
-              nodeLoc: loc.loc,
-              province: loc.province_name,
-              display: loc.province_name
+          unitDisbandingDetailed: orderSet.unit_disbanding_detailed.map((unit: DisbandingUnitDetailResult, index: number) => {
+            return <DisbandingUnitDetail> {
+              unitId: unit.unit_id,
+              unitType: unit.unit_type,
+              provinceName: unit.province_name,
+              loc: unit.loc
             }
           }),
           nukeRange: orderSet.nuke_range,
@@ -316,10 +316,7 @@ export class OrdersRepository {
     .catch((error: Error) => console.log('saveTransfers error: ' + error.message));
   }
 
-  async saveBuildOrders(
-    builds: BuildOrders,
-    orderSetId: number
-  ): Promise<void> {
+  async saveBuildOrders(orderSetId: number, builds: BuildOrders): Promise<void> {
     const buildLocs: number[] = [];
     const buildLocsTupleized: number[] = [];
 
@@ -341,5 +338,27 @@ export class OrdersRepository {
       builds.increaseRange,
       orderSetId
     ]);
+  }
+
+  async saveDisbandOrders(orderSetId: number, disbands: DisbandOrders): Promise<void> {
+    await this.pool.query(saveDisbandOrdersQuery, [
+      disbands.unitsDisbanding,
+      disbands.increaseRange,
+      disbands.nukeLocs,
+      orderSetId
+    ]);
+  }
+
+  async getNukesReadyLocs(nextTurnId: number, countryId:  number): Promise<NukeBuildInDisband[]> {
+    return await this.pool.query(getFinishedNukesOrdersQuery, [nextTurnId, countryId])
+      .then((result: QueryResult) =>  result.rows.map((loc: BuildLocationResult, index: number) => {
+        return <NukeBuildInDisband>{
+          unitId: index * -1,
+          nodeId: loc.node_id,
+          province: loc.province_name,
+          display: loc.province_name,
+          nodeLoc: loc.loc
+        };
+      }));
   }
 };

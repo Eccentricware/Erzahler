@@ -5,7 +5,7 @@ import { GameState, GameStateResult, NextTurns } from "../../models/objects/last
 import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, HoldSupport, OptionDestination, OptionsContext, OrderOption, SavedDestination, SavedOption, SecondaryUnit, TransportPathLink, UnitAdjacyInfoResult, UnitOptionsFinalized, UnitOptions, TransferOption, BuildLoc, AtRiskUnit, NominatableCountry, Nomination, OrderPrepping, OrderSet, Order, TransferCountry, BuildLocResult } from "../../models/objects/option-context-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
-import { UnitType } from "../../models/enumeration/unit-enum";
+import { BuildType, UnitType } from "../../models/enumeration/unit-enum";
 import { db } from "../../database/connection";
 import { OrderDisplay } from "../../models/enumeration/order-display-enum";
 import { AccountService } from "./accountService";
@@ -20,7 +20,7 @@ import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { CountryStatus } from "../../models/enumeration/country-enum";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { BuildOptions, OptionsFinal, TransferBuildsCountry } from "../../models/objects/options-objects";
-import { Build, BuildOrders, DisbandOrders, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
+import { Build, BuildOrders, DisbandOrders, NukeBuildInDisband, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
 import { CountryOrderSet, OrderTurnIds } from "../../models/objects/orders/expected-order-types-object";
 import assert from "assert";
 
@@ -391,6 +391,7 @@ export class OrdersService {
     const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
     if (userAssigned) {
       const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
+      orderSetIds.disbands = 542;
 
       // if (orderSetIds.votes && orders.votes) {
       //   orders.votes.forEach((vote: Order) => {
@@ -417,14 +418,12 @@ export class OrdersService {
       // }
 
       if (orderSetIds.builds && orders.builds) {
-        db.ordersRepo.saveBuildOrders(orders.builds, orderSetIds.builds);
+        db.ordersRepo.saveBuildOrders(orderSetIds.builds, orders.builds);
       }
 
-      // if (orderSetIds.units && orders.disbands) {
-      //   orders.disbands.forEach((unit: Order) => {
-      //     db.ordersRepo.saveDisbandUnitOrder(unit, orderSetIds.units);
-      //   });
-      // }
+      if (orderSetIds.units && orders.disbands) {
+        db.ordersRepo.saveDisbandOrders(orderSetIds.units, orders.disbands);
+      }
 
       // if (orderSetIds.nomination && orders.nomination) {
       //   db.ordersRepo.saveNominationOrder(orders.nomination, orderSetIds.nomination);
@@ -432,18 +431,35 @@ export class OrdersService {
     }
   }
 
-  async prepareDisbandOrders(gameId: number, pendingTurnId: number, countryId: number): Promise<DisbandOrders> {
-    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(gameId, pendingTurnId, countryId);
+  async prepareDisbandOrders(currentTurnId: number, pendingTurnId: number, countryId: number): Promise<DisbandOrders> {
+    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(currentTurnId, pendingTurnId, countryId);
 
-    if (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
-      while (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
-        disbandOrders.nukeBuildDetails.push({
-          unitId: disbandOrders.nukeBuildDetails.length * (-1),
-          nodeId: 0,
-          nodeLoc: [0, 0],
-          province: '---',
-          display: '---'
-        });
+    if (disbandOrders.nukeLocs.length > 0) {
+      disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(pendingTurnId, countryId);
+
+      if (disbandOrders.nukeBuildDetails && disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
+        while (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
+          disbandOrders.nukeBuildDetails.unshift({
+            unitId: disbandOrders.nukeBuildDetails.length * -1,
+            nodeId: 0,
+            province: '---',
+            display: '---',
+            nodeLoc: [0, 0]
+          });
+        }
+
+        if (disbandOrders.unitDisbandingDetailed.length < disbandOrders.unitsDisbanding.length) {
+          disbandOrders.nukeBuildDetails.forEach((nuke: NukeBuildInDisband, index: number) => {
+            if (nuke.nodeId === 0) {
+              disbandOrders.unitDisbandingDetailed.unshift({
+                unitId: index * -1,
+                unitType: UnitType.NUKE,
+                provinceName: nuke.province,
+                loc: nuke.nodeLoc
+              });
+            }
+          })
+        }
       }
     }
 

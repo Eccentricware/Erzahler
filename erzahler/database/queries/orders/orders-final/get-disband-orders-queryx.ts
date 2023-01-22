@@ -1,30 +1,38 @@
-export const getDisbandOrdersQuery = `
+export const getDisbandOrdersQueryx = `
   SELECT
     c.country_id,
     c.country_name,
     ch.banked_builds,
-    ABS(ch.adjustments) disbands,
+    ch.adjustments disbands,
     json_agg(
+      CASE WHEN n.node_id = any(os.nuke_locs)
+        THEN
           json_build_object(
-            'unit_id', u.unit_id,
-            'unit_type', u.unit_type,
+            'node_id', n.node_id,
+            'node_name', n.node_name,
             'province_name', p.province_name,
             'loc', n.loc
           )
-    ) AS unit_disbanding_detailed,
+        ELSE
+          json_build_object(
+            'node_id', 0,
+            'node_name', '---',
+            'province_name', '---',
+            'loc', ARRAY[0, 0]
+          )
+    END
+    ) AS nuke_loc_details,
     os.nuke_locs,
     ch.nuke_range,
     os.increase_range,
     os.units_disbanding
   FROM order_sets os
-  INNER JOIN units u ON u.unit_id = any(os.units_disbanding)
-  INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id
-  LEFT JOIN nodes n ON n.node_id = uh.node_id
+  LEFT JOIN nodes n ON n.node_id = any(os.nuke_locs)
   LEFT JOIN provinces p ON p.province_id = n.province_id
   LEFT JOIN countries c ON c.country_id = os.country_id
   LEFT JOIN country_histories ch ON ch.country_id = c.country_id
-  WHERE ch.turn_id = $1
-    AND os.turn_id = $2
+  WHERE os.turn_id = $1
+    AND ch.turn_id = $2
     AND order_set_type = 'Orders'
     AND CASE WHEN 0 = $3 THEN true ELSE os.country_id = $3 END
   GROUP BY
@@ -35,5 +43,5 @@ export const getDisbandOrdersQuery = `
     ch.nuke_range,
     os.nuke_locs,
     os.increase_range,
-    os.units_disbanding;
+    os.units_disbanding
 `;
