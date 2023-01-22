@@ -14,5 +14,6 @@ export const getAtRiskUnitsQuery = `
     AND CASE
       WHEN $2 != 0
       THEN c.country_id = $2
-    END;
+    END
+  ORDER BY p.province_name;
 `;

@@ -20,7 +20,7 @@ import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { CountryStatus } from "../../models/enumeration/country-enum";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { BuildOptions, OptionsFinal, TransferBuildsCountry } from "../../models/objects/options-objects";
-import { Build, BuildOrders, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
+import { Build, BuildOrders, DisbandOrders, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
 import { CountryOrderSet, OrderTurnIds } from "../../models/objects/orders/expected-order-types-object";
 import assert from "assert";
 
@@ -85,7 +85,10 @@ export class OrdersService {
       }
 
       if (pendingTurn) {
-        orders.disbands = await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
+        // Move back
+        const pendingDisbandOrders: DisbandOrders = await this.prepareDisbandOrders(gameState.turnId, pendingTurn.turnId, playerCountry.countryId);
+        orders.disbands = pendingDisbandOrders;
+        ////
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
 
@@ -123,10 +126,11 @@ export class OrdersService {
         // Adjustments
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
           if (playerCountry.adjustments >= 0) {
-            const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
+            const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(gameState.turnId, pendingTurn.turnId, playerCountry.countryId);
             orders.builds = pendingBuildOrders[0];
           } else {
-            // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
+            const pendingDisbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(gameState.turnId, pendingTurn.turnId, playerCountry.countryId);
+            orders.disbands = pendingDisbandOrders;
           }
         }
 
@@ -185,12 +189,14 @@ export class OrdersService {
       } else {
         playerCountry = {
           countryId: 0,
-          retreating: false,
           name: 'Administrator',
+          unitCount: -1,
+          cityCount: -1,
           builds: -1,
           nukeRange: -1,
           adjustments: -1,
           countryStatus: 'Administrator',
+          retreating: false,
           nukesInProduction: 0
         }
       }
@@ -311,10 +317,6 @@ export class OrdersService {
     return orders;
   }
 
-
-
-
-
   async getOrderSets(gameId: number, countryId: number): Promise<OrderTurnIds> {
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
     const countryOrderSets: CountryOrderSet[] = await db.ordersRepo.getCountryOrderSets(gameId, gameState.turnId, countryId);
@@ -430,7 +432,23 @@ export class OrdersService {
     }
   }
 
-  async prepareDisbandOptions(gameState: GameState, turn: UpcomingTurn, country: CountryState): Promise<any> {
+  async prepareDisbandOrders(gameId: number, pendingTurnId: number, countryId: number): Promise<DisbandOrders> {
+    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(gameId, pendingTurnId, countryId);
 
+    if (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
+      while (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
+        disbandOrders.nukeBuildDetails.push({
+          unitId: disbandOrders.nukeBuildDetails.length * (-1),
+          nodeId: 0,
+          nodeLoc: [0, 0],
+          province: '---',
+          display: '---'
+        });
+      }
+    }
+
+    // const disbandingUnitDetails: DisbandingUnitDetail = db.ordersRepo.getDisbandingUnitDetails()
+
+    return disbandOrders;
   }
 }
