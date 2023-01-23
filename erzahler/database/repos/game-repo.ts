@@ -6,6 +6,7 @@ import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { CountryRank, CountryStatus } from "../../models/enumeration/country-enum";
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
+import { CoalitionSchedule, CoalitionScheduleResult } from "../../models/objects/games/coalition-schedule-objects";
 import { CountryState, CountryStateResult } from "../../models/objects/games/country-state-objects";
 import { CountryStats, CountryStatsResult } from "../../models/objects/games/country-stats-objects";
 import { GameState, GameStateResult } from "../../models/objects/last-turn-info-object";
@@ -16,6 +17,7 @@ import { FormattingService } from "../../server/services/formattingService";
 import { getPlayerRegistrationStatusQuery } from "../queries/assignments/get-player-registration-status";
 import { checkGameNameAvailabilityQuery } from "../queries/game/check-game-name-availability-query";
 import { checkUserGameAdminQuery } from "../queries/game/check-user-game-admin-query";
+import { getCoalitionScheduleQuery } from "../queries/game/get-coalition-schedule-query";
 import { getCountryStateQuery } from "../queries/game/get-country-state-query";
 import { getGameDetailsQuery } from "../queries/game/get-game-details-query";
 import { getGameStatsQuery } from "../queries/game/get-game-stats-query";
@@ -480,5 +482,25 @@ export class GameRepository {
           adjustments: country.adjustments
         };
       }));
+  }
+
+  async getCoalitionSchedule(gameId: number): Promise<CoalitionSchedule> {
+    const coalitionSchedules = await this.pool.query(getCoalitionScheduleQuery, [gameId])
+      .then((result: QueryResult) => result.rows.map((schedule: CoalitionScheduleResult) => {
+        return <CoalitionSchedule> {
+          baseFinal: schedule.base_final,
+          penalties: {
+            a: schedule.penalty_a,
+            b: schedule.penalty_b,
+            c: schedule.penalty_c,
+            d: schedule.penalty_d,
+            e: schedule.penalty_e,
+            f: schedule.penalty_f,
+            g: schedule.penalty_g
+          }
+        }
+      }));
+
+    return coalitionSchedules[0];
   }
 }

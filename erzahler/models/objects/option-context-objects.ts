@@ -1,4 +1,5 @@
 import { OrderDisplay, OrderSetType } from "../enumeration/order-display-enum";
+import { TurnStatus } from "../enumeration/turn-status-enum";
 
 export interface OrderOption {
   turnId: number;
@@ -309,6 +310,7 @@ export interface NominatableCountry {
   countryId: number;
   countryName: string;
   rank: string;
+  penalty?: number;
 }
 
 export interface NominationResult {
@@ -382,4 +384,9 @@ export interface DisbandOptions {
   units: AtRiskUnit[];
   nukesInProduction: number;
   nukeLocs: BuildLoc[];
+}
+
+export interface NominationOptions {
+  victoryBase: number,
+  countries: NominatableCountry[]
 }

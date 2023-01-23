@@ -313,6 +313,7 @@ CREATE TABLE IF NOT EXISTS nominations(
   nominator_id INTEGER NOT NULL,
   rank_signature VARCHAR(3) NOT NULL,
   votes_required INTEGER NOT NULL,
+  country_ids INTEGER[] NOT NULL,
   PRIMARY KEY(nomination_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
@@ -320,17 +321,17 @@ CREATE TABLE IF NOT EXISTS nominations(
     REFERENCES countries(country_id)
 );
 
-\echo 'Attempting to create countries_in_nominations table'
-CREATE TABLE IF NOT EXISTS countries_in_nominations(
-  country_in_nomination_id SERIAL,
-  nomination_id INTEGER NOT NULL,
-  country_id INTEGER NOT NULL,
-  PRIMARY KEY(country_in_nomination_id),
-  FOREIGN KEY(nomination_id)
-    REFERENCES nominations(nomination_id),
-  FOREIGN KEY(country_id)
-    REFERENCES countries(country_id)
-);
+-- \echo 'Attempting to create countries_in_nominations table'
+-- CREATE TABLE IF NOT EXISTS countries_in_nominations(
+--   country_in_nomination_id SERIAL,
+--   nomination_id INTEGER NOT NULL,
+--   country_id INTEGER NOT NULL,
+--   PRIMARY KEY(country_in_nomination_id),
+--   FOREIGN KEY(nomination_id)
+--     REFERENCES nominations(nomination_id),
+--   FOREIGN KEY(country_id)
+--     REFERENCES countries(country_id)
+-- );
 
 \echo 'Attempting to create votes table'
 CREATE TABLE IF NOT EXISTS votes(
@@ -591,6 +592,7 @@ CREATE TABLE IF NOT EXISTS order_sets(
   nuke_locs INTEGER[],
   increase_range INTEGER,
   units_disbanding INTEGER[],
+  nomination INTEGER[],
   PRIMARY KEY(order_set_id),
   FOREIGN KEY(country_id)
     REFERENCES countries(country_id),

@@ -27,9 +27,11 @@ import { getBuildTransferOrdersQuery } from "../queries/orders/orders-final/get-
 import { getCountryOrderSets } from "../queries/orders/orders-final/get-country-order-sets-query";
 import { getDisbandOrdersQuery } from "../queries/orders/orders-final/get-disband-orders-query";
 import { getFinishedNukesOrdersQuery } from "../queries/orders/orders-final/get-finished-nuke-orders-query";
+import { getNominationQuery } from "../queries/orders/orders-final/get-nomination-query";
 import { getTechTransferOrderQuery } from "../queries/orders/orders-final/get-tech-transfer-order-query";
 import { saveBuildOrdersQuery } from "../queries/orders/orders-final/save-build-orders-query";
 import { saveDisbandOrdersQuery } from "../queries/orders/orders-final/save-disband-orders-query";
+import { saveNominationQuery } from "../queries/orders/orders-final/save-nomination-query";
 import { saveTransferOrdersQuery } from "../queries/orders/orders-final/save-transfer-orders-query";
 import { saveUnitOrderQuery } from "../queries/orders/orders-final/save-unit-order-query";
 import { setTurnDefaultsPreparedQuery } from "../queries/orders/set-turn-defaults-prepared-query";
@@ -360,5 +362,20 @@ export class OrdersRepository {
           nodeLoc: loc.loc
         };
       }));
+  }
+
+  async getNominationOrder(turnId: number, countryId: number): Promise<NominatableCountry[]> {
+    return await this.pool.query(getNominationQuery, [turnId, countryId])
+      .then((result: QueryResult) => result.rows.map((country: NominatableCountryResult) => {
+        return <NominatableCountry> {
+          countryId: country.country_id,
+          countryName: country.country_name,
+          rank: country.rank
+        };
+      }));
+  }
+
+  async saveNominationOrder(orderSetId: number, nomination: number[]): Promise<void> {
+    await this.pool.query(saveNominationQuery, [nomination, orderSetId]);
   }
 };

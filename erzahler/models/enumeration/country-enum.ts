@@ -10,12 +10,12 @@ export enum CountryStatus {
 }
 
 export enum CountryRank {
-  A = 'A',
-  B = 'B',
-  C = 'C',
-  D = 'D',
-  E = 'E',
-  F = 'F',
-  G = 'G',
-  N = 'N'
+  A = 'a',
+  B = 'b',
+  C = 'c',
+  D = 'd',
+  E = 'e',
+  F = 'f',
+  G = 'g',
+  N = 'n'
 }

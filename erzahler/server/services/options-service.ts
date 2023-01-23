@@ -6,7 +6,7 @@ import { UnitType } from "../../models/enumeration/unit-enum";
 import { UserAssignment } from "../../models/objects/assignment-objects";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { GameState } from "../../models/objects/last-turn-info-object";
-import { OptionsContext, AdjacenctMovement, TransportPathLink, AirAdjacency, OrderOption, HoldSupport, UnitOptions, BuildLoc, BuildLocResult, Order, OrderPrepping, OrderSet, SavedOption, TransferCountry, OptionDestination, SecondaryUnit, UnitOptionsFinalized, DisbandOptions } from "../../models/objects/option-context-objects";
+import { OptionsContext, AdjacenctMovement, TransportPathLink, AirAdjacency, OrderOption, HoldSupport, UnitOptions, BuildLoc, BuildLocResult, Order, OrderPrepping, OrderSet, SavedOption, TransferCountry, OptionDestination, SecondaryUnit, UnitOptionsFinalized, DisbandOptions, NominatableCountry, NominationOptions } from "../../models/objects/option-context-objects";
 import { OptionsFinal, BuildOptions } from "../../models/objects/options-objects";
 import { UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
 import { AccountService } from "./accountService";
@@ -563,11 +563,6 @@ export class OptionsService {
       countryName: playerCountry.name
     };
 
-    let pendingUnitOptions: SavedOption[] | undefined;
-    let preliminaryUnitOptions: SavedOption[] | undefined;
-
-    let pendingUnitOptionsFormatted: any = {};
-
     if (pendingTurn) {
       turnOptions.pending = {
         id: pendingTurn.turnId,
@@ -575,7 +570,10 @@ export class OptionsService {
         deadline: pendingTurn.deadline
       };
       // Move back after dev
-        turnOptions.disbands = await this.getDisbandOptions(gameState, pendingTurn, playerCountry);
+      turnOptions.nominations = {
+        turnStatus: pendingTurn.turnStatus,
+        options: await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING)
+      }
       ////
 
       // Units
@@ -629,7 +627,6 @@ export class OptionsService {
       // Adjustments
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
         if (playerCountry.adjustments >= 0) {
-          // Move Back After testing
           const buildLocsResult: BuildLocResult[] = await db.optionsRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
           const buildLocs: BuildOptions = {
             land: [],
@@ -691,23 +688,21 @@ export class OptionsService {
             turnStatus: TurnStatus.PENDING,
             locations: buildLocs,
             builds: playerCountry.adjustments
-          }
-          ////
-        }
+          };
 
-        if (playerCountry.adjustments < 0) {
-          // turnOptions.disbands = {
-          //   turnStatus: TurnStatus.PENDING,
-          //   options: await db.optionsRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId)
-          // }
+        } else {
+          turnOptions.disbands = {
+            turnStatus: TurnStatus.PENDING,
+            options: await this.getDisbandOptions(gameState, pendingTurn, playerCountry)
+          };
         }
       }
 
       // Nominations
       if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
         turnOptions.nominations = {
-          turnStatus: TurnStatus.PENDING,
-          options: await db.optionsRepo.getNominatableCountries(gameState.turnId)
+          turnStatus: pendingTurn.turnStatus,
+          options: await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING)
         }
       }
 
@@ -766,30 +761,82 @@ export class OptionsService {
       // Adjustments
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
         if (playerCountry.adjustments >= 0) {
-          turnOptions.builds = {
-            turnStatus: TurnStatus.PRELIMINARY,
-            builds: playerCountry.adjustments,
-            locations: {
-              land: [],
-              sea: [],
-              air: []
-            }
-          }
-        }
+          const buildLocsResult: BuildLocResult[] = await db.optionsRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
+          const buildLocs: BuildOptions = {
+            land: [],
+            sea: [],
+            air: []
+          };
 
-        if (playerCountry.adjustments < 0) {
-          // turnOptions.disbands = {
-          //   turnStatus: TurnStatus.PRELIMINARY,
-          //   options: await db.optionsRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId)
-          // }
+          buildLocsResult.forEach((loc: BuildLocResult) => {
+            if (loc.seaNodeName && loc.seaNodeName.split('_').length > 2 && loc.seaNodeId && loc.seaNodeLoc) {
+              if (buildLocs.land.filter((landLoc: BuildLoc) => landLoc.nodeId === loc.landNodeId).length === 0) {
+                buildLocs.land.push({
+                  province: loc.provinceName,
+                  display: loc.provinceName,
+                  nodeId: loc.landNodeId,
+                  nodeLoc: loc.landNodeLoc,
+                });
+
+                buildLocs.air.push({
+                  province: loc.provinceName,
+                  display: loc.provinceName,
+                  nodeId: loc.airNodeId,
+                  nodeLoc: loc.airNodeLoc
+                });
+              }
+
+              const locDisplay = loc.seaNodeName.toUpperCase().split('_');
+              buildLocs.sea.push({
+                province: loc.provinceName,
+                display: locDisplay[0] + ' ' + locDisplay[2],
+                nodeId: loc.seaNodeId,
+                nodeLoc: loc.seaNodeLoc
+              });
+            } else {
+              buildLocs.land.push({
+                province: loc.provinceName,
+                display: loc.provinceName,
+                nodeId: loc.landNodeId,
+                nodeLoc: loc.landNodeLoc
+              });
+
+              if (loc.seaNodeId && loc.seaNodeLoc)
+              buildLocs.sea.push({
+                province: loc.provinceName,
+                display: loc.provinceName,
+                nodeId: loc.seaNodeId,
+                nodeLoc: loc.seaNodeLoc
+              });
+
+              buildLocs.air.push({
+                province: loc.provinceName,
+                display: loc.provinceName,
+                nodeId: loc.airNodeId,
+                nodeLoc: loc.airNodeLoc
+              });
+            }
+          });
+
+          turnOptions.builds = {
+            turnStatus: TurnStatus.PENDING,
+            locations: buildLocs,
+            builds: playerCountry.adjustments
+          };
+
+        } else {
+          turnOptions.disbands = {
+            turnStatus: TurnStatus.PENDING,
+            options: await this.getDisbandOptions(gameState, preliminaryTurn, playerCountry)
+          };
         }
       }
 
       // Nominations
       if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
         turnOptions.nominations = {
-          turnStatus: TurnStatus.PRELIMINARY,
-          options: await db.optionsRepo.getNominatableCountries(gameState.turnId)
+          turnStatus: preliminaryTurn.turnStatus,
+          options: await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING)
         }
       }
     }
@@ -1119,5 +1166,26 @@ export class OptionsService {
     }
 
     return disbandOptions;
+  }
+
+  async getNominationOptions(gameId: number, turnId: number, turnStatus: TurnStatus): Promise<NominationOptions> {
+    const nominatableCountries = await db.optionsRepo.getNominatableCountries(turnId);
+    const coaliationSchedule = await db.gameRepo.getCoalitionSchedule(gameId);
+
+    nominatableCountries.forEach((country: NominatableCountry) => {
+      country.penalty = coaliationSchedule.penalties[country.rank];
+    });
+
+    nominatableCountries.unshift({
+      countryId: 0,
+      countryName: '-- Select Country--',
+      rank: '-',
+      penalty: 0
+    });
+
+    return {
+      victoryBase: coaliationSchedule.baseFinal,
+      countries: nominatableCountries
+    }
   }
 }

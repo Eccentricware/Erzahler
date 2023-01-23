@@ -20,7 +20,7 @@ import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { CountryStatus } from "../../models/enumeration/country-enum";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { BuildOptions, OptionsFinal, TransferBuildsCountry } from "../../models/objects/options-objects";
-import { Build, BuildOrders, DisbandOrders, NukeBuildInDisband, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
+import { Build, BuildOrders, DisbandOrders, NominationOrder, NukeBuildInDisband, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
 import { CountryOrderSet, OrderTurnIds } from "../../models/objects/orders/expected-order-types-object";
 import assert from "assert";
 
@@ -85,9 +85,8 @@ export class OrdersService {
       }
 
       if (pendingTurn) {
-        // Move back
-        const pendingDisbandOrders: DisbandOrders = await this.prepareDisbandOrders(gameState.turnId, pendingTurn.turnId, playerCountry.countryId);
-        orders.disbands = pendingDisbandOrders;
+        // Remove after
+        orders.nomination = await this.getNominationOrder(pendingTurn.turnId, playerCountry.countryId);
         ////
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
@@ -129,14 +128,13 @@ export class OrdersService {
             const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(gameState.turnId, pendingTurn.turnId, playerCountry.countryId);
             orders.builds = pendingBuildOrders[0];
           } else {
-            const pendingDisbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(gameState.turnId, pendingTurn.turnId, playerCountry.countryId);
-            orders.disbands = pendingDisbandOrders;
+            orders.disbands = await this.prepareDisbandOrders(gameState.turnId, pendingTurn.turnId, playerCountry.countryId);
           }
         }
 
         // Nominations
         if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-          // const pendingNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.turnId);
+          orders.nomination = await this.getNominationOrder(pendingTurn.turnId, playerCountry.countryId);
         }
 
         // Votes
@@ -171,13 +169,17 @@ export class OrdersService {
 
         // Adjustments
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-          // const preliminaryBuildLocs: BuildLoc[] = await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
-          // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId);
+          if (playerCountry.adjustments >= 0) {
+            const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(gameState.turnId, preliminaryTurn.turnId, playerCountry.countryId);
+            orders.builds = pendingBuildOrders[0];
+          } else {
+            orders.disbands = await this.prepareDisbandOrders(gameState.turnId, preliminaryTurn.turnId, playerCountry.countryId);
+          }
         }
 
         // Nominations
         if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-          // const preliminaryNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.turnId);
+          orders.nomination = await this.getNominationOrder(preliminaryTurn.turnId, playerCountry.countryId);
         }
       }
     }
@@ -223,6 +225,7 @@ export class OrdersService {
       }
 
       if (pendingTurn) {
+
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
           orders.units = await db.ordersRepo.getTurnUnitOrders(playerCountry.countryId, pendingTurn.turnId, gameState.turnId);
@@ -391,7 +394,7 @@ export class OrdersService {
     const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
     if (userAssigned) {
       const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
-      orderSetIds.disbands = 542;
+      orderSetIds.votes = 542;
 
       // if (orderSetIds.votes && orders.votes) {
       //   orders.votes.forEach((vote: Order) => {
@@ -425,9 +428,9 @@ export class OrdersService {
         db.ordersRepo.saveDisbandOrders(orderSetIds.units, orders.disbands);
       }
 
-      // if (orderSetIds.nomination && orders.nomination) {
-      //   db.ordersRepo.saveNominationOrder(orders.nomination, orderSetIds.nomination);
-      // }
+      if (orderSetIds.nomination && orders.nomination) {
+        db.ordersRepo.saveNominationOrder(orderSetIds.nomination, orders.nomination.countryIds);
+      }
     }
   }
 
@@ -463,8 +466,25 @@ export class OrdersService {
       }
     }
 
-    // const disbandingUnitDetails: DisbandingUnitDetail = db.ordersRepo.getDisbandingUnitDetails()
-
     return disbandOrders;
+  }
+
+  async getNominationOrder(turnId: number, countryId: number): Promise<NominationOrder> {
+    const countryDetails: NominatableCountry[] = await db.ordersRepo.getNominationOrder(turnId, countryId);
+    const countryIds: number[] = countryDetails.map((country: NominatableCountry) => country.countryId);
+
+    if (countryIds.length > 0) {
+      return {
+        countryDetails: countryDetails,
+        countryIds: countryIds,
+        coalitionSignature: `${countryDetails[0].rank}${countryDetails[1].rank}${countryDetails[2].rank}`.toUpperCase()
+      };
+    } else {
+      return {
+        countryDetails: [],
+        countryIds: [0, 0, 0],
+        coalitionSignature: '---'
+      };
+    }
   }
 }
