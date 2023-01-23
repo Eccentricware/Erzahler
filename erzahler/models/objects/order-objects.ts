@@ -27,7 +27,9 @@ export interface TurnOrders {
   builds?: BuildOrders;
   disbands?: DisbandOrders;
   nomination?: NominationOrder;
-  votes?: any[];
+  votes?: {
+    nominations: number[]
+  };
 }
 
 export interface SingleTurnOrders {

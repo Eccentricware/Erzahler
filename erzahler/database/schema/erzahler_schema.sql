@@ -311,7 +311,7 @@ CREATE TABLE IF NOT EXISTS nominations(
   nomination_id SERIAL,
   turn_id INTEGER NOT NULL,
   nominator_id INTEGER NOT NULL,
-  rank_signature VARCHAR(3) NOT NULL,
+  signature VARCHAR(3) NOT NULL,
   votes_required INTEGER NOT NULL,
   country_ids INTEGER[] NOT NULL,
   PRIMARY KEY(nomination_id),
@@ -593,6 +593,7 @@ CREATE TABLE IF NOT EXISTS order_sets(
   increase_range INTEGER,
   units_disbanding INTEGER[],
   nomination INTEGER[],
+  votes INTEGER[],
   PRIMARY KEY(order_set_id),
   FOREIGN KEY(country_id)
     REFERENCES countries(country_id),

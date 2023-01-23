@@ -7,7 +7,6 @@ import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
 import { getEmptySupplyCentersQuery } from "../queries/orders/get-empty-supply-centers-query";
 import { getNominatableCountriesQuery } from "../queries/orders/get-nominatable-countries-query";
-import { getNominationsQuery } from "../queries/orders/get-nominations-query";
 import { getOrderOptionsQuery } from "../queries/orders/get-order-options-query";
 import { getTransferBuildOptionsQuery } from "../queries/orders/get-transfer-build-options-query";
 import { getTransferOptionsQuery } from "../queries/orders/get-transfer-options-query";
@@ -15,6 +14,7 @@ import { getTechOfferOptionsQuery } from "../queries/orders/get-transfer-tech-of
 import { getTechReceiveOptionsQuery } from "../queries/orders/get-transfer-tech-receive-options-query";
 import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-info-query";
 import { getActiveCountryCenters } from "../queries/orders/options-final/get-active-centers-query";
+import { getNominationsQuery } from "../queries/orders/options-final/get-nominations-query";
 
 export class OptionsRepository {
   orderOptionsCols: ColumnSet<unknown>;
@@ -284,7 +284,7 @@ export class OptionsRepository {
       .then((result: QueryResult<any>) => result.rows.map((nomination: NominationResult) => {
         return <Nomination> {
           nominationId: nomination.nomination_id,
-          rankSignature: nomination.rank_signature,
+          signature: nomination.signature,
           countries: nomination.countries.map((country: NominatableCountryResult) => {
             return <NominatableCountry> {
               countryId: country.country_id,
@@ -319,4 +319,11 @@ export class OptionsRepository {
         }
       }));
   }
+
+  // async getVoteOptions(turnId: number): Promise<Nomination[]> {
+  //   const coalitions: Nomination[] = await this.pool.query(getNominationsQuery, [turnId])
+  //     .then((result: QueryResult) => result.rows.map((coalition: NominationResult) => {
+
+  //     }));
+  // }
 }

@@ -46,7 +46,7 @@ export interface OptionsFinal {
   }
   votes?: {
     turnStatus: string;
-    options: Nomination[];
+    options: VotingOptions;
   }
 }
 
@@ -64,4 +64,9 @@ export interface TransferBuildsCountry {
   countryId: number;
   countryName: string;
   builds: number;
+}
+
+export interface VotingOptions {
+  duplicateAlerts: string[];
+  nominations: Nomination[];
 }

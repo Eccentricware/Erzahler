@@ -86,7 +86,9 @@ export class OrdersService {
 
       if (pendingTurn) {
         // Remove after
-        orders.nomination = await this.getNominationOrder(pendingTurn.turnId, playerCountry.countryId);
+        orders.votes = {
+          nominations: await db.ordersRepo.getVotes(pendingTurn.turnId, playerCountry.countryId)
+        };
         ////
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
@@ -396,11 +398,9 @@ export class OrdersService {
       const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
       orderSetIds.votes = 542;
 
-      // if (orderSetIds.votes && orders.votes) {
-      //   orders.votes.forEach((vote: Order) => {
-      //     db.ordersRepo.saveVoteOrder(vote, orderSetIds.votes);
-      //   });
-      // }
+      if (orderSetIds.votes && orders.votes) {
+        db.ordersRepo.saveVotes(orderSetIds.votes, orders.votes.nominations);
+      }
 
       if (orderSetIds.units && orders.units) {
         orders.units.forEach(async (unit: Order) => {

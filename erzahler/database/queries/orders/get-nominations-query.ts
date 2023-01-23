@@ -1,4 +1,4 @@
-export const getNominationsQuery = `
+export const getNominationsQueryx = `
   SELECT n.nomination_id,
     n.rank_signature,
     json_agg(json_build_object('country_id', c.country_id, 'country_name', c.country_name, 'country_rank', c.rank)) countries,
