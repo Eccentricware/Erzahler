@@ -283,7 +283,7 @@ export interface BuildLoc {
   province: string;
   display: string;
   nodeId: number;
-  nodeLoc: number[];
+  loc: number[];
 }
 
 export interface AtRiskUnitResult {
@@ -359,7 +359,7 @@ export interface Order {
   orderId?: number;
   orderSetId: number;
   orderedUnitId: number;
-  orderedUnitLoc?: number[];
+  loc?: number[];
   orderType: string;
   secondaryUnitId?: number | undefined;
   secondaryUnitLoc?: number[];

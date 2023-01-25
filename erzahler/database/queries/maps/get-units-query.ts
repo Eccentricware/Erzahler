@@ -2,7 +2,8 @@ export const getUnitsQuery = `
   SELECT u.unit_name,
     u.unit_type,
     n.loc,
-    c.flag_key
+    c.flag_key,
+    uh.unit_status
   FROM units u
   INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id
   INNER JOIN countries c ON c.country_id = u.country_id

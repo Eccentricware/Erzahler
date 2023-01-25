@@ -85,11 +85,6 @@ export class OrdersService {
       }
 
       if (pendingTurn) {
-        // Remove after
-        orders.votes = {
-          nominations: await db.ordersRepo.getVotes(pendingTurn.turnId, playerCountry.countryId)
-        };
-        ////
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
 
@@ -141,7 +136,9 @@ export class OrdersService {
 
         // Votes
         if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-          // const pendingNominations: Nomination[] = await db.ordersRepo.getNominations(gameState.turnId);
+          orders.votes = {
+            nominations: await db.ordersRepo.getVotes(pendingTurn.turnId, playerCountry.countryId)
+          };
         }
       }
 
@@ -447,7 +444,7 @@ export class OrdersService {
             nodeId: 0,
             province: '---',
             display: '---',
-            nodeLoc: [0, 0]
+            loc: [0, 0]
           });
         }
 
@@ -458,7 +455,7 @@ export class OrdersService {
                 unitId: index * -1,
                 unitType: UnitType.NUKE,
                 provinceName: nuke.province,
-                loc: nuke.nodeLoc
+                loc: nuke.loc
               });
             }
           })

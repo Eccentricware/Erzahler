@@ -15,7 +15,7 @@ export const getTurnUnitOrdersQuery = `
   INNER JOIN unit_histories uh ON uh.unit_id = o.ordered_unit_id
   INNER JOIN nodes un ON un.node_id = uh.node_id
   LEFT JOIN unit_histories sh ON sh.unit_id = o.secondary_unit_id
-  LEFT JOIN nodes sn ON sn.node_id = sh.unit_id
+  LEFT JOIN nodes sn ON sn.node_id = sh.node_id AND sh.turn_id = uh.turn_id
   LEFT JOIN nodes dn ON dn.node_id = o.destination_id
   LEFT JOIN provinces dp ON dp.province_id = dn.province_id
   LEFT JOIN nodes en ON en.province_id = dp.province_id AND en.node_type = 'event'

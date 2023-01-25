@@ -82,10 +82,12 @@ export interface UnitResult {
   unit_type: string,
   loc: number[];
   flag_key: string;
+  unit_status: string;
 }
 export interface Unit {
   name: string;
   type: string;
   loc: number[];
   countryKey: string;
+  status: string;
 }
