@@ -6,17 +6,19 @@ export class MapService {
   async getCurrentMap(gameId: number): Promise<any> {
     const gameState = await db.gameRepo.getGameState(gameId);
 
-    const terrain = await db.mapRepo.getTerrain(gameId, 61);
+    const terrain = await db.mapRepo.getTerrain(gameId, gameState.turnId);
 
     const seaTerrain = terrain.filter((terrain: Terrain) => terrain.renderCategory === RenderCategory.SEA);
     const landTerrain = terrain.filter((terrain: Terrain) => terrain.renderCategory === RenderCategory.LAND);
     const canalTerrain = terrain.filter((terrain: Terrain) => terrain.renderCategory === RenderCategory.CANAL);
     const lineTerrain = terrain.filter((terrain: Terrain) => terrain.renderCategory === RenderCategory.LINE);
 
-    const cities = await db.mapRepo.getCities(gameId, 61);
+    const cities = await db.mapRepo.getCities(gameId, gameState.turnId);
 
-    const supplyCenters = cities.filter((city: City) => city.voteColor === null)
-    const votingCenters = cities.filter((city: City) => city.voteColor !== null)
+    const supplyCenters = cities.filter((city: City) => city.voteColor === null);
+    const votingCenters = cities.filter((city: City) => city.voteColor !== null);
+
+    const labels = await db.mapRepo.getLabels(gameId);
 
     return {
       terrain: {
@@ -29,9 +31,9 @@ export class MapService {
         supplyCenters: supplyCenters,
         votingCenters: votingCenters
       },
-      units: [],
-      labels: [],
-      labelLines: []
+      labels: labels,
+      labelLines: [],
+      units: []
     };
   }
 }
