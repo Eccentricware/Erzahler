@@ -614,7 +614,12 @@ CREATE TABLE IF NOT EXISTS orders(
   secondary_unit_id INTEGER,
   destination_id INTEGER,
   order_status VARCHAR(15),
+  valid BOOLEAN,
   order_success BOOLEAN,
+  power INTEGER,
+  description VARCHAR(100),
+  primary_resolution VARCHAR(250),
+  secondary_resolution VARCHAR(250)
   PRIMARY KEY(order_id),
   FOREIGN KEY(order_set_id)
     REFERENCES order_sets(order_set_id),

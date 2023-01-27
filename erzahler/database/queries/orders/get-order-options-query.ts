@@ -6,6 +6,7 @@ export const getOrderOptionsQuery = `
     c.rank unit_country_rank,
     c.flag_key unit_country_flag_key,
     p.province_name,
+    n.node_id,
     n.loc unit_loc,
     CASE
       WHEN t.turn_type in ('Fall Orders', 'Fall Retreats')
@@ -59,6 +60,7 @@ export const getOrderOptionsQuery = `
     c.rank,
     c.flag_key,
     p.province_name,
+    n.node_id,
     uh.unit_status,
     n.loc,
     oo.order_type,

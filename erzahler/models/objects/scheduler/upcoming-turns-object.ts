@@ -2,17 +2,6 @@ import { TurnStatus } from "../../enumeration/turn-status-enum";
 import { TurnType } from "../../enumeration/turn-type-enum";
 import { Order, UnitOptionsFinalized } from "../option-context-objects";
 
-export interface UpcomingTurn {
-  gameId: number;
-  turnId: number;
-  gameName: string;
-  turnName: string;
-  turnType: TurnType;
-  turnStatus: TurnStatus;
-  deadline: string | Date;
-  defaultsReady: boolean;
-}
-
 export interface UpcomingTurnResult {
   game_id: number;
   turn_id: number;
@@ -20,8 +9,18 @@ export interface UpcomingTurnResult {
   turn_name: string;
   turn_type: string;
   turn_status: string;
-  deadline: string | Date;
+  deadline: string;
   defaults_ready: boolean;
+}
+export interface UpcomingTurn {
+  gameId: number;
+  turnId: number;
+  gameName: string;
+  turnName: string;
+  turnType: TurnType;
+  turnStatus: TurnStatus;
+  deadline: string;
+  defaultsReady: boolean;
 }
 
 export interface TurnOptions {

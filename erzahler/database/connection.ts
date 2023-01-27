@@ -6,6 +6,7 @@ import { GameRepository } from "./repos/game-repo";
 import { MapRepository } from "./repos/map-repo";
 import { OptionsRepository } from "./repos/options-repo";
 import { OrdersRepository } from "./repos/orders-repo";
+import { ResolutionRepository } from "./repos/resolution-repo";
 import { SchedulerRepository } from "./repos/scheduler-repo";
 
 interface IExtensions {
@@ -15,6 +16,7 @@ interface IExtensions {
   mapRepo: MapRepository;
   optionsRepo: OptionsRepository;
   ordersRepo: OrdersRepository;
+  resolutionRepo: ResolutionRepository;
   schedulerRepo: SchedulerRepository;
 }
 
@@ -26,6 +28,7 @@ const initOptions: IInitOptions<IExtensions> = {
     obj.mapRepo = new MapRepository(obj, pgp);
     obj.optionsRepo = new OptionsRepository(obj, pgp);
     obj.ordersRepo = new OrdersRepository(obj, pgp);
+    obj.resolutionRepo = new ResolutionRepository(obj, pgp);
     obj.schedulerRepo = new SchedulerRepository(obj, pgp);
   }
 }

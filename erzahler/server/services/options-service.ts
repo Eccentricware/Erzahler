@@ -997,6 +997,7 @@ export class OptionsService {
       unitType: option.unitType,
       unitDisplay: `${option.unitType} ${option.provinceName}`,
       unitLoc: option.unitLoc,
+      nodeId: option.nodeId,
       orderTypes: option.canHold ? [OrderDisplay.HOLD] : [],
       moveDestinations: [],
       moveTransportedDestinations: [],
