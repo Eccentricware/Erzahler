@@ -237,6 +237,7 @@ export class GameService {
         await this.addProvinceHistories(pool);
         await this.addTerrain(pool);
         await this.addLabels(pool);
+        await this.addLabelLines();
         await this.addNodes(pool);
       });
   }
@@ -269,6 +270,10 @@ export class GameService {
 
   async addLabels(pool: Pool): Promise<any> {
     db.gameRepo.insertLabels(this.gameData.dbRows.labels, this.gameData.gameName);
+  }
+
+  async addLabelLines(): Promise<any> {
+    db.gameRepo.insertLabelLines(this.gameData.dbRows.labelLines, this.gameData.gameName);
   }
 
   async addNodes(pool: Pool): Promise<any> {

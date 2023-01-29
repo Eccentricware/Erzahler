@@ -59,3 +59,20 @@ export interface Label {
   fill: string;
   province: string;
 }
+
+export interface LabelLineResult {
+  label_line_name: string;
+	x1: number;
+	x2: number;
+	y1: number;
+	y2: number;
+	stroke: string;
+}
+export interface LabelLine {
+  name: string;
+	x1: number;
+	x2: number;
+	y1: number;
+	y2: number;
+	stroke: string;
+}

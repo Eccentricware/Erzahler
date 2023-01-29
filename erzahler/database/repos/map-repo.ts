@@ -1,8 +1,9 @@
 import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain, queryResult } from "pg-promise";
-import { City, CityResult, Label, LabelResult, Terrain, TerrainResult } from "../../models/objects/map-objects";
+import { City, CityResult, Label, LabelLine, LabelLineResult, LabelResult, Terrain, TerrainResult } from "../../models/objects/map-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getCitiesQuery } from "../queries/maps/get-cities-query";
+import { getLabelLinesQuery } from "../queries/maps/get-label-lines-query";
 import { getLabelsQuery } from "../queries/maps/get-labels-query";
 import { getTerrainQuery } from "../queries/maps/get-terrain-query";
 
@@ -53,6 +54,20 @@ export class MapRepository {
           type: result.label_type,
           loc: result.loc,
           fill: result.fill
+        }
+      }));
+  }
+
+  async getLabelLines(gameId: number): Promise<LabelLine[]> {
+    return await this.pool.query(getLabelLinesQuery, [gameId])
+      .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: LabelLineResult) => {
+        return <LabelLine> {
+          name: result.label_line_name,
+          x1: result.x1,
+          x2: result.x2,
+          y1: result.y1,
+          y2: result.y2,
+          stroke: result.stroke
         }
       }));
   }
