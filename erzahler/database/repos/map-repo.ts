@@ -1,11 +1,12 @@
 import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain, queryResult } from "pg-promise";
-import { City, CityResult, Label, LabelLine, LabelLineResult, LabelResult, Terrain, TerrainResult } from "../../models/objects/map-objects";
+import { City, CityResult, Label, LabelLine, LabelLineResult, LabelResult, Terrain, TerrainResult, Unit, UnitResult } from "../../models/objects/map-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getCitiesQuery } from "../queries/maps/get-cities-query";
 import { getLabelLinesQuery } from "../queries/maps/get-label-lines-query";
 import { getLabelsQuery } from "../queries/maps/get-labels-query";
 import { getTerrainQuery } from "../queries/maps/get-terrain-query";
+import { getUnitsQuery } from "../queries/maps/get-units-query";
 
 export class MapRepository {
   pool = new Pool(victorCredentials);
@@ -68,6 +69,18 @@ export class MapRepository {
           y1: result.y1,
           y2: result.y2,
           stroke: result.stroke
+        }
+      }));
+  }
+
+  async getUnits(gameId: number, turnId: number): Promise<Unit[]> {
+    return await this.pool.query(getUnitsQuery, [gameId, turnId])
+      .then((queryResult: QueryResult<any>) => queryResult.rows.map((result: UnitResult) => {
+        return <Unit> {
+          name: result.unit_name,
+          type: result.unit_type,
+          loc: result.loc,
+          countryKey: result.flag_key
         }
       }));
   }

@@ -76,3 +76,16 @@ export interface LabelLine {
 	y2: number;
 	stroke: string;
 }
+
+export interface UnitResult {
+  unit_name: string;
+  unit_type: string,
+  loc: number[];
+  flag_key: string;
+}
+export interface Unit {
+  name: string;
+  type: string;
+  loc: number[];
+  countryKey: string;
+}
