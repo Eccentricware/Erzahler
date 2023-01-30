@@ -3,6 +3,7 @@ export enum CountryStatus {
   CIVIL_DISORDER = 'Civil Disorder',
   ELIMINATED = 'Eliminated',
   NPC = 'Non Player Country',
+  RETREAT = 'Retreat',
   //
   SURVIVED = 'Survived',
   WON = 'Won'
