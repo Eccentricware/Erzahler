@@ -114,6 +114,7 @@ export class AssignmentRepository {
           countryId: result.country_id ? result.country_id : 0,
           countryName: result.country_name,
           countryStatus: result.country_status,
+          nukeTech: result.nuke_range !== null,
           blindAdministrators: result.blind_administrators
         };
       }))

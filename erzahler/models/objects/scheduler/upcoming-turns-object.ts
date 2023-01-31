@@ -45,6 +45,7 @@ interface SingleTurnOptions {
 }
 
 export interface TurnOrders {
+  gameId: number;
   userId: number;
   role?: string;
   countryId?: number;

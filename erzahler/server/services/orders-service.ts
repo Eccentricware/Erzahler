@@ -682,6 +682,7 @@ export class OrdersService {
     const adminVision = adminAssignments.length > 0;
 
     const orders: TurnOrders = {
+      gameId: gameId,
       userId: userId,
       render: 'pending'
     };

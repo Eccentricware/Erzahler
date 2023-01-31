@@ -25,3 +25,9 @@ ordersRouter.get(`/:gameId/orders`, (request, response) => {
       response.send(orders);
     });
 });
+
+ordersRouter.post(`/submit`, (request, response) => {
+  const idToken = <string>request.headers.idtoken;
+  const orders = request.body.orders;
+  console.log(orders);
+})
