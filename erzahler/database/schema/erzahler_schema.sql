@@ -157,6 +157,7 @@ CREATE TABLE IF NOT EXISTS country_histories(
   banked_builds INTEGER NOT NULL,
   nuke_range INTEGER,
   adjustments INTEGER NOT NULL,
+  in_retreat BOOLEAN DEFAULT false,
   PRIMARY KEY(country_history_id),
   FOREIGN KEY(country_id)
     REFERENCES countries(country_id),

@@ -1,11 +1,12 @@
 import { error } from "console";
 import { Pool, QueryResult } from "pg";
-import { IDatabase, IMain } from "pg-promise";
+import { IDatabase, IMain, queryResult } from "pg-promise";
 import { GameDetailsBuilder } from "../../models/classes/game-details-builder";
 import { GameSummaryBuilder } from "../../models/classes/game-summary-builder";
 import { CountryRank, CountryStatus } from "../../models/enumeration/country-enum";
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { GameSummaryQueryObject } from "../../models/objects/game-summary-query-object";
+import { CountryState, CountryStateResult } from "../../models/objects/games/country-state-objects";
 import { GameState, GameStateResult } from "../../models/objects/last-turn-info-object";
 import { StartScheduleEvents } from "../../models/objects/start-schedule-events-object";
 import { StartScheduleObject } from "../../models/objects/start-schedule-object";
@@ -14,6 +15,7 @@ import { FormattingService } from "../../server/services/formattingService";
 import { getPlayerRegistrationStatusQuery } from "../queries/assignments/get-player-registration-status";
 import { checkGameNameAvailabilityQuery } from "../queries/game/check-game-name-availability-query";
 import { checkUserGameAdminQuery } from "../queries/game/check-user-game-admin-query";
+import { getCountryStateQuery } from "../queries/game/get-country-state-query";
 import { getGameDetailsQuery } from "../queries/game/get-game-details-query";
 import { getGamesQuery } from "../queries/game/get-games-query";
 import { getRulesInGameQuery } from "../queries/game/get-rules-in-game-query";
@@ -440,5 +442,19 @@ export class GameRepository {
         return playerRegistrationResults.rows.map((registrationType: any) => this.formattingService.convertKeysSnakeToCamel(registrationType));
       })
       .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
+  }
+
+  async getCountryState(countryId: number): Promise<CountryState[]> {
+    return await this.pool.query(getCountryStateQuery, [countryId])
+      .then((queryResult: QueryResult<any>) => queryResult.rows.map((countryResult: CountryStateResult) => {
+        return <CountryState> {
+          id: countryResult.country_id,
+          name: countryResult.country_name,
+          retreating: countryResult.in_retreat,
+          builds: countryResult.banked_builds,
+          nukeRange: countryResult.nuke_range,
+          adjustments: countryResult.adjustments
+        };
+      }));
   }
 }

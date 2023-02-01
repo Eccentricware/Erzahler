@@ -1,6 +1,10 @@
 import express from "express";
+import { db } from "../../database/connection";
 import { SavedOption } from "../../models/objects/option-context-objects";
+import { OptionsFinal } from "../../models/objects/options-objects";
 import { TurnOptions, TurnOrders } from "../../models/objects/scheduler/upcoming-turns-object";
+import { AccountService } from "../services/accountService";
+import { AssignmentService } from "../services/assignmentService";
 import { OrdersService } from "../services/orders-service";
 
 export const ordersRouter = express.Router();
@@ -11,7 +15,7 @@ ordersRouter.get(`/:gameId/options`, (request, response) => {
   const gameId = Number(request.params.gameId);
 
   ordersService.getTurnOptions(idToken, gameId)
-    .then((options: TurnOptions) => {
+    .then((options: OptionsFinal | string) => {
       response.send(options);
     });
 });

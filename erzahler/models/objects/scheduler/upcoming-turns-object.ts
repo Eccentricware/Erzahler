@@ -65,3 +65,4 @@ export interface SingleTurnOrders {
   nomination?: any;
   votes?: any[];
 }
+

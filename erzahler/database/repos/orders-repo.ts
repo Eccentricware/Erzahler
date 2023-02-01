@@ -8,7 +8,10 @@ import { getEmptySupplyCentersQuery } from "../queries/orders/get-empty-supply-c
 import { getNominatableCountriesQuery } from "../queries/orders/get-nominatable-countries-query";
 import { getNominationsQuery } from "../queries/orders/get-nominations-query";
 import { getOrderOptionsQuery } from "../queries/orders/get-order-options-query";
+import { getTransferBuildOptionsQuery } from "../queries/orders/get-transfer-build-options-query";
 import { getTransferOptionsQuery } from "../queries/orders/get-transfer-options-query";
+import { getTechOfferOptionsQuery } from "../queries/orders/get-transfer-tech-offer-options-query";
+import { getTechReceiveOptionsQuery } from "../queries/orders/get-transfer-tech-receive-options-query";
 import { getTurnUnitOrdersQuery } from "../queries/orders/get-turn-unit-orders";
 import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-info-query";
 import { insertTurnOrderSetsQuery } from "../queries/orders/insert-turn-order-sets";
@@ -196,6 +199,42 @@ export class OrdersRepository {
       });
 
     return savedOptions;
+  }
+
+  async getBuildTransferOptions(gameId: number, turnId: number): Promise<TransferCountry[]> {
+    const transferOptions: TransferCountry[] = await this.pool.query(getTransferBuildOptionsQuery, [gameId, turnId])
+      .then((result: QueryResult<any>) => result.rows.map((countryResult: TransferCountryResult) => {
+        return <TransferCountry> {
+          countryId: countryResult.country_id,
+          countryName: countryResult.country_name
+        };
+      }))
+
+    return transferOptions;
+  }
+
+  async getTechOfferOptions(gameId: number, turnId: number): Promise<TransferCountry[]> {
+    const transferOptions: TransferCountry[] = await this.pool.query(getTechOfferOptionsQuery, [gameId, turnId])
+      .then((result: QueryResult<any>) => result.rows.map((countryResult: TransferCountryResult) => {
+        return <TransferCountry> {
+          countryId: countryResult.country_id,
+          countryName: countryResult.country_name
+        };
+      }))
+
+    return transferOptions;
+  }
+
+  async getTechReceiveOptions(gameId: number, turnId: number): Promise<TransferCountry[]> {
+    const transferOptions: TransferCountry[] = await this.pool.query(getTechReceiveOptionsQuery, [gameId, turnId])
+      .then((result: QueryResult<any>) => result.rows.map((countryResult: TransferCountryResult) => {
+        return <TransferCountry> {
+          countryId: countryResult.country_id,
+          countryName: countryResult.country_name
+        };
+      }))
+
+    return transferOptions;
   }
 
   async getTransferOptions(gameId: number, turnId: number): Promise<TransferOption[]> {

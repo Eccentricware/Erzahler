@@ -236,6 +236,14 @@ export interface TransferOptionResult {
   receive_tech: TransferCountryResult[];
   receive_builds: TransferCountryResult[];
 }
+export interface TransferOptionCountryResult {
+  country_id: number;
+  country_name: string;
+}
+export interface TransferOptionCountry {
+  id: number;
+  name: string;
+}
 
 export interface TransferCountryResult {
   country_id: number;
