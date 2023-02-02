@@ -153,6 +153,7 @@ CREATE TABLE IF NOT EXISTS country_histories(
   turn_id INTEGER NOT NULL,
   country_status VARCHAR(15) NOT NULL,
   city_count INTEGER NOT NULL,
+  vote_count INTEGER DEFAULT 1,
   unit_count INTEGER NOT NULL,
   banked_builds INTEGER NOT NULL,
   nuke_range INTEGER,

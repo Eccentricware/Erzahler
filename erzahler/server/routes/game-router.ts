@@ -78,3 +78,15 @@ gameRouter.post('/declare-ready', (request, response) => {
       }
     });
 });
+
+gameRouter.get('/stats/:gameId', (request, response) => {
+  const gameId: number = Number(request.params.gameId);
+
+  gameService.getGameStats(gameId)
+    .then((result: any) => {
+      response.send(result);
+    })
+    .catch((error: Error) => {
+      response.send({ error: 'GetGameStatsError: ' + error.message});
+    });
+})
