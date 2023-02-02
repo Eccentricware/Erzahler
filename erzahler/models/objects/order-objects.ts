@@ -73,6 +73,8 @@ export interface TransferCountry {
   countryName: string;
 }
 export interface TransferBuildOrdersResults {
+  player_country_id: number;
+  player_country_name: string;
   build_transfer_recipients: TransferCountryResult[];
   build_transfer_tuples: number[];
 }
@@ -83,6 +85,8 @@ export interface TransferCountryResult {
 }
 
 export interface TransferBuildOrder {
+  playerCountryId: number;
+  playerCountryName: string;
   countryId: number;
   countryName: string;
   builds: number;

@@ -61,17 +61,17 @@ export interface MoveSupport {
   nodeId: number[];
 }
 
-interface AdjacentTransport {
+export interface AdjacentTransport {
   unitId: number;
   unitName: string;
 }
 
-interface AdjacentTransportable {
+export interface AdjacentTransportable {
   unitId: number;
   unitName: string;
 }
 
-interface TransportDestination {
+export interface TransportDestination {
   nodeId: number;
   nodeName: string;
   provinceId: number;
@@ -105,17 +105,17 @@ interface HoldSupportResult {
   unit_name: string;
 }
 
-interface AdjacentTransportResult {
+export interface AdjacentTransportResult {
   unit_id: number;
   unit_name: string;
 }
 
-interface AdjacentTransportableResult {
+export interface AdjacentTransportableResult {
   unit_id: number;
   unit_name: string;
 }
 
-interface TransportDestinationResult {
+export interface TransportDestinationResult {
   node_id: number;
   node_name: string;
   province_id: number;

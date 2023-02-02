@@ -81,8 +81,6 @@ export class OptionsRepository {
     return unitAdjacencyInfoResult;
   }
 
-
-
   async getAirAdjacencies(gameId: number): Promise<AirAdjacency[]> {
     const airAdjArray: AirAdjacency[] = await this.pool.query(getAirAdjQuery, [gameId])
       .then((results: QueryResult<any>) => {

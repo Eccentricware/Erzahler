@@ -4,6 +4,7 @@ import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain } from "pg-promise";
 import { SchedulerSettingsBuilder } from "../../models/classes/schedule-settings-builder";
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
+import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { TurnPG, TurnTS } from "../../models/objects/database-objects";
 import { ScheduleSettingsQueryResult } from "../../models/objects/schedule-settings-query-object";
 import { UpcomingTurn, UpcomingTurnResult } from "../../models/objects/scheduler/upcoming-turns-object";
@@ -13,6 +14,7 @@ import { setAssignmentsActiveQuery } from "../queries/assignments/set-assignment
 import { insertTurnQuery } from "../queries/game/insert-turn-query";
 import { startGameQuery } from "../queries/game/start-game-query";
 import { updateTurnQuery } from "../queries/game/update-turn-query";
+import { getNominationsQuery } from "../queries/orders/options-final/get-nominations-query";
 import { getScheduleSettingsQuery } from "../queries/scheduler/get-schedule-settings-query";
 import { getUpcomingTurnsQuery } from "../queries/scheduler/get-upcoming-turns-query";
 
@@ -83,6 +85,20 @@ export class SchedulerRepository {
     return await this.pool.query(getUpcomingTurnsQuery, [gameId])
       .then((results: QueryResult<any>) => {
         return results.rows.map((turn: UpcomingTurnResult) => {
+
+          const unitMovement = [
+            TurnType.ORDERS_AND_VOTES,
+            TurnType.SPRING_ORDERS,
+            TurnType.SPRING_RETREATS,
+            TurnType.FALL_ORDERS,
+            TurnType.FALL_RETREATS
+          ].includes(turn.turn_type);
+          const transfers = [TurnType.ORDERS_AND_VOTES, TurnType.SPRING_ORDERS].includes(turn.turn_type);
+          const capturing = [TurnType.FALL_ORDERS, TurnType.FALL_RETREATS].includes(turn.turn_type);
+          const adjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(turn.turn_type);
+          const nominations = [TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS].includes(turn.turn_type);
+          const votes = [TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(turn.turn_type);
+
           return <UpcomingTurn> {
             gameId: turn.game_id,
             turnId: turn.turn_id,
@@ -91,9 +107,15 @@ export class SchedulerRepository {
             turnType: turn.turn_type,
             turnStatus: turn.turn_status,
             deadline: turn.deadline,
-            defaultsReady: turn.defaults_ready
-          }
-        })
+            defaultsReady: turn.defaults_ready,
+            unitMovement: unitMovement,
+            transfers: transfers,
+            hasCaptures: capturing,
+            adjustments: adjustments,
+            nominations: nominations,
+            votes: votes
+          };
+        });
       })
       .catch((error: Error) => {
         console.log('getUpcomingTurns Error: ' + error);

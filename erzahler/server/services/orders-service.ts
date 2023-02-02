@@ -20,7 +20,7 @@ import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { CountryStatus } from "../../models/enumeration/country-enum";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { BuildOptions, OptionsFinal, TransferBuildsCountry } from "../../models/objects/options-objects";
-import { Build, BuildOrders, DisbandOrders, NominationOrder, NukeBuildInDisband, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
+import { Build, BuildOrders, DisbandOrders, NominationOrder, NukeBuildInDisband, TransferBuildOrder, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
 import { CountryOrderSet, OrderTurnIds } from "../../models/objects/orders/expected-order-types-object";
 import assert from "assert";
 
@@ -115,7 +115,7 @@ export class OrdersService {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
           orders.techTransfer = techTransferOrders[0];
 
-          const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, pendingTurn.turnId);
+          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, pendingTurn.turnId);
           orders.buildTransfers = pendingBuildTransferOrders;
         }
 
@@ -162,7 +162,7 @@ export class OrdersService {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(preliminaryTurn.turnId, gameState.turnId, playerCountry.countryId);
           orders.techTransfer = techTransferOrders[0];
 
-          const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, preliminaryTurn.turnId);
+          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, preliminaryTurn.turnId);
           orders.buildTransfers = pendingBuildTransferOrders;
         }
 
@@ -254,7 +254,7 @@ export class OrdersService {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
           orders.techTransfer = techTransferOrders[0];
 
-          const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, pendingTurn.turnId);
+          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, pendingTurn.turnId);
           orders.buildTransfers = pendingBuildTransferOrders;
         }
 
@@ -299,7 +299,7 @@ export class OrdersService {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(preliminaryTurn.turnId, gameState.turnId, playerCountry.countryId);
           orders.techTransfer = techTransferOrders[0];
 
-          const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, preliminaryTurn.turnId);
+          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, preliminaryTurn.turnId);
           orders.buildTransfers = pendingBuildTransferOrders;
         }
 

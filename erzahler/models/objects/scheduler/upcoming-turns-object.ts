@@ -7,7 +7,7 @@ export interface UpcomingTurnResult {
   turn_id: number;
   game_name: string;
   turn_name: string;
-  turn_type: string;
+  turn_type: TurnType;
   turn_status: string;
   deadline: string;
   defaults_ready: boolean;
@@ -21,6 +21,10 @@ export interface UpcomingTurn {
   turnStatus: TurnStatus;
   deadline: string;
   defaultsReady: boolean;
+  hasCaptures: boolean;
+  unitMovement: boolean;
+  transfers: boolean;
+  adjustments: boolean;
 }
 
 export interface TurnOptions {
