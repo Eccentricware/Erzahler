@@ -582,19 +582,27 @@ CREATE TABLE IF NOT EXISTS order_sets(
   order_set_type VARCHAR(15) NOT NULL,
   order_set_name VARCHAR(25),
   default_orders DEFAULT true,
+  tech_partner_id INTEGER,
+  build_transfer_recipients INTEGER[],
+  build_transfer_amounts INTEGER[],
+  new_unit_types VARCHAR(10)[],
+  new_units_locs INTEGER[],
+  units_disbanding INTEGER[],
   PRIMARY KEY(order_set_id),
   FOREIGN KEY(country_id)
     REFERENCES countries(country_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
   FOREIGN KEY(message_id)
-    REFERENCES messages(message_id)
+    REFERENCES messages(message_id),
+  FOREIGN KEY(tech_partner_id)
+    REFERENCES countries(country_id)
 );
 
 \echo 'Attempting to create orders table'
 CREATE TABLE IF NOT EXISTS orders(
   order_id SERIAL,
-  order_set_id INTEGER,
+  order_set_id INTEGER NOT NULL,
   order_type VARCHAR(15) NOT NULL,
   ordered_unit_id INTEGER NOT NULL,
   secondary_unit_id INTEGER,
@@ -690,6 +698,7 @@ CREATE INDEX order_option_secondary_idx ON order_options(secondary_unit_id);
 CREATE INDEX order_set_country_idx ON order_sets(country_id);
 CREATE INDEX order_set_turn_idx ON order_sets(turn_id);
 CREATE INDEX order_set_message_idx ON order_sets(message_id);
+CREATE INDEX order_set_transfer_partner_idx ON order_sets(tech_partner_id);
 CREATE INDEX order_set_idx ON orders(order_set_id);
 CREATE INDEX order_unit_idx ON orders(ordered_unit_id);
 CREATE INDEX order_secondary_idx ON orders(secondary_unit_id);

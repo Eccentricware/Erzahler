@@ -52,9 +52,16 @@ export interface TurnOrders {
   countryName?: string;
   turnType?: string;
   message?: string;
-  pending?: SingleTurnOrders;
-  preliminary?: SingleTurnOrders;
+  pendingDefault?: boolean;
+  preliminaryDefault?: boolean;
   render?: string;
+  units?: any[];
+  buildTransfers?: TransferTechCountry[];
+  techTransfer?: number;
+  builds?: any[];
+  disbands?: any[];
+  nomination?: any;
+  votes?: any[];
 }
 
 export interface SingleTurnOrders {
@@ -66,3 +73,34 @@ export interface SingleTurnOrders {
   votes?: any[];
 }
 
+export interface OrderSetFinalResult {
+  order_set_id: number;
+  country_id: number;
+  country_name: string;
+  default_orders: boolean;
+  tech_partner_id: number;
+  new_unit_types: string[];
+  new_unit_locs: number[];
+  units_disbanding: number[];
+  build_transfer_recipients: any[];
+  build_transfer_amounts: number[];
+}
+
+export interface OrderSetFinal {
+  orderSetId: number;
+  countryId: number;
+  countryName: string;
+  defaultOrders: boolean;
+  techPartnerId: number;
+  newUnitTypes: string[];
+  newUnitLocs: number[];
+  unitsDisbanding: number[];
+  buildTransfers: TransferTechCountry[];
+}
+export interface TransferTechCountry {
+  countryId: number;
+  countryName: string;
+}
+export interface TransferBuildsCountry extends TransferTechCountry {
+  builds: number;
+}
