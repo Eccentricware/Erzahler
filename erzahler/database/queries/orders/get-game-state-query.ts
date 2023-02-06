@@ -23,7 +23,8 @@ export const getGameStateQuery = `
     CASE
       WHEN uh.unit_status = 'Retreat'
       THEN true ELSE false
-    END AS units_in_retreat
+    END AS units_in_retreat,
+    default_nuke_range
   FROM games g
   INNER JOIN turns t ON t.game_id = g.game_id
   INNER JOIN coalition_schedules c ON c.game_id = g.game_id

@@ -2,6 +2,7 @@ import { OrderDisplay } from "../../enumeration/order-display-enum";
 import { ProvinceStatus, ProvinceType, ResolutionEvent, VoteType } from "../../enumeration/province-enums";
 import { UnitStatus, UnitType } from "../../enumeration/unit-enum";
 import { AdjacentTransportResult, AdjacentTransportableResult, TransportDestinationResult, AdjacentTransport, AdjacentTransportable, TransportDestination } from "../option-context-objects";
+import { TransferBuildOrder, TransferTechOrder } from "../order-objects";
 
 export interface UnitOrderResolutionResult {
   order_id: number;
@@ -143,11 +144,22 @@ export interface TransferResourcesResults {
   nuke_range: number;
 }
 
-export interface TransferResources {
+export interface CountryTransferResources {
   countryId: number;
   countryName: string;
   bankedBuilds: number;
+  buildsRemaining: number;
   nukeRange: number;
+}
+
+export interface TransferResources {
+  countryResources: CountryTransferResources[];
+  handshakes: {
+    offers: Record<number,number>,
+    requests: Record<number,number>
+  };
+  techTransferResults?: TransferTechOrder[];
+  buildTransferResults?: TransferBuildOrder[];
 }
 
 export interface UnitMovementResults {

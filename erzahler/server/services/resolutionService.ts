@@ -9,7 +9,8 @@ import { CountryState } from "../../models/objects/games/country-state-objects";
 import { StartDetails } from "../../models/objects/initial-times-object";
 import { GameState } from "../../models/objects/last-turn-info-object";
 import { AdjacentTransport, OptionDestination, SavedOption, SecondaryUnit, TransportDestination, TransportPathLink, UnitOptionsFinalized } from "../../models/objects/option-context-objects";
-import { CompliantTransportPath, OrderDependencies, OrderResolutionLocation, ProvinceEvents, ProvinceHistoryInsert, TransferResources, TransportAttempt, TransportNetworkUnit, UnitMovementResults, UnitOrderGroups, UnitOrderResolution, UnitOrderResolutionResult } from "../../models/objects/resolution/order-resolution-objects";
+import { TransferBuildOrder, TransferTechOrder } from "../../models/objects/order-objects";
+import { CompliantTransportPath, CountryTransferResources, OrderDependencies, OrderResolutionLocation, ProvinceEvents, ProvinceHistoryInsert, TransferResources, TransportAttempt, TransportNetworkUnit, UnitMovementResults, UnitOrderGroups, UnitOrderResolution, UnitOrderResolutionResult } from "../../models/objects/resolution/order-resolution-objects";
 import { UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
 import { OptionsService } from "./options-service";
 
@@ -104,7 +105,27 @@ export class ResolutionService {
     }
 
     if (turnsWithTransfers.includes(turn.turnType)) {
-      this.resolveTransfers(gameState, turn);
+      const transferResults = await this.resolveTransfers(gameState, turn);
+
+      transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
+        if (result.success && result.hasNukes) {
+          const partnerHistory = countryHistories.find((country: CountryState) => country.countryId === result.techPartnerId);
+          if (partnerHistory) {
+            partnerHistory.nukeRange = gameState.defaultNukeRange;
+          }
+        }
+      });
+
+      transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
+        if (result.builds > 0) {
+          const playerCountry = countryHistories.find((country: CountryState) => country.countryId === result.playerCountryId);
+          const partnerCountry = countryHistories.find((country: CountryState) => country.countryId === result.countryId);
+          if (playerCountry && partnerCountry) {
+            playerCountry.builds -= result.builds;
+            partnerCountry.builds += result.builds;
+          }
+        }
+      });
     }
 
     if (turnsWithAdjustments.includes(turn.turnType)) {
@@ -798,20 +819,66 @@ export class ResolutionService {
     }
   }
 
-  async resolveTransfers(gameState: GameState, turn: UpcomingTurn): Promise<void> {
-    const transferResources = await db.resolutionRepo.getTransferResourceValidation(gameState.turnId);
-    await this.validateTechTransfers(turn.turnId, gameState.turnId, transferResources);
-    await this.validateBuildTransfers(turn.turnId, transferResources);
-    console.log('?');
+  async resolveTransfers(gameState: GameState, turn: UpcomingTurn): Promise<TransferResources> {
+    const transferResources: TransferResources = {
+      countryResources: await db.resolutionRepo.getTransferResourceValidation(gameState.turnId),
+      handshakes: {
+        offers: {},
+        requests: {}
+      }
+    };
+    transferResources.techTransferResults = await this.validateTechTransfers(turn.turnId, gameState.turnId, transferResources);
+    transferResources.buildTransferResults = await this.validateBuildTransfers(turn.turnId, transferResources);
+    return transferResources;
   }
 
-  async validateTechTransfers(nextTurnId: number, currentTurnId: number, transferResources: TransferResources[]): Promise<void> {
-    const techTransferOrders = await db.ordersRepo.getTechTransferPartner(nextTurnId, currentTurnId, 0);
+  async validateTechTransfers(nextTurnId: number, currentTurnId: number, transferResources: TransferResources): Promise<TransferTechOrder[]> {
+    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(nextTurnId, currentTurnId, 0);
+
+    techTransferOrders.forEach((order: TransferTechOrder) => {
+      const partnerCountry = techTransferOrders.find((resource: TransferTechOrder) => resource.countryId === order.techPartnerId);
+      if (partnerCountry) {
+        const playerCountry = techTransferOrders.find((resource: TransferTechOrder) => resource.countryId === order.countryId);
+        if (playerCountry) {
+          if (playerCountry.hasNukes && !partnerCountry.hasNukes) {
+            transferResources.handshakes.offers[playerCountry.countryId] = partnerCountry.countryId;
+            if (transferResources.handshakes.requests[partnerCountry.countryId] === playerCountry.countryId) {
+              playerCountry.success = true;
+              partnerCountry.success = true;
+            }
+          } else if (!playerCountry.hasNukes && partnerCountry.hasNukes) {
+            transferResources.handshakes.requests[playerCountry.countryId] = partnerCountry.countryId;
+            if (transferResources.handshakes.offers[partnerCountry.countryId] === playerCountry.countryId) {
+              playerCountry.success = true;
+              partnerCountry.success = true
+            }
+          }
+        }
+      }
+    });
+
+    return techTransferOrders;
   }
 
-  async validateBuildTransfers(turnId: number, transferResources: TransferResources[]): Promise<void> {
-    const buildTransferOrders = await db.ordersRepo.getBuildTransferOrders(0, turnId);
-    // const
+  async validateBuildTransfers(turnId: number, transferResources: TransferResources): Promise<TransferBuildOrder[]> {
+    const buildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(0, turnId);
+
+    buildTransferOrders.forEach((transferOrder: TransferBuildOrder) => {
+      const playerCountry =
+        transferResources.countryResources.find((country: CountryTransferResources) => country.countryId === transferOrder.playerCountryId);
+
+      if (playerCountry) {
+
+        if (playerCountry.buildsRemaining >= transferOrder.builds) {
+          playerCountry.buildsRemaining -= transferOrder.builds;
+        } else {
+          transferOrder.builds = playerCountry?.buildsRemaining;
+          playerCountry.buildsRemaining -= transferOrder.builds;
+        }
+
+      }
+    });
+    return buildTransferOrders
   }
 
   async resolveAdjustments(gameState: GameState, turn: UpcomingTurn): Promise<void> {

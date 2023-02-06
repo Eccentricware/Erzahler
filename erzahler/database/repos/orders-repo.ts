@@ -168,7 +168,8 @@ export class OrdersRepository {
         countryName: order.country_name,
         techPartnerId: order.tech_partner_id,
         techPartnerName: order.tech_partner_name,
-        hasNukes: order.has_nukes
+        hasNukes: order.has_nukes,
+        success: false
       };
      }));
   }

@@ -2,14 +2,13 @@ import { Pool } from 'pg';
 import { getUserIdQuery } from '../../database/queries/accounts/get-user-id-query';
 import { victorCredentials } from '../../secrets/dbCredentials';
 import { DecodedIdToken, getAuth, UserRecord } from 'firebase-admin/auth'
-import { createUserQuery } from '../../database/queries/accounts/create-user-query';
 import { getUserProfileQuery } from '../../database/queries/dashboard/get-user-profile-query';
 import { getExistingProviderQuery } from '../../database/queries/accounts/get-existing-provider-query';
 import { createProviderQuery } from '../../database/queries/accounts/create-provider-query';
 import { syncProviderEmailStateQuery } from '../../database/queries/accounts/sync-provider-email-state-query';
 import { lockUsernameQuery } from '../../database/queries/accounts/lock-username-query';
 import { clearVerficiationDeadlineQuery } from '../../database/queries/accounts/clear-verification-deadline-query';
-import { UserProfile } from '../../models/objects/user-profile-object';
+import { AccountsProviderRow, AccountsUserRow, UserProfile } from '../../models/objects/user-profile-object';
 import { FormattingService } from './formattingService';
 import { updatePlayerSettings } from '../../database/queries/dashboard/update-user-query';
 import { db } from '../../database/connection';
@@ -71,7 +70,10 @@ export class AccountService {
   }
 
   async addUser(firebaseUser: UserRecord, username: string, providerDependentArgs: any[]): Promise<any> {
-    await db.accountsRepo.createUser(providerDependentArgs);
+    const ceId = await db.accountsRepo.createAccountUser(providerDependentArgs);
+    providerDependentArgs.push(ceId);
+
+    await db.accountsRepo.createEnvironmentUser(providerDependentArgs);
 
     const userId: number = await db.accountsRepo.getUserId(username);
     const providerArgs = this.createProviderArgs(userId, firebaseUser);
@@ -139,21 +141,43 @@ export class AccountService {
     const token: DecodedIdToken = await this.validateToken(idToken);
 
     if (token.uid) {
-
-
       const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
       await db.accountsRepo.syncProviderEmailState(firebaseUser);
 
       const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
 
-      if (blitzkarteUser && blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
-        await db.accountsRepo.lockUsername(firebaseUser.uid);
-        await db.accountsRepo.clearVerificationDeadline(firebaseUser.uid);
+      if (blitzkarteUser) {
+        if (blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
+          await db.accountsRepo.lockUsername(firebaseUser.uid);
+          await db.accountsRepo.clearVerificationDeadline(firebaseUser.uid);
+        }
+      } else {
+        await this.restoreAccount(token.uid);
+
+        const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
+        return blitzkarteUser;
       }
 
       return blitzkarteUser;
     } else {
       return { error: 'idToken is not valid' };
+    }
+  }
+
+  async restoreAccount(uid: string): Promise<UserProfile | any> {
+    const users: AccountsUserRow[] = await db.accountsRepo.getUserRowFromAccounts(uid);
+    if (users.length > 0) {
+      const user = users[0];
+
+      const providers: AccountsProviderRow[] = await db.accountsRepo.getProviderRowFromAccountsByUserId(user.userId);
+
+      const userId = await db.accountsRepo.insertUserFromBackup(user);
+      if (userId > 0) {
+        await db.accountsRepo.insertProvidersFromBackup(providers);
+      }
+
+    } else {
+      console.log('Firebase UID does not exist in accounts DB. How did you pull that off?');
     }
   }
 
