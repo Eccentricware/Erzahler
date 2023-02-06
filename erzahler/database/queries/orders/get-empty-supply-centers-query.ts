@@ -10,8 +10,8 @@ export const getEmptySupplyCentersQuery = `
     sn.node_name as sea_node_name,
     an.node_id AS air_node_id,
     an.loc AS air_node_loc
-  FROM provinces p --597
-  INNER JOIN province_histories ph ON ph.province_id = p.province_id --597
+  FROM provinces p
+  INNER JOIN province_histories ph ON ph.province_id = p.province_id
   INNER JOIN countries c ON c.country_id = ph.controller_id
   INNER JOIN country_histories ch ON ch.country_id = c.country_id
   LEFT JOIN nodes ln ON ln.province_id = p.province_id AND ln.node_type = 'land'

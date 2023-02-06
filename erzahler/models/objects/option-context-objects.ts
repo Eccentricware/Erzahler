@@ -264,18 +264,25 @@ export interface BuildLocResult {
   air_node_loc: number[];
 }
 
-export interface BuildLoc {
+export interface BuildLocResult {
   countryId: number;
   countryName: string;
   provinceName: string;
   cityLoc: number[];
   landNodeId: number;
   landNodeLoc: number[];
-  seaNodeId: number;
-  seaNodeLoc: number[];
-  seaNodeName: string;
+  seaNodeId?: number;
+  seaNodeLoc?: number[];
+  seaNodeName?: string;
   airNodeId: number;
   airNodeLoc: number[];
+}
+
+export interface BuildLoc {
+  province: string;
+  display: string;
+  nodeId: number;
+  nodeLoc: number[];
 }
 
 export interface AtRiskUnitResult {
