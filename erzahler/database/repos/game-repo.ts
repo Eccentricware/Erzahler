@@ -450,7 +450,7 @@ export class GameRepository {
     return await this.pool.query(getCountryStateQuery, [countryId])
       .then((queryResult: QueryResult<any>) => queryResult.rows.map((countryResult: CountryStateResult) => {
         return <CountryState> {
-          id: countryResult.country_id,
+          countryId: countryResult.country_id,
           name: countryResult.country_name,
           retreating: countryResult.in_retreat,
           builds: countryResult.banked_builds,

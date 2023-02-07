@@ -5,13 +5,15 @@ export interface CountryStateResult {
   banked_builds: number;
   nuke_range: number | null;
   adjustments: number;
+  country_status: string;
 }
 
 export interface CountryState {
-  id: number;
+  countryId: number;
   name: string;
   retreating: boolean;
   builds: number;
   nukeRange: number | null;
   adjustments: number;
+  countryStatus: string;
 }
