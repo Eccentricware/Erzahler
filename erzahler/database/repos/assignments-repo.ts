@@ -15,6 +15,7 @@ import { getAssignmentsQuery } from "../queries/game/get-assignments-query";
 import { getGameAdminsQuery } from "../queries/game/get-game-admins-query";
 import { getRegisteredPlayersQuery } from "../queries/game/get-registered-players-query";
 import { UserAssignment, UserAssignmentResult } from "../../models/objects/assignment-objects";
+import { getPlayerIsCountryQuery } from "../queries/assignments/get-player-is-country-query";
 
 /**
  * Handles DB updates involving user associations with games.
@@ -124,5 +125,12 @@ export class AssignmentRepository {
       });
 
     return assignments;
+  }
+
+  async confirmUserIsCountry(gameId: number, userId: number, countryId: number): Promise<boolean> {
+    const assigned = await this.pool.query(getPlayerIsCountryQuery, [gameId, userId, countryId])
+      .then((result: QueryResult) => result.rows[0].assigned);
+
+    return assigned;
   }
 }
