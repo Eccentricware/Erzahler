@@ -21,7 +21,7 @@ export interface TurnOrders {
   render?: string;
   units?: any[];
   buildTransfers?: TransferBuildOrder[];
-  techTransfers?: TransferTechOrder[];
+  techTransfer?: TransferTechOrder;
   builds?: BuildOrders;
   disbands?: any[];
   nomination?: any;
@@ -36,6 +36,8 @@ export interface SingleTurnOrders {
   nomination?: any;
   votes?: any[];
 }
+
+
 
 export interface OrderSetFinalResult {
   order_set_id: number;

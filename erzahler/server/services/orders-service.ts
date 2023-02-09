@@ -13,7 +13,6 @@ import { AssignmentService } from "./assignmentService";
 import { SchedulerService } from "./scheduler-service";
 import { UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
-import { assert } from "console";
 import { stringify } from "querystring";
 import { TurnStatus } from "../../models/enumeration/turn-status-enum";
 import { UserAssignment } from "../../models/objects/assignment-objects";
@@ -21,8 +20,9 @@ import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { CountryStatus } from "../../models/enumeration/country-enum";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { BuildOptions, OptionsFinal, TransferBuildsCountry } from "../../models/objects/options-objects";
-import { BuildOrders, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
-import { getOrderSetQuery } from "../../database/queries/orders/get-order-set-query";
+import { Build, BuildOrders, TransferTechOrder, TurnOrders } from "../../models/objects/order-objects";
+import { CountryOrderSet, OrderTurnIds } from "../../models/objects/orders/expected-order-types-object";
+import assert from "assert";
 
 export class OrdersService {
 
@@ -553,7 +553,7 @@ export class OrdersService {
     let playerCountry: CountryState | undefined = undefined;
     const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
     if (playerCountries.length > 0) {
-      const countryStates = await db.gameRepo.getCountryState(playerCountries[0].countryId);
+      const countryStates = await db.gameRepo.getCountryState(gameId, playerCountries[0].countryId);
       playerCountry = countryStates[0];
     }
 
@@ -708,7 +708,7 @@ export class OrdersService {
 
       // Adjustments
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-        if (playerCountry.adjustments > 0) {
+        if (playerCountry.adjustments >= 0) {
           turnOptions.builds = {
             turnStatus: TurnStatus.PENDING,
             locations: buildLocs,
@@ -786,7 +786,7 @@ export class OrdersService {
 
       // Adjustments
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-        if (playerCountry.adjustments > 0) {
+        if (playerCountry.adjustments >= 0) {
           turnOptions.builds = {
             turnStatus: TurnStatus.PRELIMINARY,
             builds: playerCountry.adjustments,
@@ -852,7 +852,7 @@ export class OrdersService {
 
     if (playerCountries.length > 0) {
       orders.role === 'player';
-      const countryStates = await db.gameRepo.getCountryState(playerCountries[0].countryId);
+      const countryStates = await db.gameRepo.getCountryState(gameId, playerCountries[0].countryId);
       let playerCountry: CountryState = countryStates[0];
       orders.countryId = playerCountry.countryId;
 
@@ -911,7 +911,7 @@ export class OrdersService {
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
-          orders.techTransfers = techTransferOrders
+          orders.techTransfer = techTransferOrders[0];
 
           const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, pendingTurn.turnId);
           orders.buildTransfers = pendingBuildTransferOrders;
@@ -919,7 +919,7 @@ export class OrdersService {
 
         // Adjustments
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-          if (playerCountry.adjustments > 0) {
+          if (playerCountry.adjustments >= 0) {
             const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
             orders.builds = pendingBuildOrders[0];
           }
@@ -955,7 +955,7 @@ export class OrdersService {
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(preliminaryTurn.turnId, gameState.turnId, playerCountry.countryId);
-          orders.techTransfers = techTransferOrders
+          orders.techTransfer = techTransferOrders[0];
 
           const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, preliminaryTurn.turnId);
           orders.buildTransfers = pendingBuildTransferOrders;
@@ -976,7 +976,7 @@ export class OrdersService {
     else if (adminVision)  {
       let playerCountry: CountryState;
       if (playerCountries[0]) {
-        const countryStates = await db.gameRepo.getCountryState(playerCountries[0].countryId);
+        const countryStates = await db.gameRepo.getCountryState(gameId, playerCountries[0].countryId);
         playerCountry = countryStates[0];
       } else {
         playerCountry = {
@@ -1041,7 +1041,7 @@ export class OrdersService {
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
-          orders.techTransfers = techTransferOrders
+          orders.techTransfer = techTransferOrders[0];
 
           const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, pendingTurn.turnId);
           orders.buildTransfers = pendingBuildTransferOrders;
@@ -1049,7 +1049,7 @@ export class OrdersService {
 
         // Adjustments
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-          if (playerCountry.adjustments > 0) {
+          if (playerCountry.adjustments >= 0) {
             const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
             orders.builds = pendingBuildOrders[0];
           }
@@ -1085,7 +1085,7 @@ export class OrdersService {
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(preliminaryTurn.turnId, gameState.turnId, playerCountry.countryId);
-          orders.techTransfers = techTransferOrders
+          orders.techTransfer = techTransferOrders[0];
 
           const pendingBuildTransferOrders: TransferBuildsCountry[] = await db.ordersRepo.getBuildTransferOrders(playerCountry.countryId, preliminaryTurn.turnId);
           orders.buildTransfers = pendingBuildTransferOrders;
@@ -1397,15 +1397,122 @@ export class OrdersService {
     });
   }
 
+  async getOrderSets(gameId: number, countryId: number): Promise<OrderTurnIds> {
+    const gameState: GameState = await db.gameRepo.getGameState(gameId);
+    const countryOrderSets: CountryOrderSet[] = await db.ordersRepo.getCountryOrderSets(gameId, gameState.turnId, countryId);
+    const pendingOrderSet: CountryOrderSet | undefined
+      = countryOrderSets.find((orderSet: CountryOrderSet) => orderSet.turnStatus === TurnStatus.PENDING);
+    const preliminaryOrderSet: CountryOrderSet | undefined
+      = countryOrderSets.find((orderSet: CountryOrderSet) => orderSet.turnStatus === TurnStatus.PRELIMINARY);
+
+    const turnIds: OrderTurnIds = {};
+
+    if (pendingOrderSet) {
+      // Standard Unit Movement
+      if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingOrderSet.turnType)) {
+        turnIds.units = pendingOrderSet.orderSetId;
+      }
+
+      // Retreating Unit Movement
+      if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingOrderSet.turnType) && pendingOrderSet.inRetreat) {
+        turnIds.retreats = pendingOrderSet.orderSetId;
+      }
+
+      // Transfers
+      if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingOrderSet.turnType)) {
+        turnIds.transfers = pendingOrderSet.orderSetId;
+      }
+
+      // Adjustments
+      if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingOrderSet.turnType)) {
+        if (pendingOrderSet.adjustments >= 0) {
+          turnIds.builds = pendingOrderSet.orderSetId;
+        } else {
+          turnIds.disbands = pendingOrderSet.orderSetId;
+        }
+      }
+
+      // Nominations
+      if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingOrderSet.turnType)) {
+        turnIds.nomination = pendingOrderSet.orderSetId;
+      }
+
+      // Votes
+      if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingOrderSet.turnType)) {
+        turnIds.votes = pendingOrderSet.orderSetId;
+      }
+    }
+
+    if (preliminaryOrderSet) {
+      // Standard Unit Movement
+      if ([TurnType.SPRING_ORDERS, TurnType.FALL_ORDERS].includes(preliminaryOrderSet.turnType)) {
+        turnIds.units = preliminaryOrderSet.orderSetId;
+      }
+
+      // Transfers
+      if ([TurnType.SPRING_ORDERS].includes(preliminaryOrderSet.turnType)) {
+        turnIds.transfers = preliminaryOrderSet.orderSetId;
+      }
+
+      // Nominations
+      if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryOrderSet.turnType)) {
+        turnIds.nomination = preliminaryOrderSet.orderSetId;
+      }
+    }
+
+
+    return turnIds;
+  }
+
   async saveOrders(idToken: string, orders: TurnOrders): Promise<any> {
     // Identify user
     const accountService = new AccountService();
+    const schedulerService = new SchedulerService();
 
     const userId = await accountService.getUserIdFromToken(idToken);
     const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
     if (userAssigned) {
+      const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
 
+      // if (orderSetIds.votes && orders.votes) {
+      //   orders.votes.forEach((vote: Order) => {
+      //     db.ordersRepo.saveVoteOrder(vote, orderSetIds.votes);
+      //   });
+      // }
+
+      if (orderSetIds.units && orders.units) {
+        orders.units.forEach(async (unit: Order) => {
+          assert(orderSetIds.units);
+          await db.ordersRepo.saveUnitOrder(orderSetIds.units, unit);
+        });
+      }
+
+      if (orderSetIds.transfers && orders.techTransfer && orders.buildTransfers) {
+        await db.ordersRepo.saveTransfers(orderSetIds.transfers, orders.techTransfer, orders.buildTransfers);
+      }
+
+      // if (orderSetIds.retreats && orders.units) {
+      //   orders.units.forEach((unit: Order) => {
+      //     assert(orderSetIds.units);
+      //     db.ordersRepo.saveUnitOrder(orderSetIds.units, unit);
+      //   });
+      // }
+
+      // if (orderSetIds.builds && orders.builds) {
+      //   orders.builds.forEach((build: Build) => {
+      //     db.ordersRepo.saveBuildOrder(build, orderSetIds.builds);
+      //   });
+      // }
+
+      // if (orderSetIds.units && orders.disbands) {
+      //   orders.disbands.forEach((unit: Order) => {
+      //     db.ordersRepo.saveDisbandUnitOrder(unit, orderSetIds.units);
+      //   });
+      // }
+
+      // if (orderSetIds.nomination && orders.nomination) {
+      //   db.ordersRepo.saveNominationOrder(orders.nomination, orderSetIds.nomination);
+      // }
     }
-
   }
 }

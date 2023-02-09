@@ -26,7 +26,7 @@ initializeApp({
 });
 erzhaler.use('/assignments', assignmentRouter);
 erzhaler.use('/games', gameRouter);
-erzhaler.use('/maps/', mapRouter);
+erzhaler.use('/maps', mapRouter);
 erzhaler.use('/orders', ordersRouter);
 erzhaler.use('/user', userRouter);
 

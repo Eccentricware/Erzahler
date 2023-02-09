@@ -23,6 +23,9 @@ import { FormattingService } from './formattingService';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { GameState, NextTurns } from '../../models/objects/last-turn-info-object';
 import { db } from '../../database/connection';
+import { CountryState } from '../../models/objects/games/country-state-objects';
+import { OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
+import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -477,56 +480,5 @@ export class SchedulerService {
     }
 
     return false;
-  }
-
-  checkCallOrders() {
-    // switch(nextTurns.pending) {
-    //   case TurnType.ORDERS_AND_VOTES:
-    //     await this.processSpringOrdersAndVotes(gameState);
-    //     break;
-    //   case TurnType.SPRING_ORDERS:
-    //     await this.processSpringOrders(gameState, false);
-    //     break;
-    //   case TurnType.SPRING_RETREATS:
-    //     await this.processSpringRetreats(gameState);
-    //     break;
-    //   case TurnType.FALL_ORDERS:
-    //     await this.processFallOrders(gameState, false);
-    //     break;
-    //   case TurnType.FALL_RETREATS:
-    //     await this.processFallRetreats(gameState);
-    //     break;
-
-    //   case TurnType.ADJUSTMENTS:
-    //     await this.processAdjustments(gameState, false);
-    //     break;
-    //   case TurnType.ADJ_AND_NOM:
-    //     await this.processAdjustmentsAndNominations(gameState, false);
-    //     break;
-    //   case TurnType.NOMINATIONS:
-    //     await this.processNominations(gameState, false);
-    //     break;
-    //   case TurnType.VOTES:
-    //     await this.processVotes(gameState);
-    // }
-
-    // if (nextTurns.preliminary) {
-    //   switch(nextTurns.preliminary) {
-    //     case TurnType.SPRING_ORDERS:
-    //       await this.processSpringOrders(gameState, true);
-    //       break;
-    //     case TurnType.FALL_ORDERS:
-    //       await this.processFallOrders(gameState, true);
-    //       break;
-    //     case TurnType.ADJUSTMENTS:
-    //       await this.processAdjustments(gameState, true);
-    //       break;
-    //     case TurnType.ADJ_AND_NOM:
-    //       await this.processAdjustmentsAndNominations(gameState, true);
-    //       break;
-    //     case TurnType.NOMINATIONS:
-    //       await this.processNominations(gameState, true);
-    //   }
-    // }
   }
 }
