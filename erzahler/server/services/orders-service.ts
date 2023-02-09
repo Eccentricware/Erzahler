@@ -1460,14 +1460,12 @@ export class OrdersService {
       }
     }
 
-
     return turnIds;
   }
 
   async saveOrders(idToken: string, orders: TurnOrders): Promise<any> {
     // Identify user
     const accountService = new AccountService();
-    const schedulerService = new SchedulerService();
 
     const userId = await accountService.getUserIdFromToken(idToken);
     const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
@@ -1498,11 +1496,9 @@ export class OrdersService {
       //   });
       // }
 
-      // if (orderSetIds.builds && orders.builds) {
-      //   orders.builds.forEach((build: Build) => {
-      //     db.ordersRepo.saveBuildOrder(build, orderSetIds.builds);
-      //   });
-      // }
+      if (orderSetIds.builds && orders.builds) {
+        db.ordersRepo.saveBuildOrders(orders.builds, orderSetIds.builds);
+      }
 
       // if (orderSetIds.units && orders.disbands) {
       //   orders.disbands.forEach((unit: Order) => {

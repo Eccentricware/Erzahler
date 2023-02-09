@@ -25,6 +25,7 @@ import { getBuildOrdersQuery } from "../queries/orders/orders-final/get-build-or
 import { getBuildTransferOrdersQuery } from "../queries/orders/orders-final/get-build-transfer-orders-query";
 import { getCountryOrderSets } from "../queries/orders/orders-final/get-country-order-sets-query";
 import { getTechTransferOrderQuery } from "../queries/orders/orders-final/get-tech-transfer-order-query";
+import { saveBuildOrdersQuery } from "../queries/orders/orders-final/save-build-orders-query";
 import { saveTransferOrdersQuery } from "../queries/orders/orders-final/save-transfer-orders-query";
 import { saveUnitOrderQuery } from "../queries/orders/orders-final/save-unit-order-query";
 import { setTurnDefaultsPreparedQuery } from "../queries/orders/set-turn-defaults-prepared-query";
@@ -579,5 +580,35 @@ export class OrdersRepository {
       orderSetId
     ])
     .catch((error: Error) => console.log('saveTransfers error: ' + error.message));
+  }
+
+  async saveBuildOrders(
+    builds: BuildOrders,
+    orderSetId: number
+  ): Promise<void> {
+    const buildLocs: number[] = [];
+    const buildLocsTupleized: number[] = [];
+
+    builds.builds.forEach((build: Build) => {
+      buildLocs.push(build.nodeId);
+      buildLocsTupleized.push(build.nodeId, build.typeId);
+    });
+
+    const nukeLocs: number[] = [];
+    const nukeLocsTupleized: number[] = [];
+
+    builds.builds.forEach((build: Build) => {
+      nukeLocs.push(build.nodeId);
+      nukeLocsTupleized.push(build.nodeId, build.typeId);
+    });
+
+    await this.pool.query(saveBuildOrdersQuery, [
+      buildLocs,
+      buildLocsTupleized,
+      nukeLocs,
+      nukeLocsTupleized,
+      builds.increaseRange,
+      orderSetId
+    ]);
   }
 };
