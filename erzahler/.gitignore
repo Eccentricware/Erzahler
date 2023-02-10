@@ -4,3 +4,5 @@ jsc/server
 node_modules
 secrets
 .env
+env
+src/secrets

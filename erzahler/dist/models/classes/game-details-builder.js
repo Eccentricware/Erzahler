@@ -1,0 +1,58 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GameDetailsBuilder = void 0;
+const scheduler_service_1 = require("../../server/services/scheduler-service");
+class GameDetailsBuilder {
+    constructor(rawGame, localTimeZoneName, meridiemTime) {
+        this.scheduler = new scheduler_service_1.SchedulerService();
+        this.gameId = rawGame.game_id;
+        this.gameName = rawGame.game_name;
+        this.timeCreated = rawGame.time_created;
+        this.gameStatus = rawGame.game_status;
+        this.currentYear = rawGame.current_year;
+        this.stylizedStartYear = rawGame.stylized_start_year;
+        this.concurrentGamesLimit = rawGame.concurrent_games_limit;
+        this.privateGame = rawGame.private_game;
+        this.hiddenGame = rawGame.hidden_game;
+        this.blindAdministrators = rawGame.blind_administrators;
+        this.assignmentMethod = rawGame.assignment_method;
+        this.deadlineType = rawGame.deadline_type;
+        this.meridiemTime = rawGame.meridiem_time;
+        this.observeDst = rawGame.observe_dst;
+        this.turn1Timing = rawGame.turn_1_timing;
+        this.startTime = rawGame.start_time;
+        this.ordersDay = this.scheduler.enforceLocalDay(rawGame.orders_day, rawGame.orders_time, localTimeZoneName);
+        this.ordersTime = this.ordersTime = this.scheduler.enforceLocalTime(rawGame.orders_time, localTimeZoneName, meridiemTime);
+        this.retreatsDay = this.scheduler.enforceLocalDay(rawGame.retreats_day, rawGame.retreats_time, localTimeZoneName);
+        this.retreatsTime = this.scheduler.enforceLocalTime(rawGame.retreats_time, localTimeZoneName, meridiemTime);
+        this.adjustmentsDay = this.scheduler.enforceLocalDay(rawGame.adjustments_day, rawGame.adjustments_time, localTimeZoneName);
+        this.adjustmentsTime = this.scheduler.enforceLocalTime(rawGame.adjustments_time, localTimeZoneName, meridiemTime);
+        this.nominationsDay = this.scheduler.enforceLocalDay(rawGame.nominations_day, rawGame.nominations_time, localTimeZoneName);
+        this.nominationsTime = this.scheduler.enforceLocalTime(rawGame.nominations_time, localTimeZoneName, meridiemTime);
+        this.votesDay = this.scheduler.enforceLocalDay(rawGame.votes_day, rawGame.votes_time, localTimeZoneName);
+        this.votesTime = this.scheduler.enforceLocalTime(rawGame.votes_time, localTimeZoneName, meridiemTime);
+        this.nmrToleranceTotal = rawGame.nmr_tolerance_total;
+        this.nmrToleranceOrders = rawGame.nmr_tolerance_orders;
+        this.nmrToleranceRetreats = rawGame.nmr_tolerance_retreats;
+        this.nmrToleranceAdjustments = rawGame.nmr_tolerance_adjustments;
+        this.voteDelayEnabled = rawGame.vote_delay_enabled;
+        this.voteDelayLock = rawGame.vote_delay_lock;
+        this.voteDelayPercent = rawGame.vote_delay_percent;
+        this.voteDelayCount = rawGame.vote_delay_count;
+        this.voteDelayDisplayPercent = rawGame.vote_delay_display_percent;
+        this.voteDelayDisplayCount = rawGame.vote_delay_display_count;
+        this.partialRosterStart = rawGame.partial_roster_start;
+        this.finalReadinessCheck = rawGame.final_readiness_check;
+        this.nominationTiming = rawGame.nomination_timing;
+        this.nominationYear = rawGame.nomination_year;
+        this.automaticAssignments = rawGame.automatic_assignments;
+        this.ratingLimitsEnabled = rawGame.rating_limits_enabled;
+        this.funMin = rawGame.fun_min;
+        this.funMax = rawGame.fun_max;
+        this.skillMin = rawGame.skill_min;
+        this.skillMax = rawGame.skill_max;
+        this.isAdmin = rawGame.display_as_admin;
+    }
+}
+exports.GameDetailsBuilder = GameDetailsBuilder;
+//# sourceMappingURL=game-details-builder.js.map
