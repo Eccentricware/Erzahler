@@ -6,15 +6,6 @@ export const getBuildOrdersQuery = `
     ch.adjustments builds,
     json_agg(
       json_build_object(
-        'node_id', nn.node_id,
-        'node_name', nn.node_name,
-        'province_name', np.province_name,
-        'loc', nn.loc
-      )
-    ) AS nuke_locs,
-    os.nuke_tuples,
-    json_agg(
-      json_build_object(
         'node_id', n.node_id,
         'node_name', n.node_name,
         'province_name', p.province_name,
@@ -40,7 +31,6 @@ export const getBuildOrdersQuery = `
     c.country_name,
     ch.banked_builds,
     ch.adjustments,
-    os.nuke_tuples,
     os.build_tuples,
     ch.nuke_range,
     os.increase_range

@@ -109,7 +109,6 @@ export interface BuildOrdersResult {
   build_locs: BuildLocationResult[];
   build_tuples: number[];
   nuke_locs: BuildLocationResult[];
-  nuke_tuples: number[];
 }
 
 export interface BuildLocationResult {
@@ -127,7 +126,7 @@ export interface BuildOrders {
   nukeRange: number;
   increaseRange: number;
   builds: Build[];
-  nukesReady: Build[];
+  nukesReady?: Build[];
 }
 
 export interface Build {

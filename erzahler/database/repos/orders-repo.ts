@@ -24,6 +24,7 @@ import { insertTurnOrderSetsQuery } from "../queries/orders/insert-turn-order-se
 import { getBuildOrdersQuery } from "../queries/orders/orders-final/get-build-orders-query";
 import { getBuildTransferOrdersQuery } from "../queries/orders/orders-final/get-build-transfer-orders-query";
 import { getCountryOrderSets } from "../queries/orders/orders-final/get-country-order-sets-query";
+import { getFinishedNukesOrdersQuery } from "../queries/orders/orders-final/get-finished-nuke-orders-query";
 import { getTechTransferOrderQuery } from "../queries/orders/orders-final/get-tech-transfer-order-query";
 import { saveBuildOrdersQuery } from "../queries/orders/orders-final/save-build-orders-query";
 import { saveTransferOrdersQuery } from "../queries/orders/orders-final/save-transfer-orders-query";
@@ -452,7 +453,7 @@ export class OrdersRepository {
      }));
   }
 
-  async getBuildOrders(nextTurnId: number, currentTurnId: number, countryId: number): Promise<BuildOrders[]> {
+  async getBuildOrders(currentTurnId: number, nextTurnId: number, countryId: number): Promise<BuildOrders[]> {
     const buildOrdersResults: BuildOrdersResult[] = await this.pool.query(getBuildOrdersQuery, [nextTurnId, currentTurnId, countryId])
       .then((result: QueryResult) => result.rows);
 
@@ -481,27 +482,6 @@ export class OrdersRepository {
         }
       }
 
-      const nukes: Build[] = [];
-      if (result.build_tuples?.length > 0) {
-        const nukeTuples: number[] = result.nuke_tuples;
-        const nukeLocs: BuildLocationResult[] = result.nuke_locs;
-
-        for (let index = 0; index < nukeTuples.length; index += 2) {
-          const nukeLoc = nukeLocs.find((loc: BuildLocationResult) => loc.node_id === nukeTuples[index]);
-          const buildTypeId = nukeTuples[index + 1];
-          let buildType = this.resolveBuildType(buildTypeId);
-
-          nukes.push({
-            typeId: buildTypeId,
-            buildType: buildType,
-            nodeId: nukeLoc ? nukeLoc.node_id : 0,
-            nodeName: nukeLoc ? nukeLoc.node_name : '',
-            provinceName: nukeLoc ? nukeLoc.province_name : '',
-            loc: nukeLoc ? nukeLoc.loc : [0,0]
-          });
-        }
-      }
-
       buildOrders.push({
         countryId: result.country_id,
         countryName: result.country_name,
@@ -509,10 +489,23 @@ export class OrdersRepository {
         buildCount: result.builds,
         nukeRange: result.nuke_range,
         increaseRange: result.increase_range,
-        builds: builds,
-        nukesReady: nukes
+        builds: builds
       });
-    })
+    });
+
+    const nukesReady: Build[] = await this.pool.query(getFinishedNukesOrdersQuery, [nextTurnId, countryId])
+      .then((result: QueryResult) =>  result.rows.map((node: BuildLocationResult) => {
+        return <Build>{
+          typeId: 5,
+          buildType: BuildType.NUKE_FINISH,
+          nodeId: node.node_id,
+          nodeName: node.node_name,
+          loc: node.loc,
+          provinceName: node.province_name
+        };
+      }));
+
+    buildOrders[0].nukesReady = nukesReady;
 
     return buildOrders;
   }
@@ -594,19 +587,16 @@ export class OrdersRepository {
       buildLocsTupleized.push(build.nodeId, build.typeId);
     });
 
-    const nukeLocs: number[] = [];
-    const nukeLocsTupleized: number[] = [];
+    let nukeLocs: number[] = [];
 
-    builds.builds.forEach((build: Build) => {
-      nukeLocs.push(build.nodeId);
-      nukeLocsTupleized.push(build.nodeId, build.typeId);
-    });
+    if (builds.nukesReady) {
+      nukeLocs = builds.nukesReady.map((nukeLoc: Build) => nukeLoc.nodeId);
+    }
 
     await this.pool.query(saveBuildOrdersQuery, [
       buildLocs,
       buildLocsTupleized,
       nukeLocs,
-      nukeLocsTupleized,
       builds.increaseRange,
       orderSetId
     ]);

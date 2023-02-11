@@ -5,7 +5,6 @@ export const saveBuildOrdersQuery = `
     build_locs = $1,
     build_tuples = $2,
     nuke_locs = $3,
-    nuke_tuples = $4,
-    increase_range = $5
-  WHERE order_set_id = $6;
+    increase_range = $4
+  WHERE order_set_id = $5;
 `;

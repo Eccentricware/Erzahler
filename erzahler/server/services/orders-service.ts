@@ -879,7 +879,7 @@ export class OrdersService {
 
       if (pendingTurn) {
         // Remove after UI Dev
-        const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(pendingTurn.turnId, gameState.turnId, playerCountry.countryId);
+        const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(gameState.turnId, pendingTurn.turnId, playerCountry.countryId);
         orders.builds = pendingBuildOrders[0];
         ////
 
