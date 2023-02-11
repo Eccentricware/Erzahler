@@ -208,6 +208,13 @@ class SchedulerService {
     lockStartDetails(gameId) {
         return __awaiter(this, void 0, void 0, function* () {
             const scheduleSettings = yield this.getGameScheduleSettings(gameId);
+            if (!scheduleSettings) {
+                return {
+                    gameStatus: 'Error',
+                    gameStart: luxon_1.DateTime.now(),
+                    firstTurn: luxon_1.DateTime.now()
+                };
+            }
             let gameStatus = game_status_enum_1.GameStatus.READY;
             let gameStart = luxon_1.DateTime.utc(); // Now
             const now = luxon_1.DateTime.utc();

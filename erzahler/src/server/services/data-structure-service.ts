@@ -15,7 +15,7 @@ export function subtractArray(filterArray: any[], removeArray: any[]): any[] {
   return filterArray.filter((element: any) => !removeArray.includes(element));
 }
 
-export function copyObjectOfArrays(object: any): Record<string, unknown> {
+export function copyObjectOfArrays(object: any): Record<string, any> {
   const copy: any = {};
 
   for (const key in object) {

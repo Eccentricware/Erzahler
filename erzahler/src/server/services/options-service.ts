@@ -118,9 +118,11 @@ export class OptionsService {
       }
 
       if (unit.transportDestinations) {
-        optionsCtx.transportDestinations[unit.unitId] = unit.transportDestinations.map((destination: TransportDestination) => {
-          return destination.nodeId;
-        });
+        optionsCtx.transportDestinations[unit.unitId] = unit.transportDestinations.map(
+          (destination: TransportDestination) => {
+            return destination.nodeId;
+          }
+        );
 
         unit.transportDestinations.forEach((destination: TransportDestination) => {
           if (!optionsCtx.potentialConvoyProvinces[destination.nodeId]) {
@@ -205,6 +207,7 @@ export class OptionsService {
         );
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const nextContributions: any = copyObjectOfArrays(currentPathLink.contributions);
       for (const transport in nextContributions) {
         nextContributions[transport].push(...optionsCtx.transportDestinations[transportId]);

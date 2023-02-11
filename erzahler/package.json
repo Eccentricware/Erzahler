@@ -8,6 +8,9 @@
     "start:run": "nodemon ./server/controller.js",
     "start": "concurrently npm:start:*",
     "lint": "eslint --cache --fix . && prettier --ignore-path .prettierignore --write .",
+    "compile": "tsc -w",
+    "nodemon": "nodemon --delay 2 ./server/controller.js",
+    "dev": "concurrently npm:compile npm:nodemon",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --project ./ -w"
   },
@@ -23,10 +26,9 @@
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-prettier": "^4.2.1",
     "express": "^4.18.1",
-    "firebase-admin": "^10.2.0",
+    "firebase-admin": "^11.5.0",
     "luxon": "^3.0.4",
     "node-schedule": "^2.1.0",
-    "nodemon": "^2.0.16",
     "pg": "^8.7.3",
     "pg-promise": "^10.15.4",
     "prettier": "^2.8.3"
@@ -41,6 +43,7 @@
     "@typescript-eslint/eslint-plugin": "^5.51.0",
     "@typescript-eslint/parser": "^5.51.0",
     "eslint": "^8.33.0",
+    "nodemon": "^2.0.7",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.4"
   }

@@ -166,6 +166,7 @@ class OptionsService {
             if (optionsCtx.transports[transportId]) {
                 nextTransportOptions = optionsCtx.transports[transportId].filter((optionId) => !nextTransports.includes(optionId));
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const nextContributions = (0, data_structure_service_1.copyObjectOfArrays)(currentPathLink.contributions);
             for (const transport in nextContributions) {
                 nextContributions[transport].push(...optionsCtx.transportDestinations[transportId]);

@@ -52,9 +52,9 @@ class ResolutionService {
                 turn_type_enum_1.TurnType.FALL_RETREATS
             ];
             const turnsWithTransfers = [turn_type_enum_1.TurnType.ORDERS_AND_VOTES, turn_type_enum_1.TurnType.SPRING_ORDERS]; // Can add a check for future Transfer in Fall rule and push turn type, if desired
-            const turnsWithAdjustments = [turn_type_enum_1.TurnType.ADJUSTMENTS, turn_type_enum_1.TurnType.ADJ_AND_NOM];
-            const turnsWithNominations = [turn_type_enum_1.TurnType.ADJ_AND_NOM, turn_type_enum_1.TurnType.NOMINATIONS];
-            const turnsWithVotes = [turn_type_enum_1.TurnType.ORDERS_AND_VOTES, turn_type_enum_1.TurnType.VOTES];
+            // const turnsWithAdjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM];
+            // const turnsWithNominations = [TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS];
+            // const turnsWithVotes = [TurnType.ORDERS_AND_VOTES, TurnType.VOTES];
             const gameState = yield connection_1.db.gameRepo.getGameState(turn.gameId);
             const countryHistories = yield connection_1.db.gameRepo.getCountryState(turn.gameId, 0);
             const provinceHistories = [];
@@ -512,7 +512,7 @@ class ResolutionService {
         let powerSummary = `${transportOrderPower}`;
         let currentPower = maxPower;
         while (currentPower > 0) {
-            challenges[currentPower].forEach((challengerId) => {
+            challenges[currentPower].forEach(() => {
                 powerSummary += `v${currentPower}`;
             });
             currentPower--;
@@ -599,7 +599,7 @@ class ResolutionService {
         let currentPower = maxPower;
         while (currentPower > 0) {
             if (challenges[currentPower]) {
-                challenges[currentPower].forEach((challengerId) => {
+                challenges[currentPower].forEach(() => {
                     summary += `v${currentPower}`;
                 });
             }

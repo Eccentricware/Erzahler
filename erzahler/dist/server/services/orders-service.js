@@ -336,7 +336,7 @@ class OrdersService {
             const userAssigned = yield connection_1.db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
             if (userAssigned) {
                 const orderSetIds = yield this.getOrderSets(orders.gameId, orders.countryId);
-                orderSetIds.votes = 542;
+                // orderSetIds.votes = 542;
                 if (orderSetIds.votes && orders.votes) {
                     connection_1.db.ordersRepo.saveVotes(orderSetIds.votes, orders.votes.nominations);
                 }
