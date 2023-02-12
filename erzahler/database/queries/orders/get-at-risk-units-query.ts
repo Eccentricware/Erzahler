@@ -1,9 +1,5 @@
 export const getAtRiskUnitsQuery = `
-  SELECT c.country_id,
-    c.country_name,
-    c.rank,
-    c.flag_key,
-    u.unit_id,
+  SELECT u.unit_id,
     u.unit_type,
     p.province_name,
     n.loc

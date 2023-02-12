@@ -5,7 +5,8 @@ export const getCountryStateQuery = `
     ch.banked_builds,
     ch.nuke_range,
     ch.adjustments,
-    ch.country_status
+    ch.country_status,
+    ch.nukes_in_production
   FROM country_histories ch
   INNER JOIN countries c ON c.country_id = ch.country_id
   WHERE c.game_id = $1

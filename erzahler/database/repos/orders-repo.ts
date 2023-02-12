@@ -2,6 +2,7 @@ import { error } from "console";
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain, queryResult } from "pg-promise";
 import { BuildType, UnitType } from "../../models/enumeration/unit-enum";
+import { CountryState } from "../../models/objects/games/country-state-objects";
 import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, Order, OrderOption, OrderResult, OrderSet, OrderSetResult, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
 import { TransferBuildsCountry, TransferTechCountry } from "../../models/objects/options-objects";
 import { TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult, BuildOrders, BuildOrdersResult, BuildLocationResult, Build } from "../../models/objects/order-objects";
@@ -311,25 +312,22 @@ export class OrdersRepository {
     return buildLocs;
   }
 
-  async getAtRiskUnits(turnId: number, countryId: number = 0): Promise<AtRiskUnit[]> {
+  async getAtRiskUnits(turnId: number, countryId: number): Promise<AtRiskUnit[]> {
     const atRiskUnits: AtRiskUnit[] = await this.pool.query(getAtRiskUnitsQuery, [turnId, countryId])
       .then((result: QueryResult<any>) => result.rows.map((unit: AtRiskUnitResult) => {
         return <AtRiskUnit> {
           unitId: unit.unit_id,
           unitType: unit.unit_type,
           loc: unit.loc,
-          countryId: unit.country_id,
-          countryName: unit.country_name,
-          rank: unit.rank,
-          flagKey: unit.flag_key
-        }
+          provinceName: unit.province_name
+        };
       }))
       .catch((error: Error) => {
         console.log('getAtRiskUnits Error: ' + error.message);
         return [];
       });
 
-      return atRiskUnits;
+    return atRiskUnits;
   }
 
   async getNominatableCountries(turnId: number): Promise<NominatableCountry[]> {

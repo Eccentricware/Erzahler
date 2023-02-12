@@ -286,24 +286,17 @@ export interface BuildLoc {
 }
 
 export interface AtRiskUnitResult {
-  country_id: number;
-	country_name: string;
-	rank: string;
-	flag_key: string;
-	unit_id: number;
-	unit_type: string;
-	province_name: string;
-	loc: number[];
+  unit_id: number;
+  unit_type: string;
+  province_name: string;
+  loc: number[];
+  nuke_locs: number[];
 }
 export interface AtRiskUnit {
-  countryId: number;
-	countryName: string;
-	rank: string;
-	flagKey: string;
-	unitId: number;
-	unitType: string;
-	provinceName: string;
-	loc: number[];
+  unitId: number;
+  unitType: string;
+  provinceName: string;
+  loc: number[];
 }
 
 export interface NominatableCountryResult {

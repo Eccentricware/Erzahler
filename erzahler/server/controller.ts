@@ -10,6 +10,7 @@ import { SchedulerService } from './services/scheduler-service';
 import { OrdersService } from './services/orders-service';
 import { ordersRouter } from './routes/orders-router';
 import { mapRouter } from './routes/maps-router';
+import { optionsRouter } from './routes/options-router';
 
 const serviceAccount = require('/home/ubox/personal/blitzkarte/Erzahler/erzahler/secrets/erzahler-e66cd-firebase-adminsdk-zgsbb-a50c7851d5.json');
 const erzhaler = express();
@@ -27,6 +28,7 @@ initializeApp({
 erzhaler.use('/assignments', assignmentRouter);
 erzhaler.use('/games', gameRouter);
 erzhaler.use('/maps', mapRouter);
+erzhaler.use('/options', optionsRouter);
 erzhaler.use('/orders', ordersRouter);
 erzhaler.use('/user', userRouter);
 

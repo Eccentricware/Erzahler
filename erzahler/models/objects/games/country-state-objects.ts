@@ -6,6 +6,7 @@ export interface CountryStateResult {
   nuke_range: number | null;
   adjustments: number;
   country_status: string;
+  nukes_in_production: number;
 }
 
 export interface CountryState {
@@ -16,4 +17,5 @@ export interface CountryState {
   nukeRange: number | null;
   adjustments: number;
   countryStatus: string;
+  nukesInProduction: number;
 }
