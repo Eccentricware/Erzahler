@@ -1,6 +1,8 @@
 export const getCountryStateQuery = `
   SELECT c.country_id,
     c.country_name,
+    ch.city_count,
+    ch.unit_count,
     ch.in_retreat,
     ch.banked_builds,
     ch.nuke_range,

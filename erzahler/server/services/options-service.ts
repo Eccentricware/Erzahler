@@ -6,7 +6,7 @@ import { UnitType } from "../../models/enumeration/unit-enum";
 import { UserAssignment } from "../../models/objects/assignment-objects";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { GameState } from "../../models/objects/last-turn-info-object";
-import { OptionsContext, AdjacenctMovement, TransportPathLink, AirAdjacency, OrderOption, HoldSupport, UnitOptions, BuildLoc, BuildLocResult, Order, OrderPrepping, OrderSet, SavedOption, TransferCountry, OptionDestination, SecondaryUnit, UnitOptionsFinalized } from "../../models/objects/option-context-objects";
+import { OptionsContext, AdjacenctMovement, TransportPathLink, AirAdjacency, OrderOption, HoldSupport, UnitOptions, BuildLoc, BuildLocResult, Order, OrderPrepping, OrderSet, SavedOption, TransferCountry, OptionDestination, SecondaryUnit, UnitOptionsFinalized, DisbandOptions } from "../../models/objects/option-context-objects";
 import { OptionsFinal, BuildOptions } from "../../models/objects/options-objects";
 import { UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
 import { AccountService } from "./accountService";
@@ -575,7 +575,7 @@ export class OptionsService {
         deadline: pendingTurn.deadline
       };
       // Move back after dev
-        turnOptions.disbands = await this.prepareDisbandOptions(gameState, pendingTurn, playerCountry);
+        turnOptions.disbands = await this.getDisbandOptions(gameState, pendingTurn, playerCountry);
       ////
 
       // Units
@@ -696,10 +696,10 @@ export class OptionsService {
         }
 
         if (playerCountry.adjustments < 0) {
-          turnOptions.disbands = {
-            turnStatus: TurnStatus.PENDING,
-            options: await db.optionsRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId)
-          }
+          // turnOptions.disbands = {
+          //   turnStatus: TurnStatus.PENDING,
+          //   options: await db.optionsRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId)
+          // }
         }
       }
 
@@ -778,10 +778,10 @@ export class OptionsService {
         }
 
         if (playerCountry.adjustments < 0) {
-          turnOptions.disbands = {
-            turnStatus: TurnStatus.PRELIMINARY,
-            options: await db.optionsRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId)
-          }
+          // turnOptions.disbands = {
+          //   turnStatus: TurnStatus.PRELIMINARY,
+          //   options: await db.optionsRepo.getAtRiskUnits(gameState.turnId, playerCountry.countryId)
+          // }
         }
       }
 
@@ -1087,7 +1087,37 @@ export class OptionsService {
     });
   }
 
-  async prepareDisbandOptions(gameState: GameState, turn: UpcomingTurn, country: CountryState): Promise<any> {
+  async getDisbandOptions(gameState: GameState, turn: UpcomingTurn, countryState: CountryState): Promise<DisbandOptions> {
+    const disbandOptions: DisbandOptions = {
+      disbandCount: countryState.adjustments * (-1),
+      cityCount: countryState.cityCount,
+      unitCount: countryState.unitCount,
+      units: await db.optionsRepo.getAtRiskUnits(gameState.turnId, countryState.countryId),
+      nukesInProduction: countryState.nukesInProduction,
+      nukeLocs: []
+    };
 
+    if (countryState.nukesInProduction > 0) {
+      for (let index = 0; index < countryState.nukesInProduction; index++) {
+        disbandOptions.units.unshift({
+          unitId: index * (-1),
+          unitType: UnitType.NUKE,
+          provinceName: 'Finished',
+          loc: [0, 0]
+        });
+      }
+
+      const cityDisbandList: BuildLoc[] = await db.optionsRepo.getActiveCountryCenters(gameState.turnId, countryState.countryId);
+      cityDisbandList.unshift({
+        nodeId: 0,
+        nodeLoc: [0, 0],
+        province: '---',
+        display: '---'
+      });
+
+      disbandOptions.nukeLocs = cityDisbandList;
+    }
+
+    return disbandOptions;
   }
 }

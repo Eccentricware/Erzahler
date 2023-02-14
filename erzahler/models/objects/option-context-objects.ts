@@ -374,3 +374,12 @@ export interface OrderPrepping {
   secondaryOrderType?: string;
   destinationId?: number;
 }
+
+export interface DisbandOptions {
+  disbandCount: number;
+  cityCount: number;
+  unitCount: number;
+  units: AtRiskUnit[];
+  nukesInProduction: number;
+  nukeLocs: BuildLoc[];
+}

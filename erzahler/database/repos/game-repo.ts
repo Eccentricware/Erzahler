@@ -455,10 +455,13 @@ export class GameRepository {
         return <CountryState> {
           countryId: countryResult.country_id,
           name: countryResult.country_name,
+          cityCount: countryResult.city_count,
+          unitCount: countryResult.unit_count,
           retreating: countryResult.in_retreat,
           builds: countryResult.banked_builds,
           nukeRange: countryResult.nuke_range,
-          adjustments: countryResult.adjustments
+          adjustments: countryResult.adjustments,
+          nukesInProduction: countryResult.nukes_in_production
         };
       }));
   }

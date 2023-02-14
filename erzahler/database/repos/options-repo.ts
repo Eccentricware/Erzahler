@@ -1,6 +1,7 @@
 import { Pool, QueryResult } from "pg";
 import { ColumnSet, IDatabase, IMain } from "pg-promise";
-import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, OptionDestination, OrderOption, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, AtRiskUnitResult, BuildLoc, BuildLocResult, DestinationResult, NominatableCountry, NominatableCountryResult, Nomination, NominationResult, OptionDestination, OrderOption, SavedDestination, SavedOption, SavedOptionResult, TransferCountry, TransferCountryResult, TransferOption, TransferOptionResult, UnitAdjacyInfoResult, UnitOptions } from "../../models/objects/option-context-objects";
+import { BuildLocationResult } from "../../models/objects/order-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
@@ -13,6 +14,7 @@ import { getTransferOptionsQuery } from "../queries/orders/get-transfer-options-
 import { getTechOfferOptionsQuery } from "../queries/orders/get-transfer-tech-offer-options-query";
 import { getTechReceiveOptionsQuery } from "../queries/orders/get-transfer-tech-receive-options-query";
 import { getUnitAdjacentInfoQuery } from "../queries/orders/get-unit-adjacent-info-query";
+import { getActiveCountryCenters } from "../queries/orders/options-final/get-active-centers-query";
 
 export class OptionsRepository {
   orderOptionsCols: ColumnSet<unknown>;
@@ -304,5 +306,17 @@ export class OptionsRepository {
   formatDestinationNodeName(nodeName: string): string {
     const nameSplit: string[] = nodeName.toUpperCase().split('_');
     return nameSplit.length === 3 ? nameSplit[0] + nameSplit[2] : nameSplit[0];
+  }
+
+  async getActiveCountryCenters(turnId: number, countryId: number): Promise<BuildLoc[]> {
+    return await this.pool.query(getActiveCountryCenters, [turnId, countryId])
+      .then((result: QueryResult) => result.rows.map((loc: BuildLocationResult) => {
+        return <BuildLoc> {
+          nodeId: loc.node_id,
+          nodeLoc: loc.loc,
+          province: loc.province_name,
+          display: loc.province_name
+        }
+      }));
   }
 }

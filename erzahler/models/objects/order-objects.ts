@@ -1,3 +1,5 @@
+import { BuildLoc } from "./option-context-objects";
+
 export interface TurnOrders {
   gameId: number;
   userId: number;
@@ -23,7 +25,7 @@ export interface TurnOrders {
   buildTransfers?: TransferBuildOrder[];
   techTransfer?: TransferTechOrder;
   builds?: BuildOrders;
-  disbands?: any[];
+  disbands?: DisbandOrders;
   nomination?: any;
   votes?: any[];
 }
@@ -134,6 +136,48 @@ export interface Build {
   buildType: string;
   nodeId: number;
   nodeName: string;
+  provinceName: string;
+  loc: number[];
+}
+
+export interface DisbandOrdersResult {
+  country_id: number;
+  country_name: string;
+  banked_builds: number;
+  disbands: number;
+  unit_disbanding_detailed: DisbandingUnitDetailResult[];
+  nuke_locs: number[];
+  nuke_range: number;
+  increase_range: number;
+  units_disbanding: number[];
+}
+export interface DisbandOrders {
+  countryId: number;
+  countryName: string;
+  bankedBuilds: number;
+  disbands: number;
+  unitDisbandingDetailed: DisbandingUnitDetail[];
+  nukeLocs: number[];
+  nukeBuildDetails?: NukeBuildInDisband[];
+  nukeRange: number;
+  increaseRange: number;
+  unitsDisbanding: number[];
+}
+
+export interface NukeBuildInDisband extends BuildLoc {
+  unitId: number;
+}
+
+export interface DisbandingUnitDetailResult {
+  unit_id: number;
+  unit_type: string;
+  province_name: string;
+  loc: number[];
+}
+
+export interface DisbandingUnitDetail {
+  unitId: number;
+  unitType: string;
   provinceName: string;
   loc: number[];
 }
