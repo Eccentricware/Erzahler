@@ -7,7 +7,7 @@ import { AdjacenctMovement, AdjacenctMovementResult, AirAdjacency, AtRiskUnit, A
 import { TransferBuildsCountry, TransferTechCountry } from "../../models/objects/options-objects";
 import { TransferBuildOrder, TransferBuildOrdersResults, TransferTechOrder, TransferTechOrderResult, BuildOrders, BuildOrdersResult, BuildLocationResult, Build, DisbandOrders, DisbandOrdersResult, NukeBuildInDisband, DisbandingUnitDetail, DisbandingUnitDetailResult } from "../../models/objects/order-objects";
 import { CountryOrderSet, CountryOrderSetsResult } from "../../models/objects/orders/expected-order-types-object";
-import { victorCredentials } from "../../secrets/dbCredentials";
+import { victorCredentials } from "../../src/secrets/dbCredentials";
 import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
 import { getEmptySupplyCentersQuery } from "../queries/orders/get-empty-supply-centers-query";
