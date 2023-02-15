@@ -12,7 +12,7 @@ import {
   Unit,
   UnitResult
 } from '../../models/objects/map-objects';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { getCitiesQuery } from '../queries/maps/get-cities-query';
 import { getLabelLinesQuery } from '../queries/maps/get-label-lines-query';
 import { getLabelsQuery } from '../queries/maps/get-labels-query';
@@ -20,7 +20,7 @@ import { getTerrainQuery } from '../queries/maps/get-terrain-query';
 import { getUnitsQuery } from '../queries/maps/get-units-query';
 
 export class MapRepository {
-  pool = new Pool(victorCredentials);
+  pool = new Pool(envCredentials);
   constructor(private db: IDatabase<any>, private pgp: IMain) {}
 
   async getTerrain(gameId: number, turnId: number): Promise<Terrain[]> {

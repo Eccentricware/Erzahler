@@ -15,7 +15,7 @@ import { insertTerrainQuery } from '../../database/queries/game/insert-terrain-q
 import { insertTurnQuery } from '../../database/queries/game/insert-turn-query';
 import { insertUnitHistoryQuery } from '../../database/queries/game/insert-unit-history-query';
 import { insertUnitQuery } from '../../database/queries/game/insert-unit-query';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { AccountService } from './accountService';
 import { getGameDetailsQuery } from '../../database/queries/game/get-game-details-query';
 import { getRulesInGameQuery } from '../../database/queries/game/get-rules-in-game-query';
@@ -52,7 +52,7 @@ export class GameService {
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
-      const pool: Pool = new Pool(victorCredentials);
+      const pool: Pool = new Pool(envCredentials);
       this.gameData = gameData;
 
       const newGameResult = await this.addNewGame(pool, this.gameData, this.user.timeZone)
@@ -370,7 +370,7 @@ export class GameService {
     const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
     const formattingService: FormattingService = new FormattingService();
-    const pool: Pool = new Pool(victorCredentials);
+    const pool: Pool = new Pool(envCredentials);
     let userId = 0;
     let userTimeZone = 'Africa/Monrovia';
     let meridiemTime = false;
@@ -404,7 +404,7 @@ export class GameService {
 
     const token: DecodedIdToken = await accountService.validateToken(idToken);
     if (token.uid) {
-      const pool: Pool = new Pool(victorCredentials);
+      const pool: Pool = new Pool(envCredentials);
 
       const isAdmin = await db.gameRepo.isGameAdmin(token.uid, gameData.gameId);
       if (isAdmin) {
