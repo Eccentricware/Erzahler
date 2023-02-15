@@ -18,13 +18,13 @@ import {
   UnitOrderResolution,
   UnitOrderResolutionResult
 } from '../../models/objects/resolution/order-resolution-objects';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { getTransferValidationDataQuery } from '../queries/resolution/get-transfer-validation-data-query';
 import { getTransportNetworkValidation } from '../queries/resolution/get-transport-network-validation-query';
 import { getUnitOrdersForResolutionQuery } from '../queries/resolution/get-unit-orders-for-resolution-query';
 
 export class ResolutionRepository {
-  pool = new Pool(victorCredentials);
+  pool = new Pool(envCredentials);
 
   constructor(private db: IDatabase<any>, private pgp: IMain) {}
 

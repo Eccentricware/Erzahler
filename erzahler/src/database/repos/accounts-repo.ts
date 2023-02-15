@@ -9,9 +9,9 @@ import {
   UserProfile,
   UserProfileResult
 } from '../../models/objects/user-profile-object';
-import { accountCredentials, devCredentials, victorCredentials } from '../../secrets/dbCredentials';
+import { accountCredentials, envCredentials } from '../../secrets/dbCredentials';
 import { clearVerficiationDeadlineQuery } from '../queries/accounts/clear-verification-deadline-query';
-import { createProviderQuery } from '../queries/accounts/create-provider-query';
+import { createAccountProviderQuery } from '../queries/accounts/create-account-provider-query';
 import { createEnvironmentUserQuery } from '../queries/accounts/create-environment-user-query';
 import { getExistingProviderQuery } from '../queries/accounts/get-existing-provider-query';
 import { getUserIdQuery } from '../queries/accounts/get-user-id-query';
@@ -24,63 +24,128 @@ import { getAccountsUserRowQuery } from '../queries/dashboard/get-accounts-user-
 import { getAccountsProviderRowQuery } from '../queries/dashboard/get-accounts-provider-row-query';
 import { insertUserFromAccountsQuery } from '../queries/accounts/insert-user-from-accounts-query';
 import { insertProviderFromAccountsQuery } from '../queries/accounts/insert-provider-from-accounts-query';
+import { NewUser, NewUserResult } from '../../models/objects/new-user-objects';
+import { createEnvironmentProviderQuery } from '../queries/accounts/create-environment-provider-query';
 
 export class AccountsRepository {
-  pool = new Pool(victorCredentials);
+  pool = new Pool(envCredentials);
   accountPool = new Pool(accountCredentials);
 
   constructor(private db: IDatabase<any>, private pgp: IMain) {}
 
   // Legacy queries
 
-  async checkUsernameAvailable(username: string): Promise<any> {
-    return this.accountPool
+  async checkUsernameAvailable(username: string): Promise<boolean> {
+    return await this.accountPool
       .query(getUserIdQuery, [username])
       .then((usernameCountResponse: any) => {
         return usernameCountResponse.rows.length === 0;
       })
-      .catch((error: Error) => console.error(error.message));
+      .catch((error: Error) => {
+        console.error(error.message);
+        return false;
+      });
   }
 
-  async createAccountUser(providerDependentArgs: any): Promise<number> {
-    const ceId: number = await this.accountPool
+  async createAccountUser(providerDependentArgs: any): Promise<NewUser> {
+    const newUser: NewUser[] = await this.accountPool
       .query(createAccountUserQuery, providerDependentArgs)
+      .then((result: QueryResult) => result.rows.map((user: NewUserResult) => {
+        return <NewUser> {
+          userId: user.user_id,
+          username: user.username,
+          usernameLocked: user.username_locked,
+          userStatus: user.user_status,
+          signupTime: user.signup_time,
+          timeZone: user.time_zone,
+          meridiemTime: user.meridiem_time,
+          lastSignInTime: user.last_sign_in_time,
+          classicUnitRender: user.classic_unit_render,
+          cityRenderSize: user.city_render_size,
+          labelRenderSize: user.label_render_size,
+          unitRenderSize: user.unit_render_size,
+          wins: user.wins,
+          nmrTotal: user.nmr_total,
+          nmrOrders: user.nmr_orders,
+          nmrRetreats: user.nmr_retreats,
+          nmrAdjustments: user.nmr_adjustments,
+          dropouts: user.dropouts,
+          saves: user.saves,
+          colorTheme: user.color_theme,
+          loggedIn: user.logged_in,
+          displayPresence: user.display_presence,
+          siteAdmin: user.site_admin,
+          realName: user.real_name,
+          displayRealName: user.display_real_name
+        }
+      }));
+
+    return newUser[0];
+  }
+
+  async createEnvironmentUser(newUser: NewUser) {
+    await this.pool
+      .query(createEnvironmentUserQuery, [
+        newUser.userId,
+        newUser.username,
+        newUser.usernameLocked,
+        newUser.userStatus,
+        newUser.signupTime,
+        newUser.timeZone,
+        newUser.meridiemTime,
+        newUser.lastSignInTime,
+        newUser.classicUnitRender,
+        newUser.cityRenderSize,
+        newUser.labelRenderSize,
+        newUser.unitRenderSize,
+        newUser.wins,
+        newUser.nmrTotal,
+        newUser.nmrOrders,
+        newUser.nmrRetreats,
+        newUser.nmrAdjustments,
+        newUser.dropouts,
+        newUser.saves,
+        newUser.colorTheme,
+        newUser.loggedIn,
+        newUser.displayPresence,
+        newUser.siteAdmin,
+        newUser.realName,
+        newUser.displayRealName
+      ])
       .then((result: any) => {
         console.log(`Add user success:`, Boolean(result.rowCount));
-        return result.rows[0].ce_id;
       })
       .catch((error: Error) => {
-        console.log('Create User Query Error:', error.message);
+        console.log('Create Environment User Query Error:', error.message);
+      });
+  }
+
+  async createAccountProvider(providerArgs: any): Promise<number> {
+    return await this.accountPool
+      .query(createAccountProviderQuery, providerArgs)
+      .then((result: QueryResult) => {
+        console.log(`Provider added`, Boolean(result.rowCount));
+        return result.rows[0].provider_id;
+      })
+      .catch((error: Error) => {
+        console.log('Create Account Provider Query Error:', error.message);
         return 0;
       });
-
-    return ceId;
   }
 
-  async createEnvironmentUser(providerDependentArgs: any) {
-    this.accountPool
-      .query(createEnvironmentUserQuery, providerDependentArgs)
-      .then((result: any) => {
-        console.log(`Add user success:`, Boolean(result.rowCount));
-      })
-      .catch((error: Error) => {
-        console.log('Create User Query Error:', error.message);
-      });
-  }
-
-  async createProvider(providerArgs: any) {
-    this.pool
-      .query(createProviderQuery, providerArgs)
+  async createEnvironmentProvider(providerArgs: any) {
+    await this.pool
+      .query(createEnvironmentProviderQuery, providerArgs)
       .then((result: any) => {
         console.log(`Provider added`, Boolean(result.rowCount));
       })
       .catch((error: Error) => {
-        console.log('Create Provider Query Error:', error.message);
+        console.log('Create Environment Provider Query Error:', error.message);
       });
   }
 
   async getUserProfile(uid: string): Promise<UserProfile | void> {
-    return this.pool
+    return await this.pool
       .query(getUserProfileQuery, [uid])
       .then((result: QueryResult<UserProfileResult>) => {
         const user = result.rows[0];
@@ -120,7 +185,7 @@ export class AccountsRepository {
   }
 
   async getUserRowFromAccounts(uid: string): Promise<AccountsUserRow[]> {
-    return this.accountPool
+    return await this.accountPool
       .query(getAccountsUserRowQuery, [uid])
       .then((result: QueryResult<AccountsUserRowResult>) =>
         result.rows.map((user: AccountsUserRowResult) => {
@@ -160,7 +225,7 @@ export class AccountsRepository {
   }
 
   async getProviderRowFromAccountsByUserId(userId: number): Promise<AccountsProviderRow[]> {
-    return this.accountPool
+    return await this.accountPool
       .query(getAccountsProviderRowQuery, [userId])
       .then((result: QueryResult<AccountsProviderRowResult>) =>
         result.rows.map((provider: AccountsProviderRowResult) => {
@@ -186,7 +251,7 @@ export class AccountsRepository {
   }
 
   async getUserId(username: string): Promise<any> {
-    return this.pool
+    return await this.pool
       .query(getUserIdQuery, [username])
       .then((userResult: any) => {
         console.log('userResult.user_id:', userResult.rows[0].user_id);
@@ -196,7 +261,7 @@ export class AccountsRepository {
   }
 
   async checkProviderInDB(uid: string, username: string) {
-    return this.pool
+    return await this.pool
       .query(getExistingProviderQuery, [uid, username])
       .then((results: any) => Boolean(results.rowCount))
       .catch((error: Error) => {
@@ -236,7 +301,7 @@ export class AccountsRepository {
   }
 
   async updatePlayerSettings(timeZone: string, meridiemTime: boolean, userId: number) {
-    return this.pool
+    return await this.pool
       .query(updatePlayerSettings, [timeZone, meridiemTime, userId])
       .then(() => {
         true;

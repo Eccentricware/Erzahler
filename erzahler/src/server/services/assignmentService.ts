@@ -7,7 +7,7 @@ import { getAssignmentsQuery } from '../../database/queries/game/get-assignments
 import { getRegisteredPlayersQuery } from '../../database/queries/game/get-registered-players-query';
 import { AssignmentStatus } from '../../models/enumeration/assignment-status-enum';
 import { AssignmentDataObject } from '../../models/objects/assignment-objects';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { AccountService } from './accountService';
 import { FormattingService } from './formattingService';
 import { getGameAdminsQuery } from '../../database/queries/game/get-game-admins-query';
@@ -27,7 +27,7 @@ export class AssignmentService {
   async getGameAssignments(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
     const formattingService: FormattingService = new FormattingService();
-    const pool: Pool = new Pool(victorCredentials);
+    const pool: Pool = new Pool(envCredentials);
     let userId = 0;
 
     if (idToken) {
@@ -64,7 +64,7 @@ export class AssignmentService {
   }
 
   async isPlayerAdmin(gameId: number, playerId: number): Promise<boolean> {
-    const pool = new Pool(victorCredentials);
+    const pool = new Pool(envCredentials);
 
     const gameAdmins = await db.assignmentRepo.getGameAdmins(gameId);
 
@@ -74,7 +74,7 @@ export class AssignmentService {
 
   async registerUser(idToken: string, gameId: number, assignmentType: string) {
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(victorCredentials);
+    const pool = new Pool(envCredentials);
     console.log('gameId', gameId, 'assignmentType', assignmentType, 'userId', this.user.userId);
 
     this.user = await accountService.getUserProfile(idToken);
@@ -111,7 +111,7 @@ export class AssignmentService {
     console.log('assignmentType', assignmentType);
     console.log('userId', this.user);
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(victorCredentials);
+    const pool = new Pool(envCredentials);
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
@@ -121,7 +121,7 @@ export class AssignmentService {
 
   async assignPlayer(idToken: string, gameId: number, playerId: number, countryId: number) {
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(victorCredentials);
+    const pool = new Pool(envCredentials);
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
@@ -144,7 +144,7 @@ export class AssignmentService {
 
   async lockAssignment(idToken: string, gameId: number, playerId: number) {
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(victorCredentials);
+    const pool = new Pool(envCredentials);
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
@@ -163,7 +163,7 @@ export class AssignmentService {
 
   async unlockAssignment(idToken: string, gameId: number, playerId: number) {
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(victorCredentials);
+    const pool = new Pool(envCredentials);
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {

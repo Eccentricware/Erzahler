@@ -1,17 +1,8 @@
-import { Pool } from 'pg';
-import { getUserIdQuery } from '../../database/queries/accounts/get-user-id-query';
-import { victorCredentials } from '../../secrets/dbCredentials';
 import { DecodedIdToken, getAuth, UserRecord } from 'firebase-admin/auth';
-import { getUserProfileQuery } from '../../database/queries/dashboard/get-user-profile-query';
-import { getExistingProviderQuery } from '../../database/queries/accounts/get-existing-provider-query';
-import { createProviderQuery } from '../../database/queries/accounts/create-provider-query';
-import { syncProviderEmailStateQuery } from '../../database/queries/accounts/sync-provider-email-state-query';
-import { lockUsernameQuery } from '../../database/queries/accounts/lock-username-query';
-import { clearVerficiationDeadlineQuery } from '../../database/queries/accounts/clear-verification-deadline-query';
 import { AccountsProviderRow, AccountsUserRow, UserProfile } from '../../models/objects/user-profile-object';
 import { FormattingService } from './formattingService';
-import { updatePlayerSettings } from '../../database/queries/dashboard/update-user-query';
 import { db } from '../../database/connection';
+import { NewUser } from '../../models/objects/new-user-objects';
 
 export class AccountService {
   async validateToken(idToken: string): Promise<any> {
@@ -51,7 +42,7 @@ export class AccountService {
         .updateUser(firebaseUser.uid, {
           displayName: username
         })
-        .then((user: UserRecord) => {
+        .then(() => {
           return { success: true };
         })
         .catch((error: Error) => {
@@ -66,15 +57,14 @@ export class AccountService {
   }
 
   async addUser(firebaseUser: UserRecord, username: string, providerDependentArgs: any[]): Promise<any> {
-    const ceId = await db.accountsRepo.createAccountUser(providerDependentArgs);
-    providerDependentArgs.push(ceId);
+    const newUser: NewUser = await db.accountsRepo.createAccountUser(providerDependentArgs);
+    await db.accountsRepo.createEnvironmentUser(newUser);
 
-    await db.accountsRepo.createEnvironmentUser(providerDependentArgs);
+    const providerArgs = this.createProviderArgs(newUser.userId, firebaseUser);
 
-    const userId: number = await db.accountsRepo.getUserId(username);
-    const providerArgs = this.createProviderArgs(userId, firebaseUser);
-
-    await db.accountsRepo.createProvider(providerArgs);
+    const newProviderId = await db.accountsRepo.createAccountProvider(providerArgs);
+    providerArgs.unshift(newProviderId);
+    await db.accountsRepo.createEnvironmentProvider(providerArgs);
 
     const userAdded = await db.accountsRepo.getUserProfile(firebaseUser.uid);
 
@@ -186,7 +176,9 @@ export class AccountService {
       if (!providerInDB) {
         const userId: number = await db.accountsRepo.getUserId(username);
         const providerArgs: any = this.createProviderArgs(userId, firebaseUser);
-        await db.accountsRepo.createProvider(providerArgs);
+        const newProviderId = await db.accountsRepo.createAccountProvider(providerArgs);
+        providerArgs.unshift(newProviderId);
+        await db.accountsRepo.createEnvironmentProvider(providerArgs);
       } else {
         console.log('Provider in Database');
       }

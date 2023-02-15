@@ -26,7 +26,7 @@ import {
   UnitOptions
 } from '../../models/objects/option-context-objects';
 import { BuildLocationResult } from '../../models/objects/order-objects';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { getAirAdjQuery } from '../queries/orders/get-air-adj-query';
 import { getAtRiskUnitsQuery } from '../queries/orders/get-at-risk-units-query';
 import { getEmptySupplyCentersQuery } from '../queries/orders/get-empty-supply-centers-query';
@@ -42,7 +42,7 @@ import { getNominationsQuery } from '../queries/orders/options-final/get-nominat
 
 export class OptionsRepository {
   orderOptionsCols: ColumnSet<unknown>;
-  pool: Pool = new Pool(victorCredentials);
+  pool: Pool = new Pool(envCredentials);
   /**
    * @param db
    * @param pgp

@@ -8,7 +8,7 @@ import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { TurnPG, TurnTS } from '../../models/objects/database-objects';
 import { ScheduleSettingsQueryResult } from '../../models/objects/schedule-settings-query-object';
 import { UpcomingTurn, UpcomingTurnResult } from '../../models/objects/scheduler/upcoming-turns-object';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formattingService';
 import { setAssignmentsActiveQuery } from '../queries/assignments/set-assignments-active-query';
 import { insertTurnQuery } from '../queries/game/insert-turn-query';
@@ -23,7 +23,7 @@ import { getUpcomingTurnsQuery } from '../queries/scheduler/get-upcoming-turns-q
  */
 export class SchedulerRepository {
   turnCols: ColumnSet<unknown>;
-  pool = new Pool(victorCredentials);
+  pool = new Pool(envCredentials);
   formattingService = new FormattingService();
   // "lint": "eslint --cache --fix . && prettier --ignore-path .prettierignore --write ."
   // eslinst ^7.24

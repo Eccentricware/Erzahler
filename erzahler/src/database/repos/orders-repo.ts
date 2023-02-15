@@ -48,7 +48,7 @@ import {
   DisbandingUnitDetailResult
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, CountryOrderSetsResult } from '../../models/objects/orders/expected-order-types-object';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { getAirAdjQuery } from '../queries/orders/get-air-adj-query';
 import { getAtRiskUnitsQuery } from '../queries/orders/get-at-risk-units-query';
 import { getEmptySupplyCentersQuery } from '../queries/orders/get-empty-supply-centers-query';
@@ -82,7 +82,7 @@ export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
   orderCols: ColumnSet<unknown>;
   orderOptionsCols: ColumnSet<unknown>;
-  pool: Pool = new Pool(victorCredentials);
+  pool: Pool = new Pool(envCredentials);
   /**
    * @param db
    * @param pgp

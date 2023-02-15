@@ -1,5 +1,5 @@
 import pgPromise, { IDatabase, IInitOptions, IMain } from 'pg-promise';
-import { victorCredentials } from '../secrets/dbCredentials';
+import { envCredentials } from '../secrets/dbCredentials';
 import { AccountsRepository } from './repos/accounts-repo';
 import { AssignmentRepository } from './repos/assignments-repo';
 import { GameRepository } from './repos/game-repo';
@@ -36,6 +36,6 @@ const initOptions: IInitOptions<IExtensions> = {
 
 const pgp: IMain = pgPromise(initOptions);
 
-const db: IDatabase<IExtensions> & IExtensions = pgp(victorCredentials);
+const db: IDatabase<IExtensions> & IExtensions = pgp(envCredentials);
 
 export { db, pgp };

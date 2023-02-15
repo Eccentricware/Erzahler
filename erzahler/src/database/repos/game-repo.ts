@@ -12,7 +12,7 @@ import { CountryStats, CountryStatsResult } from '../../models/objects/games/cou
 import { GameState, GameStateResult } from '../../models/objects/last-turn-info-object';
 import { StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
 import { StartScheduleObject } from '../../models/objects/start-schedule-object';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formattingService';
 import { getPlayerRegistrationStatusQuery } from '../queries/assignments/get-player-registration-status';
 import { checkGameNameAvailabilityQuery } from '../queries/game/check-game-name-availability-query';
@@ -82,7 +82,7 @@ const gamesCols: string[] = [
 ];
 export class GameRepository {
   formattingService = new FormattingService();
-  pool = new Pool(victorCredentials);
+  pool = new Pool(envCredentials);
   constructor(private db: IDatabase<any>, private pgp: IMain) {}
 
   async getGameState(gameId: number): Promise<any> {
@@ -325,7 +325,7 @@ export class GameRepository {
   }
 
   async insertUnits(units: any, gameName: string): Promise<any[]> {
-    const pool: Pool = new Pool(victorCredentials);
+    const pool: Pool = new Pool(envCredentials);
 
     const unitPromises: Promise<any>[] = [];
     for (const unitName in units) {

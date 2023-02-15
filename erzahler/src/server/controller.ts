@@ -23,6 +23,7 @@ erzhaler.use(bodyParser.json({ limit: '5mb' }));
 initializeApp({
   credential: applicationDefault()
 });
+
 erzhaler.use('/assignments', assignmentRouter);
 erzhaler.use('/games', gameRouter);
 erzhaler.use('/maps', mapRouter);

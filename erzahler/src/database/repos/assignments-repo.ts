@@ -1,6 +1,6 @@
 import { Pool, QueryResult } from 'pg';
 import { IDatabase, IMain } from 'pg-promise';
-import { victorCredentials } from '../../secrets/dbCredentials';
+import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formattingService';
 import { assignUserQuery } from '../queries/assignments/assign-user-query';
 import { clearCountryAssignmentsQuery } from '../queries/assignments/clear-country-assignments-query';
@@ -21,7 +21,7 @@ import { getPlayerIsCountryQuery } from '../queries/assignments/get-player-is-co
  * Handles DB updates involving user associations with games.
  */
 export class AssignmentRepository {
-  pool = new Pool(victorCredentials);
+  pool = new Pool(envCredentials);
   formattingService = new FormattingService();
   constructor(private db: IDatabase<any>, private pgp: IMain) {}
 
