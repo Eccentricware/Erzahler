@@ -1,4 +1,4 @@
-import { AtRiskUnit, BuildLoc, DisbandOptions, NominatableCountry, Nomination, TransferCountry, UnitOptionsFinalized } from "./option-context-objects";
+import { AtRiskUnit, BuildLoc, DisbandOptions, NominatableCountry, Nomination, NominationOptions, TransferCountry, UnitOptionsFinalized } from "./option-context-objects";
 
 export interface OptionsFinal {
   playerId: number;
@@ -36,10 +36,13 @@ export interface OptionsFinal {
     builds: number;
     locations: BuildOptions;
   }
-  disbands?: DisbandOptions;
+  disbands?: {
+    turnStatus: string;
+    options: DisbandOptions;
+  };
   nominations?: {
     turnStatus: string;
-    options: NominatableCountry[];
+    options: NominationOptions;
   }
   votes?: {
     turnStatus: string;

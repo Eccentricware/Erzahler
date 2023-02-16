@@ -1,4 +1,4 @@
-import { BuildLoc } from "./option-context-objects";
+import { BuildLoc, NominatableCountry } from "./option-context-objects";
 
 export interface TurnOrders {
   gameId: number;
@@ -26,7 +26,7 @@ export interface TurnOrders {
   techTransfer?: TransferTechOrder;
   builds?: BuildOrders;
   disbands?: DisbandOrders;
-  nomination?: any;
+  nomination?: NominationOrder;
   votes?: any[];
 }
 
@@ -180,4 +180,10 @@ export interface DisbandingUnitDetail {
   unitType: string;
   provinceName: string;
   loc: number[];
+}
+
+export interface NominationOrder {
+  countryIds: number[];
+  countryDetails: NominatableCountry[];
+  coalitionSignature: string;
 }
