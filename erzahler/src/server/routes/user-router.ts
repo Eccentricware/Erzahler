@@ -42,16 +42,16 @@ userRouter.post('/register', (request, response) => {
 });
 
 userRouter.post('/add-provider', (request, response) => {
-  const { idToken, username } = request.body;
+  const { oldIdToken, newIdToken } = request.body;
 
   accountService
-    .addAdditionalProvider(idToken, username)
-    .then((result: any) => {
-      response.send(result);
-    })
-    .catch((error: Error) => {
-      response.send(error.message);
-    });
+    .addAdditionalProvider(oldIdToken, newIdToken)
+      .then((result: any) => {
+        response.send(result);
+      })
+      .catch((error: Error) => {
+        response.send(error.message);
+      });
 });
 
 userRouter.put('/update-settings', (request, response) => {
