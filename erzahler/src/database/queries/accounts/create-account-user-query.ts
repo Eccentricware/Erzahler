@@ -8,7 +8,7 @@ export const createAccountUserQuery = `
     time_zone
   ) VALUES (
     $1,
-    $2,
+    $2,e
     $3,
     $4,
     $5,

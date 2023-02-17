@@ -5,6 +5,5 @@ export const getExistingProviderQuery = `
   FROM users u
   INNER JOIN providers p
   ON u.user_id = p.user_id
-  WHERE uid = $1
-  OR (u.username = $2 AND p.provider_type = 'password');
+  WHERE uid = $1;
 `;

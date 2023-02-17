@@ -5,9 +5,10 @@ import { db } from '../../database/connection';
 import { NewUser } from '../../models/objects/new-user-objects';
 
 export class AccountService {
-  async validateToken(idToken: string): Promise<any> {
+  async validateToken(idToken: string, stillLoggedIn?: boolean): Promise<any> {
+    const checkRevoked = stillLoggedIn === undefined ? true : stillLoggedIn;
     return getAuth()
-      .verifyIdToken(idToken, true)
+      .verifyIdToken(idToken, checkRevoked)
       .then((decodedIdToken: DecodedIdToken) => {
         return {
           uid: decodedIdToken.uid,
@@ -123,7 +124,6 @@ export class AccountService {
    * @returns Promise<UserProfile | any>
    */
   async getUserProfile(idToken: string): Promise<UserProfile | any> {
-    const formattingService: FormattingService = new FormattingService();
     const token: DecodedIdToken = await this.validateToken(idToken);
 
     if (token.uid) {
@@ -166,22 +166,28 @@ export class AccountService {
     }
   }
 
-  async addAdditionalProvider(idToken: string, username: string) {
-    const token: DecodedIdToken = await this.validateToken(idToken);
+  async addAdditionalProvider(oldIdToken: string, newIdToken: string) {
+    const decodedOldToken: DecodedIdToken = await this.validateToken(oldIdToken, false);
+    const decodedNewToken: DecodedIdToken = await this.validateToken(newIdToken, true);
 
-    if (token.uid) {
-      const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
-      const providerInDB: any = await db.accountsRepo.checkProviderInDB(token.uid, username);
+    if (decodedOldToken.uid) {
+      const user: UserProfile | void = await db.accountsRepo.getUserProfile(decodedOldToken.uid);
 
-      if (!providerInDB) {
-        const userId: number = await db.accountsRepo.getUserId(username);
-        const providerArgs: any = this.createProviderArgs(userId, firebaseUser);
-        const newProviderId = await db.accountsRepo.createAccountProvider(providerArgs);
-        providerArgs.unshift(newProviderId);
-        await db.accountsRepo.createEnvironmentProvider(providerArgs);
-      } else {
-        console.log('Provider in Database');
+      if (user) {
+        const providerInDB: any = await db.accountsRepo.checkProviderInDB(decodedNewToken.uid);
+        const firebaseUser: UserRecord = await this.getFirebaseUser(decodedNewToken.uid);
+
+        if (!providerInDB) {
+          const providerArgs: any = this.createProviderArgs(user.userId, firebaseUser);
+          const newProviderId = await db.accountsRepo.createAccountProvider(providerArgs);
+          providerArgs.unshift(newProviderId);
+          await db.accountsRepo.createEnvironmentProvider(providerArgs);
+        } else {
+          console.log('Add Additional Provider Error: Provider in Database');
+        }
+
       }
+
     }
   }
 

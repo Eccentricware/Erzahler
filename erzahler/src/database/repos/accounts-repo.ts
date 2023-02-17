@@ -260,9 +260,9 @@ export class AccountsRepository {
       .catch((error: Error) => console.error(error.message));
   }
 
-  async checkProviderInDB(uid: string, username: string) {
+  async checkProviderInDB(uid: string) {
     return await this.pool
-      .query(getExistingProviderQuery, [uid, username])
+      .query(getExistingProviderQuery, [uid])
       .then((results: any) => Boolean(results.rowCount))
       .catch((error: Error) => {
         console.log(error.message);
