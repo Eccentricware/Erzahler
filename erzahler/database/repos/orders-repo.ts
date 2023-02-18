@@ -12,7 +12,6 @@ import { getAirAdjQuery } from "../queries/orders/get-air-adj-query";
 import { getAtRiskUnitsQuery } from "../queries/orders/get-at-risk-units-query";
 import { getEmptySupplyCentersQuery } from "../queries/orders/get-empty-supply-centers-query";
 import { getNominatableCountriesQuery } from "../queries/orders/get-nominatable-countries-query";
-import { getNominationsQuery } from "../queries/orders/get-nominations-query";
 import { getOrderOptionsQuery } from "../queries/orders/get-order-options-query";
 import { getOrderSetQuery } from "../queries/orders/get-order-set-query";
 import { getTransferBuildOptionsQuery } from "../queries/orders/get-transfer-build-options-query";
@@ -27,13 +26,15 @@ import { getBuildTransferOrdersQuery } from "../queries/orders/orders-final/get-
 import { getCountryOrderSets } from "../queries/orders/orders-final/get-country-order-sets-query";
 import { getDisbandOrdersQuery } from "../queries/orders/orders-final/get-disband-orders-query";
 import { getFinishedNukesOrdersQuery } from "../queries/orders/orders-final/get-finished-nuke-orders-query";
-import { getNominationQuery } from "../queries/orders/orders-final/get-nomination-query";
+import { getNominationOrderQuery } from "../queries/orders/orders-final/get-nomination-order-query";
 import { getTechTransferOrderQuery } from "../queries/orders/orders-final/get-tech-transfer-order-query";
+import { getVotesOrdersQuery } from "../queries/orders/orders-final/get-votes-orders-query";
 import { saveBuildOrdersQuery } from "../queries/orders/orders-final/save-build-orders-query";
 import { saveDisbandOrdersQuery } from "../queries/orders/orders-final/save-disband-orders-query";
 import { saveNominationQuery } from "../queries/orders/orders-final/save-nomination-query";
 import { saveTransferOrdersQuery } from "../queries/orders/orders-final/save-transfer-orders-query";
 import { saveUnitOrderQuery } from "../queries/orders/orders-final/save-unit-order-query";
+import { saveVotesQuery } from "../queries/orders/orders-final/save-votes-query";
 import { setTurnDefaultsPreparedQuery } from "../queries/orders/set-turn-defaults-prepared-query";
 
 export class OrdersRepository {
@@ -365,7 +366,7 @@ export class OrdersRepository {
   }
 
   async getNominationOrder(turnId: number, countryId: number): Promise<NominatableCountry[]> {
-    return await this.pool.query(getNominationQuery, [turnId, countryId])
+    return await this.pool.query(getNominationOrderQuery, [turnId, countryId])
       .then((result: QueryResult) => result.rows.map((country: NominatableCountryResult) => {
         return <NominatableCountry> {
           countryId: country.country_id,
@@ -377,5 +378,14 @@ export class OrdersRepository {
 
   async saveNominationOrder(orderSetId: number, nomination: number[]): Promise<void> {
     await this.pool.query(saveNominationQuery, [nomination, orderSetId]);
+  }
+
+  async getVotes(turnId: number, countryId: number): Promise<number[]> {
+    return await this.pool.query(getVotesOrdersQuery, [turnId, countryId])
+      .then((result: QueryResult) => result.rows[0].votes ? result.rows[0].votes : []);
+  }
+
+  async saveVotes(orderSetId: number, votes: number[]): Promise<void> {
+    await this.pool.query(saveVotesQuery, [votes, orderSetId]);
   }
 };

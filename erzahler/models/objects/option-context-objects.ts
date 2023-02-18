@@ -315,14 +315,14 @@ export interface NominatableCountry {
 
 export interface NominationResult {
   nomination_id: number;
-	rank_signature: string;
-	countries: NominatableCountryResult[];
-	votes_required: number;
+  signature: string;
+  countries: NominatableCountryResult[];
+  votes_required: number;
 }
 
 export interface Nomination {
   nominationId: number;
-  rankSignature: string;
+  signature: string;
   countries: NominatableCountry[];
   votesRequired: number;
 }
@@ -387,6 +387,6 @@ export interface DisbandOptions {
 }
 
 export interface NominationOptions {
-  victoryBase: number,
-  countries: NominatableCountry[]
+  victoryBase: number;
+  countries: NominatableCountry[];
 }

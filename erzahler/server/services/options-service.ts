@@ -6,8 +6,8 @@ import { UnitType } from "../../models/enumeration/unit-enum";
 import { UserAssignment } from "../../models/objects/assignment-objects";
 import { CountryState } from "../../models/objects/games/country-state-objects";
 import { GameState } from "../../models/objects/last-turn-info-object";
-import { OptionsContext, AdjacenctMovement, TransportPathLink, AirAdjacency, OrderOption, HoldSupport, UnitOptions, BuildLoc, BuildLocResult, Order, OrderPrepping, OrderSet, SavedOption, TransferCountry, OptionDestination, SecondaryUnit, UnitOptionsFinalized, DisbandOptions, NominatableCountry, NominationOptions } from "../../models/objects/option-context-objects";
-import { OptionsFinal, BuildOptions } from "../../models/objects/options-objects";
+import { OptionsContext, AdjacenctMovement, TransportPathLink, AirAdjacency, OrderOption, HoldSupport, UnitOptions, BuildLoc, BuildLocResult, Order, OrderPrepping, OrderSet, SavedOption, TransferCountry, OptionDestination, SecondaryUnit, UnitOptionsFinalized, DisbandOptions, NominatableCountry, NominationOptions, Nomination } from "../../models/objects/option-context-objects";
+import { OptionsFinal, BuildOptions, VotingOptions } from "../../models/objects/options-objects";
 import { UpcomingTurn } from "../../models/objects/scheduler/upcoming-turns-object";
 import { AccountService } from "./accountService";
 import { copyObjectOfArrays, mergeArrays } from "./data-structure-service";
@@ -570,9 +570,9 @@ export class OptionsService {
         deadline: pendingTurn.deadline
       };
       // Move back after dev
-      turnOptions.nominations = {
-        turnStatus: pendingTurn.turnStatus,
-        options: await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING)
+      turnOptions.votes = {
+        turnStatus: TurnStatus.PENDING,
+        options: await this.getVotingOptions(pendingTurn.turnId)
       }
       ////
 
@@ -710,7 +710,7 @@ export class OptionsService {
       if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
         turnOptions.votes = {
           turnStatus: TurnStatus.PENDING,
-          options: await db.optionsRepo.getNominations(gameState.turnId)
+          options: await this.getVotingOptions(pendingTurn.turnId)
         }
       }
     }
@@ -1186,6 +1186,39 @@ export class OptionsService {
     return {
       victoryBase: coaliationSchedule.baseFinal,
       countries: nominatableCountries
+    }
+  }
+
+  async getVotingOptions(turnId: number): Promise<VotingOptions> {
+    const nominations: Nomination[] = await db.optionsRepo.getNominations(turnId);
+
+    const duplicateAlerts: string[] = [];
+    const signatureCounts: Record<string, number> = {};
+    const spliceIndeces: number[] = [];
+
+    nominations.forEach((nomination: Nomination, index: number) => {
+      let countrySignature: string = nomination.countries.map((country: NominatableCountry) => country.countryName).sort().join(', ');
+      if (signatureCounts[countrySignature]) {
+        signatureCounts[countrySignature]++;
+        spliceIndeces.push(index);
+      } else {
+        signatureCounts[countrySignature] = 1;
+      }
+    });
+
+    for (let signature in signatureCounts) {
+      if (signatureCounts[signature] > 1) {
+        duplicateAlerts.push(`${signature} was nominated ${signatureCounts[signature]} times!`);
+      }
+    }
+
+    for (let index = spliceIndeces.length - 1; index >= 0; index--) {
+      nominations.splice(spliceIndeces[index], 1);
+    }
+
+    return {
+      duplicateAlerts: duplicateAlerts,
+      nominations: nominations
     }
   }
 }

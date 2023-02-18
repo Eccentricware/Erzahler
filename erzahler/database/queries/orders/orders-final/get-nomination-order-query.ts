@@ -1,4 +1,4 @@
-export const getNominationQuery = `
+export const getNominationOrderQuery = `
   Select
     c.country_id,
     c.country_name,
