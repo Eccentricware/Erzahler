@@ -121,7 +121,7 @@ export class OrdersRepository {
           orderId: orderResult.order_id,
           orderSetId: orderResult.order_set_id,
           orderedUnitId: orderResult.ordered_unit_id,
-          orderedUnitLoc: orderResult.ordered_unit_loc,
+          loc: orderResult.ordered_unit_loc,
           orderType: orderResult.order_type,
           secondaryUnitId: orderResult.secondary_unit_id,
           secondaryUnitLoc: orderResult.secondary_unit_loc,
@@ -360,7 +360,7 @@ export class OrdersRepository {
           nodeId: loc.node_id,
           province: loc.province_name,
           display: loc.province_name,
-          nodeLoc: loc.loc
+          loc: loc.loc
         };
       }));
   }

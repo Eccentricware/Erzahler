@@ -80,7 +80,8 @@ export class MapRepository {
           name: result.unit_name,
           type: result.unit_type,
           loc: result.loc,
-          countryKey: result.flag_key
+          countryKey: result.flag_key,
+          status: result.unit_status
         }
       }));
   }

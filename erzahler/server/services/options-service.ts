@@ -641,14 +641,14 @@ export class OptionsService {
                   province: loc.provinceName,
                   display: loc.provinceName,
                   nodeId: loc.landNodeId,
-                  nodeLoc: loc.landNodeLoc,
+                  loc: loc.landNodeLoc,
                 });
 
                 buildLocs.air.push({
                   province: loc.provinceName,
                   display: loc.provinceName,
                   nodeId: loc.airNodeId,
-                  nodeLoc: loc.airNodeLoc
+                  loc: loc.airNodeLoc
                 });
               }
 
@@ -657,14 +657,14 @@ export class OptionsService {
                 province: loc.provinceName,
                 display: locDisplay[0] + ' ' + locDisplay[2],
                 nodeId: loc.seaNodeId,
-                nodeLoc: loc.seaNodeLoc
+                loc: loc.seaNodeLoc
               });
             } else {
               buildLocs.land.push({
                 province: loc.provinceName,
                 display: loc.provinceName,
                 nodeId: loc.landNodeId,
-                nodeLoc: loc.landNodeLoc
+                loc: loc.landNodeLoc
               });
 
               if (loc.seaNodeId && loc.seaNodeLoc)
@@ -672,14 +672,14 @@ export class OptionsService {
                 province: loc.provinceName,
                 display: loc.provinceName,
                 nodeId: loc.seaNodeId,
-                nodeLoc: loc.seaNodeLoc
+                loc: loc.seaNodeLoc
               });
 
               buildLocs.air.push({
                 province: loc.provinceName,
                 display: loc.provinceName,
                 nodeId: loc.airNodeId,
-                nodeLoc: loc.airNodeLoc
+                loc: loc.airNodeLoc
               });
             }
           });
@@ -775,14 +775,14 @@ export class OptionsService {
                   province: loc.provinceName,
                   display: loc.provinceName,
                   nodeId: loc.landNodeId,
-                  nodeLoc: loc.landNodeLoc,
+                  loc: loc.landNodeLoc,
                 });
 
                 buildLocs.air.push({
                   province: loc.provinceName,
                   display: loc.provinceName,
                   nodeId: loc.airNodeId,
-                  nodeLoc: loc.airNodeLoc
+                  loc: loc.airNodeLoc
                 });
               }
 
@@ -791,14 +791,14 @@ export class OptionsService {
                 province: loc.provinceName,
                 display: locDisplay[0] + ' ' + locDisplay[2],
                 nodeId: loc.seaNodeId,
-                nodeLoc: loc.seaNodeLoc
+                loc: loc.seaNodeLoc
               });
             } else {
               buildLocs.land.push({
                 province: loc.provinceName,
                 display: loc.provinceName,
                 nodeId: loc.landNodeId,
-                nodeLoc: loc.landNodeLoc
+                loc: loc.landNodeLoc
               });
 
               if (loc.seaNodeId && loc.seaNodeLoc)
@@ -806,14 +806,14 @@ export class OptionsService {
                 province: loc.provinceName,
                 display: loc.provinceName,
                 nodeId: loc.seaNodeId,
-                nodeLoc: loc.seaNodeLoc
+                loc: loc.seaNodeLoc
               });
 
               buildLocs.air.push({
                 province: loc.provinceName,
                 display: loc.provinceName,
                 nodeId: loc.airNodeId,
-                nodeLoc: loc.airNodeLoc
+                loc: loc.airNodeLoc
               });
             }
           });
@@ -1157,7 +1157,7 @@ export class OptionsService {
       const cityDisbandList: BuildLoc[] = await db.optionsRepo.getActiveCountryCenters(gameState.turnId, countryState.countryId);
       cityDisbandList.unshift({
         nodeId: 0,
-        nodeLoc: [0, 0],
+        loc: [0, 0],
         province: '---',
         display: '---'
       });
