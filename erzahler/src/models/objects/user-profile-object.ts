@@ -31,27 +31,14 @@ export interface AccountsUserRow {
   username: string;
   usernameLocked: boolean;
   userStatus: string;
-  signupTime: Date | string;
-  timeZone: string;
-  meridiemTime: boolean;
-  lastSignInTime: Date | string;
-  classicUnitRender: boolean;
-  cityRenderSize: number;
-  labelRenderSize: number;
-  unitRenderSize: number;
-  wins: number;
-  nmrTotal: number;
-  nmrOrders: number;
-  nmrRetreats: number;
-  nmrAdjustments: number;
-  dropouts: number;
-  saves: number;
-  colorTheme: string;
-  loggedIn: boolean;
-  displayPresence: boolean;
-  siteAdmin: boolean;
-  realName: string;
-  displayRealName: boolean;
+  signupTime: string;
+}
+
+export interface AddUserArgs {
+  username: string;
+  usernameLocked: boolean;
+  userStatus: string;
+  signupTime: string;
 }
 
 export interface AccountsProviderRowResult {
