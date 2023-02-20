@@ -379,29 +379,46 @@ CREATE TABLE IF NOT EXISTS users(
   user_id SERIAL,
   username VARCHAR(100) UNIQUE NOT NULL,
   username_locked BOOLEAN NOT NULL DEFAULT false,
-  user_status VARCHAR(100) NOT NULL,
-  signup_time TIMESTAMP NOT NULL,
+  signup_time TIMESTAMP NOT NULL
+  PRIMARY KEY(user_id)
+);
+
+--\echo 'Attempting to create user_settings table'
+CREATE TABLE IF NOT EXISTS user_settings(
+  user_settings_id SERIAL,
+  user_id INTEGER NOT NULL,
   time_zone VARCHAR(50) NOT NULL DEFAULT 'America/Los_Angeles',
   meridiem_time BOOLEAN DEFAULT true, --true: AM/PM, false: 24 hour
-  last_sign_in_time TIMESTAMP NOT NULL,
   classic_unit_render BOOLEAN NOT NULL DEFAULT false,
   city_render_size INTEGER NOT NULL DEFAULT 2,
   label_render_size INTEGER NOT NULL DEFAULT 2,
   unit_render_size INTEGER NOT NULL DEFAULT 2,
-  wins INTEGER DEFAULT 0,
-  nmr_total INTEGER NOT NULL DEFAULT 0,
-  nmr_orders INTEGER NOT NULL DEFAULT 0,
-  nmr_retreats INTEGER NOT NULL DEFAULT 0,
-  nmr_adjustments INTEGER NOT NULL DEFAULT 0,
-  dropouts INTEGER NOT NULL DEFAULT 0,
-  saves INTEGER DEFAULT 0,
   color_theme VARCHAR(15),
-  logged_in BOOLEAN,
   display_presence BOOLEAN NOT NULL DEFAULT false,
-  site_admin BOOLEAN NOT NULL DEFAULT false,
-  real_name VARCHAR(32),
   display_real_name BOOLEAN DEFAULT false,
-  PRIMARY KEY(user_id)
+  real_name VARCHAR(64),
+  PRIMARY KEY(user_settings_id),
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id)
+);
+--\echo 'Attempting to create user_details table'
+CREATE TABLE IF NOT EXISTS user_details(
+  user_details_id SERIAL,
+  user_id INTEGER NOT NULL,
+  user_status VARCHAR(100) NOT NULL,
+  last_sign_in_time TIMESTAMP,
+  wins INTEGER DEFAULT 0,
+  nmr_total INTEGER DEFAULT 0,
+  nmr_orders INTEGER DEFAULT 0,
+  nmr_retreats INTEGER DEFAULT 0,
+  nmr_adjustments INTEGER DEFAULT 0,
+  dropouts INTEGER DEFAULT 0,
+  saves INTEGER DEFAULT 0,
+  logged_in BOOLEAN,
+  site_admin BOOLEAN DEFAULT false,
+  PRIMARY KEY(user_details_id),
+  FOREIGN KEY(user_id)
+    REFERENCES users(user_id)
 );
 
 --\echo 'Attempting to create providers table'
@@ -689,6 +706,8 @@ CREATE INDEX unit_history_core_idx ON unit_histories(unit_id);
 CREATE INDEX unit_history_turn_idx ON unit_histories(turn_id);
 CREATE INDEX unit_history_node_idx ON unit_histories(node_id);
 CREATE INDEX provider_user_idx ON providers(user_id);
+CREATE INDEX user_settings_idx ON user_settings(user_id);
+CREATE INDEX user_details_idx ON user_details(user_id);
 CREATE INDEX ratings_rated_idx ON user_ratings(rated_user_id);
 CREATE INDEX ratings_rating_idx ON user_ratings(rating_user_id);
 CREATE INDEX user_relationships_core_idx ON user_relationships(user_id);

@@ -1,18 +1,18 @@
 {
   "name": "erzahler",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "",
   "main": "dist/server/controller.js",
   "scripts": {
     "start:build": "tsc -w",
     "start:run": "nodemon ./server/controller.js",
-    "start": "concurrently npm:start:*",
+    "start": "nodemon ./server/controller.js",
     "lint": "eslint --cache --fix . && prettier --ignore-path .prettierignore --write .",
     "compile": "tsc -w",
     "nodemon": "nodemon --delay 2 ./server/controller.js",
     "dev": "concurrently npm:compile npm:nodemon",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc --project ./ -w"
+    "build": "tsc --project ./"
   },
   "keywords": [],
   "author": "",
