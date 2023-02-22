@@ -143,6 +143,7 @@ export interface SavedOptionResult {
   unit_country_rank: string;
   unit_flag_key: string;
   province_name: string;
+  node_id: number;
   unit_loc: number[];
   can_hold: boolean;
   order_type: string;
@@ -170,6 +171,7 @@ export interface SavedOption {
   unitCountryRank: string;
   unitFlagKey: string;
   provinceName: string;
+  nodeId: number;
   unitLoc: number[];
   canHold: boolean;
   orderType: OrderDisplay;
@@ -195,6 +197,7 @@ export interface UnitOptionsFinalized {
   unitType: string;
   unitDisplay: string;
   unitLoc: number[];
+  nodeId: number;
   orderTypes: OrderDisplay[];
   moveDestinations: OptionDestination[];
   moveTransportedDestinations: OptionDestination[];

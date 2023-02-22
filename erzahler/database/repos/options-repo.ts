@@ -109,8 +109,8 @@ export class OptionsRepository {
    * @param turnId    - Turn's ID
    * @returns Promise<SavedOption[]>
    */
-  async getUnitOptions(turnTurnId: number, orderTurnId: number, countryId: number = 0): Promise<SavedOption[]> {
-    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [turnTurnId, orderTurnId, countryId])
+  async getUnitOptions(currentTurnId: number, nextTurnId: number, countryId: number = 0): Promise<SavedOption[]> {
+    const savedOptions: SavedOption[] = await this.pool.query(getOrderOptionsQuery, [currentTurnId, nextTurnId, countryId])
       .then((result: QueryResult<any>) => {
         return result.rows.map((result: SavedOptionResult) => {
           return <SavedOption> {
@@ -121,6 +121,7 @@ export class OptionsRepository {
             unitCountryRank: result.unit_country_rank,
             unitFlagKey: result.unit_flag_key,
             provinceName: result.province_name,
+            nodeId: result.node_id,
             unitLoc: result.unit_loc,
             canHold: result.can_hold,
             orderType: result.order_type,
@@ -313,7 +314,7 @@ export class OptionsRepository {
       .then((result: QueryResult) => result.rows.map((loc: BuildLocationResult) => {
         return <BuildLoc> {
           nodeId: loc.node_id,
-          nodeLoc: loc.loc,
+          loc: loc.loc,
           province: loc.province_name,
           display: loc.province_name
         }

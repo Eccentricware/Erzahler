@@ -220,12 +220,19 @@ export class SchedulerService {
 
     const pendingTurns = await db.schedulerRepo.getUpcomingTurns(0);
 
-    pendingTurns.forEach((deadline: any) => {
+    pendingTurns.forEach((turn: UpcomingTurn) => {
+      if (Date.parse(turn.deadline) <  Date.now()) {
+        resolutionService.resolveTurn(turn);
+        console.log('Deadline in past: ' + true);
+      } else {
+        console.log('Deadline in past: ' + false);
+      }
+
       schedule.scheduleJob(
-        `${deadline.gameName} - ${deadline.turnName}`,
-        deadline.deadline,
+        `${turn.gameName} - ${turn.turnName}`,
+        turn.deadline,
         () => {
-          resolutionService.resolveTurn(deadline.turnId);
+          resolutionService.resolveTurn(turn);
         }
       );
     });

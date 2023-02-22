@@ -1,9 +1,10 @@
 export enum OrderDisplay {
   AIRLIFT = 'Airlift',
   CONVOY = 'Convoy',
-  DETONATE = 'Detonate',
+  DETONATE = 'Target',
   DISBAND = 'Disband',
   HOLD = 'Hold',
+  INVALID = 'Invalid (Holding)',
   MOVE = 'Move',
   MOVE_CONVOYED = 'Move Convoyed',
   OFFER_TECH = 'Offer Nuke Tech',
