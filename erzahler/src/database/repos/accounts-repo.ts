@@ -51,27 +51,27 @@ export class AccountsRepository {
 
   async createAccountUser(userArgs: AddUserArgs): Promise<NewUser> {
     const newUser: NewUser[] = await this.accountPool
-      .query(createAccountUserQuery, [
-        userArgs.username,
-        userArgs.usernameLocked,
-        userArgs.signupTime
-      ])
-      .then((result: QueryResult) => result.rows.map((user: NewUserResult) => {
-        return <NewUser> {
-          userId: user.user_id,
-          username: user.username,
-          usernameLocked: user.username_locked,
-          signupTime: user.signup_time
-        }
-      }))
+      .query(createAccountUserQuery, [userArgs.username, userArgs.usernameLocked, userArgs.signupTime])
+      .then((result: QueryResult) =>
+        result.rows.map((user: NewUserResult) => {
+          return <NewUser>{
+            userId: user.user_id,
+            username: user.username,
+            usernameLocked: user.username_locked,
+            signupTime: user.signup_time
+          };
+        })
+      )
       .catch((error: Error) => {
         console.log('Create Account User Error: ' + error.message);
-        return [{
-          userId: 0,
-          username: 'Failboat',
-          usernameLocked: false,
-          signupTime: 'Failtime'
-        }]
+        return [
+          {
+            userId: 0,
+            username: 'Failboat',
+            usernameLocked: false,
+            signupTime: 'Failtime'
+          }
+        ];
       });
 
     return newUser[0];
@@ -79,12 +79,7 @@ export class AccountsRepository {
 
   async createEnvironmentUser(newUser: NewUser): Promise<boolean> {
     return await this.pool
-      .query(createEnvironmentUserQuery, [
-        newUser.userId,
-        newUser.username,
-        newUser.usernameLocked,
-        newUser.signupTime
-      ])
+      .query(createEnvironmentUserQuery, [newUser.userId, newUser.username, newUser.usernameLocked, newUser.signupTime])
       .then((result: any) => {
         console.log(`Add user success:`, Boolean(result.rowCount));
         return true;
@@ -96,28 +91,25 @@ export class AccountsRepository {
   }
 
   async createUserDetails(newUser: NewUser, userStatus: string): Promise<void> {
-    await this.pool.query(insertUserDetailsQuery, [
-      newUser.userId,
-      userStatus
-    ])
-    .then((result: any) => {
-      console.log(`Add user details success:`, Boolean(result.rowCount));
-    })
-    .catch((error: Error) => {
-      console.log('Create Environment User Details Query Error:', error.message);
-    });
+    await this.pool
+      .query(insertUserDetailsQuery, [newUser.userId, userStatus])
+      .then((result: any) => {
+        console.log(`Add user details success:`, Boolean(result.rowCount));
+      })
+      .catch((error: Error) => {
+        console.log('Create Environment User Details Query Error:', error.message);
+      });
   }
 
   async createUserSettings(newUser: NewUser): Promise<void> {
-    await this.pool.query(insertUserSettingsQuery, [
-      newUser.userId
-    ])
-    .then((result: any) => {
-      console.log(`Add user details success:`, Boolean(result.rowCount));
-    })
-    .catch((error: Error) => {
-      console.log('Create Environment User Settings Query Error:', error.message);
-    });
+    await this.pool
+      .query(insertUserSettingsQuery, [newUser.userId])
+      .then((result: any) => {
+        console.log(`Add user details success:`, Boolean(result.rowCount));
+      })
+      .catch((error: Error) => {
+        console.log('Create Environment User Settings Query Error:', error.message);
+      });
   }
 
   async createAccountProvider(providerArgs: any): Promise<number> {
@@ -329,7 +321,7 @@ export class AccountsRepository {
         return {
           username: username,
           success: true
-        }
+        };
       })
       .catch((error: Error) => {
         return {
@@ -342,12 +334,7 @@ export class AccountsRepository {
 
   async insertUserFromBackup(user: AccountsUserRow): Promise<number> {
     return await this.pool
-      .query(createEnvironmentUserQuery, [
-        user.userId,
-        user.username,
-        user.usernameLocked,
-        user.signupTime
-      ])
+      .query(createEnvironmentUserQuery, [user.userId, user.username, user.usernameLocked, user.signupTime])
       .then((result: QueryResult) => result.rows[0].user_id)
       .catch((error: Error) => {
         console.log('Insert User From Backup Error: ' + error.message);

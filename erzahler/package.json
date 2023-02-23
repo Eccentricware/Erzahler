@@ -1,7 +1,7 @@
 {
   "name": "erzahler",
-  "version": "0.0.3",
-  "description": "",
+  "version": "0.0.4",
+  "description": "Back end for Blitzkarte. It means \"Storyteller\" in German.",
   "main": "dist/server/controller.js",
   "scripts": {
     "start:build": "tsc -w",
