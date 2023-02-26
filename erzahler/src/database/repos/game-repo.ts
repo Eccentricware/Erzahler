@@ -448,22 +448,23 @@ export class GameRepository {
       .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
   }
 
-  async getCountryState(gameId: number, countryId: number): Promise<CountryState[]> {
-    return await this.pool.query(getCountryStateQuery, [gameId, countryId]).then((queryResult: QueryResult<any>) =>
-      queryResult.rows.map((countryResult: CountryStateResult) => {
-        return <CountryState>{
-          countryId: countryResult.country_id,
-          name: countryResult.country_name,
-          cityCount: countryResult.city_count,
-          unitCount: countryResult.unit_count,
-          retreating: countryResult.in_retreat,
-          builds: countryResult.banked_builds,
-          nukeRange: countryResult.nuke_range,
-          adjustments: countryResult.adjustments,
-          nukesInProduction: countryResult.nukes_in_production
-        };
-      })
-    );
+  async getCountryState(gameId: number, turnNumber: number, countryId: number): Promise<CountryState[]> {
+    return await this.pool.query(getCountryStateQuery, [gameId, turnNumber, countryId])
+      .then((queryResult: QueryResult<any>) =>
+        queryResult.rows.map((countryResult: CountryStateResult) => {
+          return <CountryState>{
+            countryId: countryResult.country_id,
+            name: countryResult.country_name,
+            cityCount: countryResult.city_count,
+            unitCount: countryResult.unit_count,
+            retreating: countryResult.in_retreat,
+            builds: countryResult.banked_builds,
+            nukeRange: countryResult.nuke_range,
+            adjustments: countryResult.adjustments,
+            nukesInProduction: countryResult.nukes_in_production
+          };
+        })
+      );
   }
 
   async getGameStats(gameId: number, turnId: number): Promise<CountryStats[]> {
