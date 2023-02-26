@@ -559,7 +559,7 @@ export class OptionsService {
     let playerCountry: CountryState | undefined = undefined;
     const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
     if (playerCountries.length > 0) {
-      const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnId, playerCountries[0].countryId);
+      const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnNumber, playerCountries[0].countryId);
       playerCountry = countryStates[0];
     }
 
@@ -1201,18 +1201,18 @@ export class OptionsService {
         });
       }
 
-      const cityDisbandList: BuildLoc[] = await db.optionsRepo.getActiveCountryCenters(
-        gameState.turnId,
+      const nukePlacementCities: BuildLoc[] = await db.optionsRepo.getActiveCountryCenters(
+        gameState.turnNumber,
         countryState.countryId
       );
-      cityDisbandList.unshift({
+      nukePlacementCities.unshift({
         nodeId: 0,
         loc: [0, 0],
         province: '---',
         display: '---'
       });
 
-      disbandOptions.nukeLocs = cityDisbandList;
+      disbandOptions.nukeLocs = nukePlacementCities;
     }
 
     return disbandOptions;
