@@ -16,7 +16,7 @@ import { envCredentials } from '../../secrets/dbCredentials';
 import { getCurrentCitiesQuery } from '../queries/maps/get-current-cities-query';
 import { getLabelLinesQuery } from '../queries/maps/get-label-lines-query';
 import { getLabelsQuery } from '../queries/maps/get-labels-query';
-import { getTerrainQuery } from '../queries/maps/get-terrain-query';
+import { getCurrentTerrainQuery } from '../queries/maps/get-current-terrain-query';
 import { getCurrentUnitsQuery } from '../queries/maps/get-current-units-query';
 
 export class MapRepository {
@@ -24,7 +24,7 @@ export class MapRepository {
   constructor(private db: IDatabase<any>, private pgp: IMain) {}
 
   async getTerrain(gameId: number, turnId: number): Promise<Terrain[]> {
-    return await this.pool.query(getTerrainQuery, [gameId, turnId]).then((queryResult: QueryResult<any>) =>
+    return await this.pool.query(getCurrentTerrainQuery, [gameId, turnId]).then((queryResult: QueryResult<any>) =>
       queryResult.rows.map((result: TerrainResult) => {
         return <Terrain>{
           province: result.province_name,
