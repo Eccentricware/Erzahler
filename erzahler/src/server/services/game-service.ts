@@ -496,7 +496,7 @@ export class GameService {
 
   async getGameStats(gameId: number): Promise<any> {
     const gameState = await db.gameRepo.getGameState(gameId);
-    const countryStats = await db.gameRepo.getGameStats(gameId, gameState.turnId);
+    const countryStats = await db.gameRepo.getGameStats(gameId, gameState.turnNumber);
     return { countries: countryStats };
   }
 }
