@@ -4,6 +4,7 @@ export enum UnitStatus {
   DISBANNED_ADJUSTMENT = 'Disbanned as Adjustment',
   DISBANNED_RETREAT = 'Disbanned in Retreat',
   DETONATED = 'Detonated',
+  NUKED = 'Nuked',
   RETREAT = 'Retreat'
 }
 

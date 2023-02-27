@@ -147,6 +147,8 @@ export class OrdersRepository {
         let recipient = recipients.find((country: TransferCountryResult) => country.country_id === tuples[index]);
         if (recipient) {
           transferBuildOrders.push({
+            playerCountryId: result.player_country_id,
+            playerCountryName: result.player_country_name,
             countryId: recipient.country_id,
             countryName: recipient.country_name,
             builds: tuples[index + 1]
@@ -155,7 +157,7 @@ export class OrdersRepository {
       }
     });
 
-    return transferBuildOrders;
+    return transferBuildOrders
   }
 
   async getTechTransferPartner(nextTurnId: number, currentTurnId: number, countryId: number): Promise<TransferTechOrder[]> {

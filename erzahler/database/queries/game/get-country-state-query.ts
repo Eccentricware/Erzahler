@@ -12,7 +12,7 @@ export const getCountryStateQuery = `
   FROM country_histories ch
   INNER JOIN countries c ON c.country_id = ch.country_id
   WHERE c.game_id = $1
-    AND c.country_id = $2
+    AND CASE WHEN $2 = 0 THEN true ELSE c.country_id = $2 END
   ORDER BY ch.turn_id DESC
-  LIMIT 1;
+  --LIMIT 1;
 `;

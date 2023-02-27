@@ -425,7 +425,7 @@ export class OptionsService {
   formatNuke(unit: UnitOptions, turnId: number): OrderOption {
     return {
       unitId: unit.unitId,
-      orderType: OrderDisplay.DETONATE,
+      orderType: OrderDisplay.NUKE,
       destinations: unit.nukeTargets,
       turnId: turnId
     }
@@ -887,7 +887,7 @@ export class OptionsService {
         this.finalizeAirlifts(option, unit);
       }
 
-      if (option.orderType === OrderDisplay.DETONATE) {
+      if (option.orderType === OrderDisplay.NUKE) {
         this.finalizeNukeTargets(option, unit);
       }
 
@@ -909,7 +909,7 @@ export class OptionsService {
   }
 
   finalizeNukeTargets(option: SavedOption, unit: UnitOptionsFinalized): void {
-    unit.orderTypes.push(OrderDisplay.DETONATE);
+    unit.orderTypes.push(OrderDisplay.NUKE);
     unit.nukeTargets = this.sortDestinations(option.destinations);
   }
 
@@ -1067,8 +1067,8 @@ export class OptionsService {
       orderTypes.push(OrderDisplay.AIRLIFT);
     }
 
-    if (unit.orderTypes.includes(OrderDisplay.DETONATE)) {
-      orderTypes.push(OrderDisplay.DETONATE);
+    if (unit.orderTypes.includes(OrderDisplay.NUKE)) {
+      orderTypes.push(OrderDisplay.NUKE);
     }
 
     if (unit.orderTypes.includes(OrderDisplay.DISBAND)) {
