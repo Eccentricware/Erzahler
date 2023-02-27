@@ -18,5 +18,5 @@ export const getBuildTransferOrdersQuery = `
   GROUP BY os.order_set_id,
     pc.country_id,
     pc.country_name
-  ORDER BY pc.country_id
+  ORDER BY pc.country_id;
 `;

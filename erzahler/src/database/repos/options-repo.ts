@@ -267,9 +267,9 @@ export class OptionsRepository {
     return transferOptions;
   }
 
-  async getAvailableBuildLocs(gameId: number, turnId: number, countryId = 0): Promise<BuildLocResult[]> {
+  async getAvailableBuildLocs(turnNumber: number, gameId: number, countryId = 0): Promise<BuildLocResult[]> {
     const buildLocs: BuildLocResult[] = await this.pool
-      .query(getEmptySupplyCentersQuery, [gameId, turnId, countryId])
+      .query(getEmptySupplyCentersQuery, [turnNumber, gameId, countryId])
       .then((result: QueryResult<any>) =>
         result.rows.map((province: BuildLocResult) => {
           return <BuildLocResult>{
@@ -295,9 +295,9 @@ export class OptionsRepository {
     return buildLocs;
   }
 
-  async getAtRiskUnits(turnId: number, countryId: number): Promise<AtRiskUnit[]> {
+  async getAtRiskUnits(turnNumber: number, countryId: number): Promise<AtRiskUnit[]> {
     const atRiskUnits: AtRiskUnit[] = await this.pool
-      .query(getAtRiskUnitsQuery, [turnId, countryId])
+      .query(getAtRiskUnitsQuery, [turnNumber, countryId])
       .then((result: QueryResult<any>) =>
         result.rows.map((unit: AtRiskUnitResult) => {
           return <AtRiskUnit>{

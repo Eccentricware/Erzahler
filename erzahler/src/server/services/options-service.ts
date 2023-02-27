@@ -665,8 +665,8 @@ export class OptionsService {
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
         if (playerCountry.adjustments >= 0) {
           const buildLocsResult: BuildLocResult[] = await db.optionsRepo.getAvailableBuildLocs(
+            gameState.turnNumber,
             gameId,
-            gameState.turnId,
             playerCountry.countryId
           );
           const buildLocs: BuildOptions = {
@@ -800,8 +800,8 @@ export class OptionsService {
       if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
         if (playerCountry.adjustments >= 0) {
           const buildLocsResult: BuildLocResult[] = await db.optionsRepo.getAvailableBuildLocs(
+            gameState.turnNumber,
             gameId,
-            gameState.turnId,
             playerCountry.countryId
           );
           const buildLocs: BuildOptions = {
