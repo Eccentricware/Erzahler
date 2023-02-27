@@ -13,7 +13,7 @@ import {
   UnitResult
 } from '../../models/objects/map-objects';
 import { envCredentials } from '../../secrets/dbCredentials';
-import { getCitiesQuery } from '../queries/maps/get-cities-query';
+import { getCurrentCitiesQuery } from '../queries/maps/get-current-cities-query';
 import { getLabelLinesQuery } from '../queries/maps/get-label-lines-query';
 import { getLabelsQuery } from '../queries/maps/get-labels-query';
 import { getTerrainQuery } from '../queries/maps/get-terrain-query';
@@ -43,8 +43,8 @@ export class MapRepository {
     );
   }
 
-  async getCities(gameId: number, turnId: number): Promise<City[]> {
-    return await this.pool.query(getCitiesQuery, [gameId, turnId]).then((queryResult: QueryResult<any>) =>
+  async getCities(gameId: number, turnNumber: number): Promise<City[]> {
+    return await this.pool.query(getCurrentCitiesQuery, [gameId, turnNumber]).then((queryResult: QueryResult<any>) =>
       queryResult.rows.map((result: CityResult) => {
         return <City>{
           loc: result.city_loc,
