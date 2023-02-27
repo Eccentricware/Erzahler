@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION get_node_adjacencies(
   INTEGER, -- game_id
   INTEGER  -- turn_id
 )
-RETURNS TABLE(node_id INTEGER, province_name VARCHAR(15), adjacencies JSON)
+RETURNS TABLE(node_id INTEGER, adjacencies JSON)
 AS $$
   SELECT n.node_id,
     json_agg(CASE

@@ -105,6 +105,7 @@ export interface TransferTechOrder {
   techPartnerId: number;
   techPartnerName: string;
   hasNukes: boolean;
+  success: boolean;
 }
 
 export interface BuildOrdersResult {

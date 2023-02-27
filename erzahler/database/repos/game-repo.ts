@@ -111,7 +111,8 @@ export class GameRepository {
             yearNumber: gameStateResult.year_number,
             highestRankedReq: gameStateResult.highest_ranked_req,
             allVotesControlled: gameStateResult.all_votes_controlled,
-            unitsInRetreat: gameStateResult.unit_in_retreat
+            unitsInRetreat: gameStateResult.unit_in_retreat,
+            defaultNukeRange: gameStateResult.default_nuke_range
           }
         })[0];
       });

@@ -5,5 +5,7 @@ export const getTransferValidationDataQuery = `
     ch.nuke_range
   FROM country_histories ch
   INNER JOIN countries c ON c.country_id = ch.country_id
-  WHERE ch.turn_id = $1;
+  WHERE ch.turn_id = $1
+    AND ch.country_status IN ('Active', 'Civil Disorder')
+    AND c.rank != 'n';
 `;

@@ -24,7 +24,7 @@ AS $$
   INNER JOIN games g ON g.game_id = p1.game_id
   WHERE g.game_id = $1
     AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)
-    WHERE n.node_type = 'air'
+    AND n.node_type = 'air'
   GROUP BY n.node_id,
     p.province_name
   ORDER BY p.province_name;

@@ -25,6 +25,7 @@ export interface GameStateResult {
   highest_ranked_req: number;
   all_votes_controlled: boolean;
   unit_in_retreat: boolean;
+  default_nuke_range: number;
 }
 
 export interface GameState {
@@ -50,6 +51,7 @@ export interface GameState {
   highestRankedReq: number;
   allVotesControlled: boolean;
   unitsInRetreat: boolean;
+  defaultNukeRange: number;
 }
 
 export interface NextTurns {

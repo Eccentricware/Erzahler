@@ -2,7 +2,7 @@ import { Pool, QueryResult } from "pg";
 import { IDatabase, IMain } from "pg-promise";
 import { UnitType } from "../../models/enumeration/unit-enum";
 import { AdjacentTransport, AdjacentTransportable, AdjacentTransportableResult, AdjacentTransportResult, TransportDestination, TransportDestinationResult } from "../../models/objects/option-context-objects";
-import { TransferResources, TransferResourcesResults, TransportNetworkUnit, TransportNetworkUnitResult, UnitOrderResolution, UnitOrderResolutionResult } from "../../models/objects/resolution/order-resolution-objects";
+import { CountryTransferResources, TransferResources, TransferResourcesResults, TransportNetworkUnit, TransportNetworkUnitResult, UnitOrderResolution, UnitOrderResolutionResult } from "../../models/objects/resolution/order-resolution-objects";
 import { victorCredentials } from "../../secrets/dbCredentials";
 import { getTransferValidationDataQuery } from "../queries/resolution/get-transfer-validation-data-query";
 import { getTransportNetworkValidation } from "../queries/resolution/get-transport-network-validation-query";
@@ -117,13 +117,14 @@ export class ResolutionRepository {
     return unitAdjacencyInfoResult;
   }
 
-  async getTransferResourceValidation(turnId: number): Promise<TransferResources[]> {
+  async getTransferResourceValidation(turnId: number): Promise<CountryTransferResources[]> {
     return await this.pool.query(getTransferValidationDataQuery, [turnId])
       .then((result: QueryResult) => result.rows.map((country: TransferResourcesResults) => {
-        return <TransferResources> {
+        return <CountryTransferResources> {
           countryId: country.country_id,
           countryName: country.country_name,
           bankedBuilds: country.banked_builds,
+          buildsRemaining: country.banked_builds,
           nukeRange: country.nuke_range
         };
       }));
