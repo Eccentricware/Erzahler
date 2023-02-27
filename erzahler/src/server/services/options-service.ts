@@ -559,7 +559,11 @@ export class OptionsService {
     let playerCountry: CountryState | undefined = undefined;
     const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
     if (playerCountries.length > 0) {
-      const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnNumber, playerCountries[0].countryId);
+      const countryStates = await db.gameRepo.getCountryState(
+        gameId,
+        gameState.turnNumber,
+        playerCountries[0].countryId
+      );
       playerCountry = countryStates[0];
     }
 
@@ -733,7 +737,7 @@ export class OptionsService {
         } else {
           turnOptions.disbands = {
             turnStatus: TurnStatus.PENDING,
-            options: await this.getDisbandOptions(gameState, pendingTurn, playerCountry)
+            options: await this.getDisbandOptions(gameState, playerCountry)
           };
         }
       }
@@ -868,7 +872,7 @@ export class OptionsService {
         } else {
           turnOptions.disbands = {
             turnStatus: TurnStatus.PENDING,
-            options: await this.getDisbandOptions(gameState, preliminaryTurn, playerCountry)
+            options: await this.getDisbandOptions(gameState, playerCountry)
           };
         }
       }
@@ -1177,16 +1181,12 @@ export class OptionsService {
     });
   }
 
-  async getDisbandOptions(
-    gameState: GameState,
-    turn: UpcomingTurn,
-    countryState: CountryState
-  ): Promise<DisbandOptions> {
+  async getDisbandOptions(gameState: GameState, countryState: CountryState): Promise<DisbandOptions> {
     const disbandOptions: DisbandOptions = {
       disbandCount: countryState.adjustments * -1,
       cityCount: countryState.cityCount,
       unitCount: countryState.unitCount,
-      units: await db.optionsRepo.getAtRiskUnits(gameState.turnId, countryState.countryId),
+      units: await db.optionsRepo.getAtRiskUnits(gameState.gameId, gameState.turnNumber, countryState.countryId),
       nukesInProduction: countryState.nukesInProduction,
       nukeLocs: []
     };

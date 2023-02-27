@@ -57,7 +57,11 @@ export class OrdersService {
 
     if (playerCountries.length > 0) {
       orders.role === 'player';
-      const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnNumber, playerCountries[0].countryId);
+      const countryStates = await db.gameRepo.getCountryState(
+        gameId,
+        gameState.turnNumber,
+        playerCountries[0].countryId
+      );
       const playerCountry: CountryState = countryStates[0];
       orders.countryId = playerCountry.countryId;
 
@@ -221,7 +225,11 @@ export class OrdersService {
     } else if (adminVision) {
       let playerCountry: CountryState;
       if (playerCountries[0]) {
-        const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnNumber, playerCountries[0].countryId);
+        const countryStates = await db.gameRepo.getCountryState(
+          gameId,
+          gameState.turnNumber,
+          playerCountries[0].countryId
+        );
         playerCountry = countryStates[0];
       } else {
         playerCountry = {
@@ -318,7 +326,7 @@ export class OrdersService {
             );
             orders.builds = pendingBuildOrders[0];
           } else {
-            // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnNumber, playerCountry.countryId);
+            // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.gameId, gameState.turnNumber, playerCountry.countryId);
           }
         }
 
@@ -368,13 +376,13 @@ export class OrdersService {
 
         // Adjustments
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-          // const preliminaryBuildLocs: BuildLoc[] = await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnId, playerCountry.countryId);
-          // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.turnNumber, playerCountry.countryId);
+          // const preliminaryBuildLocs: BuildLoc[] = await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnNumber, playerCountry.countryId);
+          // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.gameId, gameState.turnNumber, playerCountry.countryId);
         }
 
         // Nominations
         if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-          // const preliminaryNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.turnId);
+          // const preliminaryNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.turnNumber);
         }
       }
     }
