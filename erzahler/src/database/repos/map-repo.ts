@@ -17,7 +17,7 @@ import { getCurrentCitiesQuery } from '../queries/maps/get-current-cities-query'
 import { getLabelLinesQuery } from '../queries/maps/get-label-lines-query';
 import { getLabelsQuery } from '../queries/maps/get-labels-query';
 import { getTerrainQuery } from '../queries/maps/get-terrain-query';
-import { getUnitsQuery } from '../queries/maps/get-units-query';
+import { getCurrentUnitsQuery } from '../queries/maps/get-current-units-query';
 
 export class MapRepository {
   pool = new Pool(envCredentials);
@@ -88,8 +88,8 @@ export class MapRepository {
     );
   }
 
-  async getUnits(gameId: number, turnId: number): Promise<Unit[]> {
-    return await this.pool.query(getUnitsQuery, [gameId, turnId]).then((queryResult: QueryResult<any>) =>
+  async getUnits(gameId: number, turnNumber: number): Promise<Unit[]> {
+    return await this.pool.query(getCurrentUnitsQuery, [gameId, turnNumber]).then((queryResult: QueryResult<any>) =>
       queryResult.rows.map((result: UnitResult) => {
         return <Unit>{
           name: result.unit_name,
