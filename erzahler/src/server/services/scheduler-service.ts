@@ -20,7 +20,6 @@ import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings
 import { setInterval } from 'timers';
 import { terminalLog } from '../utils/general';
 
-
 export class SchedulerService {
   timeZones: TimeZone[];
   turnOrder: string[] = ['orders', 'retreats', 'adjustments', 'nominations', 'votes'];
@@ -469,27 +468,27 @@ export class SchedulerService {
    * Prints current time immediately, according to env time zone, and then every increment in minutes.
    * @param interval
    */
-  checkIn(interval: number): void {
-    terminalLog('Checking in');
+  checkIn(minuteInterval: number): void {
+    terminalLog('Server Start');
 
-    let now = DateTime.now();
-    let minUntilIncrement = interval - now.minute % interval;
-    let start =
-      now.plus({
-        minute: minUntilIncrement - 1,
-        second: 59 - now.second,
-        millisecond: 1000 - now.millisecond
-      })
+    const now = DateTime.now();
+    const minUntilIncrement = minuteInterval - (now.minute % minuteInterval);
+    const start = now.plus({
+      minute: minUntilIncrement - 1 - minuteInterval,
+      second: 59 - now.second,
+      millisecond: 1000 - now.millisecond
+    });
 
     schedule.scheduleJob(
-      'First Check In',
-      start.toJSDate(),
+      {
+        start: start.toJSDate(),
+        rule: `*/${minuteInterval} * * * *`
+      },
       () => {
-        terminalLog('Checking in');
-        setInterval(() => {
-          terminalLog('Checking in');
-        }, 60000 * interval)
-      }
-    );
+        terminalLog('Check In');
+        // terminalLog('Checking in');
+        // setInterval(() => {
+        // }, 60000 * interval);
+      });
   }
 }

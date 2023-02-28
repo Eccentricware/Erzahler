@@ -56,14 +56,14 @@ userRouter.post('/add-provider', (request, response) => {
 
   accountService
     .addAdditionalProvider(oldIdToken, newIdToken)
-      .then((result: any) => {
-        terminalLog(`${result.username} added a provider: ${result.providerType}`);
-        response.send(result);
-      })
-      .catch((error: Error) => {
-        terminalLog(`Someone tried to add a provider`);
-        response.send(error.message);
-      });
+    .then((result: any) => {
+      terminalLog(`${result.username} added a provider: ${result.providerType}`);
+      response.send(result);
+    })
+    .catch((error: Error) => {
+      terminalLog(`Someone tried to add a provider`);
+      response.send(error.message);
+    });
 });
 
 userRouter.put('/update-settings', (request, response) => {

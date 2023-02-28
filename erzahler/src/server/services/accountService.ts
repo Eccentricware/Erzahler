@@ -1,5 +1,10 @@
 import { DecodedIdToken, getAuth, UserRecord } from 'firebase-admin/auth';
-import { AccountsProviderRow, AccountsUserRow, AddUserArgs, UserProfile } from '../../models/objects/user-profile-object';
+import {
+  AccountsProviderRow,
+  AccountsUserRow,
+  AddUserArgs,
+  UserProfile
+} from '../../models/objects/user-profile-object';
 import { FormattingService } from './formattingService';
 import { db } from '../../database/connection';
 import { NewUser } from '../../models/objects/new-user-objects';
@@ -158,10 +163,12 @@ export class AccountService {
     if (users.length > 0) {
       const user = users[0];
 
-      const accountProviders: AccountsProviderRow[] = await db.accountsRepo.getProviderRowFromAccountsByUserId(user.userId);
+      const accountProviders: AccountsProviderRow[] = await db.accountsRepo.getProviderRowFromAccountsByUserId(
+        user.userId
+      );
       const envProviders: number[] = await db.accountsRepo.getProviderRowFromEnvironmentByUserId(user.userId);
-      const missingProviders: AccountsProviderRow[] = accountProviders.filter((provider: AccountsProviderRow) =>
-        !envProviders.includes(provider.providerId)
+      const missingProviders: AccountsProviderRow[] = accountProviders.filter(
+        (provider: AccountsProviderRow) => !envProviders.includes(provider.providerId)
       );
 
       const success = await db.accountsRepo.createEnvironmentUser(user);
@@ -194,13 +201,11 @@ export class AccountService {
           return {
             username: user.username,
             providerType: firebaseUser.providerData[0].providerId
-          }
+          };
         } else {
           console.log('Add Additional Provider Error: Provider in Database');
         }
-
       }
-
     }
   }
 
@@ -209,7 +214,12 @@ export class AccountService {
 
     if (token.uid) {
       const blitzkarteUser: UserProfile = await this.getUserProfile(idToken);
-      return db.accountsRepo.updatePlayerSettings(data.timeZone, data.meridiemTime, blitzkarteUser.userId, blitzkarteUser.username);
+      return db.accountsRepo.updatePlayerSettings(
+        data.timeZone,
+        data.meridiemTime,
+        blitzkarteUser.userId,
+        blitzkarteUser.username
+      );
     }
   }
 
