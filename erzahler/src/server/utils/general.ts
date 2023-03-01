@@ -9,9 +9,14 @@ export const formatNow = (): string => {
 
   if (now.hour === 0) {
     hour = 12;
-  } else if (now.hour > 12) {
+  }
+
+  if (now.hour > 12) {
     hour = now.hour - 12;
-    meridiem = 'P';
+  }
+
+  if (now.hour >= 12) {
+    meridiem = 'P'
   }
 
   const time = `${hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}:${now.second
