@@ -57,7 +57,7 @@ export class OrdersService {
 
     if (playerCountries.length > 0) {
       orders.role === 'player';
-      const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnId, playerCountries[0].countryId);
+      const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnNumber, playerCountries[0].countryId);
       const playerCountry: CountryState = countryStates[0];
       orders.countryId = playerCountry.countryId;
 
@@ -221,7 +221,7 @@ export class OrdersService {
     } else if (adminVision) {
       let playerCountry: CountryState;
       if (playerCountries[0]) {
-        const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnId, playerCountries[0].countryId);
+        const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnNumber, playerCountries[0].countryId);
         playerCountry = countryStates[0];
       } else {
         playerCountry = {
