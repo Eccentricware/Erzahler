@@ -1,0 +1,21 @@
+--sudo -u postgres psql < database/scripts/create-get-last-country-history-function.sql
+
+\c erzahler_dev;
+\echo 'Attempting to create get_last_country_history function'
+
+CREATE OR REPLACE FUNCTION get_last_country_history(
+	INTEGER, --game_id
+	INTEGER  --turn_number
+)
+RETURNS TABLE(country_id INTEGER, turn_id INTEGER, turn_number INTEGER)
+AS $$
+	SELECT ch.country_id,
+		ch.turn_id,
+		MAX(t.turn_number) AS turn_number
+	FROM country_histories ch
+	INNER JOIN turns t ON t.turn_id = ch.turn_id
+	WHERE t.game_id = $1
+		AND t.turn_number <= $2
+	GROUP BY ch.country_id,
+		ch.turn_id
+$$ LANGUAGE SQL;

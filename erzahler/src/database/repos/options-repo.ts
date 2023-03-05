@@ -13,8 +13,6 @@ import {
   NominatableCountryResult,
   Nomination,
   NominationResult,
-  OptionDestination,
-  OrderOption,
   SavedDestination,
   SavedOption,
   SavedOptionResult,
@@ -295,9 +293,9 @@ export class OptionsRepository {
     return buildLocs;
   }
 
-  async getAtRiskUnits(turnNumber: number, countryId: number): Promise<AtRiskUnit[]> {
+  async getAtRiskUnits(gameId: number, turnNumber: number, countryId: number): Promise<AtRiskUnit[]> {
     const atRiskUnits: AtRiskUnit[] = await this.pool
-      .query(getAtRiskUnitsQuery, [turnNumber, countryId])
+      .query(getAtRiskUnitsQuery, [gameId, turnNumber, countryId])
       .then((result: QueryResult<any>) =>
         result.rows.map((unit: AtRiskUnitResult) => {
           return <AtRiskUnit>{
