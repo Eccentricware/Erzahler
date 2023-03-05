@@ -6,12 +6,10 @@ export const getGameStatsQuery = `
     ch.vote_count,
     ch.nuke_range,
     ch.adjustments
-  FROM games g
-  INNER JOIN countries c ON c.game_id = g.game_id
-  INNER JOIN country_histories ch ON ch.country_id = c.country_id
+  FROM get_last_country_history($1, $2) lch
+  INNER JOIN country_histories ch ON ch.country_id = lch.country_id AND ch.turn_id = lch.turn_id
+  INNER JOIN countries c ON c.country_id = ch.country_id
   WHERE ch.country_status IN ('Active', 'Civil Disorder')
-    AND g.game_id = $1
-    AND ch.turn_id = $2
   ORDER BY c.rank,
     c.country_name;
 `;

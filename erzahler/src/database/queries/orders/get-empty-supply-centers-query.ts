@@ -10,16 +10,16 @@ export const getEmptySupplyCentersQuery = `
       ph.turn_id
   )
   SELECT
-      c.country_id,
-      c.country_name,
-      p.province_name,
-      ln.node_id AS land_node_id,
-      ln.loc AS land_node_loc,
-      sn.node_id AS sea_node_id,
-      sn.loc AS sea_node_loc,
-      sn.node_name as sea_node_name,
-      an.node_id AS air_node_id,
-      an.loc AS air_node_loc
+    c.country_id,
+    c.country_name,
+    p.province_name,
+    ln.node_id AS land_node_id,
+    ln.loc AS land_node_loc,
+    sn.node_id AS sea_node_id,
+    sn.loc AS sea_node_loc,
+    sn.node_name as sea_node_name,
+    an.node_id AS air_node_id,
+    an.loc AS air_node_loc
   FROM last_province_history_id lphi
   INNER JOIN provinces p ON p.province_id = lphi.province_id
     INNER JOIN province_histories ph ON ph.province_id = lphi.province_id AND ph.turn_id = lphi.turn_id
