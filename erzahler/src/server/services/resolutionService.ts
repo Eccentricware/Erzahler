@@ -200,13 +200,14 @@ export class ResolutionService {
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
     const unitOptions = this.optionService.finalizeUnitOptions(
-      await db.optionsRepo.getUnitOptions(gameState.turnId, turn.turnId, 0)
+      await db.optionsRepo.getUnitOptions(gameState.gameId, gameState.turnNumber, turn.turnId, 0)
     );
 
     const unitOrders: UnitOrderResolution[] = await db.resolutionRepo.getUnitOrdersForResolution(
       gameState.turnId,
       turn.turnId
     );
+
     const orderGroups: UnitOrderGroups = {
       transport: [],
       hold: [],

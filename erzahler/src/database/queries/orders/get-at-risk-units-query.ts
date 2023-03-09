@@ -7,6 +7,7 @@ export const getAtRiskUnitsQuery = `
   INNER JOIN country_histories ch ON ch.country_id = lch.country_id AND ch.turn_id = lch.turn_id
   INNER JOIN units u ON u.country_id = ch.country_id
   INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id
+  INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = uh.unit_id AND luh.turn_id = uh.turn_id
   INNER JOIN nodes n ON n.node_id = uh.node_id
   INNER JOIN provinces p ON p.province_id = n.province_id
   WHERE ch.adjustments < 0

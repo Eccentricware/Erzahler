@@ -47,7 +47,7 @@ export class OptionsService {
   }
 
   async processUnitOrderOptions(gameState: GameState): Promise<OptionsContext> {
-    const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnId);
+    const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnNumber);
 
     const optionsCtx: OptionsContext = {
       gameId: gameState.gameId,
@@ -266,8 +266,8 @@ export class OptionsService {
     return optionsCtx.unitInfo[optionsCtx.unitIdToIndexLib[unitId]];
   }
 
-  async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitOptions[]> {
-    const unitOtions: UnitOptions[] = await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnId);
+  async getUnitAdjacencyInfo(gameId: number, turnNumber: number): Promise<UnitOptions[]> {
+    const unitOtions: UnitOptions[] = await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber);
 
     return unitOtions;
   }
@@ -475,19 +475,23 @@ export class OptionsService {
     )[0];
 
     if (pendingTurn && !pendingTurn.defaultsReady) {
-      this.saveTurnDefaults(pendingTurn, gameState.turnId);
+      this.saveTurnDefaults(gameState, pendingTurn);
     }
 
     if (preliminaryTurn && !preliminaryTurn.defaultsReady) {
-      this.saveTurnDefaults(preliminaryTurn, gameState.turnId);
+      this.saveTurnDefaults(gameState, preliminaryTurn);
     }
   }
 
-  async saveTurnDefaults(upcomingTurn: UpcomingTurn, currentTurnId: number): Promise<void> {
+  async saveTurnDefaults(gameState: GameState, upcomingTurn: UpcomingTurn): Promise<void> {
     const orderSetLibrary: Record<string, number> = {};
-    const newOrderSets = await db.ordersRepo.insertTurnOrderSets(currentTurnId, upcomingTurn.turnId);
+    const newOrderSets = await db.ordersRepo.insertTurnOrderSets(gameState.gameId, gameState.turnNumber, upcomingTurn.turnId);
     newOrderSets.forEach((orderSet: OrderSet) => (orderSetLibrary[orderSet.countryId] = orderSet.orderSetId));
-    const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(currentTurnId, upcomingTurn.turnId);
+    const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
+      gameState.gameId,
+      gameState.turnNumber,
+      upcomingTurn.turnId
+    );
     const preppedOrderLibrary: Record<string, OrderPrepping> = {};
     const defaultOrders: Order[] = [];
 
@@ -619,7 +623,12 @@ export class OptionsService {
         turnOptions.units = {
           turnStatus: TurnStatus.PENDING,
           options: this.finalizeUnitOptions(
-            await db.optionsRepo.getUnitOptions(gameState.turnId, pendingTurn.turnId, playerCountry.countryId)
+            await db.optionsRepo.getUnitOptions(
+              gameState.gameId,
+              gameState.turnNumber,
+              pendingTurn.turnId,
+              playerCountry.countryId
+            )
           )
         };
       }
@@ -772,7 +781,12 @@ export class OptionsService {
         turnOptions.units = {
           turnStatus: TurnStatus.PRELIMINARY,
           options: this.finalizeUnitOptions(
-            await db.optionsRepo.getUnitOptions(gameState.turnId, preliminaryTurn.turnId, playerCountry.countryId)
+            await db.optionsRepo.getUnitOptions(
+              gameState.gameId,
+              gameState.turnNumber,
+              preliminaryTurn.turnId,
+              playerCountry.countryId
+            )
           )
         };
       }
@@ -1218,8 +1232,8 @@ export class OptionsService {
     return disbandOptions;
   }
 
-  async getNominationOptions(gameId: number, turnId: number, turnStatus: TurnStatus): Promise<NominationOptions> {
-    const nominatableCountries = await db.optionsRepo.getNominatableCountries(turnId);
+  async getNominationOptions(gameId: number, turnNumber: number, turnStatus: TurnStatus): Promise<NominationOptions> {
+    const nominatableCountries = await db.optionsRepo.getNominatableCountries(gameId, turnNumber);
     const coaliationSchedule = await db.gameRepo.getCoalitionSchedule(gameId);
 
     nominatableCountries.forEach((country: NominatableCountry) => {

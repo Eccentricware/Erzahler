@@ -1,12 +1,12 @@
 --sudo -u postgres psql < database/scripts/create-get-adjacent-units-function.sql
 
 \c erzahler_dev;
-\echo 'Attempting to create get_adjacent_units funnction'
+\echo 'Attempting to create get_adjacent_units function'
 
 CREATE OR REPLACE FUNCTION get_adjacent_units(INTEGER) --turn_id
 RETURNS TABLE(unit_id INTEGER, adjacent_units json, adjacent_transports json)
 AS $$
-  	  SELECT u.unit_id,
+	SELECT u.unit_id,
   	json_agg(CASE
 			WHEN n.node_id = na.node_1_id
 				THEN json_build_object('unit_id', u2.unit_id, 'unit_name', u2.unit_name)

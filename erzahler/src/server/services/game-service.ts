@@ -1,45 +1,16 @@
 import { DecodedIdToken } from 'firebase-admin/auth';
-import { Pool, Query, QueryResult } from 'pg';
-import { checkGameNameAvailabilityQuery } from '../../database/queries/game/check-game-name-availability-query';
-import { insertAssignmentQuery } from '../../database/queries/game/insert-assignment-query';
-import { insertCountryHistoryQuery } from '../../database/queries/game/insert-country-history-query';
-import { insertCountryQuery } from '../../database/queries/game/insert-country-query';
-import { insertNewGameQuery } from '../../database/queries/game/insert-game-query';
-import { insertLabelQuery } from '../../database/queries/game/insert-label-query';
-import { insertNodeAdjacencyQuery } from '../../database/queries/game/insert-node-adjacency-query';
-import { insertNodeQuery } from '../../database/queries/game/insert-node-query';
-import { insertInitialProvinceHistoryQuery } from '../../database/queries/game/insert-initial-province-history-query';
-import { insertProvinceQuery } from '../../database/queries/game/insert-province-query';
-import { insertRuleInGameQuery } from '../../database/queries/game/insert-rule-in-game-query';
-import { insertTerrainQuery } from '../../database/queries/game/insert-terrain-query';
-import { insertTurnQuery } from '../../database/queries/game/insert-turn-query';
-import { insertUnitHistoryQuery } from '../../database/queries/game/insert-unit-history-query';
-import { insertUnitQuery } from '../../database/queries/game/insert-unit-query';
+import { Pool, QueryResult } from 'pg';
+import { db } from '../../database/connection';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { AccountService } from './accountService';
-import { getGameDetailsQuery } from '../../database/queries/game/get-game-details-query';
-import { getRulesInGameQuery } from '../../database/queries/game/get-rules-in-game-query';
-import { checkUserGameAdminQuery } from '../../database/queries/game/check-user-game-admin-query';
-import { updateGameSettingsQuery } from '../../database/queries/game/update-game-settings-query';
-import { updateTurnQuery } from '../../database/queries/game/update-turn-query';
 import { SchedulerService } from './scheduler-service';
 import { StartScheduleObject } from '../../models/objects/start-schedule-object';
 import { FormattingService } from './formattingService';
-import { getGamesQuery } from '../../database/queries/game/get-games-query';
-import { GameSummaryBuilder } from '../../models/classes/game-summary-builder';
-import { GameSummaryQueryObject } from '../../models/objects/game-summary-query-object';
-import { GameDetailsBuilder } from '../../models/classes/game-details-builder';
 import { StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
-import { GameStatus } from '../../models/enumeration/game-status-enum';
-import { setAssignmentsActiveQuery } from '../../database/queries/assignments/set-assignments-active-query';
 import { OrdersService } from './orders-service';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
-import { insertCoalitionScheduleQuery } from '../../database/queries/game/insert-coalition-schedule-query';
-import { db } from '../../database/connection';
-import { StartTiming } from '../../models/enumeration/start-timing-enum';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
-import { CountryStats } from '../../models/objects/games/country-stats-objects';
 
 export class GameService {
   gameData: any = {};
@@ -302,7 +273,7 @@ export class GameService {
   }
 
   async addCountryInitialHistories(pool: Pool): Promise<any> {
-    const countryHistoryPromises: Promise<any>[] = await db.gameRepo.insertCountryHistories(
+    const countryHistoryPromises: Promise<any>[] = await db.gameRepo.insertInitialCountryHistories(
       this.gameData.dbRows.countries,
       this.gameData.gameName
     );
@@ -325,7 +296,7 @@ export class GameService {
   }
 
   async addInitialUnitHistories(pool: Pool): Promise<any> {
-    const initialHistoryPromises: Promise<any>[] = await db.gameRepo.insertUnitHistories(
+    const initialHistoryPromises: Promise<any>[] = await db.gameRepo.insertInitialUnitHistories(
       this.gameData.dbRows.units,
       this.gameData.gameName
     );

@@ -1,4 +1,4 @@
-export const getCurrentUnitsQuery = `
+export const getUnitsQuery = `
   SELECT u.unit_name,
     u.unit_type,
     n.loc,

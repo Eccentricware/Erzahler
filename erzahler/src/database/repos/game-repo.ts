@@ -22,7 +22,7 @@ import { getGamesQuery } from '../queries/game/get-games-query';
 import { getRulesInGameQuery } from '../queries/game/get-rules-in-game-query';
 import { insertAssignmentQuery } from '../queries/game/insert-assignment-query';
 import { insertCoalitionScheduleQuery } from '../queries/game/insert-coalition-schedule-query';
-import { insertCountryHistoryQuery } from '../queries/game/insert-country-history-query';
+import { insertInitialCountryHistoryQuery } from '../queries/game/insert-initial-country-history-query';
 import { insertCountryQuery } from '../queries/game/insert-country-query';
 import { insertNewGameQuery } from '../queries/game/insert-game-query';
 import { insertInitialProvinceHistoryQuery } from '../queries/game/insert-initial-province-history-query';
@@ -34,7 +34,7 @@ import { insertProvinceQuery } from '../queries/game/insert-province-query';
 import { insertRuleInGameQuery } from '../queries/game/insert-rule-in-game-query';
 import { insertTerrainQuery } from '../queries/game/insert-terrain-query';
 import { insertTurnQuery } from '../queries/game/insert-turn-query';
-import { insertUnitHistoryQuery } from '../queries/game/insert-unit-history-query';
+import { insertInitialUnitHistoryQuery } from '../queries/game/insert-initial-unit-history-query';
 import { insertUnitQuery } from '../queries/game/insert-unit-query';
 import { updateGameSettingsQuery } from '../queries/game/update-game-settings-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
@@ -296,13 +296,13 @@ export class GameRepository {
     return newCountryPromises;
   }
 
-  async insertCountryHistories(countries: any, gameName: string): Promise<any> {
+  async insertInitialCountryHistories(countries: any, gameName: string): Promise<any> {
     const countryHistoryPromises: Promise<any>[] = [];
 
     for (const countryName in countries) {
       countryHistoryPromises.push(
         this.pool
-          .query(insertCountryHistoryQuery, [
+          .query(insertInitialCountryHistoryQuery, [
             countries[countryName].rank !== CountryRank.N ? CountryStatus.ACTIVE : CountryStatus.NPC,
             countries[countryName].cities.length,
             countries[countryName].units.length,
@@ -338,13 +338,13 @@ export class GameRepository {
     return unitPromises;
   }
 
-  async insertUnitHistories(units: any, gameName: string): Promise<any> {
+  async insertInitialUnitHistories(units: any, gameName: string): Promise<any> {
     const initialHistoryPromises: Promise<any>[] = [];
 
     for (const unitName in units) {
       initialHistoryPromises.push(
         this.pool
-          .query(insertUnitHistoryQuery, ['Active', gameName, units[unitName].fullName, units[unitName].node])
+          .query(insertInitialUnitHistoryQuery, ['Active', gameName, units[unitName].fullName, units[unitName].node])
           .catch((error: Error) => {
             console.log('Insert Unit History Error:', error.message);
           })

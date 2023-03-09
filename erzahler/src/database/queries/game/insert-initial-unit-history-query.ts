@@ -1,5 +1,5 @@
-export const insertUnitHistoryQuery = `
-  INSERT INTO unit_histories (
+export const insertInitialUnitHistoryQuery = `
+  INSERT INTO unit_histories(
     unit_id,
     turn_id,
     node_id,
