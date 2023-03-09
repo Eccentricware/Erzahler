@@ -1,11 +1,11 @@
 --sudo -u postgres psql < database/scripts/create-get-node-adjacencies-function.sql
 
 \c erzahler_dev;
-\echo 'Attempting to create get_node_adjacencies funnction'
+\echo 'Attempting to create get_node_adjacencies function'
 
 CREATE OR REPLACE FUNCTION get_node_adjacencies(
   INTEGER, -- game_id
-  INTEGER  -- turn_id
+  INTEGER  -- turn_number
 )
 RETURNS TABLE(node_id INTEGER, adjacencies JSON)
 AS $$
@@ -39,10 +39,12 @@ AS $$
       THEN p2.province_type != 'pole'
       ELSE true
     END
-  INNER JOIN province_histories ph1 ON ph1.province_id = p1.province_id AND ph1.valid_retreat = true
-  INNER JOIN province_histories ph2 ON ph2.province_id = p2.province_id AND ph2.valid_retreat = true
+  INNER JOIN get_last_province_history($1, $2) lph1 ON lph1.province_id = p1.province_id
+  INNER JOIN province_histories ph1 ON ph1.province_id = lph1.province_id AND ph1.valid_retreat = true AND ph1.turn_id = lph1.turn_id
+  INNER JOIN get_last_province_history($1, $2) lph2 ON lph2.province_id = p2.province_id
+  INNER JOIN province_histories ph2 ON ph2.province_id = lph2.province_id AND ph2.valid_retreat = true AND ph2.turn_id = lph2.turn_id
   WHERE g.game_id = $1
-    AND t.turn_id = $2
+    AND t.turn_number <= $2
     AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)
   GROUP BY n.node_id;
 $$ LANGUAGE SQL;

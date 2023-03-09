@@ -1,4 +1,4 @@
-export const getCurrentTerrainQuery = `
+export const getTerrainQuery = `
   SELECT
     p.province_name,
     t.render_category,

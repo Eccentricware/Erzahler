@@ -13,18 +13,18 @@ import {
   UnitResult
 } from '../../models/objects/map-objects';
 import { envCredentials } from '../../secrets/dbCredentials';
-import { getCurrentCitiesQuery } from '../queries/maps/get-current-cities-query';
+import { getCitiesQuery } from '../queries/maps/get-current-cities-query';
 import { getLabelLinesQuery } from '../queries/maps/get-label-lines-query';
 import { getLabelsQuery } from '../queries/maps/get-labels-query';
-import { getCurrentTerrainQuery } from '../queries/maps/get-current-terrain-query';
-import { getCurrentUnitsQuery } from '../queries/maps/get-current-units-query';
+import { getTerrainQuery } from '../queries/maps/get-current-terrain-query';
+import { getUnitsQuery } from '../queries/maps/get-current-units-query';
 
 export class MapRepository {
   pool = new Pool(envCredentials);
   constructor(private db: IDatabase<any>, private pgp: IMain) {}
 
   async getTerrain(gameId: number, turnId: number): Promise<Terrain[]> {
-    return await this.pool.query(getCurrentTerrainQuery, [gameId, turnId]).then((queryResult: QueryResult<any>) =>
+    return await this.pool.query(getTerrainQuery, [gameId, turnId]).then((queryResult: QueryResult<any>) =>
       queryResult.rows.map((result: TerrainResult) => {
         return <Terrain>{
           province: result.province_name,
@@ -44,7 +44,7 @@ export class MapRepository {
   }
 
   async getCities(gameId: number, turnNumber: number): Promise<City[]> {
-    return await this.pool.query(getCurrentCitiesQuery, [gameId, turnNumber]).then((queryResult: QueryResult<any>) =>
+    return await this.pool.query(getCitiesQuery, [gameId, turnNumber]).then((queryResult: QueryResult<any>) =>
       queryResult.rows.map((result: CityResult) => {
         return <City>{
           loc: result.city_loc,
@@ -89,7 +89,7 @@ export class MapRepository {
   }
 
   async getUnits(gameId: number, turnNumber: number): Promise<Unit[]> {
-    return await this.pool.query(getCurrentUnitsQuery, [gameId, turnNumber]).then((queryResult: QueryResult<any>) =>
+    return await this.pool.query(getUnitsQuery, [gameId, turnNumber]).then((queryResult: QueryResult<any>) =>
       queryResult.rows.map((result: UnitResult) => {
         return <Unit>{
           name: result.unit_name,

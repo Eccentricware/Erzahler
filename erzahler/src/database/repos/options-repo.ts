@@ -54,9 +54,9 @@ export class OptionsRepository {
 
   //// Legacy Functions ////
 
-  async getUnitAdjacencyInfo(gameId: number, turnId: number): Promise<UnitOptions[]> {
+  async getUnitAdjacencyInfo(gameId: number, turnNumber: number): Promise<UnitOptions[]> {
     const unitAdjacencyInfoResult: UnitOptions[] = await this.pool
-      .query(getUnitAdjacentInfoQuery, [gameId, turnId])
+      .query(getUnitAdjacentInfoQuery, [gameId, turnNumber])
       .then((results: QueryResult<any>) => {
         return results.rows.map((result: UnitAdjacyInfoResult) => {
           return <UnitOptions>{
@@ -143,9 +143,14 @@ export class OptionsRepository {
    * @param turnId    - Turn's ID
    * @returns Promise<SavedOption[]>
    */
-  async getUnitOptions(currentTurnId: number, nextTurnId: number, countryId = 0): Promise<SavedOption[]> {
+  async getUnitOptions(
+    gameId: number,
+    turnNumber: number,
+    ordersTurnId: number,
+    countryId = 0
+  ): Promise<SavedOption[]> {
     const savedOptions: SavedOption[] = await this.pool
-      .query(getOrderOptionsQuery, [currentTurnId, nextTurnId, countryId])
+      .query(getOrderOptionsQuery, [gameId, turnNumber, ordersTurnId, countryId])
       .then((result: QueryResult<any>) => {
         return result.rows.map((result: SavedOptionResult) => {
           return <SavedOption>{
@@ -267,7 +272,7 @@ export class OptionsRepository {
 
   async getAvailableBuildLocs(turnNumber: number, gameId: number, countryId = 0): Promise<BuildLocResult[]> {
     const buildLocs: BuildLocResult[] = await this.pool
-      .query(getEmptySupplyCentersQuery, [turnNumber, gameId, countryId])
+      .query(getEmptySupplyCentersQuery, [gameId, turnNumber, countryId])
       .then((result: QueryResult<any>) =>
         result.rows.map((province: BuildLocResult) => {
           return <BuildLocResult>{
@@ -314,9 +319,9 @@ export class OptionsRepository {
     return atRiskUnits;
   }
 
-  async getNominatableCountries(turnId: number): Promise<NominatableCountry[]> {
+  async getNominatableCountries(gameId: number, turnNumber: number): Promise<NominatableCountry[]> {
     const nominatableCountries: NominatableCountry[] = await this.pool
-      .query(getNominatableCountriesQuery, [turnId])
+      .query(getNominatableCountriesQuery, [gameId, turnNumber])
       .then((result: QueryResult) =>
         result.rows.map((country: NominatableCountryResult) => {
           return <NominatableCountry>{

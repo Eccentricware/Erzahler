@@ -11,8 +11,9 @@ export const insertTurnOrderSetsQuery = `
     'Orders'
   FROM countries c
   INNER JOIN country_histories ch ON ch.country_id = c.country_id
+  INNER JOIN get_last_country_history($2, $3) lch
+    ON lch.country_id = ch.country_id AND lch.turn_id = ch.turn_id
   WHERE ch.country_status IN ('Active', 'Civil Disorder')
-    AND ch.turn_id = $2
   RETURNING order_set_id,
     country_id;
 `;
