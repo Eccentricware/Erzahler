@@ -142,8 +142,8 @@ export class ResolutionRepository {
     return unitAdjacencyInfoResult;
   }
 
-  async getTransferResourceValidation(turnId: number): Promise<CountryTransferResources[]> {
-    return await this.pool.query(getTransferValidationDataQuery, [turnId]).then((result: QueryResult) =>
+  async getTransferResourceValidation(gameId: number, turnNumber: number): Promise<CountryTransferResources[]> {
+    return await this.pool.query(getTransferValidationDataQuery, [gameId, turnNumber]).then((result: QueryResult) =>
       result.rows.map((country: TransferResourcesResults) => {
         return <CountryTransferResources>{
           countryId: country.country_id,
