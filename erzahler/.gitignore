@@ -1,6 +1,6 @@
-jsc
-jsc/database
-jsc/server
+dist
 node_modules
 secrets
 .env
+env
+src/secrets

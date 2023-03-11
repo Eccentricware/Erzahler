@@ -1,0 +1,12 @@
+.editorConfig
+.eslintignore
+.husky/
+.gitignore
+.gitkeep
+.gitmodules
+.prettierignore
+dist
+node_modules
+**/*.sql
+/jsc
+jsc
