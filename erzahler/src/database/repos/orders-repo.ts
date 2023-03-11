@@ -1,37 +1,16 @@
-import { error } from 'console';
 import { Pool, QueryResult } from 'pg';
-import { ColumnSet, IDatabase, IMain, queryResult } from 'pg-promise';
-import { BuildType, UnitType } from '../../models/enumeration/unit-enum';
-import { CountryState } from '../../models/objects/games/country-state-objects';
+import { ColumnSet, IDatabase, IMain } from 'pg-promise';
+import { BuildType } from '../../models/enumeration/unit-enum';
 import {
-  AdjacenctMovement,
-  AdjacenctMovementResult,
-  AirAdjacency,
-  AtRiskUnit,
-  AtRiskUnitResult,
-  BuildLoc,
-  BuildLocResult,
-  DestinationResult,
   NominatableCountry,
   NominatableCountryResult,
-  Nomination,
-  NominationResult,
   Order,
-  OrderOption,
   OrderResult,
   OrderSet,
   OrderSetResult,
-  SavedDestination,
-  SavedOption,
-  SavedOptionResult,
-  TransferCountry,
-  TransferCountryResult,
-  TransferOption,
-  TransferOptionResult,
-  UnitAdjacyInfoResult,
-  UnitOptions
+  TransferCountryResult
 } from '../../models/objects/option-context-objects';
-import { TransferBuildsCountry, TransferTechCountry } from '../../models/objects/options-objects';
+import { TransferBuildsCountry } from '../../models/objects/options-objects';
 import {
   TransferBuildOrder,
   TransferBuildOrdersResults,
@@ -140,7 +119,12 @@ export class OrdersRepository {
     await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
   }
 
-  async getTurnUnitOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<Order[]> {
+  async getTurnUnitOrders(
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number,
+    countryId: number
+  ): Promise<Order[]> {
     const orders: Order[] = await this.pool
       .query(getTurnUnitOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult<any>) =>
@@ -211,9 +195,9 @@ export class OrdersRepository {
       );
   }
 
-  async getBuildOrders(currentTurnId: number, nextTurnId: number, countryId: number): Promise<BuildOrders[]> {
+  async getBuildOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<BuildOrders[]> {
     const buildOrdersResults: BuildOrdersResult[] = await this.pool
-      .query(getBuildOrdersQuery, [nextTurnId, currentTurnId, countryId])
+      .query(getBuildOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult) => result.rows);
 
     const buildOrders: BuildOrders[] = [];
@@ -253,7 +237,7 @@ export class OrdersRepository {
     });
 
     const nukesReady: Build[] = await this.pool
-      .query(getFinishedNukesOrdersQuery, [nextTurnId, countryId])
+      .query(getFinishedNukesOrdersQuery, [orderTurnId, countryId])
       .then((result: QueryResult) =>
         result.rows.map((node: BuildLocationResult) => {
           return <Build>{

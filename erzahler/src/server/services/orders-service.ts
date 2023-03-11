@@ -107,9 +107,9 @@ export class OrdersService {
           if (playerCountry.countryStatus === CountryStatus.RETREAT) {
             orders.units = await db.ordersRepo.getTurnUnitOrders(
               gameId,
-            gameState.turnNumber,
-            pendingTurn.turnId,
-            playerCountry.countryId
+              gameState.turnNumber,
+              pendingTurn.turnId,
+              playerCountry.countryId
             );
             if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
               orders.pendingDefault = false;
@@ -141,7 +141,8 @@ export class OrdersService {
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
           if (playerCountry.adjustments >= 0) {
             const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
-              gameState.turnId,
+              gameState.gameId,
+              gameState.turnNumber,
               pendingTurn.turnId,
               playerCountry.countryId
             );
@@ -206,7 +207,8 @@ export class OrdersService {
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
           if (playerCountry.adjustments >= 0) {
             const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
-              gameState.turnId,
+              gameState.gameId,
+              gameState.turnNumber,
               preliminaryTurn.turnId,
               playerCountry.countryId
             );
@@ -291,9 +293,9 @@ export class OrdersService {
           if (playerCountry.countryStatus === CountryStatus.RETREAT) {
             orders.units = await db.ordersRepo.getTurnUnitOrders(
               gameId,
-            gameState.turnNumber,
-            pendingTurn.turnId,
-            playerCountry.countryId
+              gameState.turnNumber,
+              pendingTurn.turnId,
+              playerCountry.countryId
             );
             if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
               orders.pendingDefault = false;
@@ -325,7 +327,8 @@ export class OrdersService {
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
           if (playerCountry.adjustments >= 0) {
             const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
-              pendingTurn.turnId,
+              gameState.gameId,
+              gameState.turnNumber,
               gameState.turnId,
               playerCountry.countryId
             );
