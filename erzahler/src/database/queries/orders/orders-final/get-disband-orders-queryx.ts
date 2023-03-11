@@ -31,10 +31,11 @@ export const getDisbandOrdersQueryx = `
   LEFT JOIN provinces p ON p.province_id = n.province_id
   LEFT JOIN countries c ON c.country_id = os.country_id
   LEFT JOIN country_histories ch ON ch.country_id = c.country_id
-  WHERE os.turn_id = $1
-    AND ch.turn_id = $2
+  LEFT JOIN get_last_country_history($1, $2) lch
+    ON lch.country_id = ch.country_id AND lch.turn_id = ch.turn_id
+  WHERE os.turn_id = $3
     AND order_set_type = 'Orders'
-    AND CASE WHEN 0 = $3 THEN true ELSE os.country_id = $3 END
+    AND CASE WHEN 0 = $4 THEN true ELSE os.country_id = $4 END
   GROUP BY
     c.country_id,
     c.country_name,
@@ -43,5 +44,5 @@ export const getDisbandOrdersQueryx = `
     ch.nuke_range,
     os.nuke_locs,
     os.increase_range,
-    os.units_disbanding
+    os.units_disbanding;
 `;
