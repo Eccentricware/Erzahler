@@ -96,12 +96,13 @@ export class ResolutionRepository {
 
   /**
    * Returns potential transports, and destinations.
-   * @param turnId
+   * @param gameId     - number
+   * @param turnNumber - number
    * @returns
    */
-  async getTransportNetworkInfo(turnId: number): Promise<TransportNetworkUnit[]> {
+  async getTransportNetworkInfo(gameId: number, turnNumber: number): Promise<TransportNetworkUnit[]> {
     const unitAdjacencyInfoResult: TransportNetworkUnit[] = await this.pool
-      .query(getTransportNetworkValidation, [turnId])
+      .query(getTransportNetworkValidation, [gameId, turnNumber])
       .then((results: QueryResult<any>) => {
         return results.rows.map((result: TransportNetworkUnitResult) => {
           return <TransportNetworkUnit>{

@@ -255,7 +255,8 @@ export class ResolutionService {
     // Convoy Compliance and success
     if (orderGroups.transport.length > 0 || orderGroups.moveTransported.length > 0) {
       const transportNetwork: TransportNetworkUnit[] = await db.resolutionRepo.getTransportNetworkInfo(
-        gameState.turnId
+        gameState.gameId,
+        gameState.turnNumber
       );
 
       // Stores filter logic for DRY operation
