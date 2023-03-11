@@ -204,7 +204,8 @@ export class ResolutionService {
     );
 
     const unitOrders: UnitOrderResolution[] = await db.resolutionRepo.getUnitOrdersForResolution(
-      gameState.turnId,
+      gameState.gameId,
+      gameState.turnNumber,
       turn.turnId
     );
 
