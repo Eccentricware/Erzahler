@@ -17,6 +17,8 @@ import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-obje
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
+import { setInterval } from 'timers';
+import { terminalLog } from '../utils/general';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -460,5 +462,33 @@ export class SchedulerService {
     }
 
     return false;
+  }
+
+  /**
+   * Prints current time immediately, according to env time zone, and then every increment in minutes.
+   * @param interval
+   */
+  checkIn(minuteInterval: number): void {
+    terminalLog('Server Start');
+
+    const now = DateTime.now();
+    const minUntilIncrement = minuteInterval - (now.minute % minuteInterval);
+    const start = now.plus({
+      minute: minUntilIncrement - 1 - minuteInterval,
+      second: 59 - now.second,
+      millisecond: 1000 - now.millisecond
+    });
+
+    schedule.scheduleJob(
+      {
+        start: start.toJSDate(),
+        rule: `*/${minuteInterval} * * * *`
+      },
+      () => {
+        terminalLog('Check In');
+        // terminalLog('Checking in');
+        // setInterval(() => {
+        // }, 60000 * interval);
+      });
   }
 }

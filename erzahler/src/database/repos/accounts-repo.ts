@@ -6,6 +6,7 @@ import {
   AccountsProviderRowResult,
   AccountsUserRow,
   AccountsUserRowResult,
+  AddUserArgs,
   UserProfile,
   UserProfileResult
 } from '../../models/objects/user-profile-object';
@@ -18,14 +19,15 @@ import { getUserIdQuery } from '../queries/accounts/get-user-id-query';
 import { lockUsernameQuery } from '../queries/accounts/lock-username-query';
 import { syncProviderEmailStateQuery } from '../queries/accounts/sync-provider-email-state-query';
 import { getUserProfileQuery } from '../queries/dashboard/get-user-profile-query';
-import { updatePlayerSettings } from '../queries/dashboard/update-user-query';
 import { createAccountUserQuery } from '../queries/accounts/create-account-user-query';
 import { getAccountsUserRowQuery } from '../queries/dashboard/get-accounts-user-row-query';
 import { getAccountsProviderRowQuery } from '../queries/dashboard/get-accounts-provider-row-query';
-import { insertUserFromAccountsQuery } from '../queries/accounts/insert-user-from-accounts-query';
 import { insertProviderFromAccountsQuery } from '../queries/accounts/insert-provider-from-accounts-query';
 import { NewUser, NewUserResult } from '../../models/objects/new-user-objects';
 import { createEnvironmentProviderQuery } from '../queries/accounts/create-environment-provider-query';
+import { insertUserSettingsQuery } from '../queries/accounts/insert-user-settings-query';
+import { insertUserDetailsQuery } from '../queries/accounts/insert-user-details-query';
+import { updateUserSettingsQuery } from '../queries/dashboard/update-user-query';
 
 export class AccountsRepository {
   pool = new Pool(envCredentials);
@@ -47,76 +49,66 @@ export class AccountsRepository {
       });
   }
 
-  async createAccountUser(providerDependentArgs: any): Promise<NewUser> {
+  async createAccountUser(userArgs: AddUserArgs): Promise<NewUser> {
     const newUser: NewUser[] = await this.accountPool
-      .query(createAccountUserQuery, providerDependentArgs)
-      .then((result: QueryResult) => result.rows.map((user: NewUserResult) => {
-        return <NewUser> {
-          userId: user.user_id,
-          username: user.username,
-          usernameLocked: user.username_locked,
-          userStatus: user.user_status,
-          signupTime: user.signup_time,
-          timeZone: user.time_zone,
-          meridiemTime: user.meridiem_time,
-          lastSignInTime: user.last_sign_in_time,
-          classicUnitRender: user.classic_unit_render,
-          cityRenderSize: user.city_render_size,
-          labelRenderSize: user.label_render_size,
-          unitRenderSize: user.unit_render_size,
-          wins: user.wins,
-          nmrTotal: user.nmr_total,
-          nmrOrders: user.nmr_orders,
-          nmrRetreats: user.nmr_retreats,
-          nmrAdjustments: user.nmr_adjustments,
-          dropouts: user.dropouts,
-          saves: user.saves,
-          colorTheme: user.color_theme,
-          loggedIn: user.logged_in,
-          displayPresence: user.display_presence,
-          siteAdmin: user.site_admin,
-          realName: user.real_name,
-          displayRealName: user.display_real_name
-        }
-      }));
+      .query(createAccountUserQuery, [userArgs.username, userArgs.usernameLocked, userArgs.signupTime])
+      .then((result: QueryResult) =>
+        result.rows.map((user: NewUserResult) => {
+          return <NewUser>{
+            userId: user.user_id,
+            username: user.username,
+            usernameLocked: user.username_locked,
+            signupTime: user.signup_time
+          };
+        })
+      )
+      .catch((error: Error) => {
+        console.log('Create Account User Error: ' + error.message);
+        return [
+          {
+            userId: 0,
+            username: 'Failboat',
+            usernameLocked: false,
+            signupTime: 'Failtime'
+          }
+        ];
+      });
 
     return newUser[0];
   }
 
-  async createEnvironmentUser(newUser: NewUser) {
-    await this.pool
-      .query(createEnvironmentUserQuery, [
-        newUser.userId,
-        newUser.username,
-        newUser.usernameLocked,
-        newUser.userStatus,
-        newUser.signupTime,
-        newUser.timeZone,
-        newUser.meridiemTime,
-        newUser.lastSignInTime,
-        newUser.classicUnitRender,
-        newUser.cityRenderSize,
-        newUser.labelRenderSize,
-        newUser.unitRenderSize,
-        newUser.wins,
-        newUser.nmrTotal,
-        newUser.nmrOrders,
-        newUser.nmrRetreats,
-        newUser.nmrAdjustments,
-        newUser.dropouts,
-        newUser.saves,
-        newUser.colorTheme,
-        newUser.loggedIn,
-        newUser.displayPresence,
-        newUser.siteAdmin,
-        newUser.realName,
-        newUser.displayRealName
-      ])
+  async createEnvironmentUser(newUser: NewUser): Promise<boolean> {
+    return await this.pool
+      .query(createEnvironmentUserQuery, [newUser.userId, newUser.username, newUser.usernameLocked, newUser.signupTime])
       .then((result: any) => {
         console.log(`Add user success:`, Boolean(result.rowCount));
+        return true;
       })
       .catch((error: Error) => {
         console.log('Create Environment User Query Error:', error.message);
+        return false;
+      });
+  }
+
+  async createUserDetails(newUser: NewUser, userStatus: string): Promise<void> {
+    await this.pool
+      .query(insertUserDetailsQuery, [newUser.userId, userStatus])
+      .then((result: any) => {
+        console.log(`Add user details success:`, Boolean(result.rowCount));
+      })
+      .catch((error: Error) => {
+        console.log('Create Environment User Details Query Error:', error.message);
+      });
+  }
+
+  async createUserSettings(newUser: NewUser): Promise<void> {
+    await this.pool
+      .query(insertUserSettingsQuery, [newUser.userId])
+      .then((result: any) => {
+        console.log(`Add user details success:`, Boolean(result.rowCount));
+      })
+      .catch((error: Error) => {
+        console.log('Create Environment User Settings Query Error:', error.message);
       });
   }
 
@@ -193,28 +185,7 @@ export class AccountsRepository {
             userId: user.user_id,
             username: user.username,
             usernameLocked: user.username_locked,
-            userStatus: user.user_status,
-            signupTime: user.signup_time,
-            timeZone: user.time_zone,
-            meridiemTime: user.meridiem_time,
-            lastSignInTime: user.last_sign_in_time,
-            classicUnitRender: user.classic_unit_render,
-            cityRenderSize: user.city_render_size,
-            labelRenderSize: user.label_render_size,
-            unitRenderSize: user.unit_render_size,
-            wins: user.wins,
-            nmrTotal: user.nmr_total,
-            nmrOrders: user.nmr_orders,
-            nmrRetreats: user.nmr_retreats,
-            nmrAdjustments: user.nmr_adjustments,
-            dropouts: user.dropouts,
-            saves: user.saves,
-            colorTheme: user.color_theme,
-            loggedIn: user.logged_in,
-            displayPresence: user.display_presence,
-            siteAdmin: user.site_admin,
-            realName: user.real_name,
-            displayRealName: user.display_real_name
+            signupTime: user.signup_time
           };
         })
       )
@@ -250,6 +221,18 @@ export class AccountsRepository {
       });
   }
 
+  async getProviderRowFromEnvironmentByUserId(userId: number): Promise<number[]> {
+    return await this.pool
+      .query(getAccountsProviderRowQuery, [userId])
+      .then((result: QueryResult<AccountsProviderRowResult>) =>
+        result.rows.map((provider: AccountsProviderRowResult) => provider.provider_id)
+      )
+      .catch((error: Error) => {
+        console.log('Get Accounts Provider Rows Error:', error.message);
+        return [];
+      });
+  }
+
   async getUserId(username: string): Promise<any> {
     return await this.pool
       .query(getUserIdQuery, [username])
@@ -260,16 +243,25 @@ export class AccountsRepository {
       .catch((error: Error) => console.error(error.message));
   }
 
-  async checkProviderInDB(uid: string, username: string) {
+  async checkProviderInDB(uid: string) {
     return await this.pool
-      .query(getExistingProviderQuery, [uid, username])
+      .query(getExistingProviderQuery, [uid])
       .then((results: any) => Boolean(results.rowCount))
       .catch((error: Error) => {
         console.log(error.message);
       });
   }
 
-  async syncProviderEmailState(firebaseUser: UserRecord) {
+  async syncAccountProviderEmailState(firebaseUser: UserRecord) {
+    await this.accountPool.query(syncProviderEmailStateQuery, [
+      firebaseUser.email,
+      firebaseUser.emailVerified,
+      firebaseUser.metadata.lastSignInTime,
+      firebaseUser.uid
+    ]);
+  }
+
+  async syncEnvironmentProviderEmailState(firebaseUser: UserRecord) {
     await this.pool.query(syncProviderEmailStateQuery, [
       firebaseUser.email,
       firebaseUser.emailVerified,
@@ -278,7 +270,18 @@ export class AccountsRepository {
     ]);
   }
 
-  async lockUsername(uid: string) {
+  async lockAccountUsername(uid: string) {
+    return await this.accountPool
+      .query(lockUsernameQuery, [uid])
+      .then((result: any) => {
+        console.log('Username Locked');
+      })
+      .catch((error: Error) => {
+        console.log(error.message);
+      });
+  }
+
+  async lockEnvironmentUsername(uid: string) {
     return await this.pool
       .query(lockUsernameQuery, [uid])
       .then((result: any) => {
@@ -289,7 +292,18 @@ export class AccountsRepository {
       });
   }
 
-  async clearVerificationDeadline(uid: string) {
+  async clearAccountVerificationDeadline(uid: string) {
+    await this.accountPool
+      .query(clearVerficiationDeadlineQuery, [uid])
+      .then((result: any) => {
+        console.log('Timer disabled');
+      })
+      .catch((error: Error) => {
+        console.log(error.message);
+      });
+  }
+
+  async clearEnvironmentVerificationDeadline(uid: string) {
     await this.pool
       .query(clearVerficiationDeadlineQuery, [uid])
       .then((result: any) => {
@@ -300,14 +314,18 @@ export class AccountsRepository {
       });
   }
 
-  async updatePlayerSettings(timeZone: string, meridiemTime: boolean, userId: number) {
+  async updatePlayerSettings(timeZone: string, meridiemTime: boolean, userId: number, username: string) {
     return await this.pool
-      .query(updatePlayerSettings, [timeZone, meridiemTime, userId])
+      .query(updateUserSettingsQuery, [timeZone, meridiemTime, userId])
       .then(() => {
-        true;
+        return {
+          username: username,
+          success: true
+        };
       })
       .catch((error: Error) => {
         return {
+          username: username,
           success: false,
           error: 'Update Profile Query Error: ' + error.message
         };
@@ -316,33 +334,7 @@ export class AccountsRepository {
 
   async insertUserFromBackup(user: AccountsUserRow): Promise<number> {
     return await this.pool
-      .query(insertUserFromAccountsQuery, [
-        user.userId,
-        user.username,
-        user.usernameLocked,
-        user.userStatus,
-        user.signupTime,
-        user.timeZone,
-        user.meridiemTime,
-        user.lastSignInTime,
-        user.classicUnitRender,
-        user.cityRenderSize,
-        user.labelRenderSize,
-        user.unitRenderSize,
-        user.wins,
-        user.nmrTotal,
-        user.nmrOrders,
-        user.nmrRetreats,
-        user.nmrAdjustments,
-        user.dropouts,
-        user.saves,
-        user.colorTheme,
-        user.loggedIn,
-        user.displayPresence,
-        user.siteAdmin,
-        user.realName,
-        user.displayRealName
-      ])
+      .query(createEnvironmentUserQuery, [user.userId, user.username, user.usernameLocked, user.signupTime])
       .then((result: QueryResult) => result.rows[0].user_id)
       .catch((error: Error) => {
         console.log('Insert User From Backup Error: ' + error.message);

@@ -1,13 +1,19 @@
 import { DecodedIdToken, getAuth, UserRecord } from 'firebase-admin/auth';
-import { AccountsProviderRow, AccountsUserRow, UserProfile } from '../../models/objects/user-profile-object';
+import {
+  AccountsProviderRow,
+  AccountsUserRow,
+  AddUserArgs,
+  UserProfile
+} from '../../models/objects/user-profile-object';
 import { FormattingService } from './formattingService';
 import { db } from '../../database/connection';
 import { NewUser } from '../../models/objects/new-user-objects';
 
 export class AccountService {
-  async validateToken(idToken: string): Promise<any> {
+  async validateToken(idToken: string, stillLoggedIn?: boolean): Promise<any> {
+    const checkRevoked = stillLoggedIn === undefined ? true : stillLoggedIn;
     return getAuth()
-      .verifyIdToken(idToken, true)
+      .verifyIdToken(idToken, checkRevoked)
       .then((decodedIdToken: DecodedIdToken) => {
         return {
           uid: decodedIdToken.uid,
@@ -36,7 +42,7 @@ export class AccountService {
   }
 
   async addUserToDatabase(firebaseUser: UserRecord, username: string): Promise<any> {
-    const addUserArgs: any[] = this.createAddUserArgs(firebaseUser, username);
+    const addUserArgs: AddUserArgs = this.createAddUserArgs(firebaseUser, username);
     if (firebaseUser.providerData[0].providerId === 'password') {
       await getAuth()
         .updateUser(firebaseUser.uid, {
@@ -53,12 +59,14 @@ export class AccountService {
         });
     }
 
-    return await this.addUser(firebaseUser, username, addUserArgs);
+    return await this.addUser(firebaseUser, addUserArgs);
   }
 
-  async addUser(firebaseUser: UserRecord, username: string, providerDependentArgs: any[]): Promise<any> {
-    const newUser: NewUser = await db.accountsRepo.createAccountUser(providerDependentArgs);
+  async addUser(firebaseUser: UserRecord, userArgs: AddUserArgs): Promise<any> {
+    const newUser: NewUser = await db.accountsRepo.createAccountUser(userArgs);
     await db.accountsRepo.createEnvironmentUser(newUser);
+    await db.accountsRepo.createUserDetails(newUser, userArgs.userStatus);
+    await db.accountsRepo.createUserSettings(newUser);
 
     const providerArgs = this.createProviderArgs(newUser.userId, firebaseUser);
 
@@ -75,17 +83,15 @@ export class AccountService {
     }
   }
 
-  createAddUserArgs(firebaseUser: UserRecord, username: string): any[] {
+  createAddUserArgs(firebaseUser: UserRecord, username: string): AddUserArgs {
     const emailSignup = firebaseUser.providerData[0].providerId === 'password';
 
-    return [
-      username,
-      emailSignup ? false : true,
-      emailSignup ? 'unverified' : 'active',
-      firebaseUser.metadata.creationTime,
-      firebaseUser.metadata.lastSignInTime,
-      'America/Los_Angeles'
-    ];
+    return {
+      username: username,
+      usernameLocked: emailSignup ? false : true,
+      userStatus: emailSignup ? 'unverified' : 'active',
+      signupTime: firebaseUser.metadata.creationTime
+    };
   }
 
   createProviderArgs(userId: number, firebaseUser: UserRecord): any[] {
@@ -123,19 +129,21 @@ export class AccountService {
    * @returns Promise<UserProfile | any>
    */
   async getUserProfile(idToken: string): Promise<UserProfile | any> {
-    const formattingService: FormattingService = new FormattingService();
     const token: DecodedIdToken = await this.validateToken(idToken);
 
     if (token.uid) {
       const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
-      await db.accountsRepo.syncProviderEmailState(firebaseUser);
+      await db.accountsRepo.syncAccountProviderEmailState(firebaseUser);
+      await db.accountsRepo.syncEnvironmentProviderEmailState(firebaseUser);
 
       const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
 
       if (blitzkarteUser) {
         if (blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
-          await db.accountsRepo.lockUsername(firebaseUser.uid);
-          await db.accountsRepo.clearVerificationDeadline(firebaseUser.uid);
+          await db.accountsRepo.lockAccountUsername(firebaseUser.uid);
+          await db.accountsRepo.lockEnvironmentUsername(firebaseUser.uid);
+          await db.accountsRepo.clearAccountVerificationDeadline(firebaseUser.uid);
+          await db.accountsRepo.clearEnvironmentVerificationDeadline(firebaseUser.uid);
         }
       } else {
         await this.restoreAccount(token.uid);
@@ -155,42 +163,63 @@ export class AccountService {
     if (users.length > 0) {
       const user = users[0];
 
-      const providers: AccountsProviderRow[] = await db.accountsRepo.getProviderRowFromAccountsByUserId(user.userId);
+      const accountProviders: AccountsProviderRow[] = await db.accountsRepo.getProviderRowFromAccountsByUserId(
+        user.userId
+      );
+      const envProviders: number[] = await db.accountsRepo.getProviderRowFromEnvironmentByUserId(user.userId);
+      const missingProviders: AccountsProviderRow[] = accountProviders.filter(
+        (provider: AccountsProviderRow) => !envProviders.includes(provider.providerId)
+      );
 
-      const userId = await db.accountsRepo.insertUserFromBackup(user);
-      if (userId > 0) {
-        await db.accountsRepo.insertProvidersFromBackup(providers);
+      const success = await db.accountsRepo.createEnvironmentUser(user);
+      if (success) {
+        await db.accountsRepo.insertProvidersFromBackup(missingProviders);
+        await db.accountsRepo.createUserDetails(user, 'active');
+        await db.accountsRepo.createUserSettings(user);
       }
     } else {
       console.log('Firebase UID does not exist in accounts DB. How did you pull that off?');
     }
   }
 
-  async addAdditionalProvider(idToken: string, username: string) {
-    const token: DecodedIdToken = await this.validateToken(idToken);
+  async addAdditionalProvider(oldIdToken: string, newIdToken: string): Promise<any> {
+    const decodedOldToken: DecodedIdToken = await this.validateToken(oldIdToken, false);
+    const decodedNewToken: DecodedIdToken = await this.validateToken(newIdToken, true);
 
-    if (token.uid) {
-      const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
-      const providerInDB: any = await db.accountsRepo.checkProviderInDB(token.uid, username);
+    if (decodedOldToken.uid) {
+      const user: UserProfile | void = await db.accountsRepo.getUserProfile(decodedOldToken.uid);
 
-      if (!providerInDB) {
-        const userId: number = await db.accountsRepo.getUserId(username);
-        const providerArgs: any = this.createProviderArgs(userId, firebaseUser);
-        const newProviderId = await db.accountsRepo.createAccountProvider(providerArgs);
-        providerArgs.unshift(newProviderId);
-        await db.accountsRepo.createEnvironmentProvider(providerArgs);
-      } else {
-        console.log('Provider in Database');
+      if (user) {
+        const providerInDB: any = await db.accountsRepo.checkProviderInDB(decodedNewToken.uid);
+        const firebaseUser: UserRecord = await this.getFirebaseUser(decodedNewToken.uid);
+
+        if (!providerInDB) {
+          const providerArgs: any = this.createProviderArgs(user.userId, firebaseUser);
+          const newProviderId = await db.accountsRepo.createAccountProvider(providerArgs);
+          providerArgs.unshift(newProviderId);
+          await db.accountsRepo.createEnvironmentProvider(providerArgs);
+          return {
+            username: user.username,
+            providerType: firebaseUser.providerData[0].providerId
+          };
+        } else {
+          console.log('Add Additional Provider Error: Provider in Database');
+        }
       }
     }
   }
 
-  async updateUserSettings(idToken: string, data: any) {
+  async updateUserSettings(idToken: string, data: any): Promise<any> {
     const token = await this.validateToken(idToken);
 
     if (token.uid) {
       const blitzkarteUser: UserProfile = await this.getUserProfile(idToken);
-      return db.accountsRepo.updatePlayerSettings(data.timeZone, data.meridiemTime, blitzkarteUser.userId);
+      return db.accountsRepo.updatePlayerSettings(
+        data.timeZone,
+        data.meridiemTime,
+        blitzkarteUser.userId,
+        blitzkarteUser.username
+      );
     }
   }
 
