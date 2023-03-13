@@ -68,7 +68,7 @@ export class ResolutionService {
     // const turnsWithVotes = [TurnType.ORDERS_AND_VOTES, TurnType.VOTES];
 
     const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
-    const countryHistories: CountryState[] = await db.gameRepo.getCountryState(gameState.gameId, 0);
+    const countryHistories: CountryState[] = await db.gameRepo.getCountryState(turn.gameId, gameState.turnNumber, 0);
     const provinceHistories: ProvinceHistoryInsert[] = [];
 
     if (turnsWithUnitOrders.includes(turn.turnType)) {

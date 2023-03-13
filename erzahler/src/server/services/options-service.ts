@@ -559,7 +559,7 @@ export class OptionsService {
     let playerCountry: CountryState | undefined = undefined;
     const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
     if (playerCountries.length > 0) {
-      const countryStates = await db.gameRepo.getCountryState(gameId, playerCountries[0].countryId);
+      const countryStates = await db.gameRepo.getCountryState(gameId, gameState.turnId, playerCountries[0].countryId);
       playerCountry = countryStates[0];
     }
 
