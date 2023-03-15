@@ -49,18 +49,7 @@ import {
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, CountryOrderSetsResult } from '../../models/objects/orders/expected-order-types-object';
 import { envCredentials } from '../../secrets/dbCredentials';
-import { getAirAdjQuery } from '../queries/orders/get-air-adj-query';
-import { getAtRiskUnitsQuery } from '../queries/orders/get-at-risk-units-query';
-import { getEmptySupplyCentersQuery } from '../queries/orders/get-empty-supply-centers-query';
-import { getNominatableCountriesQuery } from '../queries/orders/get-nominatable-countries-query';
-import { getOrderOptionsQuery } from '../queries/orders/get-order-options-query';
-import { getOrderSetQuery } from '../queries/orders/get-order-set-query';
-import { getTransferBuildOptionsQuery } from '../queries/orders/get-transfer-build-options-query';
-import { getTransferOptionsQuery } from '../queries/orders/get-transfer-options-query';
-import { getTechOfferOptionsQuery } from '../queries/orders/get-transfer-tech-offer-options-query';
-import { getTechReceiveOptionsQuery } from '../queries/orders/get-transfer-tech-receive-options-query';
 import { getTurnUnitOrdersQuery } from '../queries/orders/get-turn-unit-orders';
-import { getUnitAdjacentInfoQuery } from '../queries/orders/get-unit-adjacent-info-query';
 import { insertTurnOrderSetsQuery } from '../queries/orders/insert-turn-order-sets';
 import { getBuildOrdersQuery } from '../queries/orders/orders-final/get-build-orders-query';
 import { getBuildTransferOrdersQuery } from '../queries/orders/orders-final/get-build-transfer-orders-query';
