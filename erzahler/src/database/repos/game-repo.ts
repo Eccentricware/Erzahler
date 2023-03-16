@@ -1,6 +1,5 @@
-import { error } from 'console';
-import { Pool, Query, QueryResult } from 'pg';
-import { IDatabase, IMain, queryResult } from 'pg-promise';
+import { Pool, QueryResult } from 'pg';
+import { IDatabase, IMain } from 'pg-promise';
 import { GameDetailsBuilder } from '../../models/classes/game-details-builder';
 import { GameSummaryBuilder } from '../../models/classes/game-summary-builder';
 import { CountryRank, CountryStatus } from '../../models/enumeration/country-enum';
@@ -10,8 +9,6 @@ import { CoalitionSchedule, CoalitionScheduleResult } from '../../models/objects
 import { CountryState, CountryStateResult } from '../../models/objects/games/country-state-objects';
 import { CountryStats, CountryStatsResult } from '../../models/objects/games/country-stats-objects';
 import { GameState, GameStateResult } from '../../models/objects/last-turn-info-object';
-import { StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
-import { StartScheduleObject } from '../../models/objects/start-schedule-object';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formattingService';
 import { getPlayerRegistrationStatusQuery } from '../queries/assignments/get-player-registration-status';
@@ -449,7 +446,8 @@ export class GameRepository {
   }
 
   async getCountryState(gameId: number, turnNumber: number, countryId: number): Promise<CountryState[]> {
-    return await this.pool.query(getCountryStateQuery, [gameId, turnNumber, countryId])
+    return await this.pool
+      .query(getCountryStateQuery, [gameId, turnNumber, countryId])
       .then((queryResult: QueryResult<any>) =>
         queryResult.rows.map((countryResult: CountryStateResult) => {
           return <CountryState>{

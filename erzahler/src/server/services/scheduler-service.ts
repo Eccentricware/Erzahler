@@ -489,6 +489,7 @@ export class SchedulerService {
         // terminalLog('Checking in');
         // setInterval(() => {
         // }, 60000 * interval);
-      });
+      }
+    );
   }
 }
