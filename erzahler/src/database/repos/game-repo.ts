@@ -465,8 +465,8 @@ export class GameRepository {
       );
   }
 
-  async getGameStats(gameId: number, turnId: number): Promise<CountryStats[]> {
-    return await this.pool.query(getGameStatsQuery, [gameId, turnId]).then((queryResult: QueryResult<any>) =>
+  async getGameStats(gameId: number, turnNumber: number): Promise<CountryStats[]> {
+    return await this.pool.query(getGameStatsQuery, [gameId, turnNumber]).then((queryResult: QueryResult<any>) =>
       queryResult.rows.map((country: CountryStatsResult) => {
         return <CountryStats>{
           id: country.country_id,

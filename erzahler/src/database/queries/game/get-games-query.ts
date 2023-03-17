@@ -1,25 +1,25 @@
 export const getGamesQuery = `
   WITH countries_in_games AS (
-      SELECT c.game_id,
-        COUNT(c.game_id) as country_count
-      FROM countries c
-      WHERE c.rank != 'n'
-      GROUP BY c.game_id
-      ORDER BY c.game_id
-    ),
-    players_in_games AS (
-      SELECT a.game_id,
-        COUNT(a.game_id) as player_count
-      FROM assignments a
-      INNER JOIN games g ON g.game_id = a.game_id
-      WHERE a.assignment_type = 'Player'
-      AND
-        CASE
-          WHEN g.game_status = 'Registration' THEN a.assignment_status IN ('Assigned', 'Locked', 'Registered') ELSE a.assignment_status = 'Active'
-        END
-      GROUP BY a.game_id
-      ORDER BY a.game_id
-    )
+    SELECT c.game_id,
+      COUNT(c.game_id) as country_count
+    FROM countries c
+    WHERE c.rank != 'n'
+    GROUP BY c.game_id
+    ORDER BY c.game_id
+  ),
+  players_in_games AS (
+    SELECT a.game_id,
+      COUNT(a.game_id) as player_count
+    FROM assignments a
+    INNER JOIN games g ON g.game_id = a.game_id
+    WHERE a.assignment_type = 'Player'
+    AND
+      CASE
+        WHEN g.game_status = 'Registration' THEN a.assignment_status IN ('Assigned', 'Locked', 'Registered') ELSE a.assignment_status = 'Active'
+      END
+    GROUP BY a.game_id
+    ORDER BY a.game_id
+  )
   SELECT g.game_id,
     g.game_name,
     u.username as creator,
