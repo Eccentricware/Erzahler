@@ -120,9 +120,9 @@ export class OrdersRepository {
 
   //// Legacy Functions ////
 
-  async insertTurnOrderSets(currentTurnId: number, nextTurnId: number): Promise<OrderSet[]> {
+  async insertTurnOrderSets(gameId: number, turnNumber: number, nextTurnId: number): Promise<OrderSet[]> {
     const orderSets: OrderSet[] = await this.pool
-      .query(insertTurnOrderSetsQuery, [nextTurnId, currentTurnId])
+      .query(insertTurnOrderSetsQuery, [nextTurnId, gameId, turnNumber])
       .then((result: QueryResult<any>) =>
         result.rows.map((orderSetResult: OrderSetResult) => {
           return <OrderSet>{
@@ -140,9 +140,9 @@ export class OrdersRepository {
     await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
   }
 
-  async getTurnUnitOrders(countryId: number, orderTurnId: number, historyTurnId: number): Promise<Order[]> {
+  async getTurnUnitOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<Order[]> {
     const orders: Order[] = await this.pool
-      .query(getTurnUnitOrdersQuery, [countryId, orderTurnId, historyTurnId])
+      .query(getTurnUnitOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult<any>) =>
         result.rows.map((orderResult: OrderResult) => {
           return <Order>{

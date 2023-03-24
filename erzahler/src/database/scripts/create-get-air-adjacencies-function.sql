@@ -1,7 +1,7 @@
 --sudo -u postgres psql < database/scripts/create-get-node-adjacencies-function.sql
 
 \c erzahler_dev;
-\echo 'Attempting to create get_node_adjacencies funnction'
+\echo 'Attempting to create get_node_adjacencies function'
 
 CREATE OR REPLACE FUNCTION get_air_adjacencies(INTEGER) --game_id
 RETURNS TABLE(node_id INTEGER, province_name VARCHAR(15), adjacencies JSON)

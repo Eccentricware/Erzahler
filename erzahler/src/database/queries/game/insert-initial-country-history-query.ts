@@ -1,4 +1,4 @@
-export const insertCountryHistoryQuery = `
+export const insertInitialCountryHistoryQuery = `
   INSERT INTO country_histories (
     country_id,
     turn_id,
