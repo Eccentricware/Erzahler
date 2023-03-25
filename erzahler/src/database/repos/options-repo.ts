@@ -371,8 +371,8 @@ export class OptionsRepository {
     return nameSplit.length === 3 ? nameSplit[0] + nameSplit[2] : nameSplit[0];
   }
 
-  async getActiveCountryCenters(turnId: number, countryId: number): Promise<BuildLoc[]> {
-    return await this.pool.query(getActiveCountryCenters, [turnId, countryId]).then((result: QueryResult) =>
+  async getActiveCountryCenters(gameId: number, turnNumber: number, countryId: number): Promise<BuildLoc[]> {
+    return await this.pool.query(getActiveCountryCenters, [gameId, turnNumber, countryId]).then((result: QueryResult) =>
       result.rows.map((loc: BuildLocationResult) => {
         return <BuildLoc>{
           nodeId: loc.node_id,
