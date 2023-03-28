@@ -1216,6 +1216,7 @@ export class OptionsService {
       }
 
       const nukePlacementCities: BuildLoc[] = await db.optionsRepo.getActiveCountryCenters(
+        gameState.gameId,
         gameState.turnNumber,
         countryState.countryId
       );
