@@ -403,7 +403,7 @@ export class OrdersService {
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
     const countryOrderSets: CountryOrderSet[] = await db.ordersRepo.getCountryOrderSets(
       gameId,
-      gameState.turnId,
+      gameState.turnNumber,
       countryId
     );
     const pendingOrderSet: CountryOrderSet | undefined = countryOrderSets.find(
