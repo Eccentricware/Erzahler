@@ -281,9 +281,9 @@ export class OrdersRepository {
     }
   }
 
-  async getDisbandOrders(currentTurnId: number, nextTurnId: number, countryId: number): Promise<DisbandOrders> {
+  async getDisbandOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<DisbandOrders> {
     const disbandOrders: DisbandOrders[] = await this.pool
-      .query(getDisbandOrdersQuery, [currentTurnId, nextTurnId, countryId])
+      .query(getDisbandOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult) =>
         result.rows.map((orderSet: DisbandOrdersResult) => {
           return <DisbandOrders>{

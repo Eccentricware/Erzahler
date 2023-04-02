@@ -149,6 +149,7 @@ export class OrdersService {
             orders.builds = pendingBuildOrders[0];
           } else {
             orders.disbands = await this.prepareDisbandOrders(
+              gameId,
               gameState.turnId,
               pendingTurn.turnId,
               playerCountry.countryId
@@ -215,6 +216,7 @@ export class OrdersService {
             orders.builds = pendingBuildOrders[0];
           } else {
             orders.disbands = await this.prepareDisbandOrders(
+              gameId,
               gameState.turnId,
               preliminaryTurn.turnId,
               playerCountry.countryId
@@ -522,11 +524,11 @@ export class OrdersService {
     }
   }
 
-  async prepareDisbandOrders(currentTurnId: number, pendingTurnId: number, countryId: number): Promise<DisbandOrders> {
-    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(currentTurnId, pendingTurnId, countryId);
+  async prepareDisbandOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<DisbandOrders> {
+    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(gameId, turnNumber, orderTurnId, countryId);
 
     if (disbandOrders.nukeLocs.length > 0) {
-      disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(pendingTurnId, countryId);
+      disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(orderTurnId, countryId);
 
       if (disbandOrders.nukeBuildDetails && disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
         while (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
