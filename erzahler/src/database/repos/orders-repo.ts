@@ -175,12 +175,13 @@ export class OrdersRepository {
   }
 
   async getTechTransferPartner(
-    nextTurnId: number,
-    currentTurnId: number,
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number,
     countryId: number
   ): Promise<TransferTechOrder[]> {
     return await this.pool
-      .query(getTechTransferOrderQuery, [nextTurnId, currentTurnId, countryId])
+      .query(getTechTransferOrderQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult) =>
         result.rows.map((order: TransferTechOrderResult) => {
           return <TransferTechOrder>{
