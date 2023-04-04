@@ -8,11 +8,12 @@ export const getTechTransferOrderQuery = `
   FROM order_sets os
   INNER JOIN countries c ON c.country_id = os.country_id
   INNER JOIN country_histories ch ON ch.country_id = c.country_id
+  INNER JOIN get_last_country_history($1, $2) lch
+    ON lch.country_id = ch.country_id AND lch.turn_id = ch.turn_id
   LEFT JOIN countries pc ON pc.country_id = os.tech_partner_id
-  WHERE os.turn_id = $1
-    AND ch.turn_id = $2
+  WHERE os.turn_id = $3
     AND ch.country_status IN ('Active', 'Civil Disorder')
     AND c.rank != 'n'
     AND os.tech_partner_id != 0
-    AND CASE WHEN 0 = $3 THEN true ELSE os.country_id = $3 END;
+    AND CASE WHEN 0 = $4 THEN true ELSE os.country_id = $4 END;
 `;

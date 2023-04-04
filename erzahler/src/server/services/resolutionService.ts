@@ -892,8 +892,9 @@ export class ResolutionService {
       }
     };
     transferResources.techTransferResults = await this.validateTechTransfers(
+      gameState.gameId,
+      gameState.turnNumber,
       turn.turnId,
-      gameState.turnId,
       transferResources
     );
     transferResources.buildTransferResults = await this.validateBuildTransfers(turn.turnId, transferResources);
@@ -901,13 +902,15 @@ export class ResolutionService {
   }
 
   async validateTechTransfers(
-    nextTurnId: number,
-    currentTurnId: number,
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number,
     transferResources: TransferResources
   ): Promise<TransferTechOrder[]> {
     const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-      nextTurnId,
-      currentTurnId,
+      gameId,
+      turnNumber,
+      orderTurnId,
       0
     );
 
