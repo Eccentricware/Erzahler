@@ -885,7 +885,7 @@ export class ResolutionService {
 
   async resolveTransfers(gameState: GameState, turn: UpcomingTurn): Promise<TransferResources> {
     const transferResources: TransferResources = {
-      countryResources: await db.resolutionRepo.getTransferResourceValidation(gameState.turnId),
+      countryResources: await db.resolutionRepo.getTransferResourceValidation(gameState.gameId, gameState.turnNumber),
       handshakes: {
         offers: {},
         requests: {}
