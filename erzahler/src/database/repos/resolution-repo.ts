@@ -34,9 +34,9 @@ export class ResolutionRepository {
    * @param orderTurnId
    * @returns
    */
-  async getUnitOrdersForResolution(currentTurnId: number, orderTurnId: number): Promise<UnitOrderResolution[]> {
+  async getUnitOrdersForResolution(gameId: number, turnNumber: number, orderTurnId: number): Promise<UnitOrderResolution[]> {
     return await this.pool
-      .query(getUnitOrdersForResolutionQuery, [currentTurnId, orderTurnId])
+      .query(getUnitOrdersForResolutionQuery, [gameId, turnNumber, orderTurnId])
       .then((result: QueryResult<any>) =>
         result.rows.map((order: UnitOrderResolutionResult) => {
           return <UnitOrderResolution>{
