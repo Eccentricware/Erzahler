@@ -16,8 +16,9 @@ AS $$
 			WHEN n.node_id = na.node_2_id
 				THEN json_build_object('unit_id', u1.unit_id, 'unit_name', u1.unit_name)
 		END) AS adjacent_transports
-	FROM get_last_unit_history($1, $2) luh
-	INNER JOIN unit_histories uh ON uh.unit_id = luh.unit_id AND uh.turn_id = luh.turn_id
+	FROM unit_histories uh
+	INNER JOIN get_last_unit_history($1, $2) luh
+		ON uh.unit_id = luh.unit_id AND uh.turn_id = luh.turn_id
 	INNER JOIN units u ON u.unit_id = uh.unit_id
 	INNER JOIN nodes n ON n.node_id = uh.node_id
 	INNER JOIN node_adjacencies na ON na.node_1_id = n.node_id OR na.node_2_id = n.node_id
@@ -29,9 +30,11 @@ AS $$
 	INNER JOIN nodes tn1 ON tn1.province_id = p1.province_id
 	INNER JOIN nodes tn2 ON tn2.province_id = p2.province_id
 	INNER JOIN unit_histories uh1 ON uh1.node_id = tn1.node_id
-	INNER JOIN get_last_unit_history($1, $2) luh1 ON luh1.unit_id = uh1.unit_id AND luh1.turn_id = uh1.turn_id
+	INNER JOIN get_last_unit_history($1, $2) luh1
+		ON luh1.unit_id = uh1.unit_id AND luh1.turn_id = uh1.turn_id
 	INNER JOIN unit_histories uh2 ON uh2.node_id = tn2.node_id
-	INNER JOIN get_last_unit_history($1, $2) luh2 ON luh2.unit_id = uh2.unit_id AND luh2.turn_id = uh2.turn_id
+	INNER JOIN get_last_unit_history($1, $2) luh2
+		ON luh2.unit_id = uh2.unit_id AND luh2.turn_id = uh2.turn_id
 	INNER JOIN units u1 ON u1.unit_id = uh1.unit_id
 	INNER JOIN units u2 ON u2.unit_id = uh2.unit_id
 	INNER JOIN turns t ON t.turn_id = uh.turn_id

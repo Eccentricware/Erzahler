@@ -607,14 +607,19 @@ CREATE TABLE IF NOT EXISTS order_sets(
   build_transfer_tuples INTEGER[],
   build_transfer_recipients INTEGER[],
   build_transfer_success BOOLEAN DEFAULT false,
-  build_tuples INTEGER[],
-  build_locs INTEGER[],
+  build_tuples INTEGER[], -- build orders
+  build_locs INTEGER[],   -- build orders
+  -- Should this even be split? Build orders
   nuke_locs INTEGER[],
+  -- Makes sense to be here
   increase_range INTEGER,
   increase_range_success BOOLEAN DEFAULT false,
+  -- Requires individual fail results
   units_disbanding INTEGER[],
+  -- Makes sense
   nomination INTEGER[],
   nomination_success BOOLEAN DEFAULT false,
+  -- Makes sense
   votes INTEGER[],
   vote_success BOOLEAN DEFAULT false,
   PRIMARY KEY(order_set_id),
@@ -651,6 +656,22 @@ CREATE TABLE IF NOT EXISTS orders(
   FOREIGN KEY(secondary_unit_id)
     REFERENCES units(unit_id),
   FOREIGN KEY(destination_id)
+    REFERENCES nodes(node_id)
+);
+
+--\echo 'Attempting to create build_orders table'
+CREATE TABLE IF NOT EXISTS build_orders(
+  build_order_id SERIAL,
+  order_set_id INTEGER NOT NULL,
+  location_id INTEGER,
+  build_number INTEGER NOT NULL,
+  build_type VARCHAR(10) NOT NULL,
+  description VARCHAR(100),
+  success BOOLEAN,
+  PRIMARY KEY(build_order_id),
+  FOREIGN KEY(order_set_id)
+    REFERENCES order_sets(order_set_id),
+  FOREIGN KEY(location_id)
     REFERENCES nodes(node_id)
 );
 

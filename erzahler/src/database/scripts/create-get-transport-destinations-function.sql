@@ -19,7 +19,8 @@ AS $$
 		END) AS transport_destinations
 	FROM nodes n
 	INNER JOIN unit_histories uh ON uh.node_id = n.node_id
-	INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = uh.unit_id AND luh.turn_id = uh.turn_id
+	INNER JOIN get_last_unit_history($1, $2) luh
+		ON luh.unit_id = uh.unit_id AND luh.turn_id = uh.turn_id
 	INNER JOIN units u ON u.unit_id = uh.unit_id
 	INNER JOIN node_adjacencies na ON na.node_1_id = n.node_id OR na.node_2_id = n.node_id
 	INNER JOIN nodes n1 ON n1.node_id = na.node_1_id

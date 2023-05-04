@@ -1,7 +1,7 @@
 --sudo -u postgres psql < database/scripts/create-get-hold-supports-function.sql
 
 \c erzahler_dev;
-\echo 'Attempting to create get_adjacent_units function'
+\echo 'Attempting to create get_hold_supports function'
 
 CREATE OR REPLACE FUNCTION get_hold_supports(
 	INTEGER,  --game_id
@@ -16,8 +16,9 @@ AS $$
 			WHEN n.node_id = na.node_2_id
 				THEN json_build_object('unit_id', u1.unit_id, 'unit_name', u1.unit_name)
 		END) AS hold_supports
-	FROM get_last_unit_history($1, $2) luh
-	INNER JOIN unit_histories uh ON uh.unit_id = luh.unit_id AND uh.turn_id = luh.turn_id
+	FROM unit_histories uh
+	INNER JOIN get_last_unit_history($1, $2) luh
+		ON uh.unit_id = luh.unit_id AND uh.turn_id = luh.turn_id
 	INNER JOIN units u ON u.unit_id = uh.unit_id
 	INNER JOIN nodes n ON n.node_id = uh.node_id
 	INNER JOIN node_adjacencies na ON na.node_1_id = n.node_id OR na.node_2_id = n.node_id
