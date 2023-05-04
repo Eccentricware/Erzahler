@@ -2,6 +2,9 @@ import { DateTime } from 'luxon';
 
 export const formatNow = (): string => {
   let now = DateTime.now();
+  if (process.env.TIME_ZONE_OFFSET === undefined) {
+    return `${now} (TIME_ZONE_OFFSET is not initialized)`;
+  }
   now = now.plus({ hour: Number(process.env.TIME_ZONE_OFFSET) });
   const date = `${now.year}-${now.month.toString().padStart(2, '0')}-${now.day.toString().padStart(2, '0')}`;
   let hour: number = now.hour;
