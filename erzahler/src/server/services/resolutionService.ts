@@ -209,6 +209,10 @@ export class ResolutionService {
       turn.turnId
     );
 
+    const remainingGarrisons: UnitOrderResolution[] = await db.resolutionRepo.getRemainingGarrisons(gameState.gameId, gameState.turnNumber);
+
+    unitOrders.push(...remainingGarrisons);
+
     const orderGroups: UnitOrderGroups = {
       transport: [],
       hold: [],
@@ -324,11 +328,13 @@ export class ResolutionService {
     );
 
     if (options === undefined) {
-      console.log(
-        `orderId ${order.orderId} with unitId ${order.unit.id} doesn't even have matching options. This should be impossible but here we are!`
-      );
+      if (order.unit.type !== UnitType.GARRISON) {
+        console.log(
+          `orderId ${order.orderId} with unitId ${order.unit.id} doesn't even have matching options. This should be impossible but here we are!`
+        );
 
-      this.invalidateOrder(order, `Incredibly Invalid`);
+        this.invalidateOrder(order, `Incredibly Invalid`);
+      }
     } else if (!options.orderTypes.includes(order.orderType)) {
       this.invalidateOrder(order, `Invalid Order Type`);
     } else if (order.orderType === OrderDisplay.HOLD) {

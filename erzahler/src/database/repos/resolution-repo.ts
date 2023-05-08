@@ -11,7 +11,6 @@ import {
 } from '../../models/objects/option-context-objects';
 import {
   CountryTransferResources,
-  TransferResources,
   TransferResourcesResults,
   TransportNetworkUnit,
   TransportNetworkUnitResult,
@@ -22,6 +21,9 @@ import { envCredentials } from '../../secrets/dbCredentials';
 import { getTransferValidationDataQuery } from '../queries/resolution/get-transfer-validation-data-query';
 import { getTransportNetworkValidation } from '../queries/resolution/get-transport-network-validation-query';
 import { getUnitOrdersForResolutionQuery } from '../queries/resolution/get-unit-orders-for-resolution-query';
+import { Unit, UnitResult } from '../../models/objects/map-objects';
+import { getRemainingGarrisonsQuery } from '../queries/resolution/get-remaining-garrisons-query';
+import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 
 export class ResolutionRepository {
   pool = new Pool(envCredentials);
@@ -39,7 +41,7 @@ export class ResolutionRepository {
       .query(getUnitOrdersForResolutionQuery, [gameId, turnNumber, orderTurnId])
       .then((result: QueryResult<any>) =>
         result.rows.map((order: UnitOrderResolutionResult) => {
-          return <UnitOrderResolution>{
+          return <UnitOrderResolution> {
             orderId: order.order_id,
             orderType: order.order_type,
             orderSuccess: false,
@@ -155,5 +157,58 @@ export class ResolutionRepository {
         };
       })
     );
+  }
+
+  async getRemainingGarrisons(gameId: number, turnNumber: number): Promise<UnitOrderResolution[]> {
+    return await this.pool.query(getRemainingGarrisonsQuery, [gameId, turnNumber])
+      .then((result: QueryResult) => result.rows.map((garrison: UnitOrderResolutionResult) => {
+        return <UnitOrderResolution> {
+          orderId: 0,
+          orderType: OrderDisplay.HOLD,
+          orderSuccess: false,
+          power: 1,
+          supportCut: false,
+          description: '',
+          primaryResolution: '',
+          secondaryResolution: '',
+          valid: true,
+          supportSuccess: false,
+          unit: {
+            id: garrison.ordered_unit_id,
+            type: UnitType.GARRISON,
+            status: garrison.unit_status,
+            countryId: garrison.country_id,
+            countryName: garrison.country,
+            canCapture: false
+          },
+          origin: {
+            nodeId: garrison.node_id,
+            provinceId: garrison.province_id,
+            provinceName: garrison.province,
+            provinceType: garrison.province_type,
+            voteType: garrison.vote_type,
+            provinceStatus: garrison.province_status,
+            controllerId: garrison.controller_id,
+            capitalOwnerId: garrison.capital_owner_id
+          },
+          secondaryUnit: {
+            id: garrison.secondary_unit_id,
+            type: garrison.secondary_unit_type,
+            countryId: garrison.secondary_country_id,
+            country: garrison.secondary_country,
+            canCapture: false
+          },
+          destination: {
+            nodeId: garrison.destination_id,
+            provinceId: garrison.destination_province_id,
+            provinceName: garrison.destination_province_name,
+            provinceType: garrison.destination_province_type,
+            voteType: garrison.destination_vote_type,
+            provinceStatus: garrison.destination_province_status,
+            controllerId: garrison.destination_controller_id,
+            capitalOwnerId: garrison.destination_capital_owner_id
+          }
+        };
+      }))
   }
 }
