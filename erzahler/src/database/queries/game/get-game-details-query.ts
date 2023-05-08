@@ -11,7 +11,7 @@ export const getGameDetailsQuery = `
     g.blind_administrators,
     g.assignment_method,
     g.deadline_type,
-    u.meridiem_time,
+    us.meridiem_time,
     g.observe_dst,
     g.turn_1_timing,
     g.start_time AT TIME ZONE $3 start_time,
@@ -60,5 +60,6 @@ export const getGameDetailsQuery = `
   FROM games g
   LEFT JOIN assignments a ON a.game_id = g.game_id
   LEFT JOIN users u ON u.user_id = a.user_id
+  LEFT JOIN user_settings us ON us.user_id = u.user_id
   WHERE g.game_id = $1;
 `;

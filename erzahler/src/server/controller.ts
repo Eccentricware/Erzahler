@@ -38,7 +38,7 @@ erzahler.get('/check-status', (request, response) => {
   response.send(true);
 });
 
-schedulerService.syncDeadlines();
+// schedulerService.syncDeadlines();
 
 schedulerService.checkIn(15);
 
