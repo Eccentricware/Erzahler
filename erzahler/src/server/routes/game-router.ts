@@ -68,6 +68,8 @@ gameRouter.put('/update', (request, response) => {
 });
 
 gameRouter.post('/declare-ready', (request, response) => {
+  response.send({status: 'Starting a game is currently disabled'});
+  return;
   const idToken = <string>request.headers.idtoken;
   const gameId = request.body.gameId;
 
