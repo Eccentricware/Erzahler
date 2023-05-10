@@ -1,9 +1,6 @@
-import { error } from 'console';
-import { DateTime } from 'luxon';
 import { Pool, QueryResult } from 'pg';
 import { ColumnSet, IDatabase, IMain } from 'pg-promise';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
-import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { TurnPG, TurnTS } from '../../models/objects/database-objects';
 import { ScheduleSettingsQueryResult } from '../../models/objects/schedule-settings-query-object';
@@ -11,10 +8,8 @@ import { UpcomingTurn, UpcomingTurnResult } from '../../models/objects/scheduler
 import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formattingService';
 import { setAssignmentsActiveQuery } from '../queries/assignments/set-assignments-active-query';
-import { insertTurnQuery } from '../queries/game/insert-turn-query';
 import { startGameQuery } from '../queries/game/start-game-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
-import { getNominationsQuery } from '../queries/orders/options-final/get-nominations-query';
 import { getScheduleSettingsQuery } from '../queries/scheduler/get-schedule-settings-query';
 import { getUpcomingTurnsQuery } from '../queries/scheduler/get-upcoming-turns-query';
 
