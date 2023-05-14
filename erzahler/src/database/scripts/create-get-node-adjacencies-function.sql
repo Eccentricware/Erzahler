@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION get_node_adjacencies(
 )
 RETURNS TABLE(node_id INTEGER, adjacencies JSON)
 AS $$
+
   SELECT n.node_id,
     json_agg(CASE
       WHEN n.node_id = na.node_1_id
@@ -47,4 +48,5 @@ AS $$
     AND t.turn_number <= $2
     AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)
   GROUP BY n.node_id;
+
 $$ LANGUAGE SQL;

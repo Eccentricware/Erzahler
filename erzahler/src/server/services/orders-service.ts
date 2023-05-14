@@ -488,6 +488,7 @@ export class OrdersService {
 
     const userId = await accountService.getUserIdFromToken(idToken);
     const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
+
     if (userAssigned) {
       const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
       // orderSetIds.votes = 542;
@@ -528,8 +529,18 @@ export class OrdersService {
     }
   }
 
-  async prepareDisbandOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<DisbandOrders> {
-    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(gameId, turnNumber, orderTurnId, countryId);
+  async prepareDisbandOrders(
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number,
+    countryId: number
+  ): Promise<DisbandOrders> {
+    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(
+      gameId,
+      turnNumber,
+      orderTurnId,
+      countryId
+    );
 
     if (disbandOrders.nukeLocs.length > 0) {
       disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(orderTurnId, countryId);

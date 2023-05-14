@@ -1,4 +1,5 @@
 import { db } from '../../database/connection';
+import { CountryHistoryRow } from '../../database/schema/table-fields';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
@@ -62,16 +63,30 @@ export class ResolutionService {
       TurnType.FALL_ORDERS,
       TurnType.FALL_RETREATS
     ];
-    const turnsWithTransfers = [TurnType.ORDERS_AND_VOTES, TurnType.SPRING_ORDERS]; // Can add a check for future Transfer in Fall rule and push turn type, if desired
-    // const turnsWithAdjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM];
-    // const turnsWithNominations = [TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS];
-    // const turnsWithVotes = [TurnType.ORDERS_AND_VOTES, TurnType.VOTES];
+    const turnsWithTransfers = [TurnType.ORDERS_AND_VOTES, TurnType.SPRING_ORDERS];
+    const turnsWithAdjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM];
+    const turnsWithNominations = [TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS];
+    const turnsWithVotes = [TurnType.ORDERS_AND_VOTES, TurnType.VOTES];
+
+    // DB Update
+    const orders = [];
+    const orderSets = [];
+    // Game
+    // currentTurn
+
+    // DB Inserts
+    const newUnits = []; // Builds
+    const unitHistoryUpdates = [];
+    const provinceHistoryUpdates = [];
+    const currentCountryUpdates = [];
+    const newTurns = [];
 
     const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
-    const countryHistories: CountryState[] = await db.gameRepo.getCountryState(turn.gameId, gameState.turnNumber, 0);
-    const provinceHistories: ProvinceHistoryInsert[] = [];
+    const currentCountryHistories: CountryHistoryRow[] = await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber);
 
     if (turnsWithUnitOrders.includes(turn.turnType)) {
+      const provinceHistories: ProvinceHistoryInsert[] = [];
+      // const currentUnitStates: UnitState[] = await db.gameRepo.getUnitStates(turn.gameId, gameState.turnNumber);
       const unitMovementResults: UnitOrderResolution[] = await this.resolveUnitOrders(gameState, turn);
       // provinceHistories.push(...unitMovementResults.contestedProvinces)
 
@@ -91,7 +106,7 @@ export class ResolutionService {
           [OrderDisplay.DISBAND, OrderDisplay.NUKE].includes(result.orderType) ||
           result.unit.status === UnitStatus.NUKED
         ) {
-          const countryHistory = countryHistories.find(
+          const countryHistory = currentCountryHistories.find(
             (country: CountryState) => country.countryId === result.unit.countryId
           );
           if (countryHistory) {
@@ -101,7 +116,7 @@ export class ResolutionService {
         }
 
         if (result.orderType === OrderDisplay.NUKE) {
-          const targetCountry = countryHistories.find(
+          const targetCountry = currentCountryHistories.find(
             (country: CountryState) => country.countryId === result.destination.controllerId
           );
           if (targetCountry && result.destination.provinceStatus === ProvinceStatus.ACTIVE) {
@@ -139,7 +154,7 @@ export class ResolutionService {
 
       transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
         if (result.success && result.hasNukes) {
-          const partnerHistory = countryHistories.find(
+          const partnerHistory = currentCountryHistories.find(
             (country: CountryState) => country.countryId === result.techPartnerId
           );
           if (partnerHistory) {
@@ -150,10 +165,10 @@ export class ResolutionService {
 
       transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
         if (result.builds > 0) {
-          const playerCountry = countryHistories.find(
+          const playerCountry = currentCountryHistories.find(
             (country: CountryState) => country.countryId === result.playerCountryId
           );
-          const partnerCountry = countryHistories.find(
+          const partnerCountry = currentCountryHistories.find(
             (country: CountryState) => country.countryId === result.countryId
           );
           if (playerCountry && partnerCountry) {
@@ -209,7 +224,10 @@ export class ResolutionService {
       turn.turnId
     );
 
-    const remainingGarrisons: UnitOrderResolution[] = await db.resolutionRepo.getRemainingGarrisons(gameState.gameId, gameState.turnNumber);
+    const remainingGarrisons: UnitOrderResolution[] = await db.resolutionRepo.getRemainingGarrisons(
+      gameState.gameId,
+      gameState.turnNumber
+    );
 
     unitOrders.push(...remainingGarrisons);
 
@@ -1083,15 +1101,5 @@ export class ResolutionService {
       };
     }
     return provinceHistory;
-  }
-
-  prepareDbEntries() {
-    const orders = [];
-    const orderSets = [];
-    const units = [];
-    const unitHistories = [];
-    const provinceHistories = [];
-    const countryHistories = [];
-    const turns = [];
   }
 }
