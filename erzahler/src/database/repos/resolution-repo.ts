@@ -36,12 +36,16 @@ export class ResolutionRepository {
    * @param orderTurnId
    * @returns
    */
-  async getUnitOrdersForResolution(gameId: number, turnNumber: number, orderTurnId: number): Promise<UnitOrderResolution[]> {
+  async getUnitOrdersForResolution(
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number
+  ): Promise<UnitOrderResolution[]> {
     return await this.pool
       .query(getUnitOrdersForResolutionQuery, [gameId, turnNumber, orderTurnId])
       .then((result: QueryResult<any>) =>
         result.rows.map((order: UnitOrderResolutionResult) => {
-          return <UnitOrderResolution> {
+          return <UnitOrderResolution>{
             orderId: order.order_id,
             orderType: order.order_type,
             orderSuccess: false,
@@ -160,9 +164,9 @@ export class ResolutionRepository {
   }
 
   async getRemainingGarrisons(gameId: number, turnNumber: number): Promise<UnitOrderResolution[]> {
-    return await this.pool.query(getRemainingGarrisonsQuery, [gameId, turnNumber])
-      .then((result: QueryResult) => result.rows.map((garrison: UnitOrderResolutionResult) => {
-        return <UnitOrderResolution> {
+    return await this.pool.query(getRemainingGarrisonsQuery, [gameId, turnNumber]).then((result: QueryResult) =>
+      result.rows.map((garrison: UnitOrderResolutionResult) => {
+        return <UnitOrderResolution>{
           orderId: 0,
           orderType: OrderDisplay.HOLD,
           orderSuccess: false,
@@ -209,6 +213,7 @@ export class ResolutionRepository {
             capitalOwnerId: garrison.destination_capital_owner_id
           }
         };
-      }))
+      })
+    );
   }
 }

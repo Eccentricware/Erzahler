@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from 'pg';
+import { Pool, Query, QueryResult } from 'pg';
 import { IDatabase, IMain } from 'pg-promise';
 import { GameDetailsBuilder } from '../../models/classes/game-details-builder';
 import { GameSummaryBuilder } from '../../models/classes/game-summary-builder';
@@ -39,6 +39,8 @@ import { insertUnitQuery } from '../queries/game/insert-unit-query';
 import { updateGameSettingsQuery } from '../queries/game/update-game-settings-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
 import { getGameStateQuery } from '../queries/orders/get-game-state-query';
+import { CountryHistoryRow, CountryHistoryRowResult } from '../schema/table-fields';
+import { getCurrentCountryHistoriesQuery } from '../queries/isolated-tables/get-current-country-histories-query';
 
 const gamesCols: string[] = [
   'game_name',
@@ -501,5 +503,24 @@ export class GameRepository {
     );
 
     return coalitionSchedules[0];
+  }
+
+  // Get raw rows for the state update comparing
+  async getCountryHistories(gameId: number, turnNumber: number): Promise<CountryHistoryRow[]> {
+    return await this.pool.query(getCurrentCountryHistoriesQuery, [gameId, turnNumber])
+      .then((result: QueryResult) => result.rows.map((countryHistory: CountryHistoryRowResult) => {
+        return <CountryHistoryRow> {
+          countryId: countryHistory.country_id,
+          countryStatus: countryHistory.country_status,
+          cityCount: countryHistory.city_count,
+          unitCount: countryHistory.unit_count,
+          bankedBuilds: countryHistory.banked_builds,
+          nukeRange: countryHistory.nuke_range,
+          adjustments: countryHistory.adjustments,
+          inRetreat: countryHistory.in_retreat,
+          voteCount: countryHistory.vote_count,
+          nukesInProduction: countryHistory.nukes_in_production
+        };
+      }));
   }
 }

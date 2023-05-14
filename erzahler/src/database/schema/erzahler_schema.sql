@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS country_histories(
   country_history_id SERIAL,
   country_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
-  country_status VARCHAR(15) NOT NULL,
+  country_status VARCHAR(18) NOT NULL,
   city_count INTEGER NOT NULL,
   vote_count INTEGER DEFAULT 1,
   unit_count INTEGER NOT NULL,
@@ -663,7 +663,7 @@ CREATE TABLE IF NOT EXISTS orders(
 CREATE TABLE IF NOT EXISTS build_orders(
   build_order_id SERIAL,
   order_set_id INTEGER NOT NULL,
-  location_id INTEGER,
+  node_id INTEGER,
   build_number INTEGER NOT NULL,
   build_type VARCHAR(10) NOT NULL,
   description VARCHAR(100),
@@ -671,7 +671,7 @@ CREATE TABLE IF NOT EXISTS build_orders(
   PRIMARY KEY(build_order_id),
   FOREIGN KEY(order_set_id)
     REFERENCES order_sets(order_set_id),
-  FOREIGN KEY(location_id)
+  FOREIGN KEY(node_id)
     REFERENCES nodes(node_id)
 );
 

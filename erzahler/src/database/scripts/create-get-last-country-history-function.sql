@@ -18,4 +18,5 @@ AS $$
 		AND t.turn_number <= $2
 	GROUP BY ch.country_id,
 		ch.turn_id
+
 $$ LANGUAGE SQL;
