@@ -1,3 +1,4 @@
+import { ProvinceHistoryRow } from '../../../database/schema/table-fields';
 import { OrderDisplay } from '../../enumeration/order-display-enum';
 import { ProvinceStatus, ProvinceType, ResolutionEvent, VoteType } from '../../enumeration/province-enums';
 import { UnitStatus, UnitType } from '../../enumeration/unit-enum';
@@ -174,15 +175,5 @@ export interface TransferResources {
 
 export interface UnitMovementResults {
   orderResults: UnitOrderResolution[];
-  contestedProvinces?: ProvinceHistoryInsert[];
-}
-
-export interface ProvinceHistoryInsert {
-  provinceId: number;
-  // resolutionEvent: ResolutionEvent;
-  turnId?: number;
-  controllerId: number | null;
-  capitalOwnerId: number | null;
-  provinceStatus: ProvinceStatus;
-  validRetreat: boolean;
+  contestedProvinces: ProvinceHistoryRow[];
 }

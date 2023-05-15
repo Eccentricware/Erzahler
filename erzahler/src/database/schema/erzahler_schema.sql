@@ -604,13 +604,13 @@ CREATE TABLE IF NOT EXISTS order_sets(
   default_orders BOOLEAN DEFAULT true,
   tech_partner_id INTEGER DEFAULT 0,
   tech_transfer_success BOOLEAN DEFAULT false,
-  build_transfer_tuples INTEGER[],
-  build_transfer_recipients INTEGER[],
-  build_transfer_success BOOLEAN DEFAULT false,
-  build_tuples INTEGER[], -- build orders
-  build_locs INTEGER[],   -- build orders
+  -- build_transfer_tuples INTEGER[],
+  -- build_transfer_recipients INTEGER[],
+  -- build_transfer_success BOOLEAN DEFAULT false,
+  -- build_tuples INTEGER[], -- build orders
+  -- build_locs INTEGER[],   -- build orders
   -- Should this even be split? Build orders
-  nuke_locs INTEGER[],
+  -- nuke_locs INTEGER[],
   -- Makes sense to be here
   increase_range INTEGER,
   increase_range_success BOOLEAN DEFAULT false,

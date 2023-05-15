@@ -1,5 +1,5 @@
 import { db } from '../../database/connection';
-import { CountryHistoryRow } from '../../database/schema/table-fields';
+import { CountryHistoryRow, GameRow, OrderRow, OrderSetRow, ProvinceHistoryRow, TurnRow, UnitHistoryRow, UnitRow } from '../../database/schema/table-fields';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
@@ -22,7 +22,6 @@ import {
   CountryTransferResources,
   OrderDependencies,
   OrderResolutionLocation,
-  ProvinceHistoryInsert,
   TransferResources,
   TransportAttempt,
   TransportNetworkUnit,
@@ -68,24 +67,27 @@ export class ResolutionService {
     const turnsWithNominations = [TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS];
     const turnsWithVotes = [TurnType.ORDERS_AND_VOTES, TurnType.VOTES];
 
+    const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
+
     // DB Update
-    const orders = [];
-    const orderSets = [];
-    // Game
-    // currentTurn
+    const gameUpdate: GameRow = {};
+    const turnUpdate: TurnRow = {}
+
+    const orderSetUpdates: OrderSetRow[] = [];
+    const orderUpdates: OrderRow[] = [];
 
     // DB Inserts
-    const newUnits = []; // Builds
-    const unitHistoryUpdates = [];
-    const provinceHistoryUpdates = [];
-    const currentCountryUpdates = [];
-    const newTurns = [];
-
-    const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
     const currentCountryHistories: CountryHistoryRow[] = await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber);
+    const countryHistoryInserts: CountryHistoryRow[] = [];
+
+    const unitInserts: UnitRow[] = []; // Builds
+
+    const unitHistoryInserts: UnitHistoryRow[] = [];
+
+    const provinceHistoryRows: ProvinceHistoryRow[] = [];
 
     if (turnsWithUnitOrders.includes(turn.turnType)) {
-      const provinceHistories: ProvinceHistoryInsert[] = [];
+      const provinceHistories: ProvinceHistoryRow[] = [];
       // const currentUnitStates: UnitState[] = await db.gameRepo.getUnitStates(turn.gameId, gameState.turnNumber);
       const unitMovementResults: UnitOrderResolution[] = await this.resolveUnitOrders(gameState, turn);
       // provinceHistories.push(...unitMovementResults.contestedProvinces)
@@ -93,7 +95,7 @@ export class ResolutionService {
       unitMovementResults.forEach((result: UnitOrderResolution) => {
         const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
         let provinceHistory = provinceHistories.find(
-          (province: ProvinceHistoryInsert) => province.provinceId === finalPosition.provinceId
+          (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
         );
         if (provinceHistory) {
           provinceHistory.controllerId = this.resolveControllerId(result, finalPosition, turn);
@@ -132,7 +134,7 @@ export class ResolutionService {
           result.orderSuccess === false
         ) {
           const bounceFound = provinceHistories.find(
-            (province: ProvinceHistoryInsert) => province.provinceId === result.destination.provinceId
+            (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
           );
           if (!bounceFound) {
             provinceHistories.push({
@@ -250,7 +252,7 @@ export class ResolutionService {
     //   contested: [],
     //   nuked: []
     // };
-    // const contestedProvinces: ProvinceHistoryInsert[] = [];
+    // const contestedProvinces: ProvinceHistoryRow[] = [];
 
     const dependencies: OrderDependencies = {
       dependency: {},
@@ -1021,7 +1023,7 @@ export class ResolutionService {
     result: UnitOrderResolution,
     finalPosition: OrderResolutionLocation,
     turn: UpcomingTurn
-  ): ProvinceHistoryInsert {
+  ): ProvinceHistoryRow {
     return {
       provinceId: finalPosition.provinceId,
       controllerId: this.resolveControllerId(result, finalPosition, turn),
@@ -1084,11 +1086,11 @@ export class ResolutionService {
   }
 
   getOrCreateProvinceHistory(
-    provinceHistories: ProvinceHistoryInsert[],
+    provinceHistories: ProvinceHistoryRow[],
     finalPosition: OrderResolutionLocation
-  ): ProvinceHistoryInsert {
+  ): ProvinceHistoryRow {
     let provinceHistory = provinceHistories.find(
-      (province: ProvinceHistoryInsert) => province.provinceId === finalPosition.provinceId
+      (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
     );
     if (provinceHistory === undefined) {
       provinceHistory = {
