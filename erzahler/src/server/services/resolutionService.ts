@@ -82,9 +82,11 @@ export class ResolutionService {
 
     const unitInserts: UnitRow[] = []; // Builds
 
+    const currentUnitHistories: UnitHistoryRow[] = await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber);
     const unitHistoryInserts: UnitHistoryRow[] = [];
 
-    const provinceHistoryRows: ProvinceHistoryRow[] = [];
+    const currentProvinceHistories: ProvinceHistoryRow[] = [];
+    const provinceHistoryInserts: ProvinceHistoryRow[] = [];
 
     if (turnsWithUnitOrders.includes(turn.turnType)) {
       const provinceHistories: ProvinceHistoryRow[] = [];
@@ -94,6 +96,8 @@ export class ResolutionService {
 
       unitMovementResults.forEach((result: UnitOrderResolution) => {
         const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
+
+        // Province History Changes
         let provinceHistory = provinceHistories.find(
           (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
         );
@@ -104,6 +108,27 @@ export class ResolutionService {
           provinceHistory = this.createProvinceHistory(result, finalPosition, turn);
         }
 
+        if (
+          [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType) &&
+          [UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(result.unit.status) &&
+          [UnitType.ARMY, UnitType.FLEET, UnitType.WING].includes(result.unit.type) &&
+          result.orderSuccess === false
+        ) {
+          const bounceFound = provinceHistories.find(
+            (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
+          );
+          if (!bounceFound) {
+            provinceHistories.push({
+              provinceId: result.destination.provinceId,
+              controllerId: result.destination.controllerId,
+              capitalOwnerId: result.destination.capitalOwnerId,
+              provinceStatus: result.destination.provinceStatus,
+              validRetreat: false
+            });
+          }
+        }
+
+        // Contry History Changes
         if (
           [OrderDisplay.DISBAND, OrderDisplay.NUKE].includes(result.orderType) ||
           result.unit.status === UnitStatus.NUKED
@@ -127,27 +152,11 @@ export class ResolutionService {
           }
         }
 
-        if (
-          [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType) &&
-          [UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(result.unit.status) &&
-          [UnitType.ARMY, UnitType.FLEET, UnitType.WING].includes(result.unit.type) &&
-          result.orderSuccess === false
-        ) {
-          const bounceFound = provinceHistories.find(
-            (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
-          );
-          if (!bounceFound) {
-            provinceHistories.push({
-              provinceId: result.destination.provinceId,
-              controllerId: result.destination.controllerId,
-              capitalOwnerId: result.destination.capitalOwnerId,
-              provinceStatus: result.destination.provinceStatus,
-              validRetreat: false
-            });
-          }
-        }
-
-        provinceHistories.push(provinceHistory);
+        // orderSetUpdates.push(orderSetUpdate);
+        // orderUpdates.push(orderUpdate);
+        // unitHistoryInserts.push(unitHistoryEntry);
+        // provinceHistoryInserts.push(provinceHistoryEntry);
+        // countryHistoryInserts.push(countryHistoryEntry);
       });
     }
 

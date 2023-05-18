@@ -39,8 +39,9 @@ import { insertUnitQuery } from '../queries/game/insert-unit-query';
 import { updateGameSettingsQuery } from '../queries/game/update-game-settings-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
 import { getGameStateQuery } from '../queries/orders/get-game-state-query';
-import { CountryHistoryRow, CountryHistoryRowResult } from '../schema/table-fields';
+import { CountryHistoryRow, CountryHistoryRowResult, UnitHistoryRow, UnitHistoryRowResult } from '../schema/table-fields';
 import { getCurrentCountryHistoriesQuery } from '../queries/isolated-tables/get-current-country-histories-query';
+import { getCurrentUnitHistoriesQuery } from '../queries/isolated-tables/get-current-unit-histories-query';
 
 const gamesCols: string[] = [
   'game_name',
@@ -520,6 +521,19 @@ export class GameRepository {
           inRetreat: countryHistory.in_retreat,
           voteCount: countryHistory.vote_count,
           nukesInProduction: countryHistory.nukes_in_production
+        };
+      }));
+  }
+
+  async getUnitHistories(gameId: number, turnNumber: number): Promise<UnitHistoryRow[]> {
+    return await this.pool.query(getCurrentUnitHistoriesQuery, [gameId, turnNumber])
+      .then((result: QueryResult) => result.rows.map((unitHistory: UnitHistoryRowResult) => {
+        return <UnitHistoryRow> {
+          unitHistoryId: unitHistory.unit_history_id,
+          unitId: unitHistory.unit_id,
+          turnId: unitHistory.turn_id,
+          nodeId: unitHistory.node_id,
+          unitStatus: unitHistory.unit_status
         };
       }));
   }
