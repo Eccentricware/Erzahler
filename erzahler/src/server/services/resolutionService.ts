@@ -29,6 +29,7 @@ import {
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
+import { terminalLog } from '../utils/general';
 import { OptionsService } from './options-service';
 
 export class ResolutionService {
@@ -77,28 +78,61 @@ export class ResolutionService {
     const orderUpdates: OrderRow[] = [];
 
     // DB Inserts
+    const unitInserts: UnitRow[] = []; // Builds
+    const unitHistoryInserts: UnitHistoryRow[] = [];
+
+    const provinceHistoryInserts: ProvinceHistoryRow[] = [];
+
     const currentCountryHistories: CountryHistoryRow[] = await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber);
     const countryHistoryInserts: CountryHistoryRow[] = [];
 
-    const unitInserts: UnitRow[] = []; // Builds
-
-    const currentUnitHistories: UnitHistoryRow[] = await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber);
-    const unitHistoryInserts: UnitHistoryRow[] = [];
-
-    const currentProvinceHistories: ProvinceHistoryRow[] = [];
-    const provinceHistoryInserts: ProvinceHistoryRow[] = [];
 
     if (turnsWithUnitOrders.includes(turn.turnType)) {
-      const provinceHistories: ProvinceHistoryRow[] = [];
-      // const currentUnitStates: UnitState[] = await db.gameRepo.getUnitStates(turn.gameId, gameState.turnNumber);
+      const currentProvinceHistories: ProvinceHistoryRow[] = await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber);
+      const currentUnitHistories: UnitHistoryRow[] = await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber);
+
       const unitMovementResults: UnitOrderResolution[] = await this.resolveUnitOrders(gameState, turn);
-      // provinceHistories.push(...unitMovementResults.contestedProvinces)
 
       unitMovementResults.forEach((result: UnitOrderResolution) => {
+        // Orders => OrderSets => Units => Provinces => Countries
+
+        // Order and Order Set Update
+
+        if (result.orderId > 0) {
+          orderUpdates.push({
+            orderId: result.orderId,
+            orderStatus: 'Processed',
+            orderSuccess: result.orderSuccess,
+            power: result.power,
+            description: result.description,
+            primaryResolution: result.primaryResolution,
+            secondaryResolution: result.secondaryResolution
+          });
+        }
+
+        const originPosition: OrderResolutionLocation | undefined = undefined; // Wing bombard vacating
         const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
 
+        // Unit History Changes
+        const currentUnitState: UnitHistoryRow | undefined = currentUnitHistories.find(
+          (unitState: UnitHistoryRow) => unitState.unitId === result.unit.id
+        );
+
+        if (!currentUnitState) {
+          terminalLog(`No pre-existing state for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`);
+          return;
+        }
+
+        if (currentUnitState.nodeId !== finalPosition.nodeId || currentUnitState.unitStatus !== result.unit.status) {
+          unitHistoryInserts.push({
+            unitId: result.unit.id,
+            nodeId: result.destination.nodeId,
+            unitStatus: result.unit.status
+          });
+        }
+
         // Province History Changes
-        let provinceHistory = provinceHistories.find(
+        let provinceHistory = provinceHistoryInserts.find(
           (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
         );
         if (provinceHistory) {
@@ -114,11 +148,11 @@ export class ResolutionService {
           [UnitType.ARMY, UnitType.FLEET, UnitType.WING].includes(result.unit.type) &&
           result.orderSuccess === false
         ) {
-          const bounceFound = provinceHistories.find(
+          const bounceFound = provinceHistoryInserts.find(
             (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
           );
           if (!bounceFound) {
-            provinceHistories.push({
+            provinceHistoryInserts.push({
               provinceId: result.destination.provinceId,
               controllerId: result.destination.controllerId,
               capitalOwnerId: result.destination.capitalOwnerId,
@@ -827,6 +861,9 @@ export class ResolutionService {
     });
 
     const victory = movementOrder.power === maxPower && !challenges[maxPower];
+    if (movementOrder.power === challenges[maxPower][0]) {
+      movementOrder.destination.contested = true;
+    }
     let summary = victory ? `Victory: ${movementOrder.power}` : `Bounce: ${movementOrder.power}`;
     movementOrder.orderSuccess = victory;
 
