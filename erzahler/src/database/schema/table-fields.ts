@@ -227,18 +227,6 @@ export interface OrderRow {
   secondaryResolution?: string;
 }
 
-export interface CountryHistoryRowResult {
-  country_id: number;
-  country_status: CountryStatus;
-  city_count: number;
-  unit_count: number;
-  banked_builds: number;
-  nuke_range: number;
-  adjustments: number;
-  in_retreat: boolean;
-  vote_count: number;
-  nukes_in_production: number;
-}
 
 export interface UnitRowResult {
   unit_id: number;
@@ -255,19 +243,51 @@ export interface UnitRow {
 }
 
 export interface UnitHistoryRowResult {
-  unit_history_id: number;
+  unit_history_id?: number;
   unit_id: number;
-  turn_id: number;
+  turn_id?: number;
   node_id: number;
   unit_status: UnitStatus;
 }
 
 export interface UnitHistoryRow {
-  unitHistoryId: number;
+  unitHistoryId?: number;
   unitId: number;
-  turnId: number;
+  turnId?: number;
   nodeId: number;
   unitStatus: UnitStatus;
+}
+
+
+export interface ProvinceHistoryRowResult {
+  province_id: number;
+  turn_id?: number;
+  controller_id: number | null;
+  capital_owner_id: number | null;
+  province_status: ProvinceStatus;
+  valid_retreat: boolean;
+}
+
+export interface ProvinceHistoryRow {
+  provinceId: number;
+  turnId?: number;
+  controllerId: number | null;
+  capitalOwnerId: number | null;
+  provinceStatus: ProvinceStatus;
+  validRetreat: boolean;
+}
+
+export interface CountryHistoryRowResult {
+  country_id: number;
+  country_status: CountryStatus;
+  city_count: number;
+  unit_count: number;
+  banked_builds: number;
+  nuke_range: number;
+  adjustments: number;
+  in_retreat: boolean;
+  vote_count: number;
+  nukes_in_production: number;
 }
 
 export interface CountryHistoryRow {
@@ -281,14 +301,4 @@ export interface CountryHistoryRow {
   inRetreat: boolean;
   voteCount: number;
   nukesInProduction: number;
-}
-
-export interface ProvinceHistoryRow {
-  provinceId: number;
-  // resolutionEvent: ResolutionEvent;
-  turnId?: number;
-  controllerId: number | null;
-  capitalOwnerId: number | null;
-  provinceStatus: ProvinceStatus;
-  validRetreat: boolean;
 }

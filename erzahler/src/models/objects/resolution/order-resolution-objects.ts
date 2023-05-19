@@ -88,6 +88,7 @@ export interface OrderResolutionLocation {
   provinceStatus: ProvinceStatus;
   controllerId: number;
   capitalOwnerId: number;
+  contested?: boolean;
   validRetreat?: boolean;
   statusColor?: string;
   strokeColor?: string;
