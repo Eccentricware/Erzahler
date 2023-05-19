@@ -86,7 +86,6 @@ export class ResolutionService {
     const currentCountryHistories: CountryHistoryRow[] = await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber);
     const countryHistoryInserts: CountryHistoryRow[] = [];
 
-
     if (turnsWithUnitOrders.includes(turn.turnType)) {
       const currentProvinceHistories: ProvinceHistoryRow[] = await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber);
       const currentUnitHistories: UnitHistoryRow[] = await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber);
@@ -110,7 +109,24 @@ export class ResolutionService {
           });
         }
 
-        const originPosition: OrderResolutionLocation | undefined = undefined; // Wing bombard vacating
+        if (result.unit.type === UnitType.WING
+          && result.orderType === OrderDisplay.MOVE
+          && result.orderSuccess === true
+          && result.origin.provinceStatus === ProvinceStatus.BOMBARDED) {
+          const originPosition: OrderResolutionLocation = result.origin;
+          const originUpdateExists: ProvinceHistoryRow | undefined = provinceHistoryInserts.find(
+            (provinceHistory: ProvinceHistoryRow) => provinceHistory.provinceId === originPosition?.provinceId
+          );
+          if (!originUpdateExists) {
+            provinceHistoryInserts.push({
+              provinceId: originPosition.provinceId,
+              controllerId: originPosition.controllerId,
+              capitalOwnerId: originPosition.capitalOwnerId,
+              provinceStatus: ProvinceStatus.ACTIVE,
+              validRetreat: true
+            });
+          }
+        }
         const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
 
         // Unit History Changes
