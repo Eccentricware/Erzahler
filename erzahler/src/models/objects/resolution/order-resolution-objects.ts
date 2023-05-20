@@ -14,6 +14,7 @@ import { TransferBuildOrder, TransferTechOrder } from '../order-objects';
 
 export interface UnitOrderResolutionResult {
   order_id: number;
+  order_set_id: number;
   order_type: string;
   ordered_unit_id: number;
   valid: boolean;
@@ -52,6 +53,7 @@ export interface UnitOrderResolutionResult {
 
 export interface UnitOrderResolution {
   orderId: number;
+  orderSetId: number;
   orderType: OrderDisplay;
   valid: boolean;
   orderSuccess: boolean;

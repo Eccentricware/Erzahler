@@ -1,5 +1,6 @@
 export const getUnitOrdersForResolutionQuery = `
   SELECT o.order_id,
+    o.order_set_id,
     o.order_type,
     o.ordered_unit_id,
     o.valid,

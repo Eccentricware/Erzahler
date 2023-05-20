@@ -47,6 +47,7 @@ export class ResolutionRepository {
         result.rows.map((order: UnitOrderResolutionResult) => {
           return <UnitOrderResolution>{
             orderId: order.order_id,
+            orderSetId: order.order_set_id,
             orderType: order.order_type,
             orderSuccess: false,
             power: 1,
@@ -168,6 +169,7 @@ export class ResolutionRepository {
       result.rows.map((garrison: UnitOrderResolutionResult) => {
         return <UnitOrderResolution>{
           orderId: 0,
+          orderSetId: 0,
           orderType: OrderDisplay.HOLD,
           orderSuccess: false,
           power: 1,
