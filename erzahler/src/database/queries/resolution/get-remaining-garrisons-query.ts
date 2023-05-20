@@ -1,5 +1,6 @@
 export const getRemainingGarrisonsQuery = `
   SELECT 0 order_id,
+    0 order_set_id,
     'Hold' order_type,
     u.unit_id AS ordered_unit_id,
     true as valid,

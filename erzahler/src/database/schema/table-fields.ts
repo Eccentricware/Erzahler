@@ -291,6 +291,7 @@ export interface CountryHistoryRowResult {
 }
 
 export interface CountryHistoryRow {
+  builds: number;
   countryId: number;
   countryStatus: CountryStatus;
   cityCount: number;
