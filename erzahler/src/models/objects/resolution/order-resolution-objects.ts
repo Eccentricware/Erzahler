@@ -91,7 +91,7 @@ export interface OrderResolutionLocation {
   controllerId: number;
   capitalOwnerId: number;
   contested?: boolean;
-  validRetreat?: boolean;
+  validRetreat: boolean;
   statusColor?: string;
   strokeColor?: string;
 }
