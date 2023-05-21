@@ -68,6 +68,17 @@ export interface GameRowResult {
   default_nuke_range?:number;
 }
 
+export interface DbStates {
+  game?: GameRow;
+  turn?: TurnRow;
+  orderSets?: OrderSetRow[];
+  orders?: OrderRow[];
+  units?: UnitRow[];
+  unitHistories?: UnitHistoryRow[];
+  provinceHistories?: ProvinceHistoryRow[];
+  countryHistories?: CountryHistoryRow[];
+}
+
 export interface GameRow {
   gameId?: number;
   gameName?: string;

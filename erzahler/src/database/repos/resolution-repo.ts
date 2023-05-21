@@ -73,7 +73,8 @@ export class ResolutionRepository {
               voteType: order.vote_type,
               provinceStatus: order.province_status,
               controllerId: order.controller_id,
-              capitalOwnerId: order.capital_owner_id
+              capitalOwnerId: order.capital_owner_id,
+              validRetreat: true
             },
             secondaryUnit: {
               id: order.secondary_unit_id,
@@ -90,7 +91,8 @@ export class ResolutionRepository {
               voteType: order.destination_vote_type,
               provinceStatus: order.destination_province_status,
               controllerId: order.destination_controller_id,
-              capitalOwnerId: order.destination_capital_owner_id
+              capitalOwnerId: order.destination_capital_owner_id,
+              validRetreat: true
             }
           };
         })
@@ -195,7 +197,8 @@ export class ResolutionRepository {
             voteType: garrison.vote_type,
             provinceStatus: garrison.province_status,
             controllerId: garrison.controller_id,
-            capitalOwnerId: garrison.capital_owner_id
+            capitalOwnerId: garrison.capital_owner_id,
+            validRetreat: true
           },
           secondaryUnit: {
             id: garrison.secondary_unit_id,
@@ -212,7 +215,8 @@ export class ResolutionRepository {
             voteType: garrison.destination_vote_type,
             provinceStatus: garrison.destination_province_status,
             controllerId: garrison.destination_controller_id,
-            capitalOwnerId: garrison.destination_capital_owner_id
+            capitalOwnerId: garrison.destination_capital_owner_id,
+            validRetreat: true
           }
         };
       })

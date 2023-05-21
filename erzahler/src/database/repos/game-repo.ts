@@ -544,7 +544,7 @@ export class GameRepository {
       .then((result: QueryResult) => result.rows.map((provinceHistory: ProvinceHistoryRowResult) => {
         return <ProvinceHistoryRow> {
           provinceId: provinceHistory.province_id,
-          turnId: provinceHistory.turnId,
+          turnId: provinceHistory.turn_id,
           controllerId: provinceHistory.controller_id,
           capitalOwnerId: provinceHistory.capital_owner_id,
           provinceStatus: provinceHistory.province_status,

@@ -1,13 +1,13 @@
 import { db } from '../../database/connection';
-import { CountryHistoryRow, GameRow, OrderRow, OrderSetRow, ProvinceHistoryRow, TurnRow, UnitHistoryRow, UnitRow } from '../../database/schema/table-fields';
+import { CountryHistoryRow, DbStates, GameRow, OrderRow, OrderSetRow, ProvinceHistoryRow, TurnRow, UnitHistoryRow, UnitRow } from '../../database/schema/table-fields';
 import { CountryStatus } from '../../models/enumeration/country-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { OrderStatus } from '../../models/enumeration/order-status-enum';
 import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 import { TurnTS } from '../../models/objects/database-objects';
-import { CountryState } from '../../models/objects/games/country-state-objects';
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
@@ -26,6 +26,7 @@ import {
   TransferResources,
   TransportAttempt,
   TransportNetworkUnit,
+  UnitMovementResults,
   UnitOrderGroups,
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
@@ -72,20 +73,22 @@ export class ResolutionService {
     const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
 
     // DB Update
-    const gameUpdate: GameRow = {};
-    const turnUpdate: TurnRow = {}
+    const dbUpdates: DbStates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      orders: [],
+      units: [],
+      unitHistories: [],
+      provinceHistories: [],
+      countryHistories: []
+    };
 
-    const orderSetUpdates: OrderSetRow[] = [];
-    const orderUpdates: OrderRow[] = [];
-
-    // DB Inserts
-    const unitInserts: UnitRow[] = []; // Builds
-    const unitHistoryInserts: UnitHistoryRow[] = [];
-
-    const provinceHistoryInserts: ProvinceHistoryRow[] = [];
-
-    const currentCountryHistories: CountryHistoryRow[] = await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber);
-    const countryHistoryInserts: CountryHistoryRow[] = [];
+    const dbStates: DbStates = {
+      countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber),
+      provinceHistories: [],
+      unitHistories: []
+    }
 
     if (turnsWithUnitOrders.includes(turn.turnType)) {
       const currentProvinceHistories: ProvinceHistoryRow[] = await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber);
@@ -94,13 +97,28 @@ export class ResolutionService {
       const unitMovementResults: UnitOrderResolution[] = await this.resolveUnitOrders(gameState, turn);
 
       unitMovementResults.forEach((result: UnitOrderResolution) => {
-        // Orders => OrderSets => Units => Provinces => Countries
+        if (result.orderType === OrderDisplay.NUKE) {
+          this.prepareNuclearStrikeRows(result, dbStates, dbUpdates);
+        }
 
-        // Order and Order Set Update
+        if (result.unit.status === UnitStatus.NUKED) {
+          this.prepareNuclearVictimRows(result, dbStates, dbUpdates);
+        }
+
+        // Armies and Fleets
+        if (result.unit.status === UnitStatus.ACTIVE && result.unit.canCapture) {
+          // this.prepareUnitClaimRows(result, dbStates, dbUpdates);
+        }
+
+        // Wings and Nukes
+        if (result.unit.status === UnitStatus.ACTIVE && !result.unit.canCapture) {
+          // this.prepareUnitMovementRows(result, dbStates, dbUpdates);
+        }
+
         if (result.orderId > 0) {
-          orderUpdates.push({
+          dbUpdates.orders?.push({
             orderId: result.orderId,
-            orderStatus: 'Processed',
+            orderStatus: OrderStatus.PROCESSED,
             orderSuccess: result.orderSuccess,
             power: result.power,
             description: result.description,
@@ -109,176 +127,6 @@ export class ResolutionService {
           });
         }
 
-        // Order Sets
-
-        // Units
-        const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
-        const currentUnitState: UnitHistoryRow | undefined = currentUnitHistories.find(
-          (unitState: UnitHistoryRow) => unitState.unitId === result.unit.id
-        );
-
-        if (!currentUnitState) {
-          terminalLog(`No pre-existing unit history for ordered unit ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`);
-          return;
-        }
-
-        if (currentUnitState.nodeId !== finalPosition.nodeId || currentUnitState.unitStatus !== result.unit.status) {
-          unitHistoryInserts.push({
-            unitId: result.unit.id,
-            nodeId: result.destination.nodeId,
-            unitStatus: result.unit.status
-          });
-        }
-
-        // Nuclear Detonation
-        if (result.orderType === OrderDisplay.NUKE) {
-          // Province
-          provinceHistoryInserts.push({
-            provinceId: finalPosition.provinceId,
-            controllerId: finalPosition.controllerId,
-            capitalOwnerId: finalPosition.capitalOwnerId,
-            provinceStatus: ProvinceStatus.NUKED,
-            validRetreat: false
-          });
-
-          // Controlling Country
-          const controllingCountry = currentCountryHistories.find(
-            (country: CountryHistoryRow) => country.countryId === result.unit.countryId
-          );
-
-          if (!controllingCountry) {
-            terminalLog(`No pre-existing country history for nuke firing country ${result.unit.countryName} (${result.unit.countryId}) | Unit (${result.unit.id})`);
-            return;
-          }
-
-          const pendingControllingCountryChange = countryHistoryInserts.find(
-            (country: CountryHistoryRow) => country.countryId === result.unit.countryId
-          )
-
-          if (pendingControllingCountryChange) {
-            pendingControllingCountryChange.adjustments++;
-            pendingControllingCountryChange.unitCount--;
-
-          } else {
-            countryHistoryInserts.push({
-              builds: controllingCountry.builds,
-              countryId: controllingCountry.countryId,
-              countryStatus: CountryStatus.ACTIVE,
-              cityCount: controllingCountry.cityCount,
-              unitCount: controllingCountry.unitCount--,
-              bankedBuilds: controllingCountry.bankedBuilds,
-              nukeRange: controllingCountry.nukeRange,
-              adjustments: controllingCountry.adjustments++,
-              inRetreat: controllingCountry.inRetreat,
-              voteCount: controllingCountry.voteCount,
-              nukesInProduction: controllingCountry.nukesInProduction
-            });
-          }
-
-          // Victim Country
-          if (finalPosition.controllerId && finalPosition.provinceStatus === ProvinceStatus.ACTIVE) {
-            const pendingTargetCountryChange = countryHistoryInserts.find(
-              (country: CountryHistoryRow) => country.countryId === finalPosition.controllerId
-            );
-
-            const targettedCountry = currentCountryHistories.find(
-              (country: CountryHistoryRow) => country.countryId === result.unit.countryId
-            );
-
-            if (!targettedCountry) {
-              terminalLog(`No pre-existing country history for nuke targetted country (${result.unit.countryId})`);
-              return;
-            }
-
-            const pendingTargettedCountryChange = countryHistoryInserts.find(
-              (country: CountryHistoryRow) => country.countryId === targettedCountry.countryId
-            );
-
-            if (pendingControllingCountryChange) {
-              pendingControllingCountryChange.adjustments--;
-            } else {
-              countryHistoryInserts.push({
-                builds: controllingCountry.builds,
-                countryId: controllingCountry.countryId,
-                countryStatus: CountryStatus.ACTIVE,
-                cityCount: controllingCountry.cityCount,
-                unitCount: controllingCountry.unitCount,
-                bankedBuilds: controllingCountry.bankedBuilds,
-                nukeRange: controllingCountry.nukeRange,
-                adjustments: controllingCountry.adjustments--,
-                inRetreat: controllingCountry.inRetreat,
-                voteCount: controllingCountry.voteCount,
-                nukesInProduction: controllingCountry.nukesInProduction
-              });
-            }
-          }
-        }
-
-        // Owning Country
-        // if (
-        //   [OrderDisplay.DISBAND, OrderDisplay.NUKE].includes(result.orderType) ||
-        //   result.unit.status === UnitStatus.NUKED
-        // ) {
-        //   const countryHistory = currentCountryHistories.find(
-        //     (country: CountryHistoryRow) => country.countryId === result.unit.countryId
-        //   );
-        //   if (countryHistory) {
-        //     countryHistory.adjustments++;
-        //     countryHistory.unitCount--;
-        //   }
-        // }
-
-        // Wings vacating bombarded provinces
-        if (result.unit.type === UnitType.WING
-          && result.orderType === OrderDisplay.MOVE
-          && result.orderSuccess === true
-          && result.origin.provinceStatus === ProvinceStatus.BOMBARDED) {
-          const originPosition: OrderResolutionLocation = result.origin;
-          const originUpdateExists: ProvinceHistoryRow | undefined = provinceHistoryInserts.find(
-            (provinceHistory: ProvinceHistoryRow) => provinceHistory.provinceId === originPosition?.provinceId
-          );
-          if (!originUpdateExists) {
-            provinceHistoryInserts.push({
-              provinceId: originPosition.provinceId,
-              controllerId: originPosition.controllerId,
-              capitalOwnerId: originPosition.capitalOwnerId,
-              provinceStatus: ProvinceStatus.ACTIVE,
-              validRetreat: true
-            });
-          }
-        }
-
-        // Province Claiming
-        let provinceHistory = provinceHistoryInserts.find(
-          (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
-        );
-        if (provinceHistory) {
-          provinceHistory.controllerId = this.resolveControllerId(result, finalPosition, turn);
-          provinceHistory.provinceStatus = this.resolveProvinceStatus(result, finalPosition, turn);
-        } else {
-          provinceHistory = this.createProvinceHistory(result, finalPosition, turn);
-        }
-
-        // Setting Province Contested
-        if (
-          [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType) &&
-          [UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(result.unit.status) &&
-          [UnitType.ARMY, UnitType.FLEET, UnitType.WING].includes(result.unit.type) &&
-          result.orderSuccess === false
-        ) {
-          const bounceFound = provinceHistoryInserts.find(
-            (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
-          );
-          if (!bounceFound) {
-            provinceHistoryInserts.push({
-              provinceId: result.destination.provinceId,
-              controllerId: result.destination.controllerId,
-              capitalOwnerId: result.destination.capitalOwnerId,
-              provinceStatus: result.destination.provinceStatus,
-              validRetreat: false
-            });
-          }
-        }
       });
     }
 
@@ -287,27 +135,27 @@ export class ResolutionService {
 
       transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
         if (result.success && result.hasNukes) {
-          const partnerHistory = currentCountryHistories.find(
-            (country: CountryState) => country.countryId === result.techPartnerId
-          );
-          if (partnerHistory) {
-            partnerHistory.nukeRange = gameState.defaultNukeRange;
-          }
+          // const partnerHistory = dbStates.countryHistories?.find(
+          //   (country: CountryState) => country.countryId === result.techPartnerId
+          // );
+          // if (partnerHistory) {
+          //   partnerHistory.nukeRange = gameState.defaultNukeRange;
+          // }
         }
       });
 
       transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
         if (result.builds > 0) {
-          const playerCountry = currentCountryHistories.find(
-            (country: CountryState) => country.countryId === result.playerCountryId
-          );
-          const partnerCountry = currentCountryHistories.find(
-            (country: CountryState) => country.countryId === result.countryId
-          );
-          if (playerCountry && partnerCountry) {
-            playerCountry.builds -= result.builds;
-            partnerCountry.builds += result.builds;
-          }
+          // const playerCountry = dbStates.countryHistories?.find(
+          //   (country: CountryState) => country.countryId === result.playerCountryId
+          // );
+          // const partnerCountry = dbStates.countryHistories?.find(
+          //   (country: CountryState) => country.countryId === result.countryId
+          // );
+          // if (playerCountry && partnerCountry) {
+          //   playerCountry.builds -= result.builds;
+          //   partnerCountry.builds += result.builds;
+          // }
         }
       });
     }
@@ -1237,5 +1085,218 @@ export class ResolutionService {
       };
     }
     return provinceHistory;
+  }
+
+  /**
+   * Prepares DB rows for the firing nuke and impacted countries and province.
+   * The target of the nuke resolves its destruction elsewhere.
+   */
+  prepareNuclearStrikeRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+    const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
+    const currentUnitHistory: UnitHistoryRow | undefined = dbStates.unitHistories?.find(
+      (unitState: UnitHistoryRow) => unitState.unitId === result.unit.id
+    );
+
+    if (!currentUnitHistory) {
+      terminalLog(`No pre-existing unit history for ordered unit ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`);
+      return;
+    }
+
+    if (currentUnitHistory.nodeId !== finalPosition.nodeId || currentUnitHistory.unitStatus !== result.unit.status) {
+      dbUpdates.unitHistories?.push({
+        unitId: result.unit.id,
+        nodeId: result.destination.nodeId,
+        unitStatus: result.unit.status
+      });
+    }
+
+    // Province
+    const newProvinceHistory: ProvinceHistoryRow = this.rowifyResultLocation(finalPosition);
+    newProvinceHistory.provinceStatus = ProvinceStatus.NUKED;
+    newProvinceHistory.validRetreat = false;
+    dbUpdates.provinceHistories?.push(newProvinceHistory);
+
+    // Controlling Country
+    const controllingCountryHistory = dbStates.countryHistories?.find(
+      (country: CountryHistoryRow) => country.countryId === result.unit.countryId
+    );
+
+    if (!controllingCountryHistory) {
+      terminalLog(`No pre-existing country history for nuke firing country ${result.unit.countryName} (${result.unit.countryId}) | Unit (${result.unit.id})`);
+      return;
+    }
+
+    const pendingControllingCountryChange = dbUpdates.countryHistories?.find(
+      (country: CountryHistoryRow) => country.countryId === result.unit.countryId
+    )
+
+    if (pendingControllingCountryChange) {
+      pendingControllingCountryChange.adjustments++;
+      pendingControllingCountryChange.unitCount--;
+
+    } else {
+      const newCountryHistory: CountryHistoryRow = this.copyCountryHistory(controllingCountryHistory);
+      newCountryHistory.unitCount--;
+      newCountryHistory.adjustments++;
+      dbUpdates.countryHistories?.push(newCountryHistory);
+    }
+
+    // Victim Country
+    if (finalPosition.controllerId && finalPosition.provinceStatus === ProvinceStatus.ACTIVE) {
+      const targetCountryHistory = dbStates.countryHistories?.find(
+        (country: CountryHistoryRow) => country.countryId === result.unit.countryId
+      );
+
+      if (!targetCountryHistory) {
+        terminalLog(`No pre-existing country history for nuke targetted country (${result.unit.countryId})`);
+        return;
+      }
+
+      const pendingTargetCountryChange = dbUpdates.countryHistories?.find(
+        (country: CountryHistoryRow) => country.countryId === targetCountryHistory.countryId
+      );
+
+      if (pendingTargetCountryChange) {
+        pendingTargetCountryChange.adjustments--;
+
+      } else {
+        const newTargetCountryHistory = this.copyCountryHistory(targetCountryHistory);
+        newTargetCountryHistory.cityCount--;
+        newTargetCountryHistory.adjustments--;
+        dbUpdates.countryHistories?.push(newTargetCountryHistory);
+      }
+    }
+  }
+
+  prepareNuclearVictimRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+    dbUpdates.unitHistories?.push({
+      unitId: result.unit.id,
+      nodeId: result.origin.nodeId,
+      unitStatus: UnitStatus.NUKED
+    });
+
+    const pendingCountryHistory = dbUpdates.countryHistories?.find(
+      (country: CountryHistoryRow) => country.countryId === result.unit.countryId
+    );
+
+    if (pendingCountryHistory) {
+      pendingCountryHistory.unitCount--;
+      pendingCountryHistory.adjustments++;
+    } else {
+      const currentCountryHistory = dbStates.countryHistories?.find(
+        (countryHistory: CountryHistoryRow) => countryHistory.countryId === result.unit.countryId
+      );
+
+      if (!currentCountryHistory) {
+        terminalLog(`No pre-existing country history for nuke targetted unit (${result.unit.countryId})`);
+        return;
+      }
+
+      const newCountryHistory = this.copyCountryHistory(currentCountryHistory);
+      newCountryHistory.unitCount--;
+      newCountryHistory.adjustments++;
+      dbUpdates.countryHistories?.push(newCountryHistory);
+    }
+  }
+
+  prepareProvinceClaimRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+    // Province Claiming
+    const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
+    let provinceHistory = dbUpdates.provinceHistories?.find(
+      (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
+    );
+    if (provinceHistory) {
+      // provinceHistory.controllerId = this.resolveControllerId(result, finalPosition, turn);
+      // provinceHistory.provinceStatus = this.resolveProvinceStatus(result, finalPosition, turn);
+    } else {
+      // provinceHistory = this.createProvinceHistory(result, finalPosition, turn);
+    }
+
+    // Setting Province Contested
+    if (
+      [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType) &&
+      [UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(result.unit.status) &&
+      [UnitType.ARMY, UnitType.FLEET, UnitType.WING].includes(result.unit.type) &&
+      result.orderSuccess === false
+    ) {
+      const bounceFound = dbUpdates.provinceHistories?.find(
+        (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
+      );
+      if (!bounceFound) {
+        dbUpdates.provinceHistories?.push({
+          provinceId: result.destination.provinceId,
+          controllerId: result.destination.controllerId,
+          capitalOwnerId: result.destination.capitalOwnerId,
+          provinceStatus: result.destination.provinceStatus,
+          validRetreat: false
+        });
+      }
+    }
+  }
+
+  prepareUnitMovementRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+    // Wings vacating bombarded provinces
+    if (result.unit.type === UnitType.WING
+      && result.orderType === OrderDisplay.MOVE
+      && result.orderSuccess === true
+      && result.origin.provinceStatus === ProvinceStatus.BOMBARDED) {
+      const originPosition: OrderResolutionLocation = result.origin;
+      const originUpdateExists: ProvinceHistoryRow | undefined = dbUpdates.provinceHistories?.find(
+        (provinceHistory: ProvinceHistoryRow) => provinceHistory.provinceId === originPosition?.provinceId
+      );
+      if (!originUpdateExists) {
+        dbUpdates.provinceHistories?.push({
+          provinceId: originPosition.provinceId,
+          controllerId: originPosition.controllerId,
+          capitalOwnerId: originPosition.capitalOwnerId,
+          provinceStatus: ProvinceStatus.ACTIVE,
+          validRetreat: true
+        });
+      }
+    }
+  }
+
+  rowifyResultLocation(location: OrderResolutionLocation): ProvinceHistoryRow {
+    return {
+      provinceId: location.provinceId,
+      controllerId: location.controllerId,
+      capitalOwnerId: location.capitalOwnerId,
+      provinceStatus: location.provinceStatus,
+      validRetreat: location.validRetreat
+    }
+  }
+
+  /**
+   * Duplicates a unit history row for manipulation without undesired referencing behavior.
+   * @param unitHistory
+   * @returns
+   */
+  copyUnitHistory(unitHistory: UnitHistoryRow): UnitHistoryRow {
+    return {
+      unitId: unitHistory.unitId,
+      nodeId: unitHistory.nodeId,
+      unitStatus: unitHistory.unitStatus
+    };
+  }
+
+  /**
+   * Duplicates a country history row for manipulation without undesired referencing behavior.
+   * @param countryHistory
+   * @returns
+   */
+  copyCountryHistory(countryHistory: CountryHistoryRow): CountryHistoryRow {
+    return {
+      builds: countryHistory.builds,
+      countryId: countryHistory.countryId,
+      countryStatus: countryHistory.countryStatus,
+      cityCount: countryHistory.cityCount,
+      unitCount: countryHistory.unitCount,
+      bankedBuilds: countryHistory.bankedBuilds,
+      nukeRange: countryHistory.nukeRange,
+      adjustments: countryHistory.adjustments,
+      inRetreat: countryHistory.inRetreat,
+      voteCount: countryHistory.voteCount,
+      nukesInProduction: countryHistory.nukesInProduction
+    };
   }
 }
