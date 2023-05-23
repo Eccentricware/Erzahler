@@ -110,14 +110,12 @@ export class ResolutionService {
           this.prepareNuclearVictimRows(result, dbStates, dbUpdates);
         }
 
-        // Armies and Fleets
         if (result.unit.status === UnitStatus.ACTIVE && result.unit.canCapture) {
           this.prepareClaimingUnitRows(result, dbStates, dbUpdates, claimingSeason);
         }
 
-        // Wings and Nukes
-        if (result.unit.status === UnitStatus.ACTIVE && !result.unit.canCapture) {
-          // this.prepareUnitMovementRows(result, dbStates, dbUpdates);
+        if (result.unit.status === UnitStatus.ACTIVE && result.unit.type === UnitType.WING) {
+          this.prepareBombardRows(result, dbStates, dbUpdates, claimingSeason);
         }
 
         if (result.orderId > 0) {
@@ -1176,7 +1174,6 @@ export class ResolutionService {
         (
           [ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus)
           && finalPosition.controllerId !== result.unit.countryId
-          && !claimingSeason
         )
       ) {
         newProvinceHistory.controllerId = result.unit.countryId;
@@ -1214,26 +1211,77 @@ export class ResolutionService {
     }
   }
 
-  prepareStandardResolutionRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
-    // Wings vacating bombarded provinces
-    if (result.unit.type === UnitType.WING
-      && result.orderType === OrderDisplay.MOVE
-      && result.orderSuccess === true
-      && result.origin.provinceStatus === ProvinceStatus.BOMBARDED) {
-      const originPosition: OrderResolutionLocation = result.origin;
-      const originUpdateExists: ProvinceHistoryRow | undefined = dbUpdates.provinceHistories?.find(
-        (provinceHistory: ProvinceHistoryRow) => provinceHistory.provinceId === originPosition?.provinceId
-      );
-      if (!originUpdateExists) {
-        dbUpdates.provinceHistories?.push({
-          provinceId: originPosition.provinceId,
-          controllerId: originPosition.controllerId,
-          capitalOwnerId: originPosition.capitalOwnerId,
-          provinceStatus: ProvinceStatus.ACTIVE,
-          validRetreat: true
-        });
+  prepareBombardRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates, claimingSeason: boolean) {
+    const unitHistory = dbStates.unitHistories?.find(
+      (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
+    );
+
+    if (!unitHistory) {
+      terminalLog(`No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`);
+      return;
+    }
+
+    const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
+    if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
+      const newUnitHistory = this.copyUnitHistory(unitHistory);
+      newUnitHistory.nodeId = finalPosition.nodeId;
+      newUnitHistory.unitStatus = result.unit.status;
+      dbUpdates.unitHistories?.push(newUnitHistory);
+    }
+
+    let provinceHistory = dbStates.provinceHistories?.find(
+      (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
+    );
+
+    if (!provinceHistory) {
+      terminalLog(`No pre-existing province history for ${finalPosition.provinceName} (${finalPosition.provinceId})`);
+      return;
+    }
+
+    if ([ProvinceType.COAST, ProvinceType.INLAND, ProvinceType.ISLAND].includes(finalPosition.provinceType)) {
+      let provinceStateChanged = false;
+      const newProvinceHistory = this.rowifyResultLocation(finalPosition);
+
+      // Control
+      if (
+        [ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus)
+        && finalPosition.controllerId !== result.unit.countryId
+      ) {
+        newProvinceHistory.controllerId = result.unit.countryId;
+        provinceStateChanged = true;
+      }
+
+      // Status
+      if (
+        finalPosition.provinceStatus === ProvinceStatus.ACTIVE
+        && finalPosition.controllerId !== result.unit.countryId
+        && claimingSeason
+      ) {
+        newProvinceHistory.provinceStatus = ProvinceStatus.BOMBARDED;
+        provinceStateChanged = true;
+      }
+
+      if (provinceStateChanged) {
+        dbUpdates.provinceHistories?.push(newProvinceHistory);
       }
     }
+
+    // Setting Province Contested
+    if (
+      result.orderType === OrderDisplay.MOVE
+      && result.orderSuccess === false
+      && result.destination.contested
+    ) {
+      const bounceFound = dbUpdates.provinceHistories?.find(
+        (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
+      );
+      if (!bounceFound) {
+        const newBounceProvinceHistory = this.rowifyResultLocation(result.destination);
+        newBounceProvinceHistory.validRetreat = false;
+        dbUpdates.provinceHistories?.push(newBounceProvinceHistory);
+      }
+    }
+
   }
 
   /**
