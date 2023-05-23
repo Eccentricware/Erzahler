@@ -21,9 +21,10 @@ import { envCredentials } from '../../secrets/dbCredentials';
 import { getTransferValidationDataQuery } from '../queries/resolution/get-transfer-validation-data-query';
 import { getTransportNetworkValidation } from '../queries/resolution/get-transport-network-validation-query';
 import { getUnitOrdersForResolutionQuery } from '../queries/resolution/get-unit-orders-for-resolution-query';
-import { Unit, UnitResult } from '../../models/objects/map-objects';
 import { getRemainingGarrisonsQuery } from '../queries/resolution/get-remaining-garrisons-query';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { ProvinceHistoryRow, ProvinceHistoryRowResult } from '../schema/table-fields';
+import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-bombards-query';
 
 export class ResolutionRepository {
   pool = new Pool(envCredentials);
@@ -221,5 +222,14 @@ export class ResolutionRepository {
         };
       })
     );
+  }
+
+  async getAbandonedBombards(gameId: number, turnNumber: number): Promise<ProvinceHistoryRow[]> {
+    return await this.pool.query(getAbandonedBombardsQuery, [gameId, turnNumber])
+      .then((result: QueryResult) => result.rows.map((province: ProvinceHistoryRowResult) => {
+        return <ProvinceHistoryRow>{
+
+        }
+      }))
   }
 }

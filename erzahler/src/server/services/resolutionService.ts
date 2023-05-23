@@ -129,8 +129,9 @@ export class ResolutionService {
             secondaryResolution: result.secondaryResolution
           });
         }
-
       });
+
+      const abandonedBombards: ProvinceHistoryRow[] = await this.getAbandonedBombards(gameState);
     }
 
     if (turnsWithTransfers.includes(turn.turnType)) {
@@ -1282,6 +1283,10 @@ export class ResolutionService {
       }
     }
 
+  }
+
+  async getAbandonedBombards(gameState: GameState): Promise<ProvinceHistoryRow[]> {
+    return await db.resolutionRepo.getAbandonedBombards(gameState.gameId, gameState.turnNumber);
   }
 
   /**
