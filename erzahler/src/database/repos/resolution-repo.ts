@@ -1,5 +1,5 @@
 import { Pool, QueryResult } from 'pg';
-import { IDatabase, IMain } from 'pg-promise';
+import { ColumnSet, IDatabase, IMain } from 'pg-promise';
 import { UnitType } from '../../models/enumeration/unit-enum';
 import {
   AdjacentTransport,
@@ -27,9 +27,42 @@ import { ProvinceHistoryRow, ProvinceHistoryRowResult } from '../schema/table-fi
 import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-bombards-query';
 
 export class ResolutionRepository {
+  provinceHistoryCols: ColumnSet<unknown>;
   pool = new Pool(envCredentials);
 
-  constructor(private db: IDatabase<any>, private pgp: IMain) {}
+  constructor(private db: IDatabase<any>, private pgp: IMain) {
+    this.provinceHistoryCols = new pgp.helpers.ColumnSet(
+      [
+        'province_id',
+        'turn_id',
+        'controller_id',
+        'capital_owner_id',
+        'province_status',
+        'valid_retreat'
+      ],
+      { table: 'province_histories'}
+    );
+  }
+
+  async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {
+    const provinceHistoryValues = abandonedBombards.map(
+      (provinceHistory: ProvinceHistoryRow) => {
+        return {
+          province_id: provinceHistory.provinceId,
+          turn_id: turnId,
+          controller_id: provinceHistory.controllerId,
+          capital_owner_id: provinceHistory.capitalOwnerId,
+          province_status: provinceHistory.provinceStatus,
+          valid_retreat: provinceHistory.validRetreat
+        };
+      }
+    );
+
+    const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
+    return this.db.query(query);
+  }
+
+  // Legacy Queries
 
   /**
    *

@@ -131,37 +131,37 @@ export class ResolutionService {
         }
       });
 
-      const abandonedBombards: ProvinceHistoryRow[] = await this.getAbandonedBombards(gameState);
+
     }
 
     if (turnsWithTransfers.includes(turn.turnType)) {
-      const transferResults = await this.resolveTransfers(gameState, turn);
+      // const transferResults = await this.resolveTransfers(gameState, turn);
 
-      transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
-        if (result.success && result.hasNukes) {
-          // const partnerHistory = dbStates.countryHistories?.find(
-          //   (country: CountryState) => country.countryId === result.techPartnerId
-          // );
-          // if (partnerHistory) {
-          //   partnerHistory.nukeRange = gameState.defaultNukeRange;
-          // }
-        }
-      });
+      // transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
+      //   if (result.success && result.hasNukes) {
+      //     const partnerHistory = dbStates.countryHistories?.find(
+      //       (country: CountryState) => country.countryId === result.techPartnerId
+      //     );
+      //     if (partnerHistory) {
+      //       partnerHistory.nukeRange = gameState.defaultNukeRange;
+      //     }
+      //   }
+      // });
 
-      transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
-        if (result.builds > 0) {
-          // const playerCountry = dbStates.countryHistories?.find(
-          //   (country: CountryState) => country.countryId === result.playerCountryId
-          // );
-          // const partnerCountry = dbStates.countryHistories?.find(
-          //   (country: CountryState) => country.countryId === result.countryId
-          // );
-          // if (playerCountry && partnerCountry) {
-          //   playerCountry.builds -= result.builds;
-          //   partnerCountry.builds += result.builds;
-          // }
-        }
-      });
+      // transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
+      //   if (result.builds > 0) {
+      //     // const playerCountry = dbStates.countryHistories?.find(
+      //     //   (country: CountryState) => country.countryId === result.playerCountryId
+      //     // );
+      //     // const partnerCountry = dbStates.countryHistories?.find(
+      //     //   (country: CountryState) => country.countryId === result.countryId
+      //     // );
+      //     // if (playerCountry && partnerCountry) {
+      //     //   playerCountry.builds -= result.builds;
+      //     //   partnerCountry.builds += result.builds;
+      //     // }
+      //   }
+      // });
     }
 
     // if (turnsWithAdjustments.includes(turn.turnType)) {
@@ -176,7 +176,22 @@ export class ResolutionService {
     //   this.resolveVotes(gameState, turn);
     // }
 
-    console.log('Db Write Time!');
+    console.log('DB: Game Update'); // Irrelevant order
+    console.log('DB: Turn Update');
+    console.log('DB: Order Set Update');
+    console.log('DB: Order Update');
+
+    console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
+    console.log('DB: Unit Insert'); // Builds
+    console.log('DB: Unit History Insert'); // Anytime
+    console.log('DB: Province History Insert');
+    console.log('DB: Country History Insert'); // Tech transfers and nuclear range
+
+    const abandonedBombards: ProvinceHistoryRow[] = await this.getAbandonedBombards(gameState);
+    this.restoreBombardedProvinces(abandonedBombards, 1);
+
+    console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
+    console.log('Triggering next turn defaults');
 
     // DB Write
 
@@ -1287,6 +1302,10 @@ export class ResolutionService {
 
   async getAbandonedBombards(gameState: GameState): Promise<ProvinceHistoryRow[]> {
     return await db.resolutionRepo.getAbandonedBombards(gameState.gameId, gameState.turnNumber);
+  }
+
+  async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {
+    return await db.resolutionRepo.restoreBombardedProvinces(abandonedBombards, turnId);
   }
 
   /**
