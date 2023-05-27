@@ -69,14 +69,14 @@ export interface GameRowResult {
 }
 
 export interface DbStates {
-  game?: GameRow;
-  turn?: TurnRow;
-  orderSets?: OrderSetRow[];
-  orders?: OrderRow[];
-  units?: UnitRow[];
-  unitHistories?: UnitHistoryRow[];
-  provinceHistories?: ProvinceHistoryRow[];
-  countryHistories?: CountryHistoryRow[];
+  game: GameRow;
+  turn: TurnRow;
+  orderSets: OrderSetRow[];
+  orders: OrderRow[];
+  units: UnitRow[];
+  unitHistories: UnitHistoryRow[];
+  provinceHistories: ProvinceHistoryRow[];
+  countryHistories: CountryHistoryRow[];
 }
 
 export interface GameRow {

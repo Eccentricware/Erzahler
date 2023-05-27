@@ -337,14 +337,14 @@ export class SchedulerService {
     return true;
   }
 
-  findNextTurns(currentTurn: TurnType, gameState: GameState): NextTurns {
+  findNextTurns(currentTurn: UpcomingTurn, gameState: GameState, unitsRetreating: boolean): NextTurns {
     const nextTurns: NextTurns = { pending: { type: TurnType.SPRING_ORDERS } };
     const nominationsStarted = this.checkNominationsStarted(gameState);
     const nominateDuringAdjustments = gameState.nominateDuringAdjustments;
     const voteDuringSpring = gameState.voteDuringSpring;
 
     // (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
-    if (currentTurn === TurnType.ORDERS_AND_VOTES) {
+    if (currentTurn.turnType === TurnType.ORDERS_AND_VOTES) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
         nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
@@ -354,7 +354,7 @@ export class SchedulerService {
     }
 
     // Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> Votes ->
-    if (currentTurn === TurnType.SPRING_ORDERS) {
+    if (currentTurn.turnType === TurnType.SPRING_ORDERS) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
         nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
@@ -364,12 +364,12 @@ export class SchedulerService {
     }
 
     // Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) ->
-    if (currentTurn === TurnType.SPRING_RETREATS) {
+    if (currentTurn.turnType === TurnType.SPRING_RETREATS) {
       nextTurns.pending.type = TurnType.FALL_ORDERS;
     }
 
     // Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats ->
-    if (currentTurn === TurnType.FALL_ORDERS) {
+    if (currentTurn.turnType === TurnType.FALL_ORDERS) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.FALL_RETREATS;
 
@@ -388,7 +388,7 @@ export class SchedulerService {
     }
 
     // Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders ->
-    if (currentTurn === TurnType.FALL_RETREATS) {
+    if (currentTurn.turnType === TurnType.FALL_RETREATS) {
       if (nominationsStarted && nominateDuringAdjustments) {
         nextTurns.pending.type = TurnType.ADJ_AND_NOM;
       } else if (nominationsStarted && !nominateDuringAdjustments) {
@@ -400,7 +400,7 @@ export class SchedulerService {
     }
 
     // Adjustments -> Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
-    if (currentTurn === TurnType.ADJUSTMENTS) {
+    if (currentTurn.turnType === TurnType.ADJUSTMENTS) {
       // nominateDuringAdjustments === false
       if (nominationsStarted) {
         nextTurns.pending.type = TurnType.NOMINATIONS;
@@ -410,7 +410,7 @@ export class SchedulerService {
     }
 
     // (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
-    if (currentTurn === TurnType.ADJ_AND_NOM) {
+    if (currentTurn.turnType === TurnType.ADJ_AND_NOM) {
       if (nominationsStarted && voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
       } else {
@@ -419,7 +419,7 @@ export class SchedulerService {
     }
 
     // Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> Adjustments ->
-    if (currentTurn === TurnType.NOMINATIONS) {
+    if (currentTurn.turnType === TurnType.NOMINATIONS) {
       // nominationsStarted === true && nominateDuringAdjustments === false
       if (voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
@@ -430,7 +430,7 @@ export class SchedulerService {
     }
 
     // Votes -> Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
-    if (currentTurn === TurnType.VOTES) {
+    if (currentTurn.turnType === TurnType.VOTES) {
       nextTurns.pending.type = TurnType.SPRING_ORDERS;
     }
 
