@@ -23,8 +23,9 @@ import { getTransportNetworkValidation } from '../queries/resolution/get-transpo
 import { getUnitOrdersForResolutionQuery } from '../queries/resolution/get-unit-orders-for-resolution-query';
 import { getRemainingGarrisonsQuery } from '../queries/resolution/get-remaining-garrisons-query';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
-import { ProvinceHistoryRow, ProvinceHistoryRowResult } from '../schema/table-fields';
+import { OrderRow, ProvinceHistoryRow, ProvinceHistoryRowResult } from '../schema/table-fields';
 import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-bombards-query';
+import { updateOrderQuery } from '../queries/resolution/update-order-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -42,6 +43,20 @@ export class ResolutionRepository {
       ],
       { table: 'province_histories'}
     );
+  }
+
+  async updateOrders(orders: OrderRow[]): Promise<void> {
+    orders.forEach(async (order: OrderRow) => {
+      await this.pool.query(updateOrderQuery, [
+        order.orderStatus,
+        order.orderSuccess,
+        order.power,
+        order.valid,
+        order.description,
+        order.primaryResolution,
+        order.secondaryResolution
+      ]);
+    });
   }
 
   async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {

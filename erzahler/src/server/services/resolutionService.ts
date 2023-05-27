@@ -375,6 +375,7 @@ export class ResolutionService {
     });
 
     if (dbUpdates.orders.length > 0) {
+      // db.resolutionRepo.updateOrders(dbUpdates.orders);
       console.log('DB: Order Update', dbUpdates.orders);
     }
 
