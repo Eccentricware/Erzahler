@@ -17,7 +17,6 @@ import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-obje
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
-import { setInterval } from 'timers';
 import { terminalLog } from '../utils/general';
 
 export class SchedulerService {
@@ -338,14 +337,14 @@ export class SchedulerService {
     return true;
   }
 
-  findNextTurns(gameState: GameState): NextTurns {
+  findNextTurns(currentTurn: TurnType, gameState: GameState): NextTurns {
     const nextTurns: NextTurns = { pending: { type: TurnType.SPRING_ORDERS } };
     const nominationsStarted = this.checkNominationsStarted(gameState);
     const nominateDuringAdjustments = gameState.nominateDuringAdjustments;
     const voteDuringSpring = gameState.voteDuringSpring;
 
     // (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
-    if (gameState.turnType === TurnType.ORDERS_AND_VOTES) {
+    if (currentTurn === TurnType.ORDERS_AND_VOTES) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
         nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
@@ -355,7 +354,7 @@ export class SchedulerService {
     }
 
     // Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> Votes ->
-    if (gameState.turnType === TurnType.SPRING_ORDERS) {
+    if (currentTurn === TurnType.SPRING_ORDERS) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
         nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
@@ -365,12 +364,12 @@ export class SchedulerService {
     }
 
     // Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) ->
-    if (gameState.turnType === TurnType.SPRING_RETREATS) {
+    if (currentTurn === TurnType.SPRING_RETREATS) {
       nextTurns.pending.type = TurnType.FALL_ORDERS;
     }
 
     // Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats ->
-    if (gameState.turnType === TurnType.FALL_ORDERS) {
+    if (currentTurn === TurnType.FALL_ORDERS) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.FALL_RETREATS;
 
@@ -389,7 +388,7 @@ export class SchedulerService {
     }
 
     // Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders ->
-    if (gameState.turnType === TurnType.FALL_RETREATS) {
+    if (currentTurn === TurnType.FALL_RETREATS) {
       if (nominationsStarted && nominateDuringAdjustments) {
         nextTurns.pending.type = TurnType.ADJ_AND_NOM;
       } else if (nominationsStarted && !nominateDuringAdjustments) {
@@ -401,7 +400,7 @@ export class SchedulerService {
     }
 
     // Adjustments -> Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
-    if (gameState.turnType === TurnType.ADJUSTMENTS) {
+    if (currentTurn === TurnType.ADJUSTMENTS) {
       // nominateDuringAdjustments === false
       if (nominationsStarted) {
         nextTurns.pending.type = TurnType.NOMINATIONS;
@@ -411,7 +410,7 @@ export class SchedulerService {
     }
 
     // (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
-    if (gameState.turnType === TurnType.ADJ_AND_NOM) {
+    if (currentTurn === TurnType.ADJ_AND_NOM) {
       if (nominationsStarted && voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
       } else {
@@ -420,7 +419,7 @@ export class SchedulerService {
     }
 
     // Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> Adjustments ->
-    if (gameState.turnType === TurnType.NOMINATIONS) {
+    if (currentTurn === TurnType.NOMINATIONS) {
       // nominationsStarted === true && nominateDuringAdjustments === false
       if (voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
@@ -431,7 +430,7 @@ export class SchedulerService {
     }
 
     // Votes -> Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
-    if (gameState.turnType === TurnType.VOTES) {
+    if (currentTurn === TurnType.VOTES) {
       nextTurns.pending.type = TurnType.SPRING_ORDERS;
     }
 
