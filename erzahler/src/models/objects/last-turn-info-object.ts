@@ -34,8 +34,8 @@ export interface GameState {
   turnName: string;
   turnType: TurnType;
   turnStatus: string;
-  pendingTurnId?: number;
-  pendingTurnType?: TurnType;
+  pendingTurnId: number;
+  pendingTurnType: TurnType;
   preliminaryTurnId?: number;
   preliminaryTurnType?: TurnType;
   resolvedTime?: Date;

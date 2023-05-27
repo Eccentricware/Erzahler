@@ -33,9 +33,11 @@ import {
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
 import { terminalLog } from '../utils/general';
 import { OptionsService } from './options-service';
+import { SchedulerService } from './scheduler-service';
 
 export class ResolutionService {
   optionService: OptionsService = new OptionsService();
+  schedulerService: SchedulerService = new SchedulerService();
 
   async startGame(gameData: GameSettings, startDetails: StartDetails): Promise<void> {
     const optionsService = new OptionsService();
@@ -177,18 +179,27 @@ export class ResolutionService {
     // }
 
     console.log('DB: Game Update'); // Irrelevant order
-    console.log('DB: Turn Update');
     console.log('DB: Order Set Update');
     console.log('DB: Order Update');
 
-    console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
+    // Find next turn will require an updated gameState first
+    console.log('DB: Turn Update'); // Pending resolution
+    if (gameState.preliminaryTurnId) {
+      console.log('DB: Turn Update'); // Convert preliminary to pending
+    } else {
+      // Find next turn
+      console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
+    }
+
+    const nextTurns = this.schedulerService.findNextTurns(gameState.pendingTurnType, gameState);
+
     console.log('DB: Unit Insert'); // Builds
     console.log('DB: Unit History Insert'); // Anytime
     console.log('DB: Province History Insert');
     console.log('DB: Country History Insert'); // Tech transfers and nuclear range
 
     const abandonedBombards: ProvinceHistoryRow[] = await this.getAbandonedBombards(gameState);
-    this.restoreBombardedProvinces(abandonedBombards, 1);
+    // this.restoreBombardedProvinces(abandonedBombards, 1);
 
     console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
     console.log('Triggering next turn defaults');
