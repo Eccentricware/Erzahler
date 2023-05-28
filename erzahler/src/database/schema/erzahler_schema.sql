@@ -288,6 +288,7 @@ CREATE TABLE IF NOT EXISTS nodes(
   node_id SERIAL,
   province_id INTEGER NOT NULL,
   node_name VARCHAR(15) NOT NULL,
+  node_display VARCHAR(15) NOT NULL,
   node_type VARCHAR(5) NOT NULL,
   loc INTEGER [] NOT NULL,
   PRIMARY KEY(node_id),

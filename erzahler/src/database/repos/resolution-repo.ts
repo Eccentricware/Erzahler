@@ -23,12 +23,14 @@ import { getTransportNetworkValidation } from '../queries/resolution/get-transpo
 import { getUnitOrdersForResolutionQuery } from '../queries/resolution/get-unit-orders-for-resolution-query';
 import { getRemainingGarrisonsQuery } from '../queries/resolution/get-remaining-garrisons-query';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
-import { OrderRow, ProvinceHistoryRow, ProvinceHistoryRowResult } from '../schema/table-fields';
+import { CountryHistoryRow, OrderRow, ProvinceHistoryRow, ProvinceHistoryRowResult, UnitHistoryRow } from '../schema/table-fields';
 import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-bombards-query';
 import { updateOrderQuery } from '../queries/resolution/update-order-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
+  unitHistoryCols: ColumnSet<unknown>;
+  countryHistoryCols: ColumnSet<unknown>;
   pool = new Pool(envCredentials);
 
   constructor(private db: IDatabase<any>, private pgp: IMain) {
@@ -42,6 +44,32 @@ export class ResolutionRepository {
         'valid_retreat'
       ],
       { table: 'province_histories'}
+    );
+
+    this.unitHistoryCols = new pgp.helpers.ColumnSet(
+      [
+        'unit_id',
+        'turn_id',
+        'node_id',
+        'unit_status'
+      ],
+      { table: 'unit_histories' }
+    );
+
+    this.countryHistoryCols = new pgp.helpers.ColumnSet(
+      [
+        'country_id',
+        'turn_id',
+        'city_count',
+        'unit_count',
+        'banked_builds',
+        'nuke_range',
+        'adjustments',
+        'in_retreat',
+        'vote_count',
+        'nukes_in_production'
+      ],
+      { table: 'country_histories' }
     );
   }
 
@@ -57,6 +85,56 @@ export class ResolutionRepository {
         order.secondaryResolution
       ]);
     });
+  }
+
+  async insertUnitHistories(unitHistories: UnitHistoryRow[]): Promise<void> {
+   const unitHistoryValues = unitHistories.map((unitHistory: UnitHistoryRow) => {
+      return {
+        unit_id: unitHistory.unitId,
+        turn_id: unitHistory.turnId,
+        node_id: unitHistory.nodeId,
+        unit_status: unitHistory.unitStatus
+      };
+   });
+
+    const query = this.pgp.helpers.insert(unitHistoryValues, this.unitHistoryCols);
+    this.db.query(query);
+  }
+
+  async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[]): Promise<void> {
+    const provinceHistoryValues = provinceHistories.map((provinceHistory: ProvinceHistoryRow) => {
+      return {
+        province_id: provinceHistory.provinceId,
+        turn_id: provinceHistory.turnId,
+        controller_id: provinceHistory.controllerId,
+        capital_owner_id: provinceHistory.capitalOwnerId,
+        province_status: provinceHistory.provinceStatus,
+        valid_retreat: provinceHistory.validRetreat
+      };
+    });
+
+    const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
+    this.db.query(query);
+  }
+
+  async insertCountryHistories(countryHistories: CountryHistoryRow[]): Promise<void> {
+    const countryHistoryValues = countryHistories.map((countryHistory: CountryHistoryRow) => {
+      return {
+        country_id: countryHistory.countryId,
+        turn_id: countryHistory.turnId,
+        city_count: countryHistory.cityCount,
+        unit_count: countryHistory.unitCount,
+        banked_builds: countryHistory.bankedBuilds,
+        nuke_range: countryHistory.nukeRange,
+        adjustments: countryHistory.adjustments,
+        in_retreat: countryHistory.inRetreat,
+        vote_count: countryHistory.voteCount,
+        nukes_in_production: countryHistory.nukesInProduction
+      };
+    });
+
+    const query = this.pgp.helpers.insert(countryHistoryValues, this.countryHistoryCols);
+    this.db.query(query);
   }
 
   async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {
@@ -119,6 +197,7 @@ export class ResolutionRepository {
               provinceId: order.province_id,
               provinceName: order.province,
               provinceType: order.province_type,
+              display: order.destination_display,
               voteType: order.vote_type,
               provinceStatus: order.province_status,
               controllerId: order.controller_id,
@@ -130,6 +209,8 @@ export class ResolutionRepository {
               type: order.secondary_unit_type,
               countryId: order.secondary_country_id,
               country: order.secondary_country,
+              provinceName: order.secondary_unit_province,
+              orderType: order.secondary_unit_order_type,
               canCapture: [UnitType.ARMY, UnitType.FLEET].includes(order.secondary_unit_type)
             },
             destination: {
@@ -137,6 +218,7 @@ export class ResolutionRepository {
               provinceId: order.destination_province_id,
               provinceName: order.destination_province_name,
               provinceType: order.destination_province_type,
+              display: order.destination_display,
               voteType: order.destination_vote_type,
               provinceStatus: order.destination_province_status,
               controllerId: order.destination_controller_id,
@@ -243,6 +325,7 @@ export class ResolutionRepository {
             provinceId: garrison.province_id,
             provinceName: garrison.province,
             provinceType: garrison.province_type,
+            display: garrison.destination_province_name,
             voteType: garrison.vote_type,
             provinceStatus: garrison.province_status,
             controllerId: garrison.controller_id,
@@ -254,6 +337,8 @@ export class ResolutionRepository {
             type: garrison.secondary_unit_type,
             countryId: garrison.secondary_country_id,
             country: garrison.secondary_country,
+            provinceName: garrison.secondary_unit_province,
+            orderType: OrderDisplay.HOLD,
             canCapture: false
           },
           destination: {
@@ -261,6 +346,7 @@ export class ResolutionRepository {
             provinceId: garrison.destination_province_id,
             provinceName: garrison.destination_province_name,
             provinceType: garrison.destination_province_type,
+            display: garrison.destination_province_name,
             voteType: garrison.destination_vote_type,
             provinceStatus: garrison.destination_province_status,
             controllerId: garrison.destination_controller_id,

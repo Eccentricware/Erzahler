@@ -302,6 +302,7 @@ export interface CountryHistoryRowResult {
 }
 
 export interface CountryHistoryRow {
+  turnId: number;
   builds: number;
   countryId: number;
   countryStatus: CountryStatus;
