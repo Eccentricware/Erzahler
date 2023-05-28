@@ -39,8 +39,10 @@ export interface UnitOrderResolutionResult {
   secondary_unit_type: UnitType;
   secondary_country_id: number;
   secondary_country: string;
+  secondary_unit_province: string;
+  secondary_unit_order_type: string;
   destination_id: number;
-  // destination_name: string;
+  destination_display: string;
   destination_node_type: string;
   destination_province_id: number;
   destination_province_name: string;
@@ -76,6 +78,8 @@ export interface UnitOrderResolution {
     type: UnitType;
     countryId: number;
     country: string;
+    provinceName: string;
+    orderType: OrderDisplay;
     canCapture: boolean;
   };
   destination: OrderResolutionLocation;
@@ -85,6 +89,7 @@ export interface OrderResolutionLocation {
   nodeId: number;
   provinceId: number;
   provinceName: string;
+  display: string;
   provinceType: ProvinceType;
   voteType: VoteType;
   provinceStatus: ProvinceStatus;

@@ -380,14 +380,17 @@ export class ResolutionService {
     }
 
     if (dbUpdates.unitHistories.length > 0) {
+      // db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories);
       console.log('DB: Unit History Insert');
     }
 
     if (dbUpdates.provinceHistories.length > 0) {
+      // db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories);
       console.log('DB: Province History Insert');
     }
 
     if (dbUpdates.countryHistories.length > 0) {
+      // db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
       console.log('DB: Country History Insert');
     }
 
@@ -541,6 +544,7 @@ export class ResolutionService {
     unitOptions: UnitOptionsFinalized[],
     orderGroups: UnitOrderGroups
   ): void {
+    order.description = this.setDescription(order);
     const options: UnitOptionsFinalized | undefined = unitOptions.find(
       (option: UnitOptionsFinalized) => option.unitId === order.unit.id
     );
@@ -553,10 +557,13 @@ export class ResolutionService {
 
         this.invalidateOrder(order, `Incredibly Invalid`);
       }
+
     } else if (!options.orderTypes.includes(order.orderType)) {
       this.invalidateOrder(order, `Invalid Order Type`);
+
     } else if (order.orderType === OrderDisplay.HOLD) {
       orderGroups.hold.push(order);
+
     } else if (order.orderType === OrderDisplay.MOVE) {
       const destinationIds = options.moveDestinations.map((destination: OptionDestination) => destination.nodeId);
 
@@ -565,6 +572,7 @@ export class ResolutionService {
       } else {
         orderGroups.move.push(order);
       }
+
     } else if (order.orderType === OrderDisplay.MOVE_CONVOYED) {
       const destinationIds = options.moveTransportedDestinations.map(
         (destination: OptionDestination) => destination.nodeId
@@ -575,6 +583,7 @@ export class ResolutionService {
       } else {
         orderGroups.moveTransported.push(order);
       }
+
     } else if (order.orderType === OrderDisplay.NUKE) {
       const targetIds = options.nukeTargets.map((destination: OptionDestination) => destination.nodeId);
 
@@ -583,6 +592,7 @@ export class ResolutionService {
       } else {
         orderGroups.nuke.push(order);
       }
+
     } else if (order.orderType === OrderDisplay.SUPPORT) {
       const supportableUnitIds = options.supportStandardUnits.map((unit: SecondaryUnit) => unit.id);
 
@@ -599,6 +609,7 @@ export class ResolutionService {
           orderGroups.support.push(order);
         }
       }
+
     } else if (order.orderType === OrderDisplay.SUPPORT_CONVOYED) {
       const supportableUnitIds = options.supportTransportedUnits.map((unit: SecondaryUnit) => unit.id);
 
@@ -615,6 +626,7 @@ export class ResolutionService {
           orderGroups.support.push(order);
         }
       }
+
     } else if ([OrderDisplay.AIRLIFT, OrderDisplay.CONVOY].includes(order.orderType)) {
       const transportableUnitIds = options.transportableUnits.map((unit: SecondaryUnit) => unit.id);
 
@@ -1531,6 +1543,7 @@ export class ResolutionService {
   copyCountryHistory(countryHistory: CountryHistoryRow): CountryHistoryRow {
     return {
       builds: countryHistory.builds,
+      turnId: countryHistory.turnId,
       countryId: countryHistory.countryId,
       countryStatus: countryHistory.countryStatus,
       cityCount: countryHistory.cityCount,
@@ -1542,5 +1555,31 @@ export class ResolutionService {
       voteCount: countryHistory.voteCount,
       nukesInProduction: countryHistory.nukesInProduction
     };
+  }
+
+  setDescription(order: UnitOrderResolution): string {
+    let description = `${order.unit.type[0].toUpperCase()} ${order.origin.provinceName} `;
+
+    if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(order.orderType)) {
+      description += order.orderType;
+    }
+
+    if ([OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.orderType)) {
+      description += `=> ${order.destination.display}`;
+    }
+
+    if (order.orderType === OrderDisplay.SUPPORT && ![OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
+      description += `S ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName}`;
+    }
+
+    if ([OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(order.orderType) && [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
+      description += `${order.orderType[0].toUpperCase()} ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName} => ${order.destination.display}`;
+    }
+
+    if (order.orderType === OrderDisplay.NUKE) {
+      description += `! ${order.destination.display}`;
+    }
+
+    return description;
   }
 }

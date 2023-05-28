@@ -28,9 +28,11 @@ export const getUnitOrdersForResolutionQuery = `
     su.unit_type secondary_unit_type,
     su.country_id secondary_country_id,
     sc.country_name secondary_country,
+    sp.province_name secondary_unit_province,
+    so.order_type secondary_unit_order_type,
     o.destination_id,
-    --dn.node_name destination_name,
-    --dn.node_type destination_node_type,
+    dn.node_display destination_display,
+    dn.node_type destination_node_type,
     dn.province_id destination_province_id,
     dp.province_name destination_province_name,
     dph.province_status destination_province_status,
@@ -61,7 +63,8 @@ export const getUnitOrdersForResolutionQuery = `
   LEFT JOIN get_last_unit_history($1, $2) lsuh
     ON lsuh.unit_id = suh.unit_id AND lsuh.turn_id = suh.turn_id
   LEFT JOIN nodes sn ON sn.node_id = suh.node_id
-  LEFT JOIN provinces sp ON sp.province_id = sn.node_id
+  LEFT JOIN provinces sp ON sp.province_id = sn.province_id
+  LEFT JOIN orders so ON so.ordered_unit_id = su.unit_id
   WHERE os.turn_id = $3
     AND os.order_set_type = 'Orders';
 `;
