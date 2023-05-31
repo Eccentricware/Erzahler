@@ -474,12 +474,13 @@ export class OptionsService {
       (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PRELIMINARY
     )[0];
 
-    if (pendingTurn && !pendingTurn.defaultsReady) {
-      this.saveTurnDefaults(gameState, pendingTurn);
+    // if (pendingTurn && !pendingTurn.defaultsReady) {
+    if (pendingTurn) {
+      await this.saveTurnDefaults(gameState, pendingTurn);
     }
 
     if (preliminaryTurn && !preliminaryTurn.defaultsReady) {
-      this.saveTurnDefaults(gameState, preliminaryTurn);
+      await this.saveTurnDefaults(gameState, preliminaryTurn);
     }
   }
 
