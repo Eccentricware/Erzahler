@@ -491,12 +491,11 @@ export class OptionsService {
       gameState.turnNumber,
       upcomingTurn.turnId
     );
-    const newOrderSets: OrderSet[] = [];
-    // const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
-    //   gameState.gameId,
-    //   gameState.turnNumber,
-    //   upcomingTurn.turnId
-    // );
+    const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
+      gameState.gameId,
+      gameState.turnNumber,
+      upcomingTurn.turnId
+    );
     newOrderSets.forEach((orderSet: OrderSet) => (orderSetLibrary[orderSet.countryId] = orderSet.orderSetId));
     const preppedOrderLibrary: Record<string, OrderPrepping> = {};
     const defaultOrders: Order[] = [];
