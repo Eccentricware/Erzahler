@@ -178,6 +178,7 @@ export class OptionsRepository {
                     return <SavedDestination>{
                       nodeId: destination.node_id,
                       nodeName: this.formatDestinationNodeName(destination.node_name),
+                      nodeDisplay: destination.node_display,
                       loc: destination.loc
                     };
                   })

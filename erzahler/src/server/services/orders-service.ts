@@ -593,29 +593,29 @@ export class OrdersService {
     }
   }
 
-    setDescription(order: UnitOrderResolution): string {
-    let description = `${order.unit.type[0].toUpperCase()} ${order.origin.provinceName} `;
+  // setDescription(order: UnitOrderResolution): string {
+  //   let description = `${order.unit.type[0].toUpperCase()} ${order.origin.provinceName} `;
 
-    if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(order.orderType)) {
-      description += order.orderType;
-    }
+  //   if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(order.orderType)) {
+  //     description += order.orderType;
+  //   }
 
-    if ([OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.orderType)) {
-      description += `=> ${order.destination.display}`;
-    }
+  //   if ([OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.orderType)) {
+  //     description += `=> ${order.destination.display}`;
+  //   }
 
-    if (order.orderType === OrderDisplay.SUPPORT && ![OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
-      description += `S ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName}`;
-    }
+  //   if (order.orderType === OrderDisplay.SUPPORT && ![OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
+  //     description += `S ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName}`;
+  //   }
 
-    if ([OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(order.orderType) && [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
-      description += `${order.orderType[0].toUpperCase()} ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName} => ${order.destination.display}`;
-    }
+  //   if ([OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(order.orderType) && [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
+  //     description += `${order.orderType[0].toUpperCase()} ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName} => ${order.destination.display}`;
+  //   }
 
-    if (order.orderType === OrderDisplay.NUKE) {
-      description += `! ${order.destination.display}`;
-    }
+  //   if (order.orderType === OrderDisplay.NUKE) {
+  //     description += `! ${order.destination.display}`;
+  //   }
 
-    return description;
-  }
+  //   return description;
+  // }
 }

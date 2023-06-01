@@ -29,6 +29,7 @@ export const getOrderOptionsQuery = `
       json_build_object(
         'node_id', dn.node_id,
         'node_name', dn.node_name,
+        'node_display', dn.node_display,
         'loc', en.loc
       ) ELSE null END
     ) AS destinations
