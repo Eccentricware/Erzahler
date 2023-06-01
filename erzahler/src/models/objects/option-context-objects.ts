@@ -159,6 +159,7 @@ export interface SavedOptionResult {
 export interface DestinationResult {
   node_id: number;
   node_name: string;
+  node_display: string;
   loc: number[];
 }
 
@@ -181,13 +182,14 @@ export interface SavedOption {
   secondaryUnitFlagKey?: string;
   secondaryProvinceName?: string;
   secondaryUnitLoc?: number[];
-  secondaryOrderType?: string;
+  secondaryOrderType?: OrderDisplay;
   destinations: OptionDestination[];
 }
 
 export interface SavedDestination {
   nodeId: number;
   nodeName: string;
+  nodeDisplay: string;
   loc: number[];
 }
 
@@ -218,6 +220,7 @@ export interface SecondaryUnit {
 export interface OptionDestination {
   nodeId: number;
   nodeName: string;
+  nodeDisplay: string;
   loc: number[];
 }
 
@@ -363,6 +366,7 @@ export interface Order {
   orderedUnitId: number;
   loc?: number[];
   orderType: string;
+  description: string;
   secondaryUnitId?: number | undefined;
   secondaryUnitLoc?: number[];
   destinationId?: number;
@@ -374,6 +378,7 @@ export interface OrderPrepping {
   countryId: number;
   unitId: number;
   orderType: string;
+  description: string;
   secondaryUnitId?: number | undefined;
   secondaryOrderType?: string;
   destinationId?: number;
