@@ -19,8 +19,8 @@ const erzahler = express();
 const port = 8000;
 const schedulerService: SchedulerService = new SchedulerService();
 
-const optionsService: OptionsService = new OptionsService();
-optionsService.saveOptionsForNextTurn(33);
+// const optionsService: OptionsService = new OptionsService();
+// optionsService.saveOptionsForNextTurn(33);
 
 erzahler.use(cors());
 erzahler.use(bodyParser.json({ limit: '5mb' }));
@@ -39,7 +39,7 @@ erzahler.get('/check-status', (request, response) => {
   response.send(true);
 });
 
-schedulerService.syncDeadlines();
+// schedulerService.syncDeadlines();
 
 schedulerService.checkIn(15);
 
