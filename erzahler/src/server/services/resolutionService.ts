@@ -380,17 +380,17 @@ export class ResolutionService {
     }
 
     if (dbUpdates.unitHistories.length > 0) {
-      // db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories);
+      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories);
       console.log('DB: Unit History Insert');
     }
 
     if (dbUpdates.provinceHistories.length > 0) {
-      // db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories);
+      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories);
       console.log('DB: Province History Insert');
     }
 
     if (dbUpdates.countryHistories.length > 0) {
-      // db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
+      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
       console.log('DB: Country History Insert');
     }
 
