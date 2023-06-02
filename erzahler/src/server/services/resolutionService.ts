@@ -395,6 +395,7 @@ export class ResolutionService {
     }
 
     // Every turn
+    // await db.resolutionRepo.resolveOrderSets(turn.turnId);
     console.log('DB: Order Set Update');
 
     // Find next turn will require an updated gameState first
