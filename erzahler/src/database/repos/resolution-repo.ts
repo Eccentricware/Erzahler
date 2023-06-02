@@ -26,6 +26,7 @@ import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { CountryHistoryRow, OrderRow, ProvinceHistoryRow, ProvinceHistoryRowResult, UnitHistoryRow } from '../schema/table-fields';
 import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-bombards-query';
 import { updateOrderQuery } from '../queries/resolution/update-order-query';
+import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -365,5 +366,13 @@ export class ResolutionRepository {
 
         }
       }))
+  }
+
+  async updateOrderSets(orderSets: any[], turnId: number): Promise<void> {
+    orderSets.forEach(async (orderSet: any) => {
+      await this.pool.query(updateOrderSetsQuery, [
+        turnId
+      ]);
+    });
   }
 }
