@@ -1,5 +1,6 @@
 import express from 'express';
 import { GameService } from '../services/game-service';
+import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
 
 export const gameRouter = express.Router();
 const gameService = new GameService();
@@ -17,8 +18,20 @@ gameRouter.get('/check-name/:gameName', (request, response) => {
 gameRouter.get('/search', (request, response) => {
   const idToken: any = request.headers.idtoken;
 
+  const {
+    playing,
+    creator,
+    administrator
+  } = request.query;
+
+  const parameters: GameFinderParameters = {
+    playing: playing === 'true',
+    creator: creator === 'true',
+    administrator: administrator === 'true'
+  };
+
   gameService
-    .findGames(idToken)
+    .findGames(idToken, parameters)
     .then((result: any) => {
       response.send(result);
     })
