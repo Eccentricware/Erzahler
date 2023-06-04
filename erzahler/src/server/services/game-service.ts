@@ -11,6 +11,7 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { OrdersService } from './orders-service';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
+import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
 
 export class GameService {
   gameData: any = {};
@@ -313,10 +314,11 @@ export class GameService {
     return gameNameResults.rowCount === 0;
   }
 
-  async findGames(idToken: string): Promise<any> {
+  async findGames(idToken: string, params: GameFinderParameters): Promise<any> {
     const accountService: AccountService = new AccountService();
     const formattingService: FormattingService = new FormattingService();
     const schedulerService: SchedulerService = new SchedulerService();
+
     let userId = 0;
     let userTimeZone = 'Africa/Monrovia';
     let meridiemTime = false;
@@ -332,7 +334,7 @@ export class GameService {
       }
     }
 
-    const gameResults: any = await db.gameRepo.getGames(userTimeZone, meridiemTime);
+    const gameResults: any = await db.gameRepo.getGames(userId, params, userTimeZone, meridiemTime);
 
     return gameResults;
   }

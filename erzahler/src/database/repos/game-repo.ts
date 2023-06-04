@@ -43,6 +43,7 @@ import { CountryHistoryRow, CountryHistoryRowResult, ProvinceHistoryRow, Provinc
 import { getCurrentCountryHistoriesQuery } from '../queries/isolated-tables/get-current-country-histories-query';
 import { getCurrentUnitHistoriesQuery } from '../queries/isolated-tables/get-current-unit-histories-query';
 import { getCurrentProvinceHistoryQuery } from '../queries/isolated-tables/get-current-province-histories-query';
+import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
 
 const gamesCols: string[] = [
   'game_name',
@@ -403,9 +404,15 @@ export class GameRepository {
     return await this.pool.query(checkGameNameAvailabilityQuery, [gameName]);
   }
 
-  async getGames(timeZone: string, meridiemTime: boolean): Promise<any> {
+  async getGames(userId: number, parameters: GameFinderParameters, timeZone: string, meridiemTime: boolean): Promise<any> {
     return await this.pool
-      .query(getGamesQuery, [timeZone])
+      .query(getGamesQuery, [
+        userId,
+        timeZone,
+        parameters.playing,
+        parameters.creator,
+        parameters.administrator
+      ])
       .then((gamesResults: QueryResult<any>) => {
         return gamesResults.rows.map((game: GameSummaryQueryObject) => {
           return new GameSummaryBuilder(game, timeZone, meridiemTime);
