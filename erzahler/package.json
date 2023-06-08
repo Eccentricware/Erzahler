@@ -1,6 +1,6 @@
 {
   "name": "erzahler",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Back end for Blitzkarte. It means \"Storyteller\" in German.",
   "main": "dist/server/controller.js",
   "scripts": {

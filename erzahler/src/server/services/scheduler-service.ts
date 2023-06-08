@@ -197,22 +197,23 @@ export class SchedulerService {
   async syncDeadlines(): Promise<void> {
     const resolutionService: ResolutionService = new ResolutionService();
 
+    const gameStarts = await db.schedulerRepo.getGamesStarting();
     const pendingTurns = await db.schedulerRepo.getUpcomingTurns(0);
 
-    pendingTurns.forEach((turn: UpcomingTurn) => {
-      if (Date.parse(turn.deadline) < Date.now()) {
-        resolutionService.resolveTurn(turn);
-        console.log('Deadline in past: ' + true);
-      } else {
-        console.log('Deadline in past: ' + false);
-      }
+    // pendingTurns.forEach((turn: UpcomingTurn) => {
+    //   if (Date.parse(turn.deadline) < Date.now()) {
+    //     resolutionService.resolveTurn(turn);
+    //     console.log('Deadline in past: ' + true);
+    //   } else {
+    //     console.log('Deadline in past: ' + false);
+    //   }
 
-      schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
-        resolutionService.resolveTurn(turn);
-      });
-    });
+    //   schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
+    //     resolutionService.resolveTurn(turn);
+    //   });
+    // });
 
-    // console.log(schedule);
+    console.log('Scheduled Jobs', schedule.scheduledJobs);
   }
 
   async prepareGameStart(gameData: GameSettings): Promise<void> {
