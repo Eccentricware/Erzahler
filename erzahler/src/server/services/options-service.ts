@@ -461,6 +461,11 @@ export class OptionsService {
     };
   }
 
+  /**
+   * Given a gameID, finds the pending and preliminary turns and saves the default orders for each.
+   *
+   * @param gameId
+   */
   async saveDefaultOrders(gameId: number): Promise<void> {
     const gameState = await db.gameRepo.getGameState(gameId);
 

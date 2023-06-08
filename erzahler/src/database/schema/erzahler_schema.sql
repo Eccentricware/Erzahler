@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS games(
   game_name VARCHAR(50) UNIQUE NOT NULL,
   time_created TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'utc'),
   time_ready TIMESTAMP NULL,
+  time_paused TIMESTAMP NULL,
+  time_ended TIMESTAMP NULL,
   ready_to_start BOOLEAN NOT NULL DEFAULT false,
   game_status VARCHAR(25) NOT NULL,
   current_year INTEGER NOT NULL,
