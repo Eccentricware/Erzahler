@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS games(
   time_ready TIMESTAMP NULL,
   time_paused TIMESTAMP NULL,
   time_ended TIMESTAMP NULL,
-  ready_to_start BOOLEAN NOT NULL DEFAULT false,
+  --ready_to_start BOOLEAN NOT NULL DEFAULT false,
   game_status VARCHAR(25) NOT NULL,
   current_year INTEGER NOT NULL,
   stylized_start_year INTEGER NOT NULL DEFAULT 2000,

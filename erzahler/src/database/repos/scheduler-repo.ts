@@ -8,12 +8,12 @@ import { UpcomingTurn, UpcomingTurnResult } from '../../models/objects/scheduler
 import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formattingService';
 import { setAssignmentsActiveQuery } from '../queries/assignments/set-assignments-active-query';
-import { startGameQuery } from '../queries/game/start-game-query';
+import { readyGameQuery } from '../queries/game/ready-game-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
 import { getScheduleSettingsQuery } from '../queries/scheduler/get-schedule-settings-query';
 import { getUpcomingTurnsQuery } from '../queries/scheduler/get-upcoming-turns-query';
 import { getGamesStartingQuery } from '../queries/scheduler/get-games-starting-query';
-import { GameSchedule, GameScheduleResult } from '../../models/objects/games/game-schedule-objects';
+import { GameSchedule, GameScheduleResult, StartSchedule, StartScheduleResult } from '../../models/objects/games/game-schedule-objects';
 
 /**
  * Handles DB updates involving scheduling timing critical events and turns.
@@ -73,31 +73,16 @@ export class SchedulerRepository {
       });
   }
 
-  async getGamesStarting(): Promise<GameSchedule[]> {
+  async getGamesStarting(): Promise<StartSchedule[]> {
     return await this.pool
       .query(getGamesStartingQuery, [])
       .then((results: QueryResult<any>) =>
-        results.rows.map((game: GameScheduleResult) => {
-          return <GameSchedule> {
+        results.rows.map((game: StartScheduleResult) => {
+          return <StartSchedule> {
             gameId: game.game_id,
-            currentYear: game.current_year,
-            stylizedStartYear: game.stylized_start_year,
-            deadlineType: game.deadline_type,
-            turn1Timing: game.turn_1_timing,
-            observeDst: game.observe_dst,
-            ordersDay: game.orders_day,
-            ordersTime: game.orders_time,
-            ordersSpan: game.orders_span,
-            retreatsDay: game.retreats_day,
-            retreatsTime: game.retreats_time,
-            retreatsSpan: game.retreats_span,
-            adjustmentsDay: game.adjustments_day,
-            adjustmentsTime: game.adjustments_time,
-            adjustmentsSpan: game.adjustments_span,
-            votesDay: game.votes_day,
-            votesTime: game.votes_time,
-            votesSpan: game.votes_span
-          }
+            gameName: game.game_name,
+            startTime: game.start_time
+          };
         }));
   }
 
@@ -143,8 +128,8 @@ export class SchedulerRepository {
       });
   }
 
-  async startGame(startGameArgs: any[]): Promise<any> {
-    await this.pool.query(startGameQuery, startGameArgs);
+  async readyGame(readyGameArgs: any[]): Promise<any> {
+    await this.pool.query(readyGameQuery, readyGameArgs);
   }
 
   async setAssignmentsActive(gameId: number): Promise<any> {

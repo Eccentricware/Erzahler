@@ -1,6 +1,7 @@
 import { db } from '../../database/connection';
 import { CountryHistoryRow, DbStates, GameRow, OrderRow, OrderSetRow, ProvinceHistoryRow, TurnRow, UnitHistoryRow, UnitRow } from '../../database/schema/table-fields';
 import { CountryStatus } from '../../models/enumeration/country-enum';
+import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { OrderStatus } from '../../models/enumeration/order-status-enum';
 import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration/province-enums';
@@ -8,6 +9,7 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 import { TurnTS } from '../../models/objects/database-objects';
+import { GameSchedule, StartSchedule } from '../../models/objects/games/game-schedule-objects';
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
@@ -32,20 +34,23 @@ import {
 } from '../../models/objects/resolution/order-resolution-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
 import { terminalLog } from '../utils/general';
+import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
 
 export class ResolutionService {
-  optionService: OptionsService = new OptionsService();
+  optionsService: OptionsService = new OptionsService();
   schedulerService: SchedulerService = new SchedulerService();
+  gameService: GameService = new GameService();
 
-  async startGame(gameData: GameSettings, startDetails: StartDetails): Promise<void> {
-    const optionsService = new OptionsService();
+  async startGame(gameId: number): Promise<void> {
+    const startDetails: StartDetails = await this.schedulerService.getStartDetails(gameId);
+
     const turnNameSplit = TurnType.SPRING_ORDERS.split(' ');
     const firstTurn: TurnTS = {
-      gameId: gameData.gameId,
+      gameId: gameId,
       turnNumber: 1,
-      turnName: `${turnNameSplit[0]} ${gameData.stylizedStartYear + 1} ${turnNameSplit[1]}`,
+      turnName: `${turnNameSplit[0]} ${startDetails.stylizedYear} ${turnNameSplit[1]}`,
       turnType: TurnType.SPRING_ORDERS,
       turnStatus: TurnStatus.PENDING,
       yearNumber: 1,
@@ -54,7 +59,10 @@ export class ResolutionService {
     const nextTurn: TurnTS = await db.schedulerRepo.insertTurn(firstTurn);
 
     if (nextTurn.turnId) {
-      await optionsService.saveOptionsForNextTurn(gameData.gameId, nextTurn.turnId);
+      await this.optionsService.saveOptionsForNextTurn(gameId, nextTurn.turnId);
+      await db.gameRepo.setGamePlaying(gameId);
+    } else {
+      terminalLog(`Error starting game ${gameId}`);
     }
     // Alert service call
   }
@@ -418,7 +426,7 @@ export class ResolutionService {
 
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
-    const unitOptions = this.optionService.finalizeUnitOptions(
+    const unitOptions = this.optionsService.finalizeUnitOptions(
       await db.optionsRepo.getUnitOptions(gameState.gameId, gameState.turnNumber, turn.turnId, 0)
     );
 

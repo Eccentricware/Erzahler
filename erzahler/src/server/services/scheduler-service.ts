@@ -18,6 +18,7 @@ import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
 import { terminalLog } from '../utils/general';
+import { GameSchedule, StartSchedule } from '../../models/objects/games/game-schedule-objects';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -197,54 +198,66 @@ export class SchedulerService {
   async syncDeadlines(): Promise<void> {
     const resolutionService: ResolutionService = new ResolutionService();
 
-    const gameStarts = await db.schedulerRepo.getGamesStarting();
+    const gamesStarting = await db.schedulerRepo.getGamesStarting();
+
+    gamesStarting.forEach((game: StartSchedule) => {
+      if (Date.parse(game.startTime) < Date.now()) {
+        resolutionService.startGame(game.gameId);
+      } else {
+        schedule.scheduleJob(
+          `${game.gameName} - Start`,
+          game.startTime,
+          () => {
+            resolutionService.startGame(game.gameId);
+          }
+        );
+      }
+    });
+
     const pendingTurns = await db.schedulerRepo.getUpcomingTurns(0);
 
-    // pendingTurns.forEach((turn: UpcomingTurn) => {
-    //   if (Date.parse(turn.deadline) < Date.now()) {
-    //     resolutionService.resolveTurn(turn);
-    //     console.log('Deadline in past: ' + true);
-    //   } else {
-    //     console.log('Deadline in past: ' + false);
-    //   }
-
-    //   schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
-    //     resolutionService.resolveTurn(turn);
-    //   });
-    // });
+    pendingTurns.forEach((turn: UpcomingTurn) => {
+      // if (Date.parse(turn.deadline) < Date.now()) {
+      //   resolutionService.resolveTurn(turn);
+      //   console.log('Deadline in past: ' + true);
+      // } else {
+      //   console.log('Deadline in past: ' + false);
+      //   schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
+      //     resolutionService.resolveTurn(turn);
+      //   });
+      // }
+    });
 
     console.log('Scheduled Jobs', schedule.scheduledJobs);
   }
 
-  async prepareGameStart(gameData: GameSettings): Promise<void> {
+  async readyGame(gameData: GameSettings): Promise<void> {
     const resolutionService: ResolutionService = new ResolutionService();
 
     const gameId = gameData.gameId;
-    const startDetails: StartDetails = await this.lockStartDetails(gameId);
+    const startDetails: StartDetails = await this.getStartDetails(gameId);
 
-    await db.schedulerRepo.startGame([startDetails.gameStatus, startDetails.gameStart, gameId]);
+    await db.schedulerRepo.readyGame([startDetails.gameStart, gameId]);
 
     await db.schedulerRepo.setAssignmentsActive(gameId);
 
-    // Is this clunky? Turn creation delayed until actual start
-    await db.schedulerRepo.updateTurn([startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId]);
-
     if (startDetails.gameStatus === GameStatus.PLAYING) {
-      resolutionService.startGame(gameData, startDetails);
+      resolutionService.startGame(gameId);
     } else {
       schedule.scheduleJob(`${gameData.gameName} - Game Start`, startDetails.gameStart, () => {
-        resolutionService.startGame(gameData, startDetails);
+        resolutionService.startGame(gameId);
       });
     }
   }
 
-  async lockStartDetails(gameId: number): Promise<StartDetails> {
+  async getStartDetails(gameId: number): Promise<StartDetails> {
     const scheduleSettings = await this.getGameScheduleSettings(gameId);
     if (!scheduleSettings) {
       return {
         gameStatus: 'Error',
-        gameStart: DateTime.now(),
-        firstTurn: DateTime.now()
+        gameStart: 'Error',
+        stylizedYear: 0,
+        firstTurn: 'Error'
       };
     }
 
@@ -256,7 +269,7 @@ export class SchedulerService {
     switch (scheduleSettings.turn1Timing) {
       case StartTiming.IMMEDIATE:
         gameStatus = GameStatus.PLAYING;
-        gameStart = now;
+        // gameStart = now;
         break;
       case StartTiming.STANDARD:
         gameStatus = GameStatus.READY;
@@ -265,7 +278,7 @@ export class SchedulerService {
         break;
       case StartTiming.REMAINDER:
         gameStatus = GameStatus.PLAYING;
-        gameStart = now;
+        // gameStart = now;
         firstTurn = firstTurn.plus({ week: 1 });
         break;
       case StartTiming.DOUBLE:
@@ -275,15 +288,16 @@ export class SchedulerService {
         break;
       case StartTiming.EXTENDED:
         gameStatus = GameStatus.PLAYING;
-        gameStart = now;
+        // gameStart = now;
         firstTurn = firstTurn.plus({ week: 2 });
         break;
     }
 
     return {
       gameStatus: gameStatus,
-      gameStart: gameStart,
-      firstTurn: firstTurn
+      gameStart: gameStart.toString(),
+      stylizedYear: scheduleSettings.stylizedStartYear,
+      firstTurn: firstTurn.toString()
     };
   }
 

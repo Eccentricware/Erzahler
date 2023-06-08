@@ -465,7 +465,7 @@ export class GameService {
 
     // TO-DO Restore to registration clause after troubleshooting && gameData.gameStatus === GameStatus.REGISTRATION
     if (gameData.isAdmin) {
-      await schedulerService.prepareGameStart(gameData);
+      await schedulerService.readyGame(gameData);
     }
   }
 

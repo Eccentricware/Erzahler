@@ -61,7 +61,7 @@ export interface GameRowResult {
   fun_max?: number;
   skill_min?: number;
   skill_max?: number;
-  ready_to_start?: boolean;
+  // ready_to_start?: boolean;
   ready_time?: Date | string;
   nominate_during_adjustments?: boolean;
   vote_during_spring?: boolean;
@@ -131,7 +131,7 @@ export interface GameRow {
   funMax?: number;
   skillMin?: number;
   skillMax?: number;
-  readyToStart?: boolean;
+  // readyToStart?: boolean;
   readyTime?: Date | string;
   nominateDuringAdjustments?: boolean;
   voteDuringSpring?: boolean;
