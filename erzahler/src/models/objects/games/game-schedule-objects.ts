@@ -1,9 +1,14 @@
+import { DateTime } from "luxon";
+
 export interface GameScheduleResult {
   game_id: number;
+  game_name: string;
   current_year: number;
   stylized_start_year: number;
   deadline_type: string;
   turn_1_timing: string;
+  start_time: string;
+  first_turn: string;
   observe_dst: boolean;
   orders_day: string;
   orders_time: string;
@@ -24,10 +29,13 @@ export interface GameScheduleResult {
 
 export interface GameSchedule {
   gameId: number;
+  gameName: string;
   currentYear: number;
   stylizedStartYear: number;
   deadlineType: string;
   turn1Timing: string;
+  startTime: string;
+  firstTurn: string;
   observeDst: boolean;
   ordersDay: string;
   ordersTime: string;
@@ -44,4 +52,20 @@ export interface GameSchedule {
   votesDay: string;
   votesTime: string;
   votesSpan: number;
+}
+
+export interface StartScheduleResult {
+  game_id: number;
+  game_name: string;
+  start_time: string;
+  first_turn_deadline: string;
+  stylized_year: number;
+}
+
+export interface StartSchedule {
+  gameId: number;
+  gameName: string;
+  startTime: string;
+  firstTurnDeadline: string;
+  stylizedYear: number;
 }

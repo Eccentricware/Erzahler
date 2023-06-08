@@ -12,6 +12,7 @@ import { OrdersService } from './orders-service';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
+import { terminalLog } from '../utils/general';
 
 export class GameService {
   gameData: any = {};
@@ -316,10 +317,9 @@ export class GameService {
 
   async findGames(idToken: string, params: GameFinderParameters): Promise<any> {
     const accountService: AccountService = new AccountService();
-    const formattingService: FormattingService = new FormattingService();
-    const schedulerService: SchedulerService = new SchedulerService();
 
     let userId = 0;
+    let username = 'Guest';
     let userTimeZone = 'Africa/Monrovia';
     let meridiemTime = false;
 
@@ -329,11 +329,13 @@ export class GameService {
       this.user = await accountService.getUserProfile(idToken);
       if (!this.user.error) {
         userId = this.user.userId;
+        username = this.user.username;
         userTimeZone = this.user.timeZone;
         meridiemTime = this.user.meridiemTime;
       }
     }
 
+    terminalLog(`Finding games for ${username} (${userId}): ${JSON.stringify(params)}}`);
     const gameResults: any = await db.gameRepo.getGames(userId, params, userTimeZone, meridiemTime);
 
     return gameResults;
@@ -463,7 +465,7 @@ export class GameService {
 
     // TO-DO Restore to registration clause after troubleshooting && gameData.gameStatus === GameStatus.REGISTRATION
     if (gameData.isAdmin) {
-      await schedulerService.prepareGameStart(gameData);
+      await schedulerService.readyGame(gameData);
     }
   }
 

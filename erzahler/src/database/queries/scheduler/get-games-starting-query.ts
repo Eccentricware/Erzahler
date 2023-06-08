@@ -1,7 +1,9 @@
 export const getGamesStartingQuery = `
   SELECT g.game_id,
-    g.current_year,
+    g.game_name,
+    g.start_time,
     g.stylized_start_year,
+    g.current_year,
     g.deadline_type,
     g.turn_1_timing,
     g.observe_dst,
@@ -21,6 +23,5 @@ export const getGamesStartingQuery = `
     g.votes_time,
     g.votes_span
   FROM games g
-  WHERE g.game_status = 'Ready'
-    AND NOW() >= g.start_time;
+  WHERE g.game_status = 'Ready';
 `;

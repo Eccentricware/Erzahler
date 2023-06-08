@@ -44,6 +44,7 @@ import { getCurrentCountryHistoriesQuery } from '../queries/isolated-tables/get-
 import { getCurrentUnitHistoriesQuery } from '../queries/isolated-tables/get-current-unit-histories-query';
 import { getCurrentProvinceHistoryQuery } from '../queries/isolated-tables/get-current-province-histories-query';
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
+import { startGameQuery } from '../queries/game/start-game-query';
 
 const gamesCols: string[] = [
   'game_name',
@@ -558,5 +559,9 @@ export class GameRepository {
           validRetreat: provinceHistory.valid_retreat
         };
       }));
+  }
+
+  async setGamePlaying(gameId: number): Promise<void> {
+    await this.pool.query(startGameQuery, [gameId]);
   }
 }
