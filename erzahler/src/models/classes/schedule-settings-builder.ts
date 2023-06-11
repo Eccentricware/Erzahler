@@ -3,6 +3,7 @@ import { StartScheduleEvents } from '../objects/start-schedule-events-object';
 
 export class SchedulerSettingsBuilder {
   gameId: number;
+  gameName: string;
   currentYear: number;
   stylizedStartYear: number;
   deadlineType: string;
@@ -20,6 +21,7 @@ export class SchedulerSettingsBuilder {
 
   constructor(queriedSettings: ScheduleSettingsQueryResult) {
     this.gameId = queriedSettings.game_id;
+    this.gameName = queriedSettings.game_name;
     this.currentYear = queriedSettings.current_year;
     this.stylizedStartYear = queriedSettings.stylized_start_year;
     this.deadlineType = queriedSettings.deadline_type;

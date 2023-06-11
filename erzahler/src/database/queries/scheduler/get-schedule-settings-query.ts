@@ -1,5 +1,6 @@
 export const getScheduleSettingsQuery = `
   SELECT g.game_id,
+    g.game_name,
     g.current_year,
     g.stylized_start_year,
     g.deadline_type,
