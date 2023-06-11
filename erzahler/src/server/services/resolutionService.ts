@@ -45,6 +45,7 @@ export class ResolutionService {
 
   async startGame(gameId: number): Promise<void> {
     const startDetails: StartDetails = await this.schedulerService.getStartDetails(gameId);
+    terminalLog(`Starting game ${startDetails.gameName} (${gameId})`);
 
     const turnNameSplit = TurnType.SPRING_ORDERS.split(' ');
     const firstTurn: TurnTS = {
@@ -56,15 +57,16 @@ export class ResolutionService {
       yearNumber: 1,
       deadline: startDetails.firstTurn
     };
-    const nextTurn: TurnTS = await db.schedulerRepo.insertTurn(firstTurn);
 
-    if (nextTurn.turnId) {
-      await this.optionsService.saveOptionsForNextTurn(gameId, nextTurn.turnId);
-      await db.gameRepo.setGamePlaying(gameId);
-    } else {
-      terminalLog(`Error starting game ${gameId}`);
-    }
-    // Alert service call
+    await db.schedulerRepo.insertTurn(firstTurn)
+      .then(async (nextTurn: TurnTS) => {
+        await this.optionsService.saveOptionsForNextTurn(gameId, nextTurn.turnId);
+        await db.gameRepo.setGamePlaying(gameId);
+        // Alert service call
+      })
+      .catch((err: Error) => {
+        terminalLog(`Error starting game ${gameId}: ${err.message}`);
+      });
   }
 
   async resolveTurn(turn: UpcomingTurn): Promise<void> {

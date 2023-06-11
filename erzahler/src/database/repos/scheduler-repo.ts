@@ -13,7 +13,8 @@ import { updateTurnQuery } from '../queries/game/update-turn-query';
 import { getScheduleSettingsQuery } from '../queries/scheduler/get-schedule-settings-query';
 import { getUpcomingTurnsQuery } from '../queries/scheduler/get-upcoming-turns-query';
 import { getGamesStartingQuery } from '../queries/scheduler/get-games-starting-query';
-import { GameSchedule, GameScheduleResult, StartSchedule, StartScheduleResult } from '../../models/objects/games/game-schedule-objects';
+import { StartSchedule, StartScheduleResult } from '../../models/objects/games/game-schedule-objects';
+import { terminalLog } from '../../server/utils/general';
 
 /**
  * Handles DB updates involving scheduling timing critical events and turns.
@@ -69,7 +70,7 @@ export class SchedulerRepository {
         })[0];
       })
       .catch((error: Error) => {
-        console.log('Get Schedule Settings Query Error: ' + error.message);
+        terminalLog(`Get Game Schedule Settings Query Error | (${gameId}):`  + error.message);
       });
   }
 

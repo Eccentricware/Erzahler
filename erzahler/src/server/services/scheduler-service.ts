@@ -17,7 +17,7 @@ import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-obje
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
-import { terminalLog } from '../utils/general';
+import { terminalAddendum, terminalLog } from '../utils/general';
 import { GameSchedule, StartSchedule } from '../../models/objects/games/game-schedule-objects';
 
 export class SchedulerService {
@@ -196,14 +196,18 @@ export class SchedulerService {
   // }
 
   async syncDeadlines(): Promise<void> {
+    terminalLog('Syncing Deadlines');
     const resolutionService: ResolutionService = new ResolutionService();
 
     const gamesStarting = await db.schedulerRepo.getGamesStarting();
+    terminalAddendum('Deadlines', `Found ${gamesStarting.length} games ready`);
 
     gamesStarting.forEach((game: StartSchedule) => {
       if (Date.parse(game.startTime) < Date.now()) {
+        terminalAddendum('Deadlines', `Start event has passed for ${game.gameName} (${game.gameId})`);
         resolutionService.startGame(game.gameId);
       } else {
+        terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId})`);
         schedule.scheduleJob(
           `${game.gameName} - Start`,
           game.startTime,
@@ -227,8 +231,6 @@ export class SchedulerService {
       //   });
       // }
     });
-
-    console.log('Scheduled Jobs', schedule.scheduledJobs);
   }
 
   async readyGame(gameData: GameSettings): Promise<void> {
@@ -238,8 +240,8 @@ export class SchedulerService {
     const startDetails: StartDetails = await this.getStartDetails(gameId);
 
     await db.schedulerRepo.readyGame([startDetails.gameStart, gameId]);
-
     await db.schedulerRepo.setAssignmentsActive(gameId);
+
 
     if (startDetails.gameStatus === GameStatus.PLAYING) {
       resolutionService.startGame(gameId);
@@ -254,6 +256,7 @@ export class SchedulerService {
     const scheduleSettings = await this.getGameScheduleSettings(gameId);
     if (!scheduleSettings) {
       return {
+        gameName: 'Error',
         gameStatus: 'Error',
         gameStart: 'Error',
         stylizedYear: 0,
@@ -294,6 +297,7 @@ export class SchedulerService {
     }
 
     return {
+      gameName: scheduleSettings.gameName,
       gameStatus: gameStatus,
       gameStart: gameStart.toString(),
       stylizedYear: scheduleSettings.stylizedStartYear,
@@ -500,9 +504,6 @@ export class SchedulerService {
       },
       () => {
         terminalLog('Check In');
-        // terminalLog('Checking in');
-        // setInterval(() => {
-        // }, 60000 * interval);
       }
     );
   }

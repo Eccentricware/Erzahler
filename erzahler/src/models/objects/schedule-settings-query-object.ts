@@ -1,5 +1,6 @@
 export interface ScheduleSettingsQueryResult {
   game_id: number;
+  game_name: string;
   current_year: number;
   stylized_start_year: number;
   deadline_type: string;

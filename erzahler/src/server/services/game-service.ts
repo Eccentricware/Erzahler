@@ -30,6 +30,7 @@ export class GameService {
 
       const newGameResult = await this.addNewGame(pool, this.gameData, this.user.timeZone)
         .then(async (newGameId: any) => {
+          terminalLog(`New Game ${this.gameData.gameName} (${newGameId}) created by ${this.user.username} (${this.user.userId}))`);
           return {
             success: true,
             gameId: newGameId,
@@ -37,6 +38,7 @@ export class GameService {
           };
         })
         .catch((error: Error) => {
+          terminalLog(`New Game ${this.gameData.gameName} failed to create by ${this.user.username} (${this.user.userId}))`)
           console.log('Game Response Failure:', error.message);
           this.errors.push('New Game Error' + error.message);
           return {
@@ -48,7 +50,7 @@ export class GameService {
 
       return newGameResult;
     } else {
-      console.log('Invalid Token UID attempting to save new game');
+      console.log(`Invalid Token UID attempting to save new game ${this.gameData.gameName}`);
       return {
         success: false,
         error: 'Invalid Token UID'
@@ -462,6 +464,7 @@ export class GameService {
     const schedulerService: SchedulerService = new SchedulerService();
 
     const gameData = await this.getGameData(idToken, gameId);
+    terminalLog(`Game Declared Ready: ${gameData.gameName} (${gameData.gameId})`);
 
     // TO-DO Restore to registration clause after troubleshooting && gameData.gameStatus === GameStatus.REGISTRATION
     if (gameData.isAdmin) {
