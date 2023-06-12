@@ -13,6 +13,7 @@ import {
   NominatableCountryResult,
   Nomination,
   NominationResult,
+  OrderOption,
   SavedDestination,
   SavedOption,
   SavedOptionResult,
@@ -47,7 +48,14 @@ export class OptionsRepository {
    */
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.orderOptionsCols = new pgp.helpers.ColumnSet(
-      ['unit_id', 'order_type', 'secondary_unit_id', 'secondary_order_type', 'destinations', 'turn_id'],
+      [
+        'unit_id',
+        'order_type',
+        'secondary_unit_id',
+        'secondary_order_type',
+        'destinations',
+        'turn_id'
+      ],
       { table: 'order_options' }
     );
   }
@@ -136,6 +144,22 @@ export class OptionsRepository {
       });
 
     return airAdjArray;
+  }
+
+  async saveUnitOptions(unitOptions: OrderOption[], turnId: number): Promise<void> {
+    const optionsValues = unitOptions.map((option) => {
+      return {
+        unit_id: option.unitId,
+        order_type: option.orderType,
+        secondary_unit_id: option.secondaryUnitId,
+        secondary_order_type: option.secondaryOrderType,
+        destinations: option.destinations,
+        turn_id: turnId
+      };
+    });
+
+    const query = this.pgp.helpers.insert(optionsValues, this.orderOptionsCols);
+    await this.pool.query(query);
   }
 
   /**

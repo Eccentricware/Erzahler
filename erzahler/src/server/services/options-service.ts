@@ -34,6 +34,7 @@ import {
 } from '../../models/objects/option-context-objects';
 import { OptionsFinal, BuildOptions, VotingOptions } from '../../models/objects/options-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
+import { terminalLog } from '../utils/general';
 import { AccountService } from './accountService';
 import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 
@@ -358,8 +359,12 @@ export class OptionsService {
     });
 
     if (orderOptions.length > 0) {
-      // await db.ordersRepo.saveOrderOptions(orderOptions, turnId);
-      this.saveDefaultOrders(optionsContext.gameId);
+      await db.optionsRepo.saveUnitOptions(orderOptions, turnId)
+        .then(() => {
+          this.saveDefaultOrders(optionsContext.gameId);
+        });
+    } else {
+      terminalLog(`Operation Failure | No Options: Game ${optionsContext.gameId}, Turn ${turnId}`);
     }
   }
 
@@ -542,9 +547,15 @@ export class OptionsService {
         description: unitOrder.description
       });
     }
-    db.ordersRepo.saveDefaultOrders(defaultOrders).then((success: any) => {
-      db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
-    });
+
+    if (defaultOrders.length > 0) {
+      db.ordersRepo.saveDefaultOrders(defaultOrders).then((success: any) => {
+        db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
+      });
+
+    } else {
+      terminalLog(`Process Failure | No Default Orders: ${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`);
+    }
   }
 
   async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal | string> {

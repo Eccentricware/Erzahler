@@ -81,5 +81,4 @@ export const getOrderOptionsQuery = `
     c.country_name,
     p.province_name,
     sup.province_name
-
 `;
