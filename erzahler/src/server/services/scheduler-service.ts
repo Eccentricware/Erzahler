@@ -200,14 +200,14 @@ export class SchedulerService {
     const resolutionService: ResolutionService = new ResolutionService();
 
     const gamesStarting = await db.schedulerRepo.getGamesStarting();
-    terminalAddendum('Deadlines', `Found ${gamesStarting.length} games ready`);
+    terminalAddendum('Deadlines', `Found ${gamesStarting.length} ${gamesStarting.length === 1 ? 'game' : 'games'} ready`);
 
-    gamesStarting.forEach((game: StartSchedule) => {
+    gamesStarting.forEach(async (game: StartSchedule) => {
       if (Date.parse(game.startTime) < Date.now()) {
-        terminalAddendum('Deadlines', `Start event has passed for ${game.gameName} (${game.gameId})`);
-        resolutionService.startGame(game.gameId);
+        terminalAddendum('Deadlines', `${game.gameName} (${game.gameId}) start time ${game.startTime} has passed. Starting now.`);
+        await resolutionService.startGame(game.gameId);
       } else {
-        terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId})`);
+        terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${game.startTime}`);
         schedule.scheduleJob(
           `${game.gameName} - Start`,
           game.startTime,
@@ -219,8 +219,9 @@ export class SchedulerService {
     });
 
     const pendingTurns = await db.schedulerRepo.getUpcomingTurns(0);
+    terminalAddendum('Deadlines', `Found ${pendingTurns.length} pending turns`);
 
-    pendingTurns.forEach((turn: UpcomingTurn) => {
+    pendingTurns.forEach(async (turn: UpcomingTurn) => {
       // if (Date.parse(turn.deadline) < Date.now()) {
       //   resolutionService.resolveTurn(turn);
       //   console.log('Deadline in past: ' + true);

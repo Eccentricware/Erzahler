@@ -51,7 +51,6 @@ import { saveBuildOrderQuery } from '../queries/orders/orders-final/save-build-o
 export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
   orderCols: ColumnSet<unknown>;
-  orderOptionsCols: ColumnSet<unknown>;
   pool: Pool = new Pool(envCredentials);
   /**
    * @param db
@@ -74,11 +73,6 @@ export class OrdersRepository {
         'order_success'
       ],
       { table: 'orders' }
-    );
-
-    this.orderOptionsCols = new pgp.helpers.ColumnSet(
-      ['unit_id', 'order_type', 'secondary_unit_id', 'secondary_order_type', 'destinations', 'turn_id'],
-      { table: 'order_options' }
     );
   }
 
