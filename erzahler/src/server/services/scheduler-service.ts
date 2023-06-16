@@ -301,7 +301,7 @@ export class SchedulerService {
       gameName: scheduleSettings.gameName,
       gameStatus: gameStatus,
       gameStart: gameStart.toString(),
-      stylizedYear: scheduleSettings.stylizedStartYear,
+      stylizedYear: scheduleSettings.stylizedStartYear + 1,
       firstTurn: firstTurn.toString()
     };
   }

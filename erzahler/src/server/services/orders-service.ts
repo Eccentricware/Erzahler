@@ -21,16 +21,19 @@ import {
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
 import assert from 'assert';
+import { terminalLog } from '../utils/general';
 
 export class OrdersService {
   async getTurnOrders(idToken: string, gameId: number): Promise<TurnOrders> {
     // Identify user
     const accountService = new AccountService();
 
-    const userId = await accountService.getUserIdFromToken(idToken);
+    const user = await accountService.getUserProfile(idToken);
+    const userId = user.userId;
     const gameState = await db.gameRepo.getGameState(gameId);
     // Identify Player Type (Player, Admin, Spectator)
 
+    terminalLog(`Current orders requested for ${gameState.gameName} (${gameId}) by ${user.username} (${userId})`);
     const playerAssignments = await db.assignmentRepo.getUserAssignments(gameId, userId);
     // Identify Turn Type
     const playerCountries = playerAssignments.filter(
@@ -42,7 +45,7 @@ export class OrdersService {
         assignment.blindAdministrators === false &&
         ((assignment.assignmentType &&
           [AssignmentType.ADMINISTRATOR, AssignmentType.CREATOR].includes(assignment.assignmentType)) ||
-          assignment.username === 'Zeldark')
+          assignment.username === 'Erzahler')
       );
     });
 

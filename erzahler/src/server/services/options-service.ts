@@ -560,9 +560,11 @@ export class OptionsService {
 
   async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal | string> {
     const accountService = new AccountService();
-    const userId = await accountService.getUserIdFromToken(idToken);
+    const userProfile = await accountService.getUserProfile(idToken);
+    const userId = userProfile.userId;
 
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
+    terminalLog(`${userProfile.username} (${userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`);
     let playerCountry: CountryState | undefined = undefined;
     const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
     if (playerCountries.length > 0) {

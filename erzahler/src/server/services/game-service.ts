@@ -30,7 +30,7 @@ export class GameService {
 
       const newGameResult = await this.addNewGame(pool, this.gameData, this.user.timeZone)
         .then(async (newGameId: any) => {
-          terminalLog(`New Game ${this.gameData.gameName} (${newGameId}) created by ${this.user.username} (${this.user.userId}))`);
+          terminalLog(`New Game ${this.gameData.gameName} (${newGameId}) created by ${this.user.username} (${this.user.userId})`);
           return {
             success: true,
             gameId: newGameId,
@@ -38,7 +38,7 @@ export class GameService {
           };
         })
         .catch((error: Error) => {
-          terminalLog(`New Game ${this.gameData.gameName} failed to create by ${this.user.username} (${this.user.userId}))`)
+          terminalLog(`New Game ${this.gameData.gameName} failed to create by ${this.user.username} (${this.user.userId})`)
           console.log('Game Response Failure:', error.message);
           this.errors.push('New Game Error' + error.message);
           return {
@@ -349,6 +349,7 @@ export class GameService {
     const formattingService: FormattingService = new FormattingService();
     const pool: Pool = new Pool(envCredentials);
     let userId = 0;
+    let username = 'Guest';
     let userTimeZone = 'Africa/Monrovia';
     let meridiemTime = false;
 
@@ -358,11 +359,13 @@ export class GameService {
       this.user = await accountService.getUserProfile(idToken);
       if (!this.user.error) {
         userId = this.user.userId;
+        username = this.user.username;
         userTimeZone = this.user.timeZone;
         meridiemTime = this.user.meridiemTime;
       }
     }
 
+    terminalLog(`${username} (${userId}) Requested Game Data: ${gameId}`);
     const gameData: any = await db.gameRepo.getGameDetails(gameId, userId, userTimeZone, meridiemTime);
     const ruleData: any = await db.gameRepo.getRulesInGame(gameId);
     const playerRegistration: any = await db.gameRepo.getPlayerRegistrationStatus(gameId, userId);
@@ -375,17 +378,16 @@ export class GameService {
   }
 
   async updateGameSettings(idToken: string, gameData: any): Promise<any> {
-    console.log('triggering save');
     const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
 
     const token: DecodedIdToken = await accountService.validateToken(idToken);
     if (token.uid) {
-      const pool: Pool = new Pool(envCredentials);
-
       const isAdmin = await db.gameRepo.isGameAdmin(token.uid, gameData.gameId);
+
       if (isAdmin) {
         this.user = await accountService.getUserProfile(idToken);
+        terminalLog(`Updating Game Settings: ${gameData.gameName} (${gameData.gameId}) | ${this.user.username} (${this.user.userId})`);
         const events = schedulerService.extractEvents(gameData, this.user.timeZone);
         const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
 
@@ -445,6 +447,7 @@ export class GameService {
             };
           });
       } else {
+        terminalLog(`WARNING! Non-Admin Update Game Settings Attempt: ${gameData.gameName} (${gameData.gameId}) | ${this.user.username} (${this.user.userId})`);
         return 'Not admin!';
       }
     }
@@ -473,6 +476,7 @@ export class GameService {
   }
 
   async getGameStats(gameId: number): Promise<any> {
+    terminalLog(`Game Stats Requested: ${gameId}`);
     const gameState = await db.gameRepo.getGameState(gameId);
     const countryStats = await db.gameRepo.getGameStats(gameId, gameState.turnNumber);
     return { countries: countryStats };
