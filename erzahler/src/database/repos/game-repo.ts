@@ -93,6 +93,7 @@ export class GameRepository {
       return result.rows.map((gameStateResult: GameStateResult) => {
         return <GameState>{
           gameId: gameStateResult.game_id,
+          gameName: gameStateResult.game_name,
           turnId: gameStateResult.turn_id,
           deadline: gameStateResult.deadline,
           turnNumber: gameStateResult.turn_number,

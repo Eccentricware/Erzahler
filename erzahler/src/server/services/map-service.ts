@@ -1,10 +1,12 @@
 import { db } from '../../database/connection';
 import { RenderCategory } from '../../models/enumeration/render-category-enum';
 import { City, Terrain } from '../../models/objects/map-objects';
+import { terminalLog } from '../utils/general';
 
 export class MapService {
   async getCurrentMap(gameId: number): Promise<any> {
     const gameState = await db.gameRepo.getGameState(gameId);
+    terminalLog(`Current map requested for ${gameState.gameName} (${gameId})`);
 
     const terrain = await db.mapRepo.getTerrain(gameId, gameState.turnNumber);
 
