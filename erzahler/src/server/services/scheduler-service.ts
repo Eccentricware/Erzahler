@@ -3,13 +3,12 @@ import { StartScheduleObject } from '../../models/objects/start-schedule-object'
 import { WeeklyScheduleEventObject } from '../../models/objects/weekly-schedule-event-object';
 import { DateTime, HourNumbers } from 'luxon';
 import { DayOfWeek } from '../../models/enumeration/day_of_week-enum';
-import schedule from 'node-schedule';
-import { StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
+import schedule, { Invocation, Job } from 'node-schedule';
+import { ScheduledJob, StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
 import { StartTiming } from '../../models/enumeration/start-timing-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { ResolutionService } from './resolutionService';
-import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { GameState, NextTurns } from '../../models/objects/last-turn-info-object';
 import { db } from '../../database/connection';
@@ -18,7 +17,7 @@ import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
 import { terminalAddendum, terminalLog } from '../utils/general';
-import { GameSchedule, StartSchedule } from '../../models/objects/games/game-schedule-objects';
+import { StartSchedule } from '../../models/objects/games/game-schedule-objects';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -507,5 +506,44 @@ export class SchedulerService {
         terminalLog('Check In');
       }
     );
+  }
+
+  async getAllEvents(): Promise<ScheduledJob[]> {
+    const scheduledJobs = [];
+
+    console.log('scheduledJobs', schedule.scheduledJobs);
+
+    for (let jobName in schedule.scheduledJobs) {
+      const job: Job = schedule.scheduledJobs[jobName];
+      console.log('job', job);
+
+      //tslint:disable-next-line
+      const jobDate: DateTime = job.nextInvocation()._date;
+
+      const scheduledJob: ScheduledJob = {
+        name: jobName,
+        date: {
+          ts: jobDate.ts,
+          zone: jobDate._zone,
+          loc: jobDate.loc,
+          invalid: jobDate.invalid,
+          weekData: jobDate.weekData,
+          c: jobDate.c,
+          o: jobDate.o,
+          isLuxonDateTime: jobDate.isLuxonDateTime
+        },
+        isOneTimeJob: job.isOneTimeJob
+        // pendingInvocations: {
+          // fireDate: job.pendingInvocations[0].fireDate,
+          // endDate: schedule.scheduledJobs[job].pendingInvocations[0].endDate,
+          // recurrenceRule: schedule.scheduledJobs[job].pendingInvocations[0].recurrenceRule,
+          // timerID: job.pendingInvocations[0].timerID
+        // }
+      };
+
+      scheduledJobs.push(scheduledJob);
+    }
+
+    return scheduledJobs;
   }
 }
