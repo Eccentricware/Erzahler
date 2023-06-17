@@ -1,3 +1,5 @@
+import { DateTime } from "luxon";
+
 export interface StartScheduleEvents {
   userTimeZone: string;
   observeDst: boolean;
@@ -15,4 +17,10 @@ export interface StartScheduleEvents {
   nominationsTime: string;
   votesDay: string;
   votesTime: string;
+}
+
+export interface ScheduledJob {
+  name: string;
+  date: any;
+  isOneTimeJob: boolean;
 }

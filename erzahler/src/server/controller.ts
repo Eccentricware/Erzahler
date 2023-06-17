@@ -11,6 +11,7 @@ import { mapRouter } from './routes/maps-router';
 import { optionsRouter } from './routes/options-router';
 import * as dotenv from 'dotenv';
 import { OptionsService } from './services/options-service';
+import { schedulingRouter } from './routes/scheduling-router';
 // import { OptionsService } from './services/options-service';
 
 dotenv.config();
@@ -29,6 +30,7 @@ initializeApp({
 });
 
 erzahler.use('/assignments', assignmentRouter);
+erzahler.use('/scheduling', schedulingRouter);
 erzahler.use('/games', gameRouter);
 erzahler.use('/maps', mapRouter);
 erzahler.use('/options', optionsRouter);
