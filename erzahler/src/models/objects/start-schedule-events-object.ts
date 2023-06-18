@@ -1,5 +1,3 @@
-import { DateTime } from "luxon";
-
 export interface StartScheduleEvents {
   userTimeZone: string;
   observeDst: boolean;
@@ -22,5 +20,16 @@ export interface StartScheduleEvents {
 export interface ScheduledJob {
   name: string;
   date: any;
-  isOneTimeJob: boolean;
+}
+
+export interface NsDate extends Date {
+  isLuxonDateTime?: any;
+  o?: any;
+  c?: any;
+  weekData?: any;
+  invalid?: any;
+  loc?: any;
+  _zone?: any;
+  ts?: any;
+
 }

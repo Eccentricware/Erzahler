@@ -3,8 +3,8 @@ import { StartScheduleObject } from '../../models/objects/start-schedule-object'
 import { WeeklyScheduleEventObject } from '../../models/objects/weekly-schedule-event-object';
 import { DateTime, HourNumbers } from 'luxon';
 import { DayOfWeek } from '../../models/enumeration/day_of_week-enum';
-import schedule, { Invocation, Job } from 'node-schedule';
-import { ScheduledJob, StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
+import schedule, { Job } from 'node-schedule';
+import { NsDate, ScheduledJob, StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
 import { StartTiming } from '../../models/enumeration/start-timing-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { StartDetails } from '../../models/objects/initial-times-object';
@@ -517,8 +517,7 @@ export class SchedulerService {
       const job: Job = schedule.scheduledJobs[jobName];
       console.log('job', job);
 
-      //tslint:disable-next-line
-      const jobDate: DateTime = job.nextInvocation()._date;
+      const jobDate: NsDate = job.nextInvocation();
 
       const scheduledJob: ScheduledJob = {
         name: jobName,
@@ -531,14 +530,7 @@ export class SchedulerService {
           c: jobDate.c,
           o: jobDate.o,
           isLuxonDateTime: jobDate.isLuxonDateTime
-        },
-        isOneTimeJob: job.isOneTimeJob
-        // pendingInvocations: {
-          // fireDate: job.pendingInvocations[0].fireDate,
-          // endDate: schedule.scheduledJobs[job].pendingInvocations[0].endDate,
-          // recurrenceRule: schedule.scheduledJobs[job].pendingInvocations[0].recurrenceRule,
-          // timerID: job.pendingInvocations[0].timerID
-        // }
+        }
       };
 
       scheduledJobs.push(scheduledJob);
