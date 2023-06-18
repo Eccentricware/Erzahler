@@ -1,5 +1,6 @@
 export const getGameStateQuery = `
   SELECT g.game_id,
+    g.game_name,
     t.turn_id,
     t.deadline,
     t.turn_number,

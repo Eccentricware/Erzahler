@@ -2,7 +2,7 @@ export enum CountryStatus {
   ACTIVE = 'Active',
   CIVIL_DISORDER = 'Civil Disorder',
   ELIMINATED = 'Eliminated',
-  NPC = 'Non Player Country',
+  NPC = 'Non-Player Country',
   RETREAT = 'Retreat',
   //
   SURVIVED = 'Survived',

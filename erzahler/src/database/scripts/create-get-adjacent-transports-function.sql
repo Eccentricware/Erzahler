@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION get_adjacent_transports(
 )
 RETURNS TABLE(unit_id INTEGER, adjacent_transports json)
 AS $$
+
 	SELECT u.unit_id,
 		json_agg(CASE
 			WHEN n.node_id = na.node_1_id
@@ -48,4 +49,5 @@ AS $$
 				THEN (u1.unit_type = 'Fleet' AND p1.province_type != 'coast') OR u1.unit_type = 'Wing'
 		END
 	GROUP BY u.unit_id;
+
 $$ LANGUAGE SQL;

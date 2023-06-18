@@ -8,10 +8,13 @@ import { UpcomingTurn, UpcomingTurnResult } from '../../models/objects/scheduler
 import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formattingService';
 import { setAssignmentsActiveQuery } from '../queries/assignments/set-assignments-active-query';
-import { startGameQuery } from '../queries/game/start-game-query';
+import { readyGameQuery } from '../queries/game/ready-game-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
 import { getScheduleSettingsQuery } from '../queries/scheduler/get-schedule-settings-query';
 import { getUpcomingTurnsQuery } from '../queries/scheduler/get-upcoming-turns-query';
+import { getGamesStartingQuery } from '../queries/scheduler/get-games-starting-query';
+import { StartSchedule, StartScheduleResult } from '../../models/objects/games/game-schedule-objects';
+import { terminalLog } from '../../server/utils/general';
 
 /**
  * Handles DB updates involving scheduling timing critical events and turns.
@@ -67,8 +70,20 @@ export class SchedulerRepository {
         })[0];
       })
       .catch((error: Error) => {
-        console.log('Get Schedule Settings Query Error: ' + error.message);
+        terminalLog(`Get Game Schedule Settings Query Error | (${gameId}):` + error.message);
       });
+  }
+
+  async getGamesStarting(): Promise<StartSchedule[]> {
+    return await this.pool.query(getGamesStartingQuery, []).then((results: QueryResult<any>) =>
+      results.rows.map((game: StartScheduleResult) => {
+        return <StartSchedule>{
+          gameId: game.game_id,
+          gameName: game.game_name,
+          startTime: game.start_time
+        };
+      })
+    );
   }
 
   async getUpcomingTurns(gameId = 0): Promise<UpcomingTurn[]> {
@@ -113,8 +128,8 @@ export class SchedulerRepository {
       });
   }
 
-  async startGame(startGameArgs: any[]): Promise<any> {
-    await this.pool.query(startGameQuery, startGameArgs);
+  async readyGame(readyGameArgs: any[]): Promise<any> {
+    await this.pool.query(readyGameQuery, readyGameArgs);
   }
 
   async setAssignmentsActive(gameId: number): Promise<any> {

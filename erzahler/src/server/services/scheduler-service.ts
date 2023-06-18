@@ -3,13 +3,12 @@ import { StartScheduleObject } from '../../models/objects/start-schedule-object'
 import { WeeklyScheduleEventObject } from '../../models/objects/weekly-schedule-event-object';
 import { DateTime, HourNumbers } from 'luxon';
 import { DayOfWeek } from '../../models/enumeration/day_of_week-enum';
-import schedule from 'node-schedule';
-import { StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
+import schedule, { Job } from 'node-schedule';
+import { NsDate, ScheduledJob, StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
 import { StartTiming } from '../../models/enumeration/start-timing-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { ResolutionService } from './resolutionService';
-import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { GameState, NextTurns } from '../../models/objects/last-turn-info-object';
 import { db } from '../../database/connection';
@@ -17,8 +16,8 @@ import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-obje
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
-import { setInterval } from 'timers';
-import { terminalLog } from '../utils/general';
+import { terminalAddendum, terminalLog } from '../utils/general';
+import { StartSchedule } from '../../models/objects/games/game-schedule-objects';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -196,55 +195,73 @@ export class SchedulerService {
   // }
 
   async syncDeadlines(): Promise<void> {
+    terminalLog('Syncing Deadlines');
     const resolutionService: ResolutionService = new ResolutionService();
 
-    const pendingTurns = await db.schedulerRepo.getUpcomingTurns(0);
+    const gamesStarting = await db.schedulerRepo.getGamesStarting();
+    terminalAddendum(
+      'Deadlines',
+      `Found ${gamesStarting.length} ${gamesStarting.length === 1 ? 'game' : 'games'} ready`
+    );
 
-    pendingTurns.forEach((turn: UpcomingTurn) => {
-      if (Date.parse(turn.deadline) < Date.now()) {
-        resolutionService.resolveTurn(turn);
-        console.log('Deadline in past: ' + true);
+    gamesStarting.forEach(async (game: StartSchedule) => {
+      if (Date.parse(game.startTime) < Date.now()) {
+        terminalAddendum(
+          'Deadlines',
+          `${game.gameName} (${game.gameId}) start time ${game.startTime} has passed. Starting now.`
+        );
+        await resolutionService.startGame(game.gameId);
       } else {
-        console.log('Deadline in past: ' + false);
+        terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${game.startTime}`);
+        schedule.scheduleJob(`${game.gameName} - Start`, game.startTime, () => {
+          resolutionService.startGame(game.gameId);
+        });
       }
-
-      schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
-        resolutionService.resolveTurn(turn);
-      });
     });
 
-    // console.log(schedule);
+    const pendingTurns = await db.schedulerRepo.getUpcomingTurns(0);
+    terminalAddendum('Deadlines', `Found ${pendingTurns.length} pending turns`);
+
+    pendingTurns.forEach(async (turn: UpcomingTurn) => {
+      // if (Date.parse(turn.deadline) < Date.now()) {
+      //   resolutionService.resolveTurn(turn);
+      //   console.log('Deadline in past: ' + true);
+      // } else {
+      //   console.log('Deadline in past: ' + false);
+      //   schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
+      //     resolutionService.resolveTurn(turn);
+      //   });
+      // }
+    });
   }
 
-  async prepareGameStart(gameData: GameSettings): Promise<void> {
+  async readyGame(gameData: GameSettings): Promise<void> {
     const resolutionService: ResolutionService = new ResolutionService();
 
     const gameId = gameData.gameId;
-    const startDetails: StartDetails = await this.lockStartDetails(gameId);
+    const startDetails: StartDetails = await this.getStartDetails(gameId);
 
-    await db.schedulerRepo.startGame([startDetails.gameStatus, startDetails.gameStart, gameId]);
-
+    await db.schedulerRepo.readyGame([startDetails.gameStart, gameId]);
     await db.schedulerRepo.setAssignmentsActive(gameId);
 
-    // Is this clunky? Turn creation delayed until actual start
-    await db.schedulerRepo.updateTurn([startDetails.gameStart, TurnStatus.RESOLVED, 0, gameId]);
-
     if (startDetails.gameStatus === GameStatus.PLAYING) {
-      resolutionService.startGame(gameData, startDetails);
+      resolutionService.startGame(gameId);
     } else {
       schedule.scheduleJob(`${gameData.gameName} - Game Start`, startDetails.gameStart, () => {
-        resolutionService.startGame(gameData, startDetails);
+        resolutionService.startGame(gameId);
       });
     }
   }
 
-  async lockStartDetails(gameId: number): Promise<StartDetails> {
+  async getStartDetails(gameId: number): Promise<StartDetails> {
     const scheduleSettings = await this.getGameScheduleSettings(gameId);
     if (!scheduleSettings) {
       return {
+        gameName: 'Error',
         gameStatus: 'Error',
-        gameStart: DateTime.now(),
-        firstTurn: DateTime.now()
+        gameStart: 'Error',
+        stylizedYear: 0,
+        firstTurn: 'Error'
       };
     }
 
@@ -256,7 +273,7 @@ export class SchedulerService {
     switch (scheduleSettings.turn1Timing) {
       case StartTiming.IMMEDIATE:
         gameStatus = GameStatus.PLAYING;
-        gameStart = now;
+        // gameStart = now;
         break;
       case StartTiming.STANDARD:
         gameStatus = GameStatus.READY;
@@ -265,7 +282,7 @@ export class SchedulerService {
         break;
       case StartTiming.REMAINDER:
         gameStatus = GameStatus.PLAYING;
-        gameStart = now;
+        // gameStart = now;
         firstTurn = firstTurn.plus({ week: 1 });
         break;
       case StartTiming.DOUBLE:
@@ -275,15 +292,17 @@ export class SchedulerService {
         break;
       case StartTiming.EXTENDED:
         gameStatus = GameStatus.PLAYING;
-        gameStart = now;
+        // gameStart = now;
         firstTurn = firstTurn.plus({ week: 2 });
         break;
     }
 
     return {
+      gameName: scheduleSettings.gameName,
       gameStatus: gameStatus,
-      gameStart: gameStart,
-      firstTurn: firstTurn
+      gameStart: gameStart.toString(),
+      stylizedYear: scheduleSettings.stylizedStartYear + 1,
+      firstTurn: firstTurn.toString()
     };
   }
 
@@ -338,14 +357,14 @@ export class SchedulerService {
     return true;
   }
 
-  findNextTurns(gameState: GameState): NextTurns {
+  findNextTurns(currentTurn: UpcomingTurn, gameState: GameState, unitsRetreating: boolean): NextTurns {
     const nextTurns: NextTurns = { pending: { type: TurnType.SPRING_ORDERS } };
     const nominationsStarted = this.checkNominationsStarted(gameState);
     const nominateDuringAdjustments = gameState.nominateDuringAdjustments;
     const voteDuringSpring = gameState.voteDuringSpring;
 
     // (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
-    if (gameState.turnType === TurnType.ORDERS_AND_VOTES) {
+    if (currentTurn.turnType === TurnType.ORDERS_AND_VOTES) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
         nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
@@ -355,7 +374,7 @@ export class SchedulerService {
     }
 
     // Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> Votes ->
-    if (gameState.turnType === TurnType.SPRING_ORDERS) {
+    if (currentTurn.turnType === TurnType.SPRING_ORDERS) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
         nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
@@ -365,12 +384,12 @@ export class SchedulerService {
     }
 
     // Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) ->
-    if (gameState.turnType === TurnType.SPRING_RETREATS) {
+    if (currentTurn.turnType === TurnType.SPRING_RETREATS) {
       nextTurns.pending.type = TurnType.FALL_ORDERS;
     }
 
     // Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats ->
-    if (gameState.turnType === TurnType.FALL_ORDERS) {
+    if (currentTurn.turnType === TurnType.FALL_ORDERS) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.FALL_RETREATS;
 
@@ -389,7 +408,7 @@ export class SchedulerService {
     }
 
     // Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders ->
-    if (gameState.turnType === TurnType.FALL_RETREATS) {
+    if (currentTurn.turnType === TurnType.FALL_RETREATS) {
       if (nominationsStarted && nominateDuringAdjustments) {
         nextTurns.pending.type = TurnType.ADJ_AND_NOM;
       } else if (nominationsStarted && !nominateDuringAdjustments) {
@@ -401,7 +420,7 @@ export class SchedulerService {
     }
 
     // Adjustments -> Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
-    if (gameState.turnType === TurnType.ADJUSTMENTS) {
+    if (currentTurn.turnType === TurnType.ADJUSTMENTS) {
       // nominateDuringAdjustments === false
       if (nominationsStarted) {
         nextTurns.pending.type = TurnType.NOMINATIONS;
@@ -411,7 +430,7 @@ export class SchedulerService {
     }
 
     // (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
-    if (gameState.turnType === TurnType.ADJ_AND_NOM) {
+    if (currentTurn.turnType === TurnType.ADJ_AND_NOM) {
       if (nominationsStarted && voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
       } else {
@@ -420,7 +439,7 @@ export class SchedulerService {
     }
 
     // Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> Adjustments ->
-    if (gameState.turnType === TurnType.NOMINATIONS) {
+    if (currentTurn.turnType === TurnType.NOMINATIONS) {
       // nominationsStarted === true && nominateDuringAdjustments === false
       if (voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
@@ -431,7 +450,7 @@ export class SchedulerService {
     }
 
     // Votes -> Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
-    if (gameState.turnType === TurnType.VOTES) {
+    if (currentTurn.turnType === TurnType.VOTES) {
       nextTurns.pending.type = TurnType.SPRING_ORDERS;
     }
 
@@ -486,10 +505,38 @@ export class SchedulerService {
       },
       () => {
         terminalLog('Check In');
-        // terminalLog('Checking in');
-        // setInterval(() => {
-        // }, 60000 * interval);
       }
     );
+  }
+
+  async getAllEvents(): Promise<ScheduledJob[]> {
+    const scheduledJobs = [];
+
+    console.log('scheduledJobs', schedule.scheduledJobs);
+
+    for (const jobName in schedule.scheduledJobs) {
+      const job: Job = schedule.scheduledJobs[jobName];
+      console.log('job', job);
+
+      const jobDate: NsDate = job.nextInvocation();
+
+      const scheduledJob: ScheduledJob = {
+        name: jobName,
+        date: {
+          ts: jobDate.ts,
+          zone: jobDate._zone,
+          loc: jobDate.loc,
+          invalid: jobDate.invalid,
+          weekData: jobDate.weekData,
+          c: jobDate.c,
+          o: jobDate.o,
+          isLuxonDateTime: jobDate.isLuxonDateTime
+        }
+      };
+
+      scheduledJobs.push(scheduledJob);
+    }
+
+    return scheduledJobs;
   }
 }

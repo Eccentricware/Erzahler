@@ -13,6 +13,7 @@ import {
   NominatableCountryResult,
   Nomination,
   NominationResult,
+  OrderOption,
   SavedDestination,
   SavedOption,
   SavedOptionResult,
@@ -138,6 +139,22 @@ export class OptionsRepository {
     return airAdjArray;
   }
 
+  async saveUnitOptions(unitOptions: OrderOption[], turnId: number): Promise<void> {
+    const optionsValues = unitOptions.map((option) => {
+      return {
+        unit_id: option.unitId,
+        order_type: option.orderType,
+        secondary_unit_id: option.secondaryUnitId,
+        secondary_order_type: option.secondaryOrderType,
+        destinations: option.destinations,
+        turn_id: turnId
+      };
+    });
+
+    const query = this.pgp.helpers.insert(optionsValues, this.orderOptionsCols);
+    await this.pool.query(query);
+  }
+
   /**
    * Fetches options for a turn
    * @param turnId    - Turn's ID
@@ -178,6 +195,7 @@ export class OptionsRepository {
                     return <SavedDestination>{
                       nodeId: destination.node_id,
                       nodeName: this.formatDestinationNodeName(destination.node_name),
+                      nodeDisplay: destination.node_display,
                       loc: destination.loc
                     };
                   })

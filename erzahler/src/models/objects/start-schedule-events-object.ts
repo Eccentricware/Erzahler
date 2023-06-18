@@ -16,3 +16,19 @@ export interface StartScheduleEvents {
   votesDay: string;
   votesTime: string;
 }
+
+export interface ScheduledJob {
+  name: string;
+  date: any;
+}
+
+export interface NsDate extends Date {
+  isLuxonDateTime?: any;
+  o?: any;
+  c?: any;
+  weekData?: any;
+  invalid?: any;
+  loc?: any;
+  _zone?: any;
+  ts?: any;
+}

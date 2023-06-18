@@ -1,11 +1,25 @@
 import { db } from '../../database/connection';
+import {
+  CountryHistoryRow,
+  DbStates,
+  GameRow,
+  OrderRow,
+  OrderSetRow,
+  ProvinceHistoryRow,
+  TurnRow,
+  UnitHistoryRow,
+  UnitRow
+} from '../../database/schema/table-fields';
+import { CountryStatus } from '../../models/enumeration/country-enum';
+import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { OrderStatus } from '../../models/enumeration/order-status-enum';
 import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 import { TurnTS } from '../../models/objects/database-objects';
-import { CountryState } from '../../models/objects/games/country-state-objects';
+import { GameSchedule, StartSchedule } from '../../models/objects/games/game-schedule-objects';
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
@@ -21,185 +35,409 @@ import {
   CountryTransferResources,
   OrderDependencies,
   OrderResolutionLocation,
-  ProvinceHistoryInsert,
   TransferResources,
   TransportAttempt,
   TransportNetworkUnit,
+  UnitMovementResults,
   UnitOrderGroups,
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
+import { terminalLog } from '../utils/general';
+import { GameService } from './game-service';
 import { OptionsService } from './options-service';
+import { SchedulerService } from './scheduler-service';
 
 export class ResolutionService {
-  optionService: OptionsService = new OptionsService();
+  optionsService: OptionsService = new OptionsService();
+  schedulerService: SchedulerService = new SchedulerService();
+  gameService: GameService = new GameService();
 
-  async startGame(gameData: GameSettings, startDetails: StartDetails): Promise<void> {
-    const optionsService = new OptionsService();
+  async startGame(gameId: number): Promise<void> {
+    const startDetails: StartDetails = await this.schedulerService.getStartDetails(gameId);
+    terminalLog(`Starting game ${startDetails.gameName} (${gameId})`);
+
     const turnNameSplit = TurnType.SPRING_ORDERS.split(' ');
     const firstTurn: TurnTS = {
-      gameId: gameData.gameId,
+      gameId: gameId,
       turnNumber: 1,
-      turnName: `${turnNameSplit[0]} ${gameData.stylizedStartYear + 1} ${turnNameSplit[1]}`,
+      turnName: `${turnNameSplit[0]} ${startDetails.stylizedYear} ${turnNameSplit[1]}`,
       turnType: TurnType.SPRING_ORDERS,
       turnStatus: TurnStatus.PENDING,
       yearNumber: 1,
       deadline: startDetails.firstTurn
     };
-    const nextTurn: TurnTS = await db.schedulerRepo.insertTurn(firstTurn);
 
-    if (nextTurn.turnId) {
-      await optionsService.saveOptionsForNextTurn(gameData.gameId, nextTurn.turnId);
-    }
-    // Alert service call
+    await db.schedulerRepo
+      .insertTurn(firstTurn)
+      .then(async (nextTurn: TurnTS) => {
+        await this.optionsService.saveOptionsForNextTurn(gameId, nextTurn.turnId);
+        await db.gameRepo.setGamePlaying(gameId);
+        // Alert service call
+      })
+      .catch((err: Error) => {
+        terminalLog(`Error starting game ${gameId}: ${err.message}`);
+      });
   }
 
   async resolveTurn(turn: UpcomingTurn): Promise<void> {
-    const turnsWithUnitOrders = [
-      TurnType.ORDERS_AND_VOTES,
-      TurnType.SPRING_ORDERS,
-      TurnType.SPRING_RETREATS,
-      TurnType.FALL_ORDERS,
-      TurnType.FALL_RETREATS
-    ];
-    const turnsWithTransfers = [TurnType.ORDERS_AND_VOTES, TurnType.SPRING_ORDERS]; // Can add a check for future Transfer in Fall rule and push turn type, if desired
-    // const turnsWithAdjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM];
-    // const turnsWithNominations = [TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS];
-    // const turnsWithVotes = [TurnType.ORDERS_AND_VOTES, TurnType.VOTES];
+    switch (turn.turnType) {
+      case TurnType.ORDERS_AND_VOTES:
+        this.resolveSpringOrders(turn);
+        break;
+      case TurnType.SPRING_ORDERS:
+        this.resolveSpringOrders(turn);
+        break;
+      case TurnType.SPRING_RETREATS:
+        this.resolveSpringOrders(turn);
+        break;
+      case TurnType.FALL_ORDERS:
+        this.resolveSpringOrders(turn);
+        break;
+      case TurnType.FALL_RETREATS:
+        this.resolveSpringOrders(turn);
+        break;
+      case TurnType.ADJUSTMENTS:
+        this.resolveSpringOrders(turn);
+        break;
+      case TurnType.ADJ_AND_NOM:
+        this.resolveSpringOrders(turn);
+        break;
+      case TurnType.NOMINATIONS:
+        this.resolveSpringOrders(turn);
+        break;
+      case TurnType.VOTES:
+        this.resolveSpringOrders(turn);
+        break;
+    }
+  }
+  //   return;
+  //   const turnsWithUnitOrders = [
+  //     TurnType.ORDERS_AND_VOTES,
+  //     TurnType.SPRING_ORDERS,
+  //     TurnType.SPRING_RETREATS,
+  //     TurnType.FALL_ORDERS,
+  //     TurnType.FALL_RETREATS
+  //   ];
+  //   const turnsWithTransfers = [TurnType.ORDERS_AND_VOTES, TurnType.SPRING_ORDERS];
+  //   const turnsWithAdjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM];
+  //   const turnsWithNominations = [TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS];
+  //   const turnsWithVotes = [TurnType.ORDERS_AND_VOTES, TurnType.VOTES];
 
+  //   const turnsWithClaiming = [TurnType.FALL_ORDERS, TurnType.FALL_RETREATS];
+
+  //   let unitsRetreating = false;
+  //   const claimingSeason = turnsWithClaiming.includes(turn.turnType);
+
+  //   const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
+
+  //   // DB Update
+  //   const dbUpdates: DbStates = {
+  //     game: {},
+  //     turn: {},
+  //     orderSets: [],
+  //     orders: [],
+  //     units: [],
+  //     unitHistories: [],
+  //     provinceHistories: [],
+  //     countryHistories: []
+  //   };
+
+  //   const dbStates: DbStates = {
+  //     game: {},
+  //     turn: {},
+  //     orderSets: [],
+  //     orders: [],
+  //     units: [],
+  //     unitHistories: [],
+  //     countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber),
+  //     provinceHistories: [],
+  //   };
+
+  //   if (turnsWithUnitOrders.includes(turn.turnType)) {
+  //     dbStates.provinceHistories = await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber);
+  //     dbStates.unitHistories = await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber);
+
+  //     const unitMovementResults: UnitOrderResolution[] = await this.resolveUnitOrders(gameState, turn);
+
+  //     unitMovementResults.forEach((result: UnitOrderResolution) => {
+  //       if (result.orderType === OrderDisplay.NUKE) {
+  //         this.prepareNuclearStrikeRows(result, dbStates, dbUpdates);
+  //       }
+
+  //       if (result.unit.status === UnitStatus.NUKED) {
+  //         this.prepareNuclearVictimRows(result, dbStates, dbUpdates);
+  //       }
+
+  //       if (result.unit.status === UnitStatus.ACTIVE && result.unit.canCapture) {
+  //         this.prepareClaimingUnitRows(result, dbStates, dbUpdates, claimingSeason);
+  //       }
+
+  //       if (result.unit.status === UnitStatus.ACTIVE && result.unit.type === UnitType.WING) {
+  //         this.prepareBombardRows(result, dbStates, dbUpdates, claimingSeason);
+  //       }
+
+  //       if (result.unit.status === UnitStatus.RETREAT) {
+  //         unitsRetreating = true;
+  //       }
+
+  //       if (result.orderId > 0) {
+  //         dbUpdates.orders?.push({
+  //           orderId: result.orderId,
+  //           orderStatus: OrderStatus.PROCESSED,
+  //           orderSuccess: result.orderSuccess,
+  //           power: result.power,
+  //           description: result.description,
+  //           primaryResolution: result.primaryResolution,
+  //           secondaryResolution: result.secondaryResolution
+  //         });
+  //       }
+  //     });
+  //   }
+
+  //   if (turnsWithTransfers.includes(turn.turnType)) {
+  //     // const transferResults = await this.resolveTransfers(gameState, turn);
+
+  //     // transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
+  //     //   if (result.success && result.hasNukes) {
+  //     //     const partnerHistory = dbStates.countryHistories?.find(
+  //     //       (country: CountryState) => country.countryId === result.techPartnerId
+  //     //     );
+  //     //     if (partnerHistory) {
+  //     //       partnerHistory.nukeRange = gameState.defaultNukeRange;
+  //     //     }
+  //     //   }
+  //     // });
+
+  //     // transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
+  //     //   if (result.builds > 0) {
+  //     //     // const playerCountry = dbStates.countryHistories?.find(
+  //     //     //   (country: CountryState) => country.countryId === result.playerCountryId
+  //     //     // );
+  //     //     // const partnerCountry = dbStates.countryHistories?.find(
+  //     //     //   (country: CountryState) => country.countryId === result.countryId
+  //     //     // );
+  //     //     // if (playerCountry && partnerCountry) {
+  //     //     //   playerCountry.builds -= result.builds;
+  //     //     //   partnerCountry.builds += result.builds;
+  //     //     // }
+  //     //   }
+  //     // });
+  //   }
+
+  //   // if (turnsWithAdjustments.includes(turn.turnType)) {
+  //   //   this.resolveAdjustments(gameState, turn);
+  //   // }
+
+  //   // if (turnsWithNominations.includes(turn.turnType)) {
+  //   //   this.resolveNominations(gameState, turn);
+  //   // }
+
+  //   // if (turnsWithVotes.includes(turn.turnType)) {
+  //   //   this.resolveVotes(gameState, turn);
+  //   // }
+
+  //   // DB Writes
+  //   // Spring / Disbands
+  //   if (dbUpdates.unitHistories.length > 0) {
+  //     console.log('DB: Unit History Insert'); // Anytime
+  //   }
+
+  //   if (dbUpdates.orders.length > 0) {
+  //     console.log('DB: Order Update');
+  //   }
+
+  //   if (dbUpdates.provinceHistories.length > 0) {
+  //     console.log('DB: Province History Insert');
+  //   }
+
+  //   if (dbUpdates.countryHistories.length > 0) {
+  //     console.log('DB: Country History Insert'); // Tech transfers and nuclear range
+  //   }
+
+  //   // Builds
+  //   if (dbUpdates.units.length > 0) {
+  //     console.log('DB: Unit Insert');
+  //   }
+
+  //   // Every turn
+  //   console.log('DB: Order Set Update');
+  //   console.log('DB: Game Update'); // Current Year
+
+  //   // Find next turn will require an updated gameState first
+  //   console.log('DB: Turn Update'); // Pending resolution
+
+  //   // Next turns needs to know retreats after resolution
+  //   const nextTurns = this.schedulerService.findNextTurns(TurnType.FALL_ORDERS, gameState);
+
+  //   if (gameState.preliminaryTurnId) {
+  //     console.log('DB: Turn Update'); // Convert preliminary to pending
+  //   } else {
+  //     // Find next turn
+  //     console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
+  //   }
+
+  //   const abandonedBombards: ProvinceHistoryRow[] = await this.getAbandonedBombards(gameState);
+  //   // this.restoreBombardedProvinces(abandonedBombards, 1);
+
+  //   console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
+  //   console.log('Triggering next turn defaults');
+
+  //   // DB Write
+
+  //   ///////////
+
+  //   // Fetch turn to filter compatible orders
+  //   // New get query would be needed which includes detailed information
+  //   // Game state and the orders for validation and broadcast
+
+  //   // Validate possibility of moves
+  //   // Options array query
+  //   // Tech Possesion
+  //   // Build Counts
+  //   // Country Nomination Status
+  //   // Coalition Integrity
+
+  //   // Update Turn and Preliminary Status
+  //   // Trigger Set Defaults
+  //   // Check Preliminary invalidation
+  // }
+
+  async resolveSpringOrders(turn: UpcomingTurn): Promise<void> {
     const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
-    const countryHistories: CountryState[] = await db.gameRepo.getCountryState(turn.gameId, gameState.turnNumber, 0);
-    const provinceHistories: ProvinceHistoryInsert[] = [];
+    const dbStates: DbStates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      orders: [],
+      units: [],
+      unitHistories: [],
+      countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber),
+      provinceHistories: []
+    };
 
-    if (turnsWithUnitOrders.includes(turn.turnType)) {
-      const unitMovementResults: UnitOrderResolution[] = await this.resolveUnitOrders(gameState, turn);
-      // provinceHistories.push(...unitMovementResults.contestedProvinces)
+    // DB Update
+    const dbUpdates: DbStates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      orders: [],
+      units: [],
+      unitHistories: [],
+      provinceHistories: [],
+      countryHistories: []
+    };
 
-      unitMovementResults.forEach((result: UnitOrderResolution) => {
-        const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
-        let provinceHistory = provinceHistories.find(
-          (province: ProvinceHistoryInsert) => province.provinceId === finalPosition.provinceId
-        );
-        if (provinceHistory) {
-          provinceHistory.controllerId = this.resolveControllerId(result, finalPosition, turn);
-          provinceHistory.provinceStatus = this.resolveProvinceStatus(result, finalPosition, turn);
-        } else {
-          provinceHistory = this.createProvinceHistory(result, finalPosition, turn);
-        }
+    let unitsRetreating = false;
 
-        if (
-          [OrderDisplay.DISBAND, OrderDisplay.NUKE].includes(result.orderType) ||
-          result.unit.status === UnitStatus.NUKED
-        ) {
-          const countryHistory = countryHistories.find(
-            (country: CountryState) => country.countryId === result.unit.countryId
-          );
-          if (countryHistory) {
-            countryHistory.adjustments++;
-            countryHistory.unitCount--;
-          }
-        }
+    dbStates.provinceHistories = await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber);
+    dbStates.unitHistories = await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber);
 
-        if (result.orderType === OrderDisplay.NUKE) {
-          const targetCountry = countryHistories.find(
-            (country: CountryState) => country.countryId === result.destination.controllerId
-          );
-          if (targetCountry && result.destination.provinceStatus === ProvinceStatus.ACTIVE) {
-            targetCountry.adjustments--;
-            targetCountry.cityCount--;
-          }
-        }
+    const unitMovementResults: UnitOrderResolution[] = await this.resolveUnitOrders(gameState, turn);
 
-        if (
-          [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType) &&
-          [UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(result.unit.status) &&
-          [UnitType.ARMY, UnitType.FLEET, UnitType.WING].includes(result.unit.type) &&
-          result.orderSuccess === false
-        ) {
-          const bounceFound = provinceHistories.find(
-            (province: ProvinceHistoryInsert) => province.provinceId === result.destination.provinceId
-          );
-          if (!bounceFound) {
-            provinceHistories.push({
-              provinceId: result.destination.provinceId,
-              controllerId: result.destination.controllerId,
-              capitalOwnerId: result.destination.capitalOwnerId,
-              provinceStatus: result.destination.provinceStatus,
-              validRetreat: false
-            });
-          }
-        }
+    unitMovementResults.forEach((result: UnitOrderResolution) => {
+      if (result.orderId > 0) {
+        dbUpdates.orders.push({
+          orderId: result.orderId,
+          orderStatus: OrderStatus.PROCESSED,
+          orderSuccess: result.orderSuccess,
+          power: result.power,
+          description: result.description,
+          primaryResolution: result.primaryResolution,
+          secondaryResolution: result.secondaryResolution
+        });
+      }
 
-        provinceHistories.push(provinceHistory);
-      });
+      // Includes Province rows. Units don't have to be nuked. Striker always has eyes on nuked province
+      if (result.orderType === OrderDisplay.NUKE) {
+        this.handleNuclearStrike(result, dbStates, dbUpdates);
+      }
+
+      if (result.unit.status === UnitStatus.NUKED) {
+        this.handleNuclearVictim(result, dbStates, dbUpdates);
+      }
+
+      // Includes province contesting
+      if (result.unit.status === UnitStatus.ACTIVE) {
+        this.handleSpringMovement(result, dbStates, dbUpdates);
+      }
+
+      if (result.unit.status === UnitStatus.RETREAT) {
+        unitsRetreating = true;
+      }
+    });
+
+    const transferResults = await this.resolveTransfers(gameState, turn);
+
+    transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
+      // if (result.success && result.hasNukes) {
+      //   const partnerHistory = dbStates.countryHistories?.find(
+      //     (country: CountryState) => country.countryId === result.techPartnerId
+      //   );
+      //   if (partnerHistory) {
+      //     partnerHistory.nukeRange = gameState.defaultNukeRange;
+      //   }
+      // }
+    });
+
+    transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
+      if (result.builds > 0) {
+        // const playerCountry = dbStates.countryHistories?.find(
+        //   (country: CountryState) => country.countryId === result.playerCountryId
+        // );
+        // const partnerCountry = dbStates.countryHistories?.find(
+        //   (country: CountryState) => country.countryId === result.countryId
+        // );
+        // if (playerCountry && partnerCountry) {
+        //   playerCountry.builds -= result.builds;
+        //   partnerCountry.builds += result.builds;
+        // }
+      }
+    });
+
+    if (dbUpdates.orders.length > 0) {
+      // db.resolutionRepo.updateOrders(dbUpdates.orders);
+      console.log('DB: Order Update', dbUpdates.orders);
     }
 
-    if (turnsWithTransfers.includes(turn.turnType)) {
-      const transferResults = await this.resolveTransfers(gameState, turn);
-
-      transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
-        if (result.success && result.hasNukes) {
-          const partnerHistory = countryHistories.find(
-            (country: CountryState) => country.countryId === result.techPartnerId
-          );
-          if (partnerHistory) {
-            partnerHistory.nukeRange = gameState.defaultNukeRange;
-          }
-        }
-      });
-
-      transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
-        if (result.builds > 0) {
-          const playerCountry = countryHistories.find(
-            (country: CountryState) => country.countryId === result.playerCountryId
-          );
-          const partnerCountry = countryHistories.find(
-            (country: CountryState) => country.countryId === result.countryId
-          );
-          if (playerCountry && partnerCountry) {
-            playerCountry.builds -= result.builds;
-            partnerCountry.builds += result.builds;
-          }
-        }
-      });
+    if (dbUpdates.unitHistories.length > 0) {
+      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories);
+      console.log('DB: Unit History Insert');
     }
 
-    // if (turnsWithAdjustments.includes(turn.turnType)) {
-    //   this.resolveAdjustments(gameState, turn);
-    // }
+    if (dbUpdates.provinceHistories.length > 0) {
+      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories);
+      console.log('DB: Province History Insert');
+    }
 
-    // if (turnsWithNominations.includes(turn.turnType)) {
-    //   this.resolveNominations(gameState, turn);
-    // }
+    if (dbUpdates.countryHistories.length > 0) {
+      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
+      console.log('DB: Country History Insert');
+    }
 
-    // if (turnsWithVotes.includes(turn.turnType)) {
-    //   this.resolveVotes(gameState, turn);
-    // }
+    // Every turn
+    // await db.resolutionRepo.resolveOrderSets(turn.turnId);
+    console.log('DB: Order Set Update');
 
-    console.log('Db Write Time!');
+    // Find next turn will require an updated gameState first
+    console.log('DB: Turn Update'); // Pending resolution
 
-    // DB Write
+    // Next turns needs to know retreats after resolution
+    const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
 
-    ///////////
+    if (gameState.preliminaryTurnId) {
+      console.log('DB: Turn Update'); // Convert preliminary to pending
+    } else {
+      // Find next turn
+      console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
+    }
 
-    // Fetch turn to filter compatible orders
-    // New get query would be needed which includes detailed information
-    // Game state and the orders for validation and broadcast
-
-    // Validate possibility of moves
-    // Options array query
-    // Tech Possesion
-    // Build Counts
-    // Country Nomination Status
-    // Coalition Integrity
-
-    // Update Turn and Preliminary Status
-    // Trigger Set Defaults
-    // Check Preliminary invalidation
+    console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
+    console.log('Triggering next turn defaults');
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
-    const unitOptions = this.optionService.finalizeUnitOptions(
+    const unitOptions = this.optionsService.finalizeUnitOptions(
       await db.optionsRepo.getUnitOptions(gameState.gameId, gameState.turnNumber, turn.turnId, 0)
     );
 
@@ -208,6 +446,13 @@ export class ResolutionService {
       gameState.turnNumber,
       turn.turnId
     );
+
+    const remainingGarrisons: UnitOrderResolution[] = await db.resolutionRepo.getRemainingGarrisons(
+      gameState.gameId,
+      gameState.turnNumber
+    );
+
+    unitOrders.push(...remainingGarrisons);
 
     const orderGroups: UnitOrderGroups = {
       transport: [],
@@ -228,7 +473,7 @@ export class ResolutionService {
     //   contested: [],
     //   nuked: []
     // };
-    // const contestedProvinces: ProvinceHistoryInsert[] = [];
+    // const contestedProvinces: ProvinceHistoryRow[] = [];
 
     const dependencies: OrderDependencies = {
       dependency: {},
@@ -324,11 +569,13 @@ export class ResolutionService {
     );
 
     if (options === undefined) {
-      console.log(
-        `orderId ${order.orderId} with unitId ${order.unit.id} doesn't even have matching options. This should be impossible but here we are!`
-      );
+      if (order.unit.type !== UnitType.GARRISON) {
+        console.log(
+          `orderId ${order.orderId} with unitId ${order.unit.id} doesn't even have matching options. This should be impossible but here we are!`
+        );
 
-      this.invalidateOrder(order, `Incredibly Invalid`);
+        this.invalidateOrder(order, `Incredibly Invalid`);
+      }
     } else if (!options.orderTypes.includes(order.orderType)) {
       this.invalidateOrder(order, `Invalid Order Type`);
     } else if (order.orderType === OrderDisplay.HOLD) {
@@ -792,6 +1039,9 @@ export class ResolutionService {
     });
 
     const victory = movementOrder.power === maxPower && !challenges[maxPower];
+    if (movementOrder.power === challenges[maxPower][0]) {
+      movementOrder.destination.contested = true;
+    }
     let summary = victory ? `Victory: ${movementOrder.power}` : `Bounce: ${movementOrder.power}`;
     movementOrder.orderSuccess = victory;
 
@@ -997,7 +1247,7 @@ export class ResolutionService {
     result: UnitOrderResolution,
     finalPosition: OrderResolutionLocation,
     turn: UpcomingTurn
-  ): ProvinceHistoryInsert {
+  ): ProvinceHistoryRow {
     return {
       provinceId: finalPosition.provinceId,
       controllerId: this.resolveControllerId(result, finalPosition, turn),
@@ -1060,11 +1310,11 @@ export class ResolutionService {
   }
 
   getOrCreateProvinceHistory(
-    provinceHistories: ProvinceHistoryInsert[],
+    provinceHistories: ProvinceHistoryRow[],
     finalPosition: OrderResolutionLocation
-  ): ProvinceHistoryInsert {
+  ): ProvinceHistoryRow {
     let provinceHistory = provinceHistories.find(
-      (province: ProvinceHistoryInsert) => province.provinceId === finalPosition.provinceId
+      (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
     );
     if (provinceHistory === undefined) {
       provinceHistory = {
@@ -1079,13 +1329,243 @@ export class ResolutionService {
     return provinceHistory;
   }
 
-  prepareDbEntries() {
-    const orders = [];
-    const orderSets = [];
-    const units = [];
-    const unitHistories = [];
-    const provinceHistories = [];
-    const countryHistories = [];
-    const turns = [];
+  /**
+   * Prepares DB rows for the firing nuke and impacted countries and province.
+   * The target of the nuke resolves its destruction elsewhere.
+   */
+  handleNuclearStrike(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+    const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
+    const currentUnitHistory: UnitHistoryRow | undefined = dbStates.unitHistories?.find(
+      (unitState: UnitHistoryRow) => unitState.unitId === result.unit.id
+    );
+
+    if (!currentUnitHistory) {
+      terminalLog(
+        `No pre-existing unit history for ordered unit ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      );
+      return;
+    }
+
+    if (currentUnitHistory.nodeId !== finalPosition.nodeId || currentUnitHistory.unitStatus !== result.unit.status) {
+      dbUpdates.unitHistories?.push({
+        unitId: result.unit.id,
+        nodeId: result.destination.nodeId,
+        unitStatus: result.unit.status
+      });
+    }
+
+    // Province
+    const newProvinceHistory: ProvinceHistoryRow = this.rowifyResultLocation(finalPosition);
+    newProvinceHistory.provinceStatus = ProvinceStatus.NUKED;
+    newProvinceHistory.validRetreat = false;
+    dbUpdates.provinceHistories?.push(newProvinceHistory);
+  }
+
+  handleNuclearVictim(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+    dbUpdates.unitHistories?.push({
+      unitId: result.unit.id,
+      nodeId: result.origin.nodeId,
+      unitStatus: UnitStatus.NUKED
+    });
+  }
+
+  handleSpringMovement(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+    const unitHistory = dbStates.unitHistories?.find(
+      (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
+    );
+
+    if (!unitHistory) {
+      terminalLog(
+        `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      );
+      return;
+    }
+
+    const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
+    if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
+      const newUnitHistory = this.copyUnitHistory(unitHistory);
+      newUnitHistory.nodeId = finalPosition.nodeId;
+      newUnitHistory.unitStatus = result.unit.status;
+      dbUpdates.unitHistories?.push(newUnitHistory);
+    }
+
+    // Okay this ain't MVP no mo
+    // let provinceHistory = dbStates.provinceHistories?.find(
+    //   (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
+    // );
+
+    // if (!provinceHistory) {
+    //   terminalLog(`No pre-existing province history for ${finalPosition.provinceName} (${finalPosition.provinceId})`);
+    //   return;
+    // }
+
+    // Movement and claiming will only aesthetically impact inert provinces
+    // if ([ProvinceType.COAST, ProvinceType.INLAND, ProvinceType.ISLAND].includes(finalPosition.provinceType)) {
+    //   let provinceStateChanged = false;
+    //   const newProvinceHistory = this.rowifyResultLocation(finalPosition);
+
+    //   // Control
+    //   if ([ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus)
+    //       && finalPosition.controllerId !== result.unit.countryId
+    //   ) {
+    //     newProvinceHistory.controllerId = result.unit.countryId;
+    //     provinceStateChanged = true;
+    //   }
+
+    //   // Status
+    //   if ([ProvinceStatus.BOMBARDED, ProvinceStatus.DORMANT].includes(finalPosition.provinceStatus)) {
+    //     newProvinceHistory.provinceStatus = ProvinceStatus.ACTIVE;
+    //     provinceStateChanged = true;
+    //   }
+
+    //   if (provinceStateChanged) {
+    //     dbUpdates.provinceHistories?.push(newProvinceHistory);
+    //   }
+    // }
+
+    // Setting Province Contested
+    if (
+      [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType) &&
+      result.orderSuccess === false &&
+      result.destination.contested
+    ) {
+      const bounceFound = dbUpdates.provinceHistories?.find(
+        (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
+      );
+      if (!bounceFound) {
+        const newBounceProvinceHistory = this.rowifyResultLocation(result.destination);
+        newBounceProvinceHistory.validRetreat = false;
+        dbUpdates.provinceHistories?.push(newBounceProvinceHistory);
+      }
+    }
+  }
+
+  prepareBombardRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates, claimingSeason: boolean) {
+    const unitHistory = dbStates.unitHistories?.find(
+      (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
+    );
+
+    if (!unitHistory) {
+      terminalLog(
+        `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      );
+      return;
+    }
+
+    const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
+    if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
+      const newUnitHistory = this.copyUnitHistory(unitHistory);
+      newUnitHistory.nodeId = finalPosition.nodeId;
+      newUnitHistory.unitStatus = result.unit.status;
+      dbUpdates.unitHistories?.push(newUnitHistory);
+    }
+
+    const provinceHistory = dbStates.provinceHistories?.find(
+      (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
+    );
+
+    if (!provinceHistory) {
+      terminalLog(`No pre-existing province history for ${finalPosition.provinceName} (${finalPosition.provinceId})`);
+      return;
+    }
+
+    if ([ProvinceType.COAST, ProvinceType.INLAND, ProvinceType.ISLAND].includes(finalPosition.provinceType)) {
+      let provinceStateChanged = false;
+      const newProvinceHistory = this.rowifyResultLocation(finalPosition);
+
+      // Control
+      if (
+        [ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus) &&
+        finalPosition.controllerId !== result.unit.countryId
+      ) {
+        newProvinceHistory.controllerId = result.unit.countryId;
+        provinceStateChanged = true;
+      }
+
+      // Status
+      if (
+        finalPosition.provinceStatus === ProvinceStatus.ACTIVE &&
+        finalPosition.controllerId !== result.unit.countryId &&
+        claimingSeason
+      ) {
+        newProvinceHistory.provinceStatus = ProvinceStatus.BOMBARDED;
+        provinceStateChanged = true;
+      }
+
+      if (provinceStateChanged) {
+        dbUpdates.provinceHistories?.push(newProvinceHistory);
+      }
+    }
+
+    // Setting Province Contested
+    if (result.orderType === OrderDisplay.MOVE && result.orderSuccess === false && result.destination.contested) {
+      const bounceFound = dbUpdates.provinceHistories?.find(
+        (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
+      );
+      if (!bounceFound) {
+        const newBounceProvinceHistory = this.rowifyResultLocation(result.destination);
+        newBounceProvinceHistory.validRetreat = false;
+        dbUpdates.provinceHistories?.push(newBounceProvinceHistory);
+      }
+    }
+  }
+
+  async getAbandonedBombards(gameState: GameState): Promise<ProvinceHistoryRow[]> {
+    return await db.resolutionRepo.getAbandonedBombards(gameState.gameId, gameState.turnNumber);
+  }
+
+  async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {
+    return await db.resolutionRepo.restoreBombardedProvinces(abandonedBombards, turnId);
+  }
+
+  /**
+   * Converts the data from an OrderResolution Destination or Origin into a province history row entry.
+   *
+   * @param location
+   * @returns
+   */
+  rowifyResultLocation(location: OrderResolutionLocation): ProvinceHistoryRow {
+    return {
+      provinceId: location.provinceId,
+      controllerId: location.controllerId,
+      capitalOwnerId: location.capitalOwnerId,
+      provinceStatus: location.provinceStatus,
+      validRetreat: location.validRetreat
+    };
+  }
+
+  /**
+   * Duplicates a unit history row for manipulation without undesired referencing behavior.
+   * @param unitHistory
+   * @returns
+   */
+  copyUnitHistory(unitHistory: UnitHistoryRow): UnitHistoryRow {
+    return {
+      unitId: unitHistory.unitId,
+      nodeId: unitHistory.nodeId,
+      unitStatus: unitHistory.unitStatus
+    };
+  }
+
+  /**
+   * Duplicates a country history row for manipulation without undesired referencing behavior.
+   * @param countryHistory
+   * @returns
+   */
+  copyCountryHistory(countryHistory: CountryHistoryRow): CountryHistoryRow {
+    return {
+      builds: countryHistory.builds,
+      turnId: countryHistory.turnId,
+      countryId: countryHistory.countryId,
+      countryStatus: countryHistory.countryStatus,
+      cityCount: countryHistory.cityCount,
+      unitCount: countryHistory.unitCount,
+      bankedBuilds: countryHistory.bankedBuilds,
+      nukeRange: countryHistory.nukeRange,
+      adjustments: countryHistory.adjustments,
+      inRetreat: countryHistory.inRetreat,
+      voteCount: countryHistory.voteCount,
+      nukesInProduction: countryHistory.nukesInProduction
+    };
   }
 }

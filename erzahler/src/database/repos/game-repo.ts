@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from 'pg';
+import { Pool, Query, QueryResult } from 'pg';
 import { IDatabase, IMain } from 'pg-promise';
 import { GameDetailsBuilder } from '../../models/classes/game-details-builder';
 import { GameSummaryBuilder } from '../../models/classes/game-summary-builder';
@@ -39,6 +39,19 @@ import { insertUnitQuery } from '../queries/game/insert-unit-query';
 import { updateGameSettingsQuery } from '../queries/game/update-game-settings-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
 import { getGameStateQuery } from '../queries/orders/get-game-state-query';
+import {
+  CountryHistoryRow,
+  CountryHistoryRowResult,
+  ProvinceHistoryRow,
+  ProvinceHistoryRowResult,
+  UnitHistoryRow,
+  UnitHistoryRowResult
+} from '../schema/table-fields';
+import { getCurrentCountryHistoriesQuery } from '../queries/isolated-tables/get-current-country-histories-query';
+import { getCurrentUnitHistoriesQuery } from '../queries/isolated-tables/get-current-unit-histories-query';
+import { getCurrentProvinceHistoryQuery } from '../queries/isolated-tables/get-current-province-histories-query';
+import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
+import { startGameQuery } from '../queries/game/start-game-query';
 
 const gamesCols: string[] = [
   'game_name',
@@ -87,6 +100,7 @@ export class GameRepository {
       return result.rows.map((gameStateResult: GameStateResult) => {
         return <GameState>{
           gameId: gameStateResult.game_id,
+          gameName: gameStateResult.game_name,
           turnId: gameStateResult.turn_id,
           deadline: gameStateResult.deadline,
           turnNumber: gameStateResult.turn_number,
@@ -399,9 +413,14 @@ export class GameRepository {
     return await this.pool.query(checkGameNameAvailabilityQuery, [gameName]);
   }
 
-  async getGames(timeZone: string, meridiemTime: boolean): Promise<any> {
+  async getGames(
+    userId: number,
+    parameters: GameFinderParameters,
+    timeZone: string,
+    meridiemTime: boolean
+  ): Promise<any> {
     return await this.pool
-      .query(getGamesQuery, [timeZone])
+      .query(getGamesQuery, [userId, timeZone, parameters.playing, parameters.creator, parameters.administrator])
       .then((gamesResults: QueryResult<any>) => {
         return gamesResults.rows.map((game: GameSummaryQueryObject) => {
           return new GameSummaryBuilder(game, timeZone, meridiemTime);
@@ -501,5 +520,58 @@ export class GameRepository {
     );
 
     return coalitionSchedules[0];
+  }
+
+  // Get raw rows for the state update comparing
+  async getCountryHistories(gameId: number, turnNumber: number): Promise<CountryHistoryRow[]> {
+    return await this.pool.query(getCurrentCountryHistoriesQuery, [gameId, turnNumber]).then((result: QueryResult) =>
+      result.rows.map((countryHistory: CountryHistoryRowResult) => {
+        return <CountryHistoryRow>{
+          countryId: countryHistory.country_id,
+          countryStatus: countryHistory.country_status,
+          cityCount: countryHistory.city_count,
+          unitCount: countryHistory.unit_count,
+          bankedBuilds: countryHistory.banked_builds,
+          nukeRange: countryHistory.nuke_range,
+          adjustments: countryHistory.adjustments,
+          inRetreat: countryHistory.in_retreat,
+          voteCount: countryHistory.vote_count,
+          nukesInProduction: countryHistory.nukes_in_production
+        };
+      })
+    );
+  }
+
+  async getUnitHistories(gameId: number, turnNumber: number): Promise<UnitHistoryRow[]> {
+    return await this.pool.query(getCurrentUnitHistoriesQuery, [gameId, turnNumber]).then((result: QueryResult) =>
+      result.rows.map((unitHistory: UnitHistoryRowResult) => {
+        return <UnitHistoryRow>{
+          unitHistoryId: unitHistory.unit_history_id,
+          unitId: unitHistory.unit_id,
+          turnId: unitHistory.turn_id,
+          nodeId: unitHistory.node_id,
+          unitStatus: unitHistory.unit_status
+        };
+      })
+    );
+  }
+
+  async getProvinceHistories(gameId: number, turnNumber: number): Promise<ProvinceHistoryRow[]> {
+    return await this.pool.query(getCurrentProvinceHistoryQuery, [gameId, turnNumber]).then((result: QueryResult) =>
+      result.rows.map((provinceHistory: ProvinceHistoryRowResult) => {
+        return <ProvinceHistoryRow>{
+          provinceId: provinceHistory.province_id,
+          turnId: provinceHistory.turn_id,
+          controllerId: provinceHistory.controller_id,
+          capitalOwnerId: provinceHistory.capital_owner_id,
+          provinceStatus: provinceHistory.province_status,
+          validRetreat: provinceHistory.valid_retreat
+        };
+      })
+    );
+  }
+
+  async setGamePlaying(gameId: number): Promise<void> {
+    await this.pool.query(startGameQuery, [gameId]);
   }
 }

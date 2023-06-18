@@ -2,6 +2,7 @@ import { TurnType } from '../enumeration/turn-type-enum';
 
 export interface GameStateResult {
   game_id: number;
+  game_name: string;
   turn_id: number;
   deadline: Date;
   turn_number: number;
@@ -28,14 +29,15 @@ export interface GameStateResult {
 
 export interface GameState {
   gameId: number;
+  gameName: string;
   turnId: number;
   deadline: Date;
   turnNumber: number;
   turnName: string;
   turnType: TurnType;
   turnStatus: string;
-  pendingTurnId?: number;
-  pendingTurnType?: TurnType;
+  pendingTurnId: number;
+  pendingTurnType: TurnType;
   preliminaryTurnId?: number;
   preliminaryTurnType?: TurnType;
   resolvedTime?: Date;
@@ -58,6 +60,10 @@ export interface NextTurns {
     id?: number;
   };
   preliminary?: {
+    type: TurnType;
+    id?: number;
+  };
+  resolved?: {
     type: TurnType;
     id?: number;
   };

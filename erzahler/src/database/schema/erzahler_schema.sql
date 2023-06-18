@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS games(
   game_name VARCHAR(50) UNIQUE NOT NULL,
   time_created TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'utc'),
   time_ready TIMESTAMP NULL,
-  ready_to_start BOOLEAN NOT NULL DEFAULT false,
+  time_paused TIMESTAMP NULL,
+  time_ended TIMESTAMP NULL,
+  --ready_to_start BOOLEAN NOT NULL DEFAULT false,
   game_status VARCHAR(25) NOT NULL,
   current_year INTEGER NOT NULL,
   stylized_start_year INTEGER NOT NULL DEFAULT 2000,
@@ -152,7 +154,7 @@ CREATE TABLE IF NOT EXISTS country_histories(
   country_history_id SERIAL,
   country_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
-  country_status VARCHAR(15) NOT NULL,
+  country_status VARCHAR(18) NOT NULL,
   city_count INTEGER NOT NULL,
   vote_count INTEGER DEFAULT 1,
   unit_count INTEGER NOT NULL,
@@ -288,6 +290,7 @@ CREATE TABLE IF NOT EXISTS nodes(
   node_id SERIAL,
   province_id INTEGER NOT NULL,
   node_name VARCHAR(15) NOT NULL,
+  node_display VARCHAR(15) NOT NULL,
   node_type VARCHAR(5) NOT NULL,
   loc INTEGER [] NOT NULL,
   PRIMARY KEY(node_id),
@@ -604,13 +607,13 @@ CREATE TABLE IF NOT EXISTS order_sets(
   default_orders BOOLEAN DEFAULT true,
   tech_partner_id INTEGER DEFAULT 0,
   tech_transfer_success BOOLEAN DEFAULT false,
-  build_transfer_tuples INTEGER[],
-  build_transfer_recipients INTEGER[],
-  build_transfer_success BOOLEAN DEFAULT false,
-  build_tuples INTEGER[], -- build orders
-  build_locs INTEGER[],   -- build orders
+  -- build_transfer_tuples INTEGER[],
+  -- build_transfer_recipients INTEGER[],
+  -- build_transfer_success BOOLEAN DEFAULT false,
+  -- build_tuples INTEGER[], -- build orders
+  -- build_locs INTEGER[],   -- build orders
   -- Should this even be split? Build orders
-  nuke_locs INTEGER[],
+  -- nuke_locs INTEGER[],
   -- Makes sense to be here
   increase_range INTEGER,
   increase_range_success BOOLEAN DEFAULT false,
@@ -663,7 +666,7 @@ CREATE TABLE IF NOT EXISTS orders(
 CREATE TABLE IF NOT EXISTS build_orders(
   build_order_id SERIAL,
   order_set_id INTEGER NOT NULL,
-  location_id INTEGER,
+  node_id INTEGER,
   build_number INTEGER NOT NULL,
   build_type VARCHAR(10) NOT NULL,
   description VARCHAR(100),
@@ -671,7 +674,7 @@ CREATE TABLE IF NOT EXISTS build_orders(
   PRIMARY KEY(build_order_id),
   FOREIGN KEY(order_set_id)
     REFERENCES order_sets(order_set_id),
-  FOREIGN KEY(location_id)
+  FOREIGN KEY(node_id)
     REFERENCES nodes(node_id)
 );
 

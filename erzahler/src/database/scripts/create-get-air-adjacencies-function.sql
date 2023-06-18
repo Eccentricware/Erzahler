@@ -1,11 +1,12 @@
---sudo -u postgres psql < database/scripts/create-get-node-adjacencies-function.sql
+--sudo -u postgres psql < database/scripts/create-get-air-adjacencies-function.sql
 
 \c erzahler_dev;
-\echo 'Attempting to create get_node_adjacencies function'
+\echo 'Attempting to create get_air_adjacencies function'
 
 CREATE OR REPLACE FUNCTION get_air_adjacencies(INTEGER) --game_id
 RETURNS TABLE(node_id INTEGER, province_name VARCHAR(15), adjacencies JSON)
 AS $$
+
   SELECT n.node_id,
     p.province_name,
     json_agg(CASE
@@ -28,4 +29,5 @@ AS $$
   GROUP BY n.node_id,
     p.province_name
   ORDER BY p.province_name;
+
 $$ LANGUAGE SQL;

@@ -10,6 +10,8 @@ import { ordersRouter } from './routes/orders-router';
 import { mapRouter } from './routes/maps-router';
 import { optionsRouter } from './routes/options-router';
 import * as dotenv from 'dotenv';
+import { OptionsService } from './services/options-service';
+import { schedulingRouter } from './routes/scheduling-router';
 // import { OptionsService } from './services/options-service';
 
 dotenv.config();
@@ -28,6 +30,7 @@ initializeApp({
 });
 
 erzahler.use('/assignments', assignmentRouter);
+erzahler.use('/scheduling', schedulingRouter);
 erzahler.use('/games', gameRouter);
 erzahler.use('/maps', mapRouter);
 erzahler.use('/options', optionsRouter);
@@ -38,10 +41,10 @@ erzahler.get('/check-status', (request, response) => {
   response.send(true);
 });
 
-schedulerService.syncDeadlines();
-
-schedulerService.checkIn(15);
-
 erzahler.listen(port, () => {
   console.log(`Erzahler (${process.env.npm_package_version}) is running on port ${port}`);
 });
+
+schedulerService.checkIn(15);
+
+schedulerService.syncDeadlines();

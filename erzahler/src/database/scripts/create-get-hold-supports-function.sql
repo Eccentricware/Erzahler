@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION get_hold_supports(
 )
 RETURNS TABLE(unit_id INTEGER, hold_supports json)
 AS $$
+
   SELECT u.unit_id,
   	json_agg(CASE
 			WHEN n.node_id = na.node_1_id
@@ -44,4 +45,5 @@ AS $$
 			WHEN n.node_id = na.node_2_id THEN u1.unit_type != 'Nuke'
 		END
 	GROUP BY u.unit_id;
+
 $$ LANGUAGE SQL;

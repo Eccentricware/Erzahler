@@ -1,3 +1,4 @@
+import { ProvinceHistoryRow } from '../../../database/schema/table-fields';
 import { OrderDisplay } from '../../enumeration/order-display-enum';
 import { ProvinceStatus, ProvinceType, ResolutionEvent, VoteType } from '../../enumeration/province-enums';
 import { UnitStatus, UnitType } from '../../enumeration/unit-enum';
@@ -13,6 +14,7 @@ import { TransferBuildOrder, TransferTechOrder } from '../order-objects';
 
 export interface UnitOrderResolutionResult {
   order_id: number;
+  order_set_id: number;
   order_type: string;
   ordered_unit_id: number;
   valid: boolean;
@@ -37,8 +39,10 @@ export interface UnitOrderResolutionResult {
   secondary_unit_type: UnitType;
   secondary_country_id: number;
   secondary_country: string;
+  secondary_unit_province: string;
+  secondary_unit_order_type: string;
   destination_id: number;
-  // destination_name: string;
+  destination_display: string;
   destination_node_type: string;
   destination_province_id: number;
   destination_province_name: string;
@@ -51,6 +55,7 @@ export interface UnitOrderResolutionResult {
 
 export interface UnitOrderResolution {
   orderId: number;
+  orderSetId: number;
   orderType: OrderDisplay;
   valid: boolean;
   orderSuccess: boolean;
@@ -73,6 +78,8 @@ export interface UnitOrderResolution {
     type: UnitType;
     countryId: number;
     country: string;
+    provinceName: string;
+    orderType: OrderDisplay;
     canCapture: boolean;
   };
   destination: OrderResolutionLocation;
@@ -82,12 +89,14 @@ export interface OrderResolutionLocation {
   nodeId: number;
   provinceId: number;
   provinceName: string;
+  display: string;
   provinceType: ProvinceType;
   voteType: VoteType;
   provinceStatus: ProvinceStatus;
   controllerId: number;
   capitalOwnerId: number;
-  validRetreat?: boolean;
+  contested?: boolean;
+  validRetreat: boolean;
   statusColor?: string;
   strokeColor?: string;
 }
@@ -174,15 +183,5 @@ export interface TransferResources {
 
 export interface UnitMovementResults {
   orderResults: UnitOrderResolution[];
-  contestedProvinces?: ProvinceHistoryInsert[];
-}
-
-export interface ProvinceHistoryInsert {
-  provinceId: number;
-  // resolutionEvent: ResolutionEvent;
-  turnId?: number;
-  controllerId: number | null;
-  capitalOwnerId: number | null;
-  provinceStatus: ProvinceStatus;
-  validRetreat: boolean;
+  contestedProvinces: ProvinceHistoryRow[];
 }

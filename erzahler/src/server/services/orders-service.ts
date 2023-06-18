@@ -21,16 +21,19 @@ import {
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
 import assert from 'assert';
+import { terminalLog } from '../utils/general';
 
 export class OrdersService {
   async getTurnOrders(idToken: string, gameId: number): Promise<TurnOrders> {
     // Identify user
     const accountService = new AccountService();
 
-    const userId = await accountService.getUserIdFromToken(idToken);
+    const user = await accountService.getUserProfile(idToken);
+    const userId = user.userId;
     const gameState = await db.gameRepo.getGameState(gameId);
     // Identify Player Type (Player, Admin, Spectator)
 
+    terminalLog(`Current orders requested for ${gameState.gameName} (${gameId}) by ${user.username} (${userId})`);
     const playerAssignments = await db.assignmentRepo.getUserAssignments(gameId, userId);
     // Identify Turn Type
     const playerCountries = playerAssignments.filter(
@@ -42,7 +45,7 @@ export class OrdersService {
         assignment.blindAdministrators === false &&
         ((assignment.assignmentType &&
           [AssignmentType.ADMINISTRATOR, AssignmentType.CREATOR].includes(assignment.assignmentType)) ||
-          assignment.username === 'Zeldark')
+          assignment.username === 'Erzahler')
       );
     });
 
@@ -488,6 +491,7 @@ export class OrdersService {
 
     const userId = await accountService.getUserIdFromToken(idToken);
     const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
+
     if (userAssigned) {
       const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
       // orderSetIds.votes = 542;
@@ -528,8 +532,18 @@ export class OrdersService {
     }
   }
 
-  async prepareDisbandOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<DisbandOrders> {
-    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(gameId, turnNumber, orderTurnId, countryId);
+  async prepareDisbandOrders(
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number,
+    countryId: number
+  ): Promise<DisbandOrders> {
+    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(
+      gameId,
+      turnNumber,
+      orderTurnId,
+      countryId
+    );
 
     if (disbandOrders.nukeLocs.length > 0) {
       disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(orderTurnId, countryId);
@@ -581,4 +595,30 @@ export class OrdersService {
       };
     }
   }
+
+  // setDescription(order: UnitOrderResolution): string {
+  //   let description = `${order.unit.type[0].toUpperCase()} ${order.origin.provinceName} `;
+
+  //   if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(order.orderType)) {
+  //     description += order.orderType;
+  //   }
+
+  //   if ([OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.orderType)) {
+  //     description += `=> ${order.destination.display}`;
+  //   }
+
+  //   if (order.orderType === OrderDisplay.SUPPORT && ![OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
+  //     description += `S ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName}`;
+  //   }
+
+  //   if ([OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(order.orderType) && [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
+  //     description += `${order.orderType[0].toUpperCase()} ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName} => ${order.destination.display}`;
+  //   }
+
+  //   if (order.orderType === OrderDisplay.NUKE) {
+  //     description += `! ${order.destination.display}`;
+  //   }
+
+  //   return description;
+  // }
 }

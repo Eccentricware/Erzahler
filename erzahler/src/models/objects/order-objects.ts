@@ -1,3 +1,4 @@
+import { BuildType } from '../enumeration/unit-enum';
 import { BuildLoc, NominatableCountry } from './option-context-objects';
 
 export interface TurnOrders {
@@ -110,12 +111,10 @@ export interface BuildOrdersResult {
   country_id: number;
   country_name: string;
   banked_builds: number;
-  builds: number;
+  adjustments: number;
   nuke_range: number;
   increase_range: number;
-  build_locs: BuildLocationResult[];
-  build_tuples: number[];
-  nuke_locs: BuildLocationResult[];
+  builds: BuildResult[];
 }
 
 export interface BuildLocationResult {
@@ -136,9 +135,19 @@ export interface BuildOrders {
   nukesReady?: Build[];
 }
 
+export interface BuildResult {
+  build_number: number;
+  build_type: BuildType;
+  node_id: number;
+  node_name: string;
+  province_name: string;
+  loc: number[];
+}
+
 export interface Build {
+  buildNumber: number;
+  buildType: BuildType;
   typeId: number;
-  buildType: string;
   nodeId: number;
   nodeName: string;
   provinceName: string;

@@ -29,6 +29,7 @@ export const getOrderOptionsQuery = `
       json_build_object(
         'node_id', dn.node_id,
         'node_name', dn.node_name,
+        'node_display', dn.node_display,
         'loc', en.loc
       ) ELSE null END
     ) AS destinations
@@ -80,5 +81,4 @@ export const getOrderOptionsQuery = `
     c.country_name,
     p.province_name,
     sup.province_name
-
 `;

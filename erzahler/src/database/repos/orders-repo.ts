@@ -24,7 +24,8 @@ import {
   DisbandOrdersResult,
   NukeBuildInDisband,
   DisbandingUnitDetail,
-  DisbandingUnitDetailResult
+  DisbandingUnitDetailResult,
+  BuildResult
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, CountryOrderSetsResult } from '../../models/objects/orders/expected-order-types-object';
 import { envCredentials } from '../../secrets/dbCredentials';
@@ -45,11 +46,11 @@ import { saveTransferOrdersQuery } from '../queries/orders/orders-final/save-tra
 import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-order-query';
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
+import { saveBuildOrderQuery } from '../queries/orders/orders-final/save-build-order-query';
 
 export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
   orderCols: ColumnSet<unknown>;
-  orderOptionsCols: ColumnSet<unknown>;
   pool: Pool = new Pool(envCredentials);
   /**
    * @param db
@@ -72,11 +73,6 @@ export class OrdersRepository {
         'order_success'
       ],
       { table: 'orders' }
-    );
-
-    this.orderOptionsCols = new pgp.helpers.ColumnSet(
-      ['unit_id', 'order_type', 'secondary_unit_id', 'secondary_order_type', 'destinations', 'turn_id'],
-      { table: 'order_options' }
     );
   }
 
@@ -196,93 +192,45 @@ export class OrdersRepository {
       );
   }
 
-  async getBuildOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<BuildOrders[]> {
-    const buildOrdersResults: BuildOrdersResult[] = await this.pool
+  async getBuildOrders(
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number,
+    countryId: number
+  ): Promise<BuildOrders[]> {
+    return await this.pool
       .query(getBuildOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
-      .then((result: QueryResult) => result.rows);
-
-    const buildOrders: BuildOrders[] = [];
-    buildOrdersResults.forEach((result: BuildOrdersResult) => {
-      const builds: Build[] = [];
-      if (result.build_tuples?.length > 0) {
-        const buildTuples: number[] = result.build_tuples;
-        const buildLocs: BuildLocationResult[] = result.build_locs;
-
-        for (let index = 0; index < buildTuples.length; index += 2) {
-          const buildLoc = buildLocs.find((loc: BuildLocationResult) => loc.node_id === buildTuples[index]);
-          const buildTypeId = buildTuples[index + 1];
-          const buildType = this.resolveBuildType(buildTypeId);
-
-          if (buildLoc) {
-            builds.push({
-              typeId: buildTypeId,
-              buildType: buildType,
-              nodeId: buildLoc.node_id,
-              nodeName: buildLoc.node_name,
-              provinceName: buildLoc.province_name,
-              loc: buildLoc.loc
-            });
-          }
-        }
-      }
-
-      buildOrders.push({
-        countryId: result.country_id,
-        countryName: result.country_name,
-        bankedBuilds: result.banked_builds,
-        buildCount: result.builds,
-        nukeRange: result.nuke_range,
-        increaseRange: result.increase_range,
-        builds: builds
-      });
-    });
-
-    const nukesReady: Build[] = await this.pool
-      .query(getFinishedNukesOrdersQuery, [orderTurnId, countryId])
       .then((result: QueryResult) =>
-        result.rows.map((node: BuildLocationResult) => {
-          return <Build>{
-            typeId: 5,
-            buildType: BuildType.NUKE_FINISH,
-            nodeId: node.node_id,
-            nodeName: node.node_name,
-            loc: node.loc,
-            provinceName: node.province_name
+        result.rows.map((result: BuildOrdersResult) => {
+          return <BuildOrders>{
+            countryId: result.country_id,
+            countryName: result.country_name,
+            bankedBuilds: result.banked_builds,
+            buildCount: result.adjustments,
+            nukeRange: result.nuke_range,
+            increaseRange: result.increase_range,
+            builds: result.builds.map((build: BuildResult) => {
+              return <Build>{
+                buildNumber: build.build_number,
+                buildType: build.build_type,
+                typeId: this.resolveTypeId(build.build_type),
+                nodeId: build.node_id,
+                nodeName: build.node_name,
+                provinceName: build.province_name,
+                loc: build.loc
+              };
+            })
           };
         })
       );
-
-    buildOrders[0].nukesReady = nukesReady;
-
-    return buildOrders;
   }
 
-  resolveBuildType(buildTypeId: number): BuildType {
-    switch (buildTypeId) {
-      case -3:
-        return BuildType.NUKE_START;
-      case -2:
-        return BuildType.RANGE;
-      case -1:
-        return BuildType.DISBAND;
-      case 0:
-        return BuildType.BUILD;
-      case 1:
-        return BuildType.ARMY;
-      case 2:
-        return BuildType.FLEET;
-      case 3:
-        return BuildType.WING;
-      case 4:
-        return BuildType.NUKE_RUSH;
-      case 5:
-        return BuildType.NUKE_FINISH;
-      default:
-        return BuildType.BUILD;
-    }
-  }
-
-  async getDisbandOrders(gameId: number, turnNumber: number, orderTurnId: number, countryId: number): Promise<DisbandOrders> {
+  async getDisbandOrders(
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number,
+    countryId: number
+  ): Promise<DisbandOrders> {
     const disbandOrders: DisbandOrders[] = await this.pool
       .query(getDisbandOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult) =>
@@ -336,6 +284,10 @@ export class OrdersRepository {
       orderSetId,
       unit.orderedUnitId
     ]);
+  }
+
+  async saveBuildOrder(orderSetId: number, build: Build): Promise<void> {
+    await this.pool.query(saveBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, build.buildNumber]);
   }
 
   async saveTransfers(
@@ -432,5 +384,55 @@ export class OrdersRepository {
 
   async saveVotes(orderSetId: number, votes: number[]): Promise<void> {
     await this.pool.query(saveVotesQuery, [votes, orderSetId]);
+  }
+
+  resolveBuildType(buildTypeId: number): BuildType {
+    switch (buildTypeId) {
+      case -3:
+        return BuildType.NUKE_START;
+      case -2:
+        return BuildType.RANGE;
+      case -1:
+        return BuildType.DISBAND;
+      case 0:
+        return BuildType.BUILD;
+      case 1:
+        return BuildType.ARMY;
+      case 2:
+        return BuildType.FLEET;
+      case 3:
+        return BuildType.WING;
+      case 4:
+        return BuildType.NUKE_RUSH;
+      case 5:
+        return BuildType.NUKE_FINISH;
+      default:
+        return BuildType.BUILD;
+    }
+  }
+
+  resolveTypeId(buildType: BuildType): number {
+    switch (buildType) {
+      case BuildType.NUKE_START:
+        return -3;
+      case BuildType.RANGE:
+        return -2;
+      case BuildType.DISBAND:
+        return -1;
+      case BuildType.BUILD:
+        return 0;
+      case BuildType.ARMY:
+        return 1;
+      case BuildType.FLEET:
+        return 2;
+      case BuildType.WING:
+        return 3;
+      case BuildType.NUKE_RUSH:
+        return 4;
+      case BuildType.NUKE_FINISH:
+        return 5;
+      default:
+        return NaN;
+    }
   }
 }

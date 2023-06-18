@@ -34,6 +34,7 @@ import {
 } from '../../models/objects/option-context-objects';
 import { OptionsFinal, BuildOptions, VotingOptions } from '../../models/objects/options-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
+import { terminalLog } from '../utils/general';
 import { AccountService } from './accountService';
 import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 
@@ -358,8 +359,11 @@ export class OptionsService {
     });
 
     if (orderOptions.length > 0) {
-      // await db.ordersRepo.saveOrderOptions(orderOptions, turnId);
-      this.saveDefaultOrders(optionsContext.gameId);
+      await db.optionsRepo.saveUnitOptions(orderOptions, turnId).then(() => {
+        this.saveDefaultOrders(optionsContext.gameId);
+      });
+    } else {
+      terminalLog(`Operation Failure | No Options: Game ${optionsContext.gameId}, Turn ${turnId}`);
     }
   }
 
@@ -461,6 +465,11 @@ export class OptionsService {
     };
   }
 
+  /**
+   * Given a gameID, finds the pending and preliminary turns and saves the default orders for each.
+   *
+   * @param gameId
+   */
   async saveDefaultOrders(gameId: number): Promise<void> {
     const gameState = await db.gameRepo.getGameState(gameId);
 
@@ -475,58 +484,44 @@ export class OptionsService {
     )[0];
 
     if (pendingTurn && !pendingTurn.defaultsReady) {
-      this.saveTurnDefaults(gameState, pendingTurn);
+      // if (pendingTurn) {
+      await this.saveTurnDefaults(gameState, pendingTurn);
     }
 
     if (preliminaryTurn && !preliminaryTurn.defaultsReady) {
-      this.saveTurnDefaults(gameState, preliminaryTurn);
+      await this.saveTurnDefaults(gameState, preliminaryTurn);
     }
   }
 
   async saveTurnDefaults(gameState: GameState, upcomingTurn: UpcomingTurn): Promise<void> {
     const orderSetLibrary: Record<string, number> = {};
+    const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
+      gameState.gameId,
+      gameState.turnNumber,
+      upcomingTurn.turnId
+    );
     const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
       gameState.gameId,
       gameState.turnNumber,
       upcomingTurn.turnId
     );
     newOrderSets.forEach((orderSet: OrderSet) => (orderSetLibrary[orderSet.countryId] = orderSet.orderSetId));
-    const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
-      gameState.gameId,
-      gameState.turnNumber,
-      upcomingTurn.turnId
-    );
     const preppedOrderLibrary: Record<string, OrderPrepping> = {};
     const defaultOrders: Order[] = [];
 
     if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(upcomingTurn.turnType)) {
       unitOptions.forEach((option: SavedOption) => {
         if (!preppedOrderLibrary[option.unitId]) {
-          preppedOrderLibrary[option.unitId] = {
-            unitId: option.unitId,
-            orderType: OrderDisplay.HOLD,
-            destinationId: undefined,
-            countryId: Number(option.unitCountryId)
-          };
+          preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
         }
       });
     } else if (upcomingTurn.turnType === TurnType.FALL_ORDERS) {
       unitOptions.forEach((option: SavedOption) => {
         if (!preppedOrderLibrary[option.unitId]) {
           if (option.canHold) {
-            preppedOrderLibrary[option.unitId] = {
-              unitId: option.unitId,
-              orderType: OrderDisplay.HOLD,
-              destinationId: undefined,
-              countryId: Number(option.unitCountryId)
-            };
+            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
           } else if (option.orderType === OrderDisplay.MOVE) {
-            preppedOrderLibrary[option.unitId] = {
-              unitId: option.unitId,
-              orderType: OrderDisplay.MOVE,
-              destinationId: option.destinations[0].nodeId,
-              countryId: Number(option.unitCountryId)
-            };
+            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
           }
         }
       });
@@ -535,35 +530,43 @@ export class OptionsService {
       unitOptions.forEach((option: SavedOption) => {
         if (!preppedOrderLibrary[option.unitId]) {
           if (option.orderType === OrderDisplay.MOVE) {
-            preppedOrderLibrary[option.unitId] = {
-              unitId: option.unitId,
-              orderType: OrderDisplay.MOVE,
-              destinationId: option.destinations[0].nodeId,
-              countryId: Number(option.unitCountryId)
-            };
+            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
           }
         }
       });
     }
 
     for (const unitId in preppedOrderLibrary) {
+      const unitOrder = preppedOrderLibrary[unitId];
       defaultOrders.push({
-        orderSetId: orderSetLibrary[preppedOrderLibrary[unitId].countryId],
-        orderedUnitId: preppedOrderLibrary[unitId].unitId,
-        orderType: preppedOrderLibrary[unitId].orderType,
-        destinationId: preppedOrderLibrary[unitId].destinationId
+        orderSetId: orderSetLibrary[unitOrder.countryId],
+        orderedUnitId: unitOrder.unitId,
+        orderType: unitOrder.orderType,
+        destinationId: unitOrder.destinationId,
+        description: unitOrder.description
       });
     }
-    db.ordersRepo.saveDefaultOrders(defaultOrders).then((success: any) => {
-      db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
-    });
+
+    if (defaultOrders.length > 0) {
+      db.ordersRepo.saveDefaultOrders(defaultOrders).then((success: any) => {
+        db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
+      });
+    } else {
+      terminalLog(
+        `Process Failure | No Default Orders: ${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`
+      );
+    }
   }
 
   async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal | string> {
     const accountService = new AccountService();
-    const userId = await accountService.getUserIdFromToken(idToken);
+    const userProfile = await accountService.getUserProfile(idToken);
+    const userId = userProfile.userId;
 
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
+    terminalLog(
+      `${userProfile.username} (${userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`
+    );
     let playerCountry: CountryState | undefined = undefined;
     const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
     if (playerCountries.length > 0) {
@@ -1093,6 +1096,7 @@ export class OptionsService {
     return {
       nodeId: 0,
       nodeName: OrderDisplay.HOLD,
+      nodeDisplay: OrderDisplay.HOLD,
       loc: loc
     };
   }
@@ -1292,5 +1296,55 @@ export class OptionsService {
       duplicateAlerts: duplicateAlerts,
       nominations: nominations
     };
+  }
+
+  prepDefaultOrder(option: SavedOption, forcedHold: boolean): OrderPrepping {
+    const description = this.setOptionDescription(option);
+
+    return <OrderPrepping>{
+      unitId: option.unitId,
+      orderType: forcedHold ? OrderDisplay.HOLD : OrderDisplay.MOVE,
+      description: description,
+      destinationId: forcedHold ? undefined : option.destinations[0].nodeId,
+      countryId: Number(option.unitCountryId)
+    };
+  }
+
+  setOptionDescription(option: SavedOption): string {
+    let description = `${option.unitType[0].toUpperCase()} ${option.provinceName} `;
+
+    if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(option.orderType)) {
+      description += option.orderType;
+    }
+
+    if ([OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(option.orderType)) {
+      description += `=> ${option.destinations[0].nodeDisplay}`;
+    }
+
+    if (
+      option.orderType === OrderDisplay.SUPPORT &&
+      option.secondaryUnitType &&
+      option.secondaryOrderType &&
+      ![OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(option.secondaryOrderType)
+    ) {
+      description += `S ${option.secondaryUnitType[0].toUpperCase()} ${option.secondaryProvinceName}`;
+    }
+
+    if (
+      [OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(option.orderType) &&
+      option.secondaryUnitType &&
+      option.secondaryOrderType !== undefined &&
+      [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(option.secondaryOrderType)
+    ) {
+      description += `${option.orderType[0].toUpperCase()} ${option.secondaryUnitType[0].toUpperCase()} ${
+        option.secondaryProvinceName
+      } => ${option.destinations[0].nodeDisplay}`;
+    }
+
+    if (option.orderType === OrderDisplay.NUKE) {
+      description += `! ${option.destinations[0].nodeDisplay}`;
+    }
+
+    return description;
   }
 }

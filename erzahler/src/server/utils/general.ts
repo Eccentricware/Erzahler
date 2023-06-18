@@ -32,3 +32,8 @@ export const terminalLog = (message: string): void => {
   const now = formatNow();
   console.log(`${now} | ${message}`);
 };
+
+export const terminalAddendum = (event: string, message: string): void => {
+  const eventMessage = event.padStart(20, ' ');
+  console.log(`${eventMessage} | ${message}`);
+};
