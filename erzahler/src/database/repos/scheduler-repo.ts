@@ -70,21 +70,20 @@ export class SchedulerRepository {
         })[0];
       })
       .catch((error: Error) => {
-        terminalLog(`Get Game Schedule Settings Query Error | (${gameId}):`  + error.message);
+        terminalLog(`Get Game Schedule Settings Query Error | (${gameId}):` + error.message);
       });
   }
 
   async getGamesStarting(): Promise<StartSchedule[]> {
-    return await this.pool
-      .query(getGamesStartingQuery, [])
-      .then((results: QueryResult<any>) =>
-        results.rows.map((game: StartScheduleResult) => {
-          return <StartSchedule> {
-            gameId: game.game_id,
-            gameName: game.game_name,
-            startTime: game.start_time
-          };
-        }));
+    return await this.pool.query(getGamesStartingQuery, []).then((results: QueryResult<any>) =>
+      results.rows.map((game: StartScheduleResult) => {
+        return <StartSchedule>{
+          gameId: game.game_id,
+          gameName: game.game_name,
+          startTime: game.start_time
+        };
+      })
+    );
   }
 
   async getUpcomingTurns(gameId = 0): Promise<UpcomingTurn[]> {

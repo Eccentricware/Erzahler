@@ -18,11 +18,7 @@ gameRouter.get('/check-name/:gameName', (request, response) => {
 gameRouter.get('/search', (request, response) => {
   const idToken: any = request.headers.idtoken;
 
-  const {
-    playing,
-    creator,
-    administrator
-  } = request.query;
+  const { playing, creator, administrator } = request.query;
 
   const parameters: GameFinderParameters = {
     playing: playing === 'true',

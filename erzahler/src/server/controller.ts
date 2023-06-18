@@ -48,4 +48,3 @@ erzahler.listen(port, () => {
 schedulerService.checkIn(15);
 
 schedulerService.syncDeadlines();
-

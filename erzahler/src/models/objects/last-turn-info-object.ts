@@ -66,5 +66,5 @@ export interface NextTurns {
   resolved?: {
     type: TurnType;
     id?: number;
-  }
+  };
 }

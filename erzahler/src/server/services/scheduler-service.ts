@@ -199,21 +199,23 @@ export class SchedulerService {
     const resolutionService: ResolutionService = new ResolutionService();
 
     const gamesStarting = await db.schedulerRepo.getGamesStarting();
-    terminalAddendum('Deadlines', `Found ${gamesStarting.length} ${gamesStarting.length === 1 ? 'game' : 'games'} ready`);
+    terminalAddendum(
+      'Deadlines',
+      `Found ${gamesStarting.length} ${gamesStarting.length === 1 ? 'game' : 'games'} ready`
+    );
 
     gamesStarting.forEach(async (game: StartSchedule) => {
       if (Date.parse(game.startTime) < Date.now()) {
-        terminalAddendum('Deadlines', `${game.gameName} (${game.gameId}) start time ${game.startTime} has passed. Starting now.`);
+        terminalAddendum(
+          'Deadlines',
+          `${game.gameName} (${game.gameId}) start time ${game.startTime} has passed. Starting now.`
+        );
         await resolutionService.startGame(game.gameId);
       } else {
         terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${game.startTime}`);
-        schedule.scheduleJob(
-          `${game.gameName} - Start`,
-          game.startTime,
-          () => {
-            resolutionService.startGame(game.gameId);
-          }
-        );
+        schedule.scheduleJob(`${game.gameName} - Start`, game.startTime, () => {
+          resolutionService.startGame(game.gameId);
+        });
       }
     });
 
@@ -241,7 +243,6 @@ export class SchedulerService {
 
     await db.schedulerRepo.readyGame([startDetails.gameStart, gameId]);
     await db.schedulerRepo.setAssignmentsActive(gameId);
-
 
     if (startDetails.gameStatus === GameStatus.PLAYING) {
       resolutionService.startGame(gameId);
@@ -513,7 +514,7 @@ export class SchedulerService {
 
     console.log('scheduledJobs', schedule.scheduledJobs);
 
-    for (let jobName in schedule.scheduledJobs) {
+    for (const jobName in schedule.scheduledJobs) {
       const job: Job = schedule.scheduledJobs[jobName];
       console.log('job', job);
 

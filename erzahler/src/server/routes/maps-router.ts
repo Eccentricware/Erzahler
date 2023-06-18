@@ -21,5 +21,4 @@ mapRouter.get('/:gameId/current', (request, response) => {
     terminalLog(`Invalid game ID: ${gameId}`);
     response.send({ error: 'Invalid game ID' });
   }
-
 });

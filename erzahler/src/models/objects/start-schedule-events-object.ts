@@ -31,5 +31,4 @@ export interface NsDate extends Date {
   loc?: any;
   _zone?: any;
   ts?: any;
-
 }

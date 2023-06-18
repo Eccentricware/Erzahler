@@ -1,5 +1,15 @@
 import { db } from '../../database/connection';
-import { CountryHistoryRow, DbStates, GameRow, OrderRow, OrderSetRow, ProvinceHistoryRow, TurnRow, UnitHistoryRow, UnitRow } from '../../database/schema/table-fields';
+import {
+  CountryHistoryRow,
+  DbStates,
+  GameRow,
+  OrderRow,
+  OrderSetRow,
+  ProvinceHistoryRow,
+  TurnRow,
+  UnitHistoryRow,
+  UnitRow
+} from '../../database/schema/table-fields';
 import { CountryStatus } from '../../models/enumeration/country-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
@@ -58,7 +68,8 @@ export class ResolutionService {
       deadline: startDetails.firstTurn
     };
 
-    await db.schedulerRepo.insertTurn(firstTurn)
+    await db.schedulerRepo
+      .insertTurn(firstTurn)
       .then(async (nextTurn: TurnTS) => {
         await this.optionsService.saveOptionsForNextTurn(gameId, nextTurn.turnId);
         await db.gameRepo.setGamePlaying(gameId);
@@ -70,7 +81,7 @@ export class ResolutionService {
   }
 
   async resolveTurn(turn: UpcomingTurn): Promise<void> {
-    switch(turn.turnType) {
+    switch (turn.turnType) {
       case TurnType.ORDERS_AND_VOTES:
         this.resolveSpringOrders(turn);
         break;
@@ -302,7 +313,7 @@ export class ResolutionService {
       units: [],
       unitHistories: [],
       countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber),
-      provinceHistories: [],
+      provinceHistories: []
     };
 
     // DB Update
@@ -424,8 +435,6 @@ export class ResolutionService {
     console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
     console.log('Triggering next turn defaults');
   }
-
-
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
     const unitOptions = this.optionsService.finalizeUnitOptions(
@@ -567,13 +576,10 @@ export class ResolutionService {
 
         this.invalidateOrder(order, `Incredibly Invalid`);
       }
-
     } else if (!options.orderTypes.includes(order.orderType)) {
       this.invalidateOrder(order, `Invalid Order Type`);
-
     } else if (order.orderType === OrderDisplay.HOLD) {
       orderGroups.hold.push(order);
-
     } else if (order.orderType === OrderDisplay.MOVE) {
       const destinationIds = options.moveDestinations.map((destination: OptionDestination) => destination.nodeId);
 
@@ -582,7 +588,6 @@ export class ResolutionService {
       } else {
         orderGroups.move.push(order);
       }
-
     } else if (order.orderType === OrderDisplay.MOVE_CONVOYED) {
       const destinationIds = options.moveTransportedDestinations.map(
         (destination: OptionDestination) => destination.nodeId
@@ -593,7 +598,6 @@ export class ResolutionService {
       } else {
         orderGroups.moveTransported.push(order);
       }
-
     } else if (order.orderType === OrderDisplay.NUKE) {
       const targetIds = options.nukeTargets.map((destination: OptionDestination) => destination.nodeId);
 
@@ -602,7 +606,6 @@ export class ResolutionService {
       } else {
         orderGroups.nuke.push(order);
       }
-
     } else if (order.orderType === OrderDisplay.SUPPORT) {
       const supportableUnitIds = options.supportStandardUnits.map((unit: SecondaryUnit) => unit.id);
 
@@ -619,7 +622,6 @@ export class ResolutionService {
           orderGroups.support.push(order);
         }
       }
-
     } else if (order.orderType === OrderDisplay.SUPPORT_CONVOYED) {
       const supportableUnitIds = options.supportTransportedUnits.map((unit: SecondaryUnit) => unit.id);
 
@@ -636,7 +638,6 @@ export class ResolutionService {
           orderGroups.support.push(order);
         }
       }
-
     } else if ([OrderDisplay.AIRLIFT, OrderDisplay.CONVOY].includes(order.orderType)) {
       const transportableUnitIds = options.transportableUnits.map((unit: SecondaryUnit) => unit.id);
 
@@ -1339,7 +1340,9 @@ export class ResolutionService {
     );
 
     if (!currentUnitHistory) {
-      terminalLog(`No pre-existing unit history for ordered unit ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`);
+      terminalLog(
+        `No pre-existing unit history for ordered unit ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      );
       return;
     }
 
@@ -1372,7 +1375,9 @@ export class ResolutionService {
     );
 
     if (!unitHistory) {
-      terminalLog(`No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`);
+      terminalLog(
+        `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      );
       return;
     }
 
@@ -1420,9 +1425,9 @@ export class ResolutionService {
 
     // Setting Province Contested
     if (
-      [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType)
-      && result.orderSuccess === false
-      && result.destination.contested
+      [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType) &&
+      result.orderSuccess === false &&
+      result.destination.contested
     ) {
       const bounceFound = dbUpdates.provinceHistories?.find(
         (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
@@ -1441,7 +1446,9 @@ export class ResolutionService {
     );
 
     if (!unitHistory) {
-      terminalLog(`No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`);
+      terminalLog(
+        `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      );
       return;
     }
 
@@ -1453,7 +1460,7 @@ export class ResolutionService {
       dbUpdates.unitHistories?.push(newUnitHistory);
     }
 
-    let provinceHistory = dbStates.provinceHistories?.find(
+    const provinceHistory = dbStates.provinceHistories?.find(
       (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
     );
 
@@ -1468,8 +1475,8 @@ export class ResolutionService {
 
       // Control
       if (
-        [ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus)
-        && finalPosition.controllerId !== result.unit.countryId
+        [ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus) &&
+        finalPosition.controllerId !== result.unit.countryId
       ) {
         newProvinceHistory.controllerId = result.unit.countryId;
         provinceStateChanged = true;
@@ -1477,9 +1484,9 @@ export class ResolutionService {
 
       // Status
       if (
-        finalPosition.provinceStatus === ProvinceStatus.ACTIVE
-        && finalPosition.controllerId !== result.unit.countryId
-        && claimingSeason
+        finalPosition.provinceStatus === ProvinceStatus.ACTIVE &&
+        finalPosition.controllerId !== result.unit.countryId &&
+        claimingSeason
       ) {
         newProvinceHistory.provinceStatus = ProvinceStatus.BOMBARDED;
         provinceStateChanged = true;
@@ -1491,11 +1498,7 @@ export class ResolutionService {
     }
 
     // Setting Province Contested
-    if (
-      result.orderType === OrderDisplay.MOVE
-      && result.orderSuccess === false
-      && result.destination.contested
-    ) {
+    if (result.orderType === OrderDisplay.MOVE && result.orderSuccess === false && result.destination.contested) {
       const bounceFound = dbUpdates.provinceHistories?.find(
         (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
       );
@@ -1505,7 +1508,6 @@ export class ResolutionService {
         dbUpdates.provinceHistories?.push(newBounceProvinceHistory);
       }
     }
-
   }
 
   async getAbandonedBombards(gameState: GameState): Promise<ProvinceHistoryRow[]> {
@@ -1529,7 +1531,7 @@ export class ResolutionService {
       capitalOwnerId: location.capitalOwnerId,
       provinceStatus: location.provinceStatus,
       validRetreat: location.validRetreat
-    }
+    };
   }
 
   /**

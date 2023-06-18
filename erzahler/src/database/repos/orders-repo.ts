@@ -225,7 +225,6 @@ export class OrdersRepository {
       );
   }
 
-
   async getDisbandOrders(
     gameId: number,
     turnNumber: number,
@@ -432,7 +431,6 @@ export class OrdersRepository {
         return 4;
       case BuildType.NUKE_FINISH:
         return 5;
-      case BuildType.BUILD:
       default:
         return NaN;
     }

@@ -1,5 +1,5 @@
-import express from "express";
-import { SchedulerService } from "../services/scheduler-service";
+import express from 'express';
+import { SchedulerService } from '../services/scheduler-service';
 
 export const schedulingRouter = express.Router();
 const schedulingService = new SchedulerService();

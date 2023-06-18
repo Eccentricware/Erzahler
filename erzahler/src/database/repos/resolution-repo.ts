@@ -23,7 +23,13 @@ import { getTransportNetworkValidation } from '../queries/resolution/get-transpo
 import { getUnitOrdersForResolutionQuery } from '../queries/resolution/get-unit-orders-for-resolution-query';
 import { getRemainingGarrisonsQuery } from '../queries/resolution/get-remaining-garrisons-query';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
-import { CountryHistoryRow, OrderRow, ProvinceHistoryRow, ProvinceHistoryRowResult, UnitHistoryRow } from '../schema/table-fields';
+import {
+  CountryHistoryRow,
+  OrderRow,
+  ProvinceHistoryRow,
+  ProvinceHistoryRowResult,
+  UnitHistoryRow
+} from '../schema/table-fields';
 import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-bombards-query';
 import { updateOrderQuery } from '../queries/resolution/update-order-query';
 import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-query';
@@ -36,26 +42,13 @@ export class ResolutionRepository {
 
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.provinceHistoryCols = new pgp.helpers.ColumnSet(
-      [
-        'province_id',
-        'turn_id',
-        'controller_id',
-        'capital_owner_id',
-        'province_status',
-        'valid_retreat'
-      ],
-      { table: 'province_histories'}
+      ['province_id', 'turn_id', 'controller_id', 'capital_owner_id', 'province_status', 'valid_retreat'],
+      { table: 'province_histories' }
     );
 
-    this.unitHistoryCols = new pgp.helpers.ColumnSet(
-      [
-        'unit_id',
-        'turn_id',
-        'node_id',
-        'unit_status'
-      ],
-      { table: 'unit_histories' }
-    );
+    this.unitHistoryCols = new pgp.helpers.ColumnSet(['unit_id', 'turn_id', 'node_id', 'unit_status'], {
+      table: 'unit_histories'
+    });
 
     this.countryHistoryCols = new pgp.helpers.ColumnSet(
       [
@@ -89,14 +82,14 @@ export class ResolutionRepository {
   }
 
   async insertUnitHistories(unitHistories: UnitHistoryRow[]): Promise<void> {
-   const unitHistoryValues = unitHistories.map((unitHistory: UnitHistoryRow) => {
+    const unitHistoryValues = unitHistories.map((unitHistory: UnitHistoryRow) => {
       return {
         unit_id: unitHistory.unitId,
         turn_id: unitHistory.turnId,
         node_id: unitHistory.nodeId,
         unit_status: unitHistory.unitStatus
       };
-   });
+    });
 
     const query = this.pgp.helpers.insert(unitHistoryValues, this.unitHistoryCols);
     this.db.query(query);
@@ -139,18 +132,16 @@ export class ResolutionRepository {
   }
 
   async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {
-    const provinceHistoryValues = abandonedBombards.map(
-      (provinceHistory: ProvinceHistoryRow) => {
-        return {
-          province_id: provinceHistory.provinceId,
-          turn_id: turnId,
-          controller_id: provinceHistory.controllerId,
-          capital_owner_id: provinceHistory.capitalOwnerId,
-          province_status: provinceHistory.provinceStatus,
-          valid_retreat: provinceHistory.validRetreat
-        };
-      }
-    );
+    const provinceHistoryValues = abandonedBombards.map((provinceHistory: ProvinceHistoryRow) => {
+      return {
+        province_id: provinceHistory.provinceId,
+        turn_id: turnId,
+        controller_id: provinceHistory.controllerId,
+        capital_owner_id: provinceHistory.capitalOwnerId,
+        province_status: provinceHistory.provinceStatus,
+        valid_retreat: provinceHistory.validRetreat
+      };
+    });
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
     return this.db.query(query);
@@ -360,19 +351,16 @@ export class ResolutionRepository {
   }
 
   async getAbandonedBombards(gameId: number, turnNumber: number): Promise<ProvinceHistoryRow[]> {
-    return await this.pool.query(getAbandonedBombardsQuery, [gameId, turnNumber])
-      .then((result: QueryResult) => result.rows.map((province: ProvinceHistoryRowResult) => {
-        return <ProvinceHistoryRow>{
-
-        }
-      }))
+    return await this.pool.query(getAbandonedBombardsQuery, [gameId, turnNumber]).then((result: QueryResult) =>
+      result.rows.map((province: ProvinceHistoryRowResult) => {
+        return <ProvinceHistoryRow>{};
+      })
+    );
   }
 
   async updateOrderSets(orderSets: any[], turnId: number): Promise<void> {
     orderSets.forEach(async (orderSet: any) => {
-      await this.pool.query(updateOrderSetsQuery, [
-        turnId
-      ]);
+      await this.pool.query(updateOrderSetsQuery, [turnId]);
     });
   }
 }

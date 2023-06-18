@@ -30,7 +30,9 @@ export class GameService {
 
       const newGameResult = await this.addNewGame(pool, this.gameData, this.user.timeZone)
         .then(async (newGameId: any) => {
-          terminalLog(`New Game ${this.gameData.gameName} (${newGameId}) created by ${this.user.username} (${this.user.userId})`);
+          terminalLog(
+            `New Game ${this.gameData.gameName} (${newGameId}) created by ${this.user.username} (${this.user.userId})`
+          );
           return {
             success: true,
             gameId: newGameId,
@@ -38,7 +40,9 @@ export class GameService {
           };
         })
         .catch((error: Error) => {
-          terminalLog(`New Game ${this.gameData.gameName} failed to create by ${this.user.username} (${this.user.userId})`)
+          terminalLog(
+            `New Game ${this.gameData.gameName} failed to create by ${this.user.username} (${this.user.userId})`
+          );
           console.log('Game Response Failure:', error.message);
           this.errors.push('New Game Error' + error.message);
           return {
@@ -387,7 +391,9 @@ export class GameService {
 
       if (isAdmin) {
         this.user = await accountService.getUserProfile(idToken);
-        terminalLog(`Updating Game Settings: ${gameData.gameName} (${gameData.gameId}) | ${this.user.username} (${this.user.userId})`);
+        terminalLog(
+          `Updating Game Settings: ${gameData.gameName} (${gameData.gameId}) | ${this.user.username} (${this.user.userId})`
+        );
         const events = schedulerService.extractEvents(gameData, this.user.timeZone);
         const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
 
@@ -447,7 +453,9 @@ export class GameService {
             };
           });
       } else {
-        terminalLog(`WARNING! Non-Admin Update Game Settings Attempt: ${gameData.gameName} (${gameData.gameId}) | ${this.user.username} (${this.user.userId})`);
+        terminalLog(
+          `WARNING! Non-Admin Update Game Settings Attempt: ${gameData.gameName} (${gameData.gameId}) | ${this.user.username} (${this.user.userId})`
+        );
         return 'Not admin!';
       }
     }

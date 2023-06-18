@@ -1,13 +1,13 @@
-import { Serializer } from "v8";
-import { CountryStatus } from "../../models/enumeration/country-enum";
-import { DayOfWeek } from "../../models/enumeration/day_of_week-enum";
-import { DeadlineSchedule } from "../../models/enumeration/deadline-schedule-enum";
-import { GameStatus } from "../../models/enumeration/game-status-enum";
-import { OrderDisplay } from "../../models/enumeration/order-display-enum";
-import { ProvinceStatus } from "../../models/enumeration/province-enums";
-import { TurnStatus } from "../../models/enumeration/turn-status-enum";
-import { TurnType } from "../../models/enumeration/turn-type-enum";
-import { UnitStatus, UnitType } from "../../models/enumeration/unit-enum";
+import { Serializer } from 'v8';
+import { CountryStatus } from '../../models/enumeration/country-enum';
+import { DayOfWeek } from '../../models/enumeration/day_of_week-enum';
+import { DeadlineSchedule } from '../../models/enumeration/deadline-schedule-enum';
+import { GameStatus } from '../../models/enumeration/game-status-enum';
+import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { ProvinceStatus } from '../../models/enumeration/province-enums';
+import { TurnStatus } from '../../models/enumeration/turn-status-enum';
+import { TurnType } from '../../models/enumeration/turn-type-enum';
+import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 
 export interface GameRowResult {
   game_id?: number;
@@ -65,7 +65,7 @@ export interface GameRowResult {
   ready_time?: Date | string;
   nominate_during_adjustments?: boolean;
   vote_during_spring?: boolean;
-  default_nuke_range?:number;
+  default_nuke_range?: number;
 }
 
 export interface DbStates {
@@ -135,7 +135,7 @@ export interface GameRow {
   readyTime?: Date | string;
   nominateDuringAdjustments?: boolean;
   voteDuringSpring?: boolean;
-  defaultNukeRange?:number;
+  defaultNukeRange?: number;
 }
 
 export interface TurnRowResult {
@@ -238,7 +238,6 @@ export interface OrderRow {
   secondaryResolution?: string;
 }
 
-
 export interface UnitRowResult {
   unit_id: number;
   country_id: number;
@@ -268,7 +267,6 @@ export interface UnitHistoryRow {
   nodeId: number;
   unitStatus: UnitStatus;
 }
-
 
 export interface ProvinceHistoryRowResult {
   province_id: number;

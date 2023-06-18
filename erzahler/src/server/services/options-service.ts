@@ -359,10 +359,9 @@ export class OptionsService {
     });
 
     if (orderOptions.length > 0) {
-      await db.optionsRepo.saveUnitOptions(orderOptions, turnId)
-        .then(() => {
-          this.saveDefaultOrders(optionsContext.gameId);
-        });
+      await db.optionsRepo.saveUnitOptions(orderOptions, turnId).then(() => {
+        this.saveDefaultOrders(optionsContext.gameId);
+      });
     } else {
       terminalLog(`Operation Failure | No Options: Game ${optionsContext.gameId}, Turn ${turnId}`);
     }
@@ -485,7 +484,7 @@ export class OptionsService {
     )[0];
 
     if (pendingTurn && !pendingTurn.defaultsReady) {
-    // if (pendingTurn) {
+      // if (pendingTurn) {
       await this.saveTurnDefaults(gameState, pendingTurn);
     }
 
@@ -552,9 +551,10 @@ export class OptionsService {
       db.ordersRepo.saveDefaultOrders(defaultOrders).then((success: any) => {
         db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
       });
-
     } else {
-      terminalLog(`Process Failure | No Default Orders: ${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`);
+      terminalLog(
+        `Process Failure | No Default Orders: ${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`
+      );
     }
   }
 
@@ -564,7 +564,9 @@ export class OptionsService {
     const userId = userProfile.userId;
 
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
-    terminalLog(`${userProfile.username} (${userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`);
+    terminalLog(
+      `${userProfile.username} (${userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`
+    );
     let playerCountry: CountryState | undefined = undefined;
     const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
     if (playerCountries.length > 0) {
@@ -1299,13 +1301,13 @@ export class OptionsService {
   prepDefaultOrder(option: SavedOption, forcedHold: boolean): OrderPrepping {
     const description = this.setOptionDescription(option);
 
-    return <OrderPrepping> {
+    return <OrderPrepping>{
       unitId: option.unitId,
       orderType: forcedHold ? OrderDisplay.HOLD : OrderDisplay.MOVE,
       description: description,
       destinationId: forcedHold ? undefined : option.destinations[0].nodeId,
       countryId: Number(option.unitCountryId)
-    }
+    };
   }
 
   setOptionDescription(option: SavedOption): string {
@@ -1320,21 +1322,23 @@ export class OptionsService {
     }
 
     if (
-      option.orderType === OrderDisplay.SUPPORT
-      && option.secondaryUnitType
-      && option.secondaryOrderType
-      && ![OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(option.secondaryOrderType)
+      option.orderType === OrderDisplay.SUPPORT &&
+      option.secondaryUnitType &&
+      option.secondaryOrderType &&
+      ![OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(option.secondaryOrderType)
     ) {
       description += `S ${option.secondaryUnitType[0].toUpperCase()} ${option.secondaryProvinceName}`;
     }
 
     if (
-      [OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(option.orderType)
-      && option.secondaryUnitType
-      && option.secondaryOrderType !== undefined
-      && [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(option.secondaryOrderType)
+      [OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(option.orderType) &&
+      option.secondaryUnitType &&
+      option.secondaryOrderType !== undefined &&
+      [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(option.secondaryOrderType)
     ) {
-      description += `${option.orderType[0].toUpperCase()} ${option.secondaryUnitType[0].toUpperCase()} ${option.secondaryProvinceName} => ${option.destinations[0].nodeDisplay}`;
+      description += `${option.orderType[0].toUpperCase()} ${option.secondaryUnitType[0].toUpperCase()} ${
+        option.secondaryProvinceName
+      } => ${option.destinations[0].nodeDisplay}`;
     }
 
     if (option.orderType === OrderDisplay.NUKE) {

@@ -48,14 +48,7 @@ export class OptionsRepository {
    */
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.orderOptionsCols = new pgp.helpers.ColumnSet(
-      [
-        'unit_id',
-        'order_type',
-        'secondary_unit_id',
-        'secondary_order_type',
-        'destinations',
-        'turn_id'
-      ],
+      ['unit_id', 'order_type', 'secondary_unit_id', 'secondary_order_type', 'destinations', 'turn_id'],
       { table: 'order_options' }
     );
   }
