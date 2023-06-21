@@ -235,6 +235,11 @@ export class SchedulerService {
     });
   }
 
+  /**
+   * Finalizes assignments and locks in game start time.
+   *
+   * @param gameData
+   */
   async readyGame(gameData: GameSettings): Promise<void> {
     const resolutionService: ResolutionService = new ResolutionService();
 
@@ -253,6 +258,12 @@ export class SchedulerService {
     }
   }
 
+  /**
+   * Changes game state to ready and schedules the first turn.
+   *
+   * @param gameId
+   * @returns
+   */
   async getStartDetails(gameId: number): Promise<StartDetails> {
     const scheduleSettings = await this.getGameScheduleSettings(gameId);
     if (!scheduleSettings) {
@@ -310,6 +321,14 @@ export class SchedulerService {
     return await db.schedulerRepo.getScheduleSettings(gameId);
   }
 
+  /**
+   * Finds the next time the event will occur.
+   * If the check is on cadence, return now.
+   *
+   * @param eventDay
+   * @param eventTime
+   * @returns
+   */
   findNextOccurence(eventDay: string, eventTime: string): DateTime {
     const now: DateTime = DateTime.utc();
     let nextDeadline: DateTime = DateTime.utc();
@@ -350,7 +369,7 @@ export class SchedulerService {
       return false;
     }
 
-    if (dayDifference === 0 && hourDifference === 0 && minuteDifference < 0) {
+    if (dayDifference === 0 && hourDifference === 0 && minuteDifference <= 0) {
       return false;
     }
 
