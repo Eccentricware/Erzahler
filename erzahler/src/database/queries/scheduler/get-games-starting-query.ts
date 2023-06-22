@@ -1,7 +1,7 @@
 export const getGamesStartingQuery = `
   SELECT g.game_id,
     g.game_name,
-    g.start_time,
+    g.start_time AT TIME ZONE 'utc' start_time,
     g.stylized_start_year,
     g.current_year,
     g.deadline_type,
