@@ -2,6 +2,7 @@ import { db } from '../../database/connection';
 import {
   CountryHistoryRow,
   DbStates,
+  DbUpdates,
   GameRow,
   OrderRow,
   OrderSetRow,
@@ -312,12 +313,12 @@ export class ResolutionService {
       orders: [],
       units: [],
       unitHistories: [],
-      countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber),
-      provinceHistories: []
+      provinceHistories: [],
+      countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
     };
 
     // DB Update
-    const dbUpdates: DbStates = {
+    const dbUpdates: DbUpdates = {
       game: {},
       turn: {},
       orderSets: [],
@@ -325,7 +326,7 @@ export class ResolutionService {
       units: [],
       unitHistories: [],
       provinceHistories: [],
-      countryHistories: []
+      countryHistories: {}
     };
 
     let unitsRetreating = false;
@@ -370,14 +371,17 @@ export class ResolutionService {
     const transferResults = await this.resolveTransfers(gameState, turn);
 
     transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
-      // if (result.success && result.hasNukes) {
-      //   const partnerHistory = dbStates.countryHistories?.find(
-      //     (country: CountryState) => country.countryId === result.techPartnerId
-      //   );
-      //   if (partnerHistory) {
-      //     partnerHistory.nukeRange = gameState.defaultNukeRange;
-      //   }
-      // }
+      if (result.success && result.hasNukes) {
+        const partnerHistory = dbStates.countryHistories?.find(
+          (country: CountryHistoryRow) => country.countryId === result.techPartnerId
+        );
+
+        if (partnerHistory) {
+          const newCountryHistory = this.copyCountryHistory(partnerHistory);
+          newCountryHistory.nukeRange = gameState.defaultNukeRange;
+          dbUpdates.countryHistories[partnerHistory.countryId] = newCountryHistory;
+        }
+      }
     });
 
     transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
@@ -410,7 +414,7 @@ export class ResolutionService {
       console.log('DB: Province History Insert');
     }
 
-    if (dbUpdates.countryHistories.length > 0) {
+    if (Object.keys(dbUpdates.countryHistories).length > 0) {
       // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
       console.log('DB: Country History Insert');
     }
@@ -1333,7 +1337,7 @@ export class ResolutionService {
    * Prepares DB rows for the firing nuke and impacted countries and province.
    * The target of the nuke resolves its destruction elsewhere.
    */
-  handleNuclearStrike(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+  handleNuclearStrike(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbUpdates) {
     const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
     const currentUnitHistory: UnitHistoryRow | undefined = dbStates.unitHistories?.find(
       (unitState: UnitHistoryRow) => unitState.unitId === result.unit.id
@@ -1361,7 +1365,7 @@ export class ResolutionService {
     dbUpdates.provinceHistories?.push(newProvinceHistory);
   }
 
-  handleNuclearVictim(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+  handleNuclearVictim(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbUpdates) {
     dbUpdates.unitHistories?.push({
       unitId: result.unit.id,
       nodeId: result.origin.nodeId,
@@ -1369,7 +1373,7 @@ export class ResolutionService {
     });
   }
 
-  handleSpringMovement(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates) {
+  handleSpringMovement(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbUpdates) {
     const unitHistory = dbStates.unitHistories?.find(
       (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
     );
