@@ -79,6 +79,17 @@ export interface DbStates {
   countryHistories: CountryHistoryRow[];
 }
 
+export interface DbUpdates {
+  game: GameRow;
+  turn: TurnRow;
+  orderSets: OrderSetRow[];
+  orders: OrderRow[];
+  units: UnitRow[];
+  unitHistories: UnitHistoryRow[];
+  provinceHistories: ProvinceHistoryRow[];
+  countryHistories: Record<string, CountryHistoryRow>;
+}
+
 export interface GameRow {
   gameId?: number;
   gameName?: string;
