@@ -386,16 +386,29 @@ export class ResolutionService {
 
     transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
       if (result.builds > 0) {
-        // const playerCountry = dbStates.countryHistories?.find(
-        //   (country: CountryState) => country.countryId === result.playerCountryId
-        // );
-        // const partnerCountry = dbStates.countryHistories?.find(
-        //   (country: CountryState) => country.countryId === result.countryId
-        // );
-        // if (playerCountry && partnerCountry) {
-        //   playerCountry.builds -= result.builds;
-        //   partnerCountry.builds += result.builds;
-        // }
+        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.playerCountryId];
+        if (!playerCountry) {
+          playerCountry = dbStates.countryHistories?.find(
+            (country: CountryHistoryRow) => country.countryId === result.playerCountryId
+          );
+        }
+
+        let partnerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.countryId];
+        if (!partnerCountry) {
+          partnerCountry = dbStates.countryHistories?.find(
+            (country: CountryHistoryRow) => country.countryId === result.countryId
+          );
+        }
+
+        if (playerCountry && partnerCountry) {
+          const newPlayerCountryHistory = this.copyCountryHistory(playerCountry);
+          const newPartnerCountryHistory = this.copyCountryHistory(partnerCountry);
+
+          newPlayerCountryHistory.bankedBuilds -= result.builds;
+          newPartnerCountryHistory.bankedBuilds += result.builds;
+          dbUpdates.countryHistories[result.playerCountryId] = newPlayerCountryHistory;
+          dbUpdates.countryHistories[result.countryId] = newPartnerCountryHistory;
+        }
       }
     });
 
