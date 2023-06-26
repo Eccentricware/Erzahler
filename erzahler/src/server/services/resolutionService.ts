@@ -428,7 +428,7 @@ export class ResolutionService {
     }
 
     if (Object.keys(dbUpdates.countryHistories).length > 0) {
-      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
+      await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
       console.log('DB: Country History Insert');
     }
 
