@@ -81,10 +81,11 @@ export class ResolutionRepository {
     });
   }
 
-  async insertUnitHistories(unitHistories: UnitHistoryRow[]): Promise<void> {
+  async insertUnitHistories(unitHistories: UnitHistoryRow[], turnId: number): Promise<void> {
     const unitHistoryValues = unitHistories.map((unitHistory: UnitHistoryRow) => {
       return {
         unit_id: unitHistory.unitId,
+        turn_id: turnId,
         node_id: unitHistory.nodeId,
         unit_status: unitHistory.unitStatus
       };
@@ -94,10 +95,11 @@ export class ResolutionRepository {
     this.db.query(query);
   }
 
-  async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[]): Promise<void> {
+  async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[], turnId: number): Promise<void> {
     const provinceHistoryValues = provinceHistories.map((provinceHistory: ProvinceHistoryRow) => {
       return {
         province_id: provinceHistory.provinceId,
+        turn_id: turnId,
         controller_id: provinceHistory.controllerId,
         capital_owner_id: provinceHistory.capitalOwnerId,
         province_status: provinceHistory.provinceStatus,
@@ -109,10 +111,11 @@ export class ResolutionRepository {
     this.db.query(query);
   }
 
-  async insertCountryHistories(countryHistories: Record<string, CountryHistoryRow>): Promise<void> {
+  async insertCountryHistories(countryHistories: Record<string, CountryHistoryRow>, turnId: number): Promise<void> {
     const countryHistoryValues = Object.values(countryHistories).map((countryHistory: CountryHistoryRow) => {
       return {
         country_id: countryHistory.countryId,
+        turn_id: turnId,
         city_count: countryHistory.cityCount,
         unit_count: countryHistory.unitCount,
         banked_builds: countryHistory.bankedBuilds,
@@ -132,6 +135,7 @@ export class ResolutionRepository {
     const provinceHistoryValues = abandonedBombards.map((provinceHistory: ProvinceHistoryRow) => {
       return {
         province_id: provinceHistory.provinceId,
+        turn_id: turnId,
         controller_id: provinceHistory.controllerId,
         capital_owner_id: provinceHistory.capitalOwnerId,
         province_status: provinceHistory.provinceStatus,
