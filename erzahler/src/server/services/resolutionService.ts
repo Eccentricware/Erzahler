@@ -418,26 +418,27 @@ export class ResolutionService {
     }
 
     if (dbUpdates.unitHistories.length > 0) {
-      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories);
+      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
       console.log('DB: Unit History Insert');
     }
 
     if (dbUpdates.provinceHistories.length > 0) {
-      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories);
+      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
       console.log('DB: Province History Insert');
     }
 
     if (Object.keys(dbUpdates.countryHistories).length > 0) {
-      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
+      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
       console.log('DB: Country History Insert');
     }
 
     // Every turn
-    // await db.resolutionRepo.resolveOrderSets(turn.turnId);
     console.log('DB: Order Set Update');
+    // await db.resolutionRepo.resolveOrderSets(turn.turnId);
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
+    await db.resolutionRepo.resolveTurn(turn.turnId);
 
     // Next turns needs to know retreats after resolution
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);

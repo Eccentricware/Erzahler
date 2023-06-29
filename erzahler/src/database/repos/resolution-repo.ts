@@ -33,6 +33,7 @@ import {
 import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-bombards-query';
 import { updateOrderQuery } from '../queries/resolution/update-order-query';
 import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-query';
+import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -362,5 +363,9 @@ export class ResolutionRepository {
     orderSets.forEach(async (orderSet: any) => {
       await this.pool.query(updateOrderSetsQuery, [turnId]);
     });
+  }
+
+  async resolveTurn(turnId: number): Promise<void> {
+    await this.pool.query(resolveTurnQuery, [turnId]);
   }
 }
