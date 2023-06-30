@@ -25,6 +25,8 @@ import { getRemainingGarrisonsQuery } from '../queries/resolution/get-remaining-
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import {
   CountryHistoryRow,
+  CountryStatCounts,
+  CountryStatCountsResult,
   OrderRow,
   ProvinceHistoryRow,
   ProvinceHistoryRowResult,
@@ -34,6 +36,7 @@ import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-b
 import { updateOrderQuery } from '../queries/resolution/update-order-query';
 import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-query';
 import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
+import { getCountryUnitCityCountsQuery } from '../queries/resolution/get-country-unit-city-counts';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -367,5 +370,16 @@ export class ResolutionRepository {
 
   async resolveTurn(turnId: number): Promise<void> {
     await this.pool.query(resolveTurnQuery, [turnId]);
+  }
+
+  async getCountryStatCounts(gameId: number, turnNumber: number): Promise<CountryStatCounts[]> {
+    return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber])
+      .then((result: QueryResult) => result.rows.map((country: CountryStatCountsResult) => {
+        return <CountryStatCounts>{
+          countryId: country.country_id,
+          cityCount: Number(country.city_count),
+          unitCount: Number(country.unit_count)
+        };
+      }));
   }
 }
