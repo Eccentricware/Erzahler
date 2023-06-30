@@ -1,6 +1,7 @@
 import { db } from '../../database/connection';
 import {
   CountryHistoryRow,
+  CountryStatCounts,
   DbStates,
   DbUpdates,
   GameRow,
@@ -427,6 +428,30 @@ export class ResolutionService {
       console.log('DB: Province History Insert');
     }
 
+    const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, gameState.turnNumber);
+
+    countryStatCounts.forEach((countryStats: CountryStatCounts) => {
+      let countryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.countryId];
+      if (!countryHistory) {
+        const countryHistoryRow = dbStates.countryHistories.find(
+          (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+        );
+
+        if (countryHistoryRow) {
+          countryHistory = this.copyCountryHistory(countryHistoryRow);
+        }
+      }
+
+      if (!countryHistory) {
+        terminalLog(`Country History not found for ${countryStats.countryId}`);
+
+      } else if (countryHistory.cityCount !== countryStats.cityCount || countryHistory.unitCount !== countryStats.unitCount) {
+        countryHistory.cityCount = countryStats.cityCount;
+        countryHistory.unitCount = countryStats.unitCount;
+        dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
+      }
+    });
+
     if (Object.keys(dbUpdates.countryHistories).length > 0) {
       // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
       console.log('DB: Country History Insert');
@@ -438,10 +463,13 @@ export class ResolutionService {
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
-    await db.resolutionRepo.resolveTurn(turn.turnId);
+    // await db.resolutionRepo.resolveTurn(turn.turnId);
 
     // Next turns needs to know retreats after resolution
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
+
+    console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
+
 
     if (gameState.preliminaryTurnId) {
       console.log('DB: Turn Update'); // Convert preliminary to pending
@@ -450,7 +478,6 @@ export class ResolutionService {
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
     }
 
-    console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
     console.log('Triggering next turn defaults');
   }
 
