@@ -37,6 +37,7 @@ import { updateOrderQuery } from '../queries/resolution/update-order-query';
 import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-query';
 import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
 import { getCountryUnitCityCountsQuery } from '../queries/resolution/get-country-unit-city-counts';
+import { advancePreliminaryTurnQuery } from '../queries/resolution/advance-preliminary-turn-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -370,6 +371,10 @@ export class ResolutionRepository {
 
   async resolveTurn(turnId: number): Promise<void> {
     await this.pool.query(resolveTurnQuery, [turnId]);
+  }
+
+  async advancePreliminaryTurn(turnId: number): Promise<void> {
+    await this.pool.query(advancePreliminaryTurnQuery, [turnId]);
   }
 
   async getCountryStatCounts(gameId: number, turnNumber: number): Promise<CountryStatCounts[]> {
