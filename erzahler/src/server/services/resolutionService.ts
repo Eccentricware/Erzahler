@@ -472,7 +472,8 @@ export class ResolutionService {
 
 
     if (gameState.preliminaryTurnId) {
-      console.log('DB: Turn Update'); // Convert preliminary to pending
+      console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`); // Convert preliminary to pending
+      // db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
