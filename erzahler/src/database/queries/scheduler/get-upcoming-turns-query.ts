@@ -3,6 +3,7 @@ export const getUpcomingTurnsQuery = `
     t.turn_id,
     g.game_name,
     t.turn_name,
+    t.turn_number,
     t.turn_type,
     t.turn_status,
     t.deadline,
