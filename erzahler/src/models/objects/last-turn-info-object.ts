@@ -57,14 +57,17 @@ export interface GameState {
 export interface NextTurns {
   pending: {
     type: TurnType;
+    turnNumber: number;
     id?: number;
   };
   preliminary?: {
     type: TurnType;
+    turnNumber: number;
     id?: number;
   };
   resolved?: {
     type: TurnType;
+    turnNumber: number;
     id?: number;
   };
 }

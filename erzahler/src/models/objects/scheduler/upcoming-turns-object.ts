@@ -7,6 +7,7 @@ export interface UpcomingTurnResult {
   turn_id: number;
   game_name: string;
   turn_name: string;
+  turn_number: number;
   turn_type: TurnType;
   turn_status: string;
   deadline: string;
@@ -17,6 +18,7 @@ export interface UpcomingTurn {
   turnId: number;
   gameName: string;
   turnName: string;
+  turnNumber: number;
   turnType: TurnType;
   turnStatus: TurnStatus;
   deadline: string;
