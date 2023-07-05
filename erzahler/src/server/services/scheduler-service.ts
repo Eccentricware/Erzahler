@@ -377,7 +377,12 @@ export class SchedulerService {
   }
 
   findNextTurns(currentTurn: UpcomingTurn, gameState: GameState, unitsRetreating: boolean): NextTurns {
-    const nextTurns: NextTurns = { pending: { type: TurnType.SPRING_ORDERS } };
+    const nextTurns: NextTurns = {
+      pending: {
+        type: TurnType.SPRING_ORDERS,
+        turnNumber: currentTurn.turnNumber + 1
+      }
+    };
     const nominationsStarted = this.checkNominationsStarted(gameState);
     const nominateDuringAdjustments = gameState.nominateDuringAdjustments;
     const voteDuringSpring = gameState.voteDuringSpring;
@@ -386,7 +391,10 @@ export class SchedulerService {
     if (currentTurn.turnType === TurnType.ORDERS_AND_VOTES) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
-        nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
+        nextTurns.preliminary = {
+          type: TurnType.FALL_ORDERS,
+          turnNumber: currentTurn.turnNumber + 2
+        };
       } else {
         nextTurns.pending.type = TurnType.FALL_ORDERS;
       }
@@ -396,7 +404,10 @@ export class SchedulerService {
     if (currentTurn.turnType === TurnType.SPRING_ORDERS) {
       if (gameState.unitsInRetreat) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
-        nextTurns.preliminary = { type: TurnType.FALL_ORDERS };
+        nextTurns.preliminary = {
+          type: TurnType.FALL_ORDERS,
+          turnNumber: currentTurn.turnNumber + 2
+        };
       } else {
         nextTurns.pending.type = TurnType.FALL_ORDERS;
       }
@@ -413,9 +424,15 @@ export class SchedulerService {
         nextTurns.pending.type = TurnType.FALL_RETREATS;
 
         if (nominationsStarted && nominateDuringAdjustments) {
-          nextTurns.preliminary = { type: TurnType.ADJ_AND_NOM };
+          nextTurns.preliminary = {
+            type: TurnType.ADJ_AND_NOM,
+            turnNumber: currentTurn.turnNumber + 2
+          };
         } else {
-          nextTurns.preliminary = { type: TurnType.ADJUSTMENTS };
+          nextTurns.preliminary = {
+            type: TurnType.ADJUSTMENTS,
+            turnNumber: currentTurn.turnNumber + 2
+          };
         }
       } else {
         if (nominationsStarted && nominateDuringAdjustments) {
@@ -432,7 +449,10 @@ export class SchedulerService {
         nextTurns.pending.type = TurnType.ADJ_AND_NOM;
       } else if (nominationsStarted && !nominateDuringAdjustments) {
         nextTurns.pending.type = TurnType.ADJUSTMENTS;
-        nextTurns.preliminary = { type: TurnType.NOMINATIONS };
+        nextTurns.preliminary = {
+          type: TurnType.NOMINATIONS,
+          turnNumber: currentTurn.turnNumber + 2
+        };
       } else {
         nextTurns.pending.type = TurnType.ADJUSTMENTS;
       }
@@ -464,7 +484,10 @@ export class SchedulerService {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
       } else {
         nextTurns.pending.type = TurnType.VOTES;
-        nextTurns.preliminary = { type: TurnType.SPRING_ORDERS };
+        nextTurns.preliminary = {
+          type: TurnType.SPRING_ORDERS,
+          turnNumber: currentTurn.turnNumber + 2
+        };
       }
     }
 

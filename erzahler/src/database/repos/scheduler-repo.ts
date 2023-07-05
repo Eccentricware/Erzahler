@@ -109,6 +109,7 @@ export class SchedulerRepository {
             turnId: turn.turn_id,
             gameName: turn.game_name,
             turnName: turn.turn_name,
+            turnNumber: turn.turn_number,
             turnType: turn.turn_type,
             turnStatus: turn.turn_status,
             deadline: turn.deadline,

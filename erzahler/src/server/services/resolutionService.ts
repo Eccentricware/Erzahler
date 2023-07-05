@@ -1,6 +1,7 @@
 import { db } from '../../database/connection';
 import {
   CountryHistoryRow,
+  CountryStatCounts,
   DbStates,
   DbUpdates,
   GameRow,
@@ -386,57 +387,98 @@ export class ResolutionService {
 
     transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
       if (result.builds > 0) {
-        // const playerCountry = dbStates.countryHistories?.find(
-        //   (country: CountryState) => country.countryId === result.playerCountryId
-        // );
-        // const partnerCountry = dbStates.countryHistories?.find(
-        //   (country: CountryState) => country.countryId === result.countryId
-        // );
-        // if (playerCountry && partnerCountry) {
-        //   playerCountry.builds -= result.builds;
-        //   partnerCountry.builds += result.builds;
-        // }
+        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.playerCountryId];
+        if (!playerCountry) {
+          playerCountry = dbStates.countryHistories?.find(
+            (country: CountryHistoryRow) => country.countryId === result.playerCountryId
+          );
+        }
+
+        let partnerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.countryId];
+        if (!partnerCountry) {
+          partnerCountry = dbStates.countryHistories?.find(
+            (country: CountryHistoryRow) => country.countryId === result.countryId
+          );
+        }
+
+        if (playerCountry && partnerCountry) {
+          const newPlayerCountryHistory = this.copyCountryHistory(playerCountry);
+          const newPartnerCountryHistory = this.copyCountryHistory(partnerCountry);
+
+          newPlayerCountryHistory.bankedBuilds -= result.builds;
+          newPartnerCountryHistory.bankedBuilds += result.builds;
+          dbUpdates.countryHistories[result.playerCountryId] = newPlayerCountryHistory;
+          dbUpdates.countryHistories[result.countryId] = newPartnerCountryHistory;
+        }
       }
     });
 
     if (dbUpdates.orders.length > 0) {
       // db.resolutionRepo.updateOrders(dbUpdates.orders);
-      console.log('DB: Order Update', dbUpdates.orders);
+      // console.log('DB: Order Update', dbUpdates.orders);
     }
 
     if (dbUpdates.unitHistories.length > 0) {
-      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories);
+      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
       console.log('DB: Unit History Insert');
     }
 
     if (dbUpdates.provinceHistories.length > 0) {
-      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories);
+      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
       console.log('DB: Province History Insert');
     }
 
+    const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, gameState.turnNumber);
+
+    countryStatCounts.forEach((countryStats: CountryStatCounts) => {
+      let countryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.countryId];
+      if (!countryHistory) {
+        const countryHistoryRow = dbStates.countryHistories.find(
+          (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+        );
+
+        if (countryHistoryRow) {
+          countryHistory = this.copyCountryHistory(countryHistoryRow);
+        }
+      }
+
+      if (!countryHistory) {
+        terminalLog(`Country History not found for ${countryStats.countryId}`);
+
+      } else if (countryHistory.cityCount !== countryStats.cityCount || countryHistory.unitCount !== countryStats.unitCount) {
+        countryHistory.cityCount = countryStats.cityCount;
+        countryHistory.unitCount = countryStats.unitCount;
+        dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
+      }
+    });
+
     if (Object.keys(dbUpdates.countryHistories).length > 0) {
-      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories);
+      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
       console.log('DB: Country History Insert');
     }
 
     // Every turn
-    // await db.resolutionRepo.resolveOrderSets(turn.turnId);
     console.log('DB: Order Set Update');
+    // await db.resolutionRepo.resolveOrderSets(turn.turnId);
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
+    // await db.resolutionRepo.resolveTurn(turn.turnId);
 
     // Next turns needs to know retreats after resolution
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
 
+    console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
+
+
     if (gameState.preliminaryTurnId) {
-      console.log('DB: Turn Update'); // Convert preliminary to pending
+      console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`); // Convert preliminary to pending
+      // db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
     }
 
-    console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
     console.log('Triggering next turn defaults');
   }
 

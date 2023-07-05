@@ -25,6 +25,8 @@ import { getRemainingGarrisonsQuery } from '../queries/resolution/get-remaining-
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import {
   CountryHistoryRow,
+  CountryStatCounts,
+  CountryStatCountsResult,
   OrderRow,
   ProvinceHistoryRow,
   ProvinceHistoryRowResult,
@@ -33,6 +35,9 @@ import {
 import { getAbandonedBombardsQuery } from '../queries/resolution/get-abandoned-bombards-query';
 import { updateOrderQuery } from '../queries/resolution/update-order-query';
 import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-query';
+import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
+import { getCountryUnitCityCountsQuery } from '../queries/resolution/get-country-unit-city-counts';
+import { advancePreliminaryTurnQuery } from '../queries/resolution/advance-preliminary-turn-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -81,11 +86,11 @@ export class ResolutionRepository {
     });
   }
 
-  async insertUnitHistories(unitHistories: UnitHistoryRow[]): Promise<void> {
+  async insertUnitHistories(unitHistories: UnitHistoryRow[], turnId: number): Promise<void> {
     const unitHistoryValues = unitHistories.map((unitHistory: UnitHistoryRow) => {
       return {
         unit_id: unitHistory.unitId,
-        turn_id: unitHistory.turnId,
+        turn_id: turnId,
         node_id: unitHistory.nodeId,
         unit_status: unitHistory.unitStatus
       };
@@ -95,11 +100,11 @@ export class ResolutionRepository {
     this.db.query(query);
   }
 
-  async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[]): Promise<void> {
+  async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[], turnId: number): Promise<void> {
     const provinceHistoryValues = provinceHistories.map((provinceHistory: ProvinceHistoryRow) => {
       return {
         province_id: provinceHistory.provinceId,
-        turn_id: provinceHistory.turnId,
+        turn_id: turnId,
         controller_id: provinceHistory.controllerId,
         capital_owner_id: provinceHistory.capitalOwnerId,
         province_status: provinceHistory.provinceStatus,
@@ -111,11 +116,11 @@ export class ResolutionRepository {
     this.db.query(query);
   }
 
-  async insertCountryHistories(countryHistories: CountryHistoryRow[]): Promise<void> {
-    const countryHistoryValues = countryHistories.map((countryHistory: CountryHistoryRow) => {
+  async insertCountryHistories(countryHistories: Record<string, CountryHistoryRow>, turnId: number): Promise<void> {
+    const countryHistoryValues = Object.values(countryHistories).map((countryHistory: CountryHistoryRow) => {
       return {
         country_id: countryHistory.countryId,
-        turn_id: countryHistory.turnId,
+        turn_id: turnId,
         city_count: countryHistory.cityCount,
         unit_count: countryHistory.unitCount,
         banked_builds: countryHistory.bankedBuilds,
@@ -362,5 +367,24 @@ export class ResolutionRepository {
     orderSets.forEach(async (orderSet: any) => {
       await this.pool.query(updateOrderSetsQuery, [turnId]);
     });
+  }
+
+  async resolveTurn(turnId: number): Promise<void> {
+    await this.pool.query(resolveTurnQuery, [turnId]);
+  }
+
+  async advancePreliminaryTurn(turnId: number): Promise<void> {
+    await this.pool.query(advancePreliminaryTurnQuery, [turnId]);
+  }
+
+  async getCountryStatCounts(gameId: number, turnNumber: number): Promise<CountryStatCounts[]> {
+    return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber])
+      .then((result: QueryResult) => result.rows.map((country: CountryStatCountsResult) => {
+        return <CountryStatCounts>{
+          countryId: country.country_id,
+          cityCount: Number(country.city_count),
+          unitCount: Number(country.unit_count)
+        };
+      }));
   }
 }
