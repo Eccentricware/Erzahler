@@ -2,7 +2,7 @@ import { GameState } from '../../models/objects/last-turn-info-object';
 import { NominatableCountry, Order } from '../../models/objects/option-context-objects';
 import { UnitType } from '../../models/enumeration/unit-enum';
 import { db } from '../../database/connection';
-import { AccountService } from './accountService';
+import { AccountService } from './account-service';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';

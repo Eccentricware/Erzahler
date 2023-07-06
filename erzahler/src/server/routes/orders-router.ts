@@ -4,8 +4,8 @@ import { db } from '../../database/connection';
 import { SavedOption } from '../../models/objects/option-context-objects';
 import { OptionsFinal } from '../../models/objects/options-objects';
 import { TurnOrders } from '../../models/objects/order-objects';
-import { AccountService } from '../services/accountService';
-import { AssignmentService } from '../services/assignmentService';
+import { AccountService } from '../services/account-service';
+import { AssignmentService } from '../services/assignment-service';
 import { OrdersService } from '../services/orders-service';
 
 export const ordersRouter = express.Router();
