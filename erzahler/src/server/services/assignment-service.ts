@@ -8,8 +8,8 @@ import { getRegisteredPlayersQuery } from '../../database/queries/game/get-regis
 import { AssignmentStatus } from '../../models/enumeration/assignment-status-enum';
 import { AssignmentDataObject } from '../../models/objects/assignment-objects';
 import { envCredentials } from '../../secrets/dbCredentials';
-import { AccountService } from './accountService';
-import { FormattingService } from './formattingService';
+import { AccountService } from './account-service';
+import { FormattingService } from './formatting-service';
 import { getGameAdminsQuery } from '../../database/queries/game/get-game-admins-query';
 import { clearCountryAssignmentsQuery } from '../../database/queries/assignments/clear-country-assignments-query';
 import { assignUserQuery } from '../../database/queries/assignments/assign-user-query';

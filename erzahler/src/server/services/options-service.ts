@@ -35,7 +35,7 @@ import {
 import { OptionsFinal, BuildOptions, VotingOptions } from '../../models/objects/options-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
 import { terminalLog } from '../utils/general';
-import { AccountService } from './accountService';
+import { AccountService } from './account-service';
 import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 
 export class OptionsService {

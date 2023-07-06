@@ -1,7 +1,7 @@
 import express from 'express';
 import { db } from '../../database/connection';
 import { UserProfile } from '../../models/objects/user-profile-object';
-import { AccountService } from '../services/accountService';
+import { AccountService } from '../services/account-service';
 import { terminalLog } from '../utils/general';
 
 export const userRouter = express.Router();

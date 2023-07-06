@@ -6,7 +6,7 @@ import { TurnPG, TurnTS } from '../../models/objects/database-objects';
 import { ScheduleSettingsQueryResult } from '../../models/objects/schedule-settings-query-object';
 import { UpcomingTurn, UpcomingTurnResult } from '../../models/objects/scheduler/upcoming-turns-object';
 import { envCredentials } from '../../secrets/dbCredentials';
-import { FormattingService } from '../../server/services/formattingService';
+import { FormattingService } from '../../server/services/formatting-service';
 import { setAssignmentsActiveQuery } from '../queries/assignments/set-assignments-active-query';
 import { readyGameQuery } from '../queries/game/ready-game-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
