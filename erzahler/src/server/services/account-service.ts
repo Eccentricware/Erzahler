@@ -5,7 +5,7 @@ import {
   AddUserArgs,
   UserProfile
 } from '../../models/objects/user-profile-object';
-import { FormattingService } from './formattingService';
+import { FormattingService } from './formatting-service';
 import { db } from '../../database/connection';
 import { NewUser } from '../../models/objects/new-user-objects';
 

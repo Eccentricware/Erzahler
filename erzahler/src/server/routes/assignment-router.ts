@@ -1,5 +1,5 @@
 import express from 'express';
-import { AssignmentService } from '../services/assignmentService';
+import { AssignmentService } from '../services/assignment-service';
 
 export const assignmentRouter = express.Router();
 const assignmentService = new AssignmentService();

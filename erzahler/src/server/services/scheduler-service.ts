@@ -8,7 +8,7 @@ import { NsDate, ScheduledJob, StartScheduleEvents } from '../../models/objects/
 import { StartTiming } from '../../models/enumeration/start-timing-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { StartDetails } from '../../models/objects/initial-times-object';
-import { ResolutionService } from './resolutionService';
+import { ResolutionService } from './resolution-service';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { GameState, NextTurns } from '../../models/objects/last-turn-info-object';
 import { db } from '../../database/connection';

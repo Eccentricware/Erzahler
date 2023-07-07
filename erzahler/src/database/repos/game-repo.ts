@@ -10,7 +10,7 @@ import { CountryState, CountryStateResult } from '../../models/objects/games/cou
 import { CountryStats, CountryStatsResult } from '../../models/objects/games/country-stats-objects';
 import { GameState, GameStateResult } from '../../models/objects/last-turn-info-object';
 import { envCredentials } from '../../secrets/dbCredentials';
-import { FormattingService } from '../../server/services/formattingService';
+import { FormattingService } from '../../server/services/formatting-service';
 import { getPlayerRegistrationStatusQuery } from '../queries/assignments/get-player-registration-status';
 import { checkGameNameAvailabilityQuery } from '../queries/game/check-game-name-availability-query';
 import { checkUserGameAdminQuery } from '../queries/game/check-user-game-admin-query';

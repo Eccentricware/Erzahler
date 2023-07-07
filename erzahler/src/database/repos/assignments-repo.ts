@@ -1,7 +1,7 @@
 import { Pool, QueryResult } from 'pg';
 import { IDatabase, IMain } from 'pg-promise';
 import { envCredentials } from '../../secrets/dbCredentials';
-import { FormattingService } from '../../server/services/formattingService';
+import { FormattingService } from '../../server/services/formatting-service';
 import { assignUserQuery } from '../queries/assignments/assign-user-query';
 import { clearCountryAssignmentsQuery } from '../queries/assignments/clear-country-assignments-query';
 import { getUserGameAssignmentsQuery } from '../queries/assignments/get-user-game-assignments-query';
