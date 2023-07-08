@@ -444,8 +444,10 @@ export class ResolutionService {
 
       if (!countryHistory) {
         terminalLog(`Country History not found for ${countryStats.countryId}`);
-
-      } else if (countryHistory.cityCount !== countryStats.cityCount || countryHistory.unitCount !== countryStats.unitCount) {
+      } else if (
+        countryHistory.cityCount !== countryStats.cityCount ||
+        countryHistory.unitCount !== countryStats.unitCount
+      ) {
         countryHistory.cityCount = countryStats.cityCount;
         countryHistory.unitCount = countryStats.unitCount;
         dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
@@ -469,7 +471,6 @@ export class ResolutionService {
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
 
     console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
-
 
     if (gameState.preliminaryTurnId) {
       console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`); // Convert preliminary to pending
