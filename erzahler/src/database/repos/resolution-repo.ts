@@ -378,13 +378,14 @@ export class ResolutionRepository {
   }
 
   async getCountryStatCounts(gameId: number, turnNumber: number): Promise<CountryStatCounts[]> {
-    return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber])
-      .then((result: QueryResult) => result.rows.map((country: CountryStatCountsResult) => {
+    return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber]).then((result: QueryResult) =>
+      result.rows.map((country: CountryStatCountsResult) => {
         return <CountryStatCounts>{
           countryId: country.country_id,
           cityCount: Number(country.city_count),
           unitCount: Number(country.unit_count)
         };
-      }));
+      })
+    );
   }
 }
