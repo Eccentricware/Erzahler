@@ -391,12 +391,23 @@ export class SchedulerService {
     if (currentTurn.turnType === TurnType.ORDERS_AND_VOTES) {
       if (unitsRetreating) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
+        nextTurns.resolved = {
+          type: TurnType.SPRING_FINAL,
+          turnNumber: currentTurn.turnNumber + 2
+        }
         nextTurns.preliminary = {
           type: TurnType.FALL_ORDERS,
-          turnNumber: currentTurn.turnNumber + 2
+          turnNumber: currentTurn.turnNumber + 3
         };
+
       } else {
+        nextTurns.resolved = {
+          type: TurnType.SPRING_FINAL,
+          turnNumber: currentTurn.turnNumber + 1
+        };
+
         nextTurns.pending.type = TurnType.FALL_ORDERS;
+        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
       }
     }
 
@@ -408,6 +419,7 @@ export class SchedulerService {
           type: TurnType.FALL_ORDERS,
           turnNumber: currentTurn.turnNumber + 2
         };
+
       } else {
         nextTurns.pending.type = TurnType.FALL_ORDERS;
       }
