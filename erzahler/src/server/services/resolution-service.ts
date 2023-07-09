@@ -414,18 +414,18 @@ export class ResolutionService {
     });
 
     if (dbUpdates.orders.length > 0) {
+      console.log('DB: Order Update');
       // db.resolutionRepo.updateOrders(dbUpdates.orders);
-      // console.log('DB: Order Update', dbUpdates.orders);
     }
 
     if (dbUpdates.unitHistories.length > 0) {
-      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
       console.log('DB: Unit History Insert');
+      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
     }
 
     if (dbUpdates.provinceHistories.length > 0) {
-      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
       console.log('DB: Province History Insert');
+      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
     }
 
     const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, gameState.turnNumber);
@@ -455,8 +455,8 @@ export class ResolutionService {
     });
 
     if (Object.keys(dbUpdates.countryHistories).length > 0) {
-      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
       console.log('DB: Country History Insert');
+      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
     }
 
     // Every turn
@@ -469,8 +469,6 @@ export class ResolutionService {
 
     // Next turns needs to know retreats after resolution
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
-
-    console.log('DB: Country History Update'); // Province and Unit results are a pre-req, Spring
 
     if (gameState.preliminaryTurnId) {
       console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`); // Convert preliminary to pending
