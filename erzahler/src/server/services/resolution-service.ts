@@ -471,8 +471,10 @@ export class ResolutionService {
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
 
     if (gameState.preliminaryTurnId) {
-      console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`); // Convert preliminary to pending
+      // Convert preliminary to pending
+      console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`);
       // db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
+
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
