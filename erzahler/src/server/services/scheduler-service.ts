@@ -394,7 +394,7 @@ export class SchedulerService {
         nextTurns.resolved = {
           type: TurnType.SPRING_FINAL,
           turnNumber: currentTurn.turnNumber + 2
-        }
+        };
         nextTurns.preliminary = {
           type: TurnType.FALL_ORDERS,
           turnNumber: currentTurn.turnNumber + 3
@@ -415,13 +415,23 @@ export class SchedulerService {
     if (currentTurn.turnType === TurnType.SPRING_ORDERS) {
       if (unitsRetreating) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
+        nextTurns.resolved = {
+          type: TurnType.SPRING_FINAL,
+          turnNumber: currentTurn.turnNumber + 2
+        };
         nextTurns.preliminary = {
           type: TurnType.FALL_ORDERS,
-          turnNumber: currentTurn.turnNumber + 2
+          turnNumber: currentTurn.turnNumber + 3
         };
 
       } else {
+        nextTurns.resolved = {
+          type: TurnType.SPRING_FINAL,
+          turnNumber: currentTurn.turnNumber + 1
+        };
+
         nextTurns.pending.type = TurnType.FALL_ORDERS;
+        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
       }
     }
 
