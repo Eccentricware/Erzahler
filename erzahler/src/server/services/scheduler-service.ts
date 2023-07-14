@@ -383,7 +383,7 @@ export class SchedulerService {
         turnNumber: currentTurn.turnNumber + 1
       }
     };
-    const nominationsStarted = this.checkNominationsStarted(gameState);
+    const nominationsStarted = this.checkNominationsStarted(gameState, unitsRetreating);
     const nominateDuringAdjustments = gameState.nominateDuringAdjustments;
     const voteDuringSpring = gameState.voteDuringSpring;
 
@@ -521,7 +521,7 @@ export class SchedulerService {
     return nextTurns;
   }
 
-  checkNominationsStarted(gameState: GameState): boolean {
+  checkNominationsStarted(gameState: GameState, unitsRetreating: boolean): boolean {
     if (gameState.nominationTiming === 'set' && gameState.nominationYear) {
       if (gameState.currentYear > gameState.nominationYear) {
         return true;
@@ -537,7 +537,7 @@ export class SchedulerService {
 
         if (
           impactedTurns.includes(gameState.turnType) ||
-          (gameState.turnType === TurnType.FALL_ORDERS && !gameState.unitsInRetreat)
+          (gameState.turnType === TurnType.FALL_ORDERS && !unitsRetreating)
         ) {
           return true;
         }
