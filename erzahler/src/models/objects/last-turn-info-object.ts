@@ -1,3 +1,4 @@
+import { DayOfWeek } from '../enumeration/day_of_week-enum';
 import { TurnType } from '../enumeration/turn-type-enum';
 
 export interface GameStateResult {
@@ -13,6 +14,21 @@ export interface GameStateResult {
   pending_turn_type: string;
   preliminary_turn_id: number;
   preliminary_turn_type: string;
+  orders_day: DayOfWeek;
+  orders_time: Date;
+  orders_span: number;
+  retreats_day: DayOfWeek;
+  retreats_time: Date;
+  retreats_span: number;
+  adjustments_day: DayOfWeek;
+  adjustments_time: Date;
+  adjustments_span: number;
+  nominations_day: DayOfWeek;
+  nominations_time: Date;
+  nominations_span: number;
+  votes_day: DayOfWeek;
+  votes_time: Date;
+  votes_span: number;
   resolved_time?: Date;
   deadline_missed?: boolean;
   nominate_during_adjustments: boolean;
@@ -40,6 +56,21 @@ export interface GameState {
   pendingTurnType: TurnType;
   preliminaryTurnId?: number;
   preliminaryTurnType?: TurnType;
+  ordersDay: DayOfWeek;
+  ordersTime: Date;
+  ordersSpan: number;
+  retreatsDay: DayOfWeek;
+  retreatsTime: Date;
+  retreatsSpan: number;
+  adjustmentsDay: DayOfWeek;
+  adjustmentsTime: Date;
+  adjustmentsSpan: number;
+  nominationsDay: DayOfWeek;
+  nominationsTime: Date;
+  nominationsSpan: number;
+  votesDay: DayOfWeek;
+  votesTime: Date;
+  votesSpan: number;
   resolvedTime?: Date;
   deadlineMissed?: boolean;
   nominateDuringAdjustments: boolean;
