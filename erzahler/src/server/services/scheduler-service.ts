@@ -397,7 +397,8 @@ export class SchedulerService {
         };
         nextTurns.preliminary = {
           type: TurnType.FALL_ORDERS,
-          turnNumber: currentTurn.turnNumber + 3
+          turnNumber: currentTurn.turnNumber + 3,
+          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString())
         };
 
       } else {
@@ -421,7 +422,8 @@ export class SchedulerService {
         };
         nextTurns.preliminary = {
           type: TurnType.FALL_ORDERS,
-          turnNumber: currentTurn.turnNumber + 3
+          turnNumber: currentTurn.turnNumber + 3,
+          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString())
         };
 
       } else {
@@ -432,6 +434,7 @@ export class SchedulerService {
 
         nextTurns.pending.type = TurnType.FALL_ORDERS;
         nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
       }
     }
 

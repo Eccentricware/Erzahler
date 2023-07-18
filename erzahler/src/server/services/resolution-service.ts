@@ -483,7 +483,7 @@ export class ResolutionService {
         'deadline',
         `${nextTurns.pending.type.split('_')[0]} YEAR HERE ${nextTurns.pending.type.split('_')[1]}`,
         nextTurns.pending.type,
-        TurnStatus.PENDING,
+        TurnStatus.PENDING
       ]);
     }
 
