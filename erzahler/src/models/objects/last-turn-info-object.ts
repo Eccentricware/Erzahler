@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import { DayOfWeek } from '../enumeration/day_of_week-enum';
 import { TurnType } from '../enumeration/turn-type-enum';
 
@@ -89,11 +90,13 @@ export interface NextTurns {
   pending: {
     type: TurnType;
     turnNumber: number;
+    deadline?: Date | DateTime | string;
     id?: number;
   };
   preliminary?: {
     type: TurnType;
     turnNumber: number;
+    deadline?: Date | DateTime | string;
     id?: number;
   };
   resolved?: {
