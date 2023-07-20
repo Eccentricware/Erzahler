@@ -478,16 +478,17 @@ export class ResolutionService {
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
-      db.gameRepo.insertTurn([
-        gameState.gameId,
-        'deadline',
-        `${nextTurns.pending.type.split('_')[0]} YEAR HERE ${nextTurns.pending.type.split('_')[1]}`,
-        nextTurns.pending.type,
-        TurnStatus.PENDING
-      ]);
+      // db.gameRepo.insertTurn([
+      //   gameState.gameId,
+      //   nextTurns.pending.deadline,
+      //   `${nextTurns.pending.type.split('_')[0]} YEAR HERE ${nextTurns.pending.type.split('_')[1]}`,
+      //   nextTurns.pending.type,
+      //   TurnStatus.PENDING
+      // ]);
     }
 
     console.log('Triggering next turn defaults');
+    // this.optionsService.saveDefaultOrders(gameState.gameId);
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
