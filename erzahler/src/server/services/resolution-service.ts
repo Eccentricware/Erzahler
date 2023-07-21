@@ -461,7 +461,7 @@ export class ResolutionService {
 
     // Every turn
     console.log('DB: Order Set Update');
-    // await db.resolutionRepo.resolveOrderSets(turn.turnId);
+    // await db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId);
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
@@ -488,7 +488,7 @@ export class ResolutionService {
     }
 
     console.log('Triggering next turn defaults');
-    // this.optionsService.saveDefaultOrders(gameState.gameId);
+    this.optionsService.saveDefaultOrders(gameState.gameId);
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
