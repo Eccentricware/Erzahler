@@ -34,6 +34,7 @@ export const getGameStateQuery = `
     g.nomination_year,
     g.current_year,
     t.year_number,
+    g.stylized_start_year,
     c.highest_ranked_req,
     c.all_votes_controlled,
     CASE

@@ -393,7 +393,9 @@ export class SchedulerService {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
         nextTurns.resolved = {
           type: TurnType.SPRING_FINAL,
-          turnNumber: currentTurn.turnNumber + 2
+          turnNumber: currentTurn.turnNumber + 2,
+          yearNumber: currentTurn.yearNumber,
+          yearStylized: currentTurn.yearStylized
         };
         nextTurns.preliminary = {
           type: TurnType.FALL_ORDERS,
