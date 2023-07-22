@@ -134,6 +134,7 @@ export class GameRepository {
           nominationYear: gameStateResult.nomination_year,
           currentYear: gameStateResult.current_year,
           yearNumber: gameStateResult.year_number,
+          stylizedStartYear: gameStateResult.stylized_start_year,
           highestRankedReq: gameStateResult.highest_ranked_req,
           allVotesControlled: gameStateResult.all_votes_controlled,
           unitsInRetreat: gameStateResult.unit_in_retreat,

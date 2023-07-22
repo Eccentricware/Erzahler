@@ -21,6 +21,8 @@ export interface UpcomingTurn {
   turnNumber: number;
   turnType: TurnType;
   turnStatus: TurnStatus;
+  yearNumber: number;
+  yearStylized: number;
   deadline: string;
   defaultsReady: boolean;
   hasCaptures: boolean;

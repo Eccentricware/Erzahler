@@ -38,6 +38,7 @@ export interface GameStateResult {
   nomination_year?: number;
   current_year: number;
   year_number: number;
+  stylized_start_year: number;
   highest_ranked_req: number;
   all_votes_controlled: boolean;
   unit_in_retreat: boolean;
@@ -80,6 +81,7 @@ export interface GameState {
   nominationYear?: number;
   currentYear: number;
   yearNumber: number;
+  stylizedStartYear: number;
   highestRankedReq: number;
   allVotesControlled: boolean;
   unitsInRetreat: boolean;
@@ -91,23 +93,23 @@ export interface NextTurns {
     type: TurnType;
     turnNumber: number;
     deadline?: Date | DateTime | string;
-    year?: number;
-    displayYear?: number;
+    yearNumber?: number;
+    yearStylized?: number;
     id?: number;
   };
   preliminary?: {
     type: TurnType;
     turnNumber: number;
     deadline?: Date | DateTime | string;
-    year?: number;
-    displayYear?: number;
+    yearNumber?: number;
+    yearStylized?: number;
     id?: number;
   };
   resolved?: {
     type: TurnType;
     turnNumber: number;
-    year?: number;
-    displayYear?: number;
+    yearNumber?: number;
+    yearStylized?: number;
     id?: number;
   };
 }
