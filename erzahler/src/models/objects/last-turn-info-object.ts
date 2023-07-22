@@ -91,17 +91,23 @@ export interface NextTurns {
     type: TurnType;
     turnNumber: number;
     deadline?: Date | DateTime | string;
+    year?: number;
+    displayYear?: number;
     id?: number;
   };
   preliminary?: {
     type: TurnType;
     turnNumber: number;
     deadline?: Date | DateTime | string;
+    year?: number;
+    displayYear?: number;
     id?: number;
   };
   resolved?: {
     type: TurnType;
     turnNumber: number;
+    year?: number;
+    displayYear?: number;
     id?: number;
   };
 }
