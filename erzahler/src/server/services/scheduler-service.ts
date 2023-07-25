@@ -385,6 +385,7 @@ export class SchedulerService {
         yearStylized: currentTurn.yearStylized
       }
     };
+
     const nominationsStarted = this.checkNominationsStarted(gameState, unitsRetreating);
     const nominateDuringAdjustments = gameState.nominateDuringAdjustments;
     const voteDuringSpring = gameState.voteDuringSpring;
@@ -430,33 +431,26 @@ export class SchedulerService {
         nextTurns.pending.type = TurnType.FALL_RETREATS;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString());
 
-        if (nominationsStarted && nominateDuringAdjustments) {
-          nextTurns.preliminary = {
-            type: TurnType.ADJ_AND_NOM,
-            turnNumber: currentTurn.turnNumber + 2,
-            deadline: this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString()),
-            yearNumber: currentTurn.yearNumber,
-            yearStylized: currentTurn.yearStylized
-          };
+        nextTurns.preliminary = {
+          type: TurnType.ADJUSTMENTS,
+          turnNumber: currentTurn.turnNumber + 2,
+          deadline: this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString()),
+          yearNumber: currentTurn.yearNumber,
+          yearStylized: currentTurn.yearStylized
+        };
 
-        } else {
-          nextTurns.preliminary = {
-            type: TurnType.ADJUSTMENTS,
-            turnNumber: currentTurn.turnNumber + 2,
-            deadline: this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString()),
-            yearNumber: currentTurn.yearNumber,
-            yearStylized: currentTurn.yearStylized
-          };
+        if (nominationsStarted && nominateDuringAdjustments) {
+          nextTurns.preliminary.type = TurnType.ADJ_AND_NOM;
         }
 
       } else {
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
+
         if (nominationsStarted && nominateDuringAdjustments) {
           nextTurns.pending.type = TurnType.ADJ_AND_NOM;
-          nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
 
         } else {
           nextTurns.pending.type = TurnType.ADJUSTMENTS;
-          nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
         }
       }
     }
