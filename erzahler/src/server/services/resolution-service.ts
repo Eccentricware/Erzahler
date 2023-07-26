@@ -461,7 +461,7 @@ export class ResolutionService {
 
     // Every turn
     console.log('DB: Order Set Update');
-    // await db.resolutionRepo.resolveOrderSets(turn.turnId);
+    // await db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId);
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
@@ -478,16 +478,17 @@ export class ResolutionService {
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
-      db.gameRepo.insertTurn([
-        gameState.gameId,
-        'deadline',
-        `${nextTurns.pending.type.split('_')[0]} YEAR HERE ${nextTurns.pending.type.split('_')[1]}`,
-        nextTurns.pending.type,
-        TurnStatus.PENDING,
-      ]);
+      // db.gameRepo.insertTurn([
+      //   gameState.gameId,
+      //   nextTurns.pending.deadline,
+      //   `${nextTurns.pending.type.split('_')[0]} YEAR HERE ${nextTurns.pending.type.split('_')[1]}`,
+      //   nextTurns.pending.type,
+      //   TurnStatus.PENDING
+      // ]);
     }
 
     console.log('Triggering next turn defaults');
+    this.optionsService.saveDefaultOrders(gameState.gameId);
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {

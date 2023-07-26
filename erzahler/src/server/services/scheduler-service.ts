@@ -380,7 +380,9 @@ export class SchedulerService {
     const nextTurns: NextTurns = {
       pending: {
         type: TurnType.SPRING_ORDERS,
-        turnNumber: currentTurn.turnNumber + 1
+        turnNumber: currentTurn.turnNumber + 1,
+        yearNumber: currentTurn.yearNumber,
+        yearStylized: currentTurn.yearStylized
       }
     };
     const nominationsStarted = this.checkNominationsStarted(gameState, unitsRetreating);
@@ -388,79 +390,73 @@ export class SchedulerService {
     const voteDuringSpring = gameState.voteDuringSpring;
 
     // (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
-    if (currentTurn.turnType === TurnType.ORDERS_AND_VOTES) {
+    // (Orders and Votes) and (Spring Orders) both result in Spring Retreats -> Fall Orders
+    if ([TurnType.ORDERS_AND_VOTES, TurnType.SPRING_ORDERS].includes(currentTurn.turnType)) {
       if (unitsRetreating) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
-        nextTurns.resolved = {
-          type: TurnType.SPRING_FINAL,
-          turnNumber: currentTurn.turnNumber + 2
-        };
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString());
+
         nextTurns.preliminary = {
           type: TurnType.FALL_ORDERS,
-          turnNumber: currentTurn.turnNumber + 3
+          turnNumber: currentTurn.turnNumber + 3,
+          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString()),
+          yearNumber: currentTurn.yearNumber,
+          yearStylized: currentTurn.yearStylized
         };
 
       } else {
         nextTurns.resolved = {
           type: TurnType.SPRING_FINAL,
-          turnNumber: currentTurn.turnNumber + 1
+          turnNumber: currentTurn.turnNumber + 1,
+          yearNumber: currentTurn.yearNumber,
+          yearStylized: currentTurn.yearStylized
         };
 
         nextTurns.pending.type = TurnType.FALL_ORDERS;
         nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
-      }
-    }
-
-    // Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> Votes ->
-    if (currentTurn.turnType === TurnType.SPRING_ORDERS) {
-      if (unitsRetreating) {
-        nextTurns.pending.type = TurnType.SPRING_RETREATS;
-        nextTurns.resolved = {
-          type: TurnType.SPRING_FINAL,
-          turnNumber: currentTurn.turnNumber + 2
-        };
-        nextTurns.preliminary = {
-          type: TurnType.FALL_ORDERS,
-          turnNumber: currentTurn.turnNumber + 3
-        };
-
-      } else {
-        nextTurns.resolved = {
-          type: TurnType.SPRING_FINAL,
-          turnNumber: currentTurn.turnNumber + 1
-        };
-
-        nextTurns.pending.type = TurnType.FALL_ORDERS;
-        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
       }
     }
 
     // Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) ->
     if (currentTurn.turnType === TurnType.SPRING_RETREATS) {
       nextTurns.pending.type = TurnType.FALL_ORDERS;
+      nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
     }
 
     // Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats ->
     if (currentTurn.turnType === TurnType.FALL_ORDERS) {
       if (unitsRetreating) {
         nextTurns.pending.type = TurnType.FALL_RETREATS;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString());
 
         if (nominationsStarted && nominateDuringAdjustments) {
           nextTurns.preliminary = {
             type: TurnType.ADJ_AND_NOM,
-            turnNumber: currentTurn.turnNumber + 2
+            turnNumber: currentTurn.turnNumber + 2,
+            deadline: this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString()),
+            yearNumber: currentTurn.yearNumber,
+            yearStylized: currentTurn.yearStylized
           };
+
         } else {
           nextTurns.preliminary = {
             type: TurnType.ADJUSTMENTS,
-            turnNumber: currentTurn.turnNumber + 2
+            turnNumber: currentTurn.turnNumber + 2,
+            deadline: this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString()),
+            yearNumber: currentTurn.yearNumber,
+            yearStylized: currentTurn.yearStylized
           };
         }
+
       } else {
         if (nominationsStarted && nominateDuringAdjustments) {
           nextTurns.pending.type = TurnType.ADJ_AND_NOM;
+          nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
+
         } else {
           nextTurns.pending.type = TurnType.ADJUSTMENTS;
+          nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
         }
       }
     }
@@ -469,14 +465,23 @@ export class SchedulerService {
     if (currentTurn.turnType === TurnType.FALL_RETREATS) {
       if (nominationsStarted && nominateDuringAdjustments) {
         nextTurns.pending.type = TurnType.ADJ_AND_NOM;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
+
       } else if (nominationsStarted && !nominateDuringAdjustments) {
         nextTurns.pending.type = TurnType.ADJUSTMENTS;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
+
         nextTurns.preliminary = {
           type: TurnType.NOMINATIONS,
-          turnNumber: currentTurn.turnNumber + 2
+          turnNumber: currentTurn.turnNumber + 2,
+          deadline: this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString()),
+          yearNumber: currentTurn.yearNumber,
+          yearStylized: currentTurn.yearStylized
         };
+
       } else {
         nextTurns.pending.type = TurnType.ADJUSTMENTS;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
       }
     }
 
@@ -485,8 +490,11 @@ export class SchedulerService {
       // nominateDuringAdjustments === false
       if (nominationsStarted) {
         nextTurns.pending.type = TurnType.NOMINATIONS;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString());
+
       } else {
         nextTurns.pending.type = TurnType.SPRING_ORDERS;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
       }
     }
 
@@ -494,8 +502,11 @@ export class SchedulerService {
     if (currentTurn.turnType === TurnType.ADJ_AND_NOM) {
       if (nominationsStarted && voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
+
       } else {
         nextTurns.pending.type = TurnType.SPRING_ORDERS;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
       }
     }
 
@@ -504,11 +515,18 @@ export class SchedulerService {
       // nominationsStarted === true && nominateDuringAdjustments === false
       if (voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
+
       } else {
         nextTurns.pending.type = TurnType.VOTES;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.votesDay, gameState.votesTime.toString());
+
         nextTurns.preliminary = {
           type: TurnType.SPRING_ORDERS,
-          turnNumber: currentTurn.turnNumber + 2
+          turnNumber: currentTurn.turnNumber + 2,
+          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString()),
+          yearNumber: currentTurn.yearNumber,
+          yearStylized: currentTurn.yearStylized
         };
       }
     }
@@ -516,6 +534,7 @@ export class SchedulerService {
     // Votes -> Spring Orders -> Spring Retreats -> Fall Orders -> Fall Retreats -> (Adjustments -> Nominations) ->
     if (currentTurn.turnType === TurnType.VOTES) {
       nextTurns.pending.type = TurnType.SPRING_ORDERS;
+      nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
     }
 
     return nextTurns;
