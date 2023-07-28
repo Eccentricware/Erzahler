@@ -10,6 +10,8 @@ export interface UpcomingTurnResult {
   turn_number: number;
   turn_type: TurnType;
   turn_status: string;
+  year_number: number;
+  year_stylized: number;
   deadline: string;
   defaults_ready: boolean;
 }
