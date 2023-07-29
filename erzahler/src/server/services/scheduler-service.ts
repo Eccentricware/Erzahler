@@ -478,25 +478,46 @@ export class SchedulerService {
     // Adjustments -> Nominations -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
     if (currentTurn.turnType === TurnType.ADJUSTMENTS) {
       // nominateDuringAdjustments === false
+      nextTurns.resolved = {
+        type: TurnType.ADJUSTMENTS_FINAL,
+        turnNumber: currentTurn.turnNumber + 1,
+        yearNumber: currentTurn.yearNumber,
+        yearStylized: currentTurn.yearStylized
+      };
+
       if (nominationsStarted) {
         nextTurns.pending.type = TurnType.NOMINATIONS;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString());
+        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
 
       } else {
         nextTurns.pending.type = TurnType.SPRING_ORDERS;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
+        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
+        nextTurns.pending.yearNumber = currentTurn.yearNumber + 1;
       }
     }
 
     // (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders -> Fall Retreats ->
     if (currentTurn.turnType === TurnType.ADJ_AND_NOM) {
-      if (nominationsStarted && voteDuringSpring) {
+      // If turn is ADJ_AND_NOM, then nominationsStarted === true
+      if (voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
 
       } else {
-        nextTurns.pending.type = TurnType.SPRING_ORDERS;
-        nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
+        nextTurns.pending.type = TurnType.VOTES;
+        nextTurns.pending.deadline = this.findNextOccurence(gameState.votesDay, gameState.votesTime.toString());
+        nextTurns.pending.yearNumber = currentTurn.yearNumber + 1;
+        nextTurns.pending.yearStylized = currentTurn.yearStylized + 1;
+
+        nextTurns.preliminary = {
+          type: TurnType.SPRING_ORDERS,
+          turnNumber: currentTurn.turnNumber + 2,
+          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString()),
+          yearNumber: currentTurn.yearNumber + 1,
+          yearStylized: currentTurn.yearStylized + 1
+        };
       }
     }
 
