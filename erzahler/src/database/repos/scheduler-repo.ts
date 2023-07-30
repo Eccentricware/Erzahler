@@ -112,6 +112,8 @@ export class SchedulerRepository {
             turnNumber: turn.turn_number,
             turnType: turn.turn_type,
             turnStatus: turn.turn_status,
+            yearNumber: turn.year_number,
+            yearStylized: turn.year_stylized,
             deadline: turn.deadline,
             defaultsReady: turn.defaults_ready,
             unitMovement: unitMovement,
