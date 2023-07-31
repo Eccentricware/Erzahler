@@ -457,7 +457,15 @@ export class SchedulerService {
 
     // Fall Retreats -> (Adjustments -> Nominations) -> (Votes -> Spring Orders) -> Spring Retreats -> Fall Orders ->
     if (currentTurn.turnType === TurnType.FALL_RETREATS) {
+      nextTurns.resolved = {
+        type: TurnType.FALL_FINAL,
+        turnNumber: currentTurn.turnNumber + 1,
+        yearNumber: currentTurn.yearNumber,
+        yearStylized: currentTurn.yearStylized
+      };
+
       nextTurns.pending.type = TurnType.ADJUSTMENTS;
+      nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
       nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
 
       if (nominationsStarted && nominateDuringAdjustments) {
@@ -467,7 +475,7 @@ export class SchedulerService {
       if (nominationsStarted && !nominateDuringAdjustments) {
         nextTurns.preliminary = {
           type: TurnType.NOMINATIONS,
-          turnNumber: currentTurn.turnNumber + 2,
+          turnNumber: currentTurn.turnNumber + 3,
           deadline: this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString()),
           yearNumber: currentTurn.yearNumber,
           yearStylized: currentTurn.yearStylized
