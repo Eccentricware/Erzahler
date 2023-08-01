@@ -493,15 +493,15 @@ export class SchedulerService {
         yearStylized: currentTurn.yearStylized
       };
 
+      nextTurns.pending.turnNumber + 2;
+
       if (nominationsStarted) {
         nextTurns.pending.type = TurnType.NOMINATIONS;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString());
-        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
 
       } else {
         nextTurns.pending.type = TurnType.SPRING_ORDERS;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
-        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
         nextTurns.pending.yearNumber = currentTurn.yearNumber + 1;
       }
     }
