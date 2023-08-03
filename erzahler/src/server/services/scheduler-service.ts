@@ -554,8 +554,8 @@ export class SchedulerService {
           type: TurnType.SPRING_ORDERS,
           turnNumber: currentTurn.turnNumber + 2,
           deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString()),
-          yearNumber: currentTurn.yearNumber,
-          yearStylized: currentTurn.yearStylized
+          yearNumber: currentTurn.yearNumber + 1,
+          yearStylized: currentTurn.yearStylized + 1
         };
       }
     }
