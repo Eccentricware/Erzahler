@@ -45,7 +45,7 @@ import {
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
-import { terminalLog } from '../utils/general';
+import { formatTurnName, terminalLog } from '../utils/general';
 import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
@@ -59,11 +59,10 @@ export class ResolutionService {
     const startDetails: StartDetails = await this.schedulerService.getStartDetails(gameId);
     terminalLog(`Starting game ${startDetails.gameName} (${gameId})`);
 
-    const turnNameSplit = TurnType.SPRING_ORDERS.split(' ');
     const firstTurn: TurnTS = {
       gameId: gameId,
       turnNumber: 1,
-      turnName: `${turnNameSplit[0]} ${startDetails.stylizedYear} ${turnNameSplit[1]}`,
+      turnName: formatTurnName(TurnType.SPRING_ORDERS, startDetails.stylizedYear),
       turnType: TurnType.SPRING_ORDERS,
       turnStatus: TurnStatus.PENDING,
       yearNumber: 1,
