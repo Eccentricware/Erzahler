@@ -90,26 +90,29 @@ export interface GameState {
 
 export interface NextTurns {
   pending: {
+    turnName: string;
     type: TurnType;
     turnNumber: number;
-    deadline?: Date | DateTime | string;
-    yearNumber?: number;
-    yearStylized?: number;
+    deadline: Date | DateTime | string;
+    yearNumber: number;
+    yearStylized: number;
     id?: number;
   };
   preliminary?: {
+    turnName: string;
     type: TurnType;
     turnNumber: number;
-    deadline?: Date | DateTime | string;
-    yearNumber?: number;
-    yearStylized?: number;
+    deadline: Date | DateTime | string;
+    yearNumber: number;
+    yearStylized: number;
     id?: number;
   };
   resolved?: {
+    turnName: string;
     type: TurnType;
     turnNumber: number;
-    yearNumber?: number;
-    yearStylized?: number;
+    yearNumber: number;
+    yearStylized: number;
     id?: number;
   };
 }

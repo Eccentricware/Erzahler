@@ -16,7 +16,7 @@ import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-obje
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
-import { terminalAddendum, terminalLog } from '../utils/general';
+import { formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
 import { StartSchedule } from '../../models/objects/games/game-schedule-objects';
 
 export class SchedulerService {
@@ -377,12 +377,16 @@ export class SchedulerService {
   }
 
   findNextTurns(currentTurn: UpcomingTurn, gameState: GameState, unitsRetreating: boolean): NextTurns {
+    const currentYear = gameState.stylizedStartYear + currentTurn.yearNumber;
     const nextTurns: NextTurns = {
       pending: {
-        type: TurnType.SPRING_ORDERS,
         turnNumber: currentTurn.turnNumber + 1,
+        // These rest are all defaults for elegance. Spring would iterate year. Processed at end of year.
+        type: TurnType.SPRING_ORDERS,
+        deadline: DateTime.now(),
         yearNumber: currentTurn.yearNumber,
-        yearStylized: currentTurn.yearStylized
+        yearStylized: gameState.stylizedStartYear + currentTurn.yearNumber,
+        turnName: formatTurnName(TurnType.SPRING_ORDERS, currentYear)
       }
     };
 
@@ -395,6 +399,7 @@ export class SchedulerService {
     if ([TurnType.ORDERS_AND_VOTES, TurnType.SPRING_ORDERS].includes(currentTurn.turnType)) {
       if (unitsRetreating) {
         nextTurns.pending.type = TurnType.SPRING_RETREATS;
+        nextTurns.pending.turnName = formatTurnName(nextTurns.pending.type, nextTurns.pending.yearStylized);
         nextTurns.pending.deadline = this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString());
 
         nextTurns.preliminary = {
