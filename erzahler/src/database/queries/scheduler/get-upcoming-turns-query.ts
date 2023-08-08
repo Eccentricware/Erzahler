@@ -7,6 +7,7 @@ export const getUpcomingTurnsQuery = `
     t.turn_type,
     t.turn_status,
     t.year_number,
+    g.stylized_start_year + t.year_number AS year_stylized,
     t.deadline,
     t.defaults_ready
   FROM games g
