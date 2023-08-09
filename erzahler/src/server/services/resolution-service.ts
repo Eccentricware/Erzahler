@@ -480,7 +480,7 @@ export class ResolutionService {
       // db.gameRepo.insertTurn([
       //   gameState.gameId,
       //   nextTurns.pending.deadline,
-      //   `${nextTurns.pending.type.split('_')[0]} YEAR HERE ${nextTurns.pending.type.split('_')[1]}`,
+      //   nextTurns.pending.turnName,
       //   nextTurns.pending.type,
       //   TurnStatus.PENDING
       // ]);
