@@ -126,7 +126,7 @@ export class SchedulerRepository {
         });
       })
       .catch((error: Error) => {
-        console.log('getUpcomingTurns Error: ' + error);
+        terminalLog('getUpcomingTurns Error: ' + error);
         return [];
       });
   }
