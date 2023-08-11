@@ -38,6 +38,7 @@ import { getTechReceiveOptionsQuery } from '../queries/orders/get-transfer-tech-
 import { getUnitAdjacentInfoQuery } from '../queries/orders/get-unit-adjacent-info-query';
 import { getActiveCountryCenters } from '../queries/orders/options-final/get-active-centers-query';
 import { getNominationsQuery } from '../queries/orders/options-final/get-nominations-query';
+import { terminalLog } from '../../server/utils/general';
 
 export class OptionsRepository {
   orderOptionsCols: ColumnSet<unknown>;
@@ -109,7 +110,7 @@ export class OptionsRepository {
         });
       })
       .catch((error: Error) => {
-        console.log('unitAdjacencyInfoResultError: ' + error.message);
+        terminalLog('unitAdjacencyInfoResultError: ' + error.message);
         const dud: UnitOptions[] = [];
         return dud;
       });
@@ -281,7 +282,7 @@ export class OptionsRepository {
         });
       })
       .catch((error: Error) => {
-        console.log('getTransferOptions Error: ' + error.message);
+        terminalLog('getTransferOptions Error: ' + error.message);
         return [];
       });
 
@@ -309,7 +310,7 @@ export class OptionsRepository {
         })
       )
       .catch((error: Error) => {
-        console.log('getAvailableBuildLocs Error: ' + error.message);
+        terminalLog('getAvailableBuildLocs Error: ' + error.message);
         return [];
       });
 
@@ -330,7 +331,7 @@ export class OptionsRepository {
         })
       )
       .catch((error: Error) => {
-        console.log('getAtRiskUnits Error: ' + error.message);
+        terminalLog('getAtRiskUnits Error: ' + error.message);
         return [];
       });
 
@@ -350,7 +351,7 @@ export class OptionsRepository {
         })
       )
       .catch((error: Error) => {
-        console.log('getNominatableCountries Error: ' + error.message);
+        terminalLog('getNominatableCountries Error: ' + error.message);
         return [];
       });
 
@@ -377,7 +378,7 @@ export class OptionsRepository {
         })
       )
       .catch((error: Error) => {
-        console.log('getNominations Error: ' + error.message);
+        terminalLog('getNominations Error: ' + error.message);
         return [];
       });
 

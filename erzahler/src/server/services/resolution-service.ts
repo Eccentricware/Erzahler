@@ -486,7 +486,7 @@ export class ResolutionService {
       ]);
     }
 
-    console.log('Triggering next turn defaults');
+    terminalLog('Triggering next turn defaults');
     this.optionsService.saveDefaultOrders(gameState.gameId);
   }
 
@@ -624,7 +624,7 @@ export class ResolutionService {
 
     if (options === undefined) {
       if (order.unit.type !== UnitType.GARRISON) {
-        console.log(
+        terminalLog(
           `orderId ${order.orderId} with unitId ${order.unit.id} doesn't even have matching options. This should be impossible but here we are!`
         );
 

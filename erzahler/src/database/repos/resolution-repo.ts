@@ -38,6 +38,7 @@ import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-q
 import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
 import { getCountryUnitCityCountsQuery } from '../queries/resolution/get-country-unit-city-counts';
 import { advancePreliminaryTurnQuery } from '../queries/resolution/advance-preliminary-turn-query';
+import { terminalLog } from '../../server/utils/general';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -86,7 +87,7 @@ export class ResolutionRepository {
         order.orderId
       ])
       .catch((error: Error) => {
-        console.log('Update Orders Error: ' + error.message);
+        terminalLog('Update Orders Error: ' + error.message);
       });
     });
   }
@@ -104,7 +105,7 @@ export class ResolutionRepository {
     const query = this.pgp.helpers.insert(unitHistoryValues, this.unitHistoryCols);
     this.db.query(query)
       .catch((error: Error) => {
-        console.log('Insert Unit Histories Error: ' + error.message);
+        terminalLog('Insert Unit Histories Error: ' + error.message);
       });
   }
 
@@ -123,7 +124,7 @@ export class ResolutionRepository {
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
     this.db.query(query)
       .catch((error: Error) => {
-        console.log('Insert Province Histories Error: ' + error.message);
+        terminalLog('Insert Province Histories Error: ' + error.message);
       });
   }
 
@@ -147,7 +148,7 @@ export class ResolutionRepository {
     const query = this.pgp.helpers.insert(countryHistoryValues, this.countryHistoryCols);
     this.db.query(query)
       .catch((error: Error) => {
-        console.log('Insert Country Histories Error: ' + error.message);
+        terminalLog('Insert Country Histories Error: ' + error.message);
       });
   }
 
@@ -166,7 +167,7 @@ export class ResolutionRepository {
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
     return this.db.query(query)
       .catch((error: Error) => {
-        console.log('Insert Province Histories Error: ' + error.message);
+        terminalLog('Insert Province Histories Error: ' + error.message);
       });
   }
 
@@ -244,7 +245,7 @@ export class ResolutionRepository {
         })
       )
       .catch((error: Error) => {
-        console.log('Get Unit Orders For Resolution Error: ' + error.message);
+        terminalLog('Get Unit Orders For Resolution Error: ' + error.message);
         return [];
       });
   }
@@ -291,7 +292,7 @@ export class ResolutionRepository {
         });
       })
       .catch((error: Error) => {
-        console.log('getTransportNetworkInfo: ' + error.message);
+        terminalLog('getTransportNetworkInfo: ' + error.message);
         return [];
       });
 

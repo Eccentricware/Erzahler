@@ -29,9 +29,9 @@ export const formatNow = (): string => {
   return `${date} ${time}${meridiem}`;
 };
 
-export const terminalLog = (message: string): void => {
+export const terminalLog = (message: string, addendum?: string): void => {
   const now = formatNow();
-  console.log(`${now} | ${message}`);
+  console.log(`${now} | ${message}${addendum ? ` | ${addendum}` : ''}`);
 };
 
 export const terminalAddendum = (event: string, message: string): void => {

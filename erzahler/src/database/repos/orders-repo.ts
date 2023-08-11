@@ -47,6 +47,7 @@ import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-ord
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
 import { saveBuildOrderQuery } from '../queries/orders/orders-final/save-build-order-query';
+import { terminalLog } from '../../server/utils/general';
 
 export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
@@ -310,7 +311,7 @@ export class OrdersRepository {
         tupleizedBuildRecipients,
         orderSetId
       ])
-      .catch((error: Error) => console.log('saveTransfers error: ' + error.message));
+      .catch((error: Error) => terminalLog('saveTransfers error: ' + error.message));
   }
 
   async saveBuildOrders(orderSetId: number, builds: BuildOrders): Promise<void> {

@@ -639,11 +639,11 @@ export class SchedulerService {
   async getAllEvents(): Promise<ScheduledJob[]> {
     const scheduledJobs = [];
 
-    console.log('scheduledJobs', schedule.scheduledJobs);
+    // console.log('scheduledJobs', schedule.scheduledJobs);
 
     for (const jobName in schedule.scheduledJobs) {
       const job: Job = schedule.scheduledJobs[jobName];
-      console.log('job', job);
+      // console.log('job', job);
 
       const jobDate: NsDate = job.nextInvocation();
 
