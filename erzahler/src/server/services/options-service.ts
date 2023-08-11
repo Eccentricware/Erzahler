@@ -495,16 +495,19 @@ export class OptionsService {
 
   async saveTurnDefaults(gameState: GameState, upcomingTurn: UpcomingTurn): Promise<void> {
     const orderSetLibrary: Record<string, number> = {};
+
     const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
       gameState.gameId,
       gameState.turnNumber,
       upcomingTurn.turnId
     );
+
     const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
       gameState.gameId,
       gameState.turnNumber,
       upcomingTurn.turnId
     );
+
     newOrderSets.forEach((orderSet: OrderSet) => (orderSetLibrary[orderSet.countryId] = orderSet.orderSetId));
     const preppedOrderLibrary: Record<string, OrderPrepping> = {};
     const defaultOrders: Order[] = [];
@@ -515,6 +518,7 @@ export class OptionsService {
           preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
         }
       });
+
     } else if (upcomingTurn.turnType === TurnType.FALL_ORDERS) {
       unitOptions.forEach((option: SavedOption) => {
         if (!preppedOrderLibrary[option.unitId]) {
@@ -525,6 +529,7 @@ export class OptionsService {
           }
         }
       });
+
     } else if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)) {
       // Basic retreats for testing, may be necessary to flesh out in detail later
       unitOptions.forEach((option: SavedOption) => {

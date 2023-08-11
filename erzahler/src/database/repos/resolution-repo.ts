@@ -59,6 +59,7 @@ export class ResolutionRepository {
       [
         'country_id',
         'turn_id',
+        'country_status',
         'city_count',
         'unit_count',
         'banked_builds',
@@ -81,8 +82,12 @@ export class ResolutionRepository {
         order.valid,
         order.description,
         order.primaryResolution,
-        order.secondaryResolution
-      ]);
+        order.secondaryResolution,
+        order.orderId
+      ])
+      .catch((error: Error) => {
+        console.log('Update Orders Error: ' + error.message);
+      });
     });
   }
 
@@ -97,7 +102,10 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(unitHistoryValues, this.unitHistoryCols);
-    this.db.query(query);
+    this.db.query(query)
+      .catch((error: Error) => {
+        console.log('Insert Unit Histories Error: ' + error.message);
+      });
   }
 
   async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[], turnId: number): Promise<void> {
@@ -113,7 +121,10 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
-    this.db.query(query);
+    this.db.query(query)
+      .catch((error: Error) => {
+        console.log('Insert Province Histories Error: ' + error.message);
+      });
   }
 
   async insertCountryHistories(countryHistories: Record<string, CountryHistoryRow>, turnId: number): Promise<void> {
@@ -121,6 +132,7 @@ export class ResolutionRepository {
       return {
         country_id: countryHistory.countryId,
         turn_id: turnId,
+        country_status: countryHistory.countryStatus,
         city_count: countryHistory.cityCount,
         unit_count: countryHistory.unitCount,
         banked_builds: countryHistory.bankedBuilds,
@@ -133,7 +145,10 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(countryHistoryValues, this.countryHistoryCols);
-    this.db.query(query);
+    this.db.query(query)
+      .catch((error: Error) => {
+        console.log('Insert Country Histories Error: ' + error.message);
+      });
   }
 
   async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {
@@ -149,7 +164,10 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
-    return this.db.query(query);
+    return this.db.query(query)
+      .catch((error: Error) => {
+        console.log('Insert Province Histories Error: ' + error.message);
+      });
   }
 
   // Legacy Queries
