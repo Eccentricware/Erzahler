@@ -414,17 +414,17 @@ export class ResolutionService {
 
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
-      // db.resolutionRepo.updateOrders(dbUpdates.orders);
+      db.resolutionRepo.updateOrders(dbUpdates.orders);
     }
 
     if (dbUpdates.unitHistories.length > 0) {
       console.log('DB: Unit History Insert');
-      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
+      await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
     }
 
     if (dbUpdates.provinceHistories.length > 0) {
       console.log('DB: Province History Insert');
-      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
+      await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
     }
 
     const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, gameState.turnNumber);
@@ -455,16 +455,16 @@ export class ResolutionService {
 
     if (Object.keys(dbUpdates.countryHistories).length > 0) {
       console.log('DB: Country History Insert');
-      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
+      await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
     }
 
     // Every turn
     console.log('DB: Order Set Update');
-    // await db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId);
+    await db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId);
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
-    // await db.resolutionRepo.resolveTurn(turn.turnId);
+    await db.resolutionRepo.resolveTurn(turn.turnId);
 
     // Next turns needs to know retreats after resolution
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
@@ -472,18 +472,18 @@ export class ResolutionService {
     if (gameState.preliminaryTurnId) {
       // Convert preliminary to pending
       console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`);
-      // db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
+      db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
 
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
-      // db.gameRepo.insertTurn([
-      //   gameState.gameId,
-      //   nextTurns.pending.deadline,
-      //   nextTurns.pending.turnName,
-      //   nextTurns.pending.type,
-      //   TurnStatus.PENDING
-      // ]);
+      db.gameRepo.insertTurn([
+        gameState.gameId,
+        nextTurns.pending.deadline,
+        nextTurns.pending.turnName,
+        nextTurns.pending.type,
+        TurnStatus.PENDING
+      ]);
     }
 
     console.log('Triggering next turn defaults');
