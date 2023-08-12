@@ -91,7 +91,8 @@ export class OrdersRepository {
     });
 
     const query = this.pgp.helpers.insert(orderValues, this.orderCols);
-    return this.db.query(query);
+    return this.db.query(query)
+      .catch((error: Error) => terminalLog('saveDefaultOrders error: ' + error.message));
   }
 
   //// Legacy Functions ////
@@ -107,13 +108,18 @@ export class OrdersRepository {
             turnId: nextTurnId
           };
         })
-      );
+      )
+      .catch((error: Error) => {
+        terminalLog(`Insert Turn Order Sets Query Error | (${gameId}, ${turnNumber}):` + error.message);
+        return [];
+      });
 
     return orderSets;
   }
 
   async setTurnDefaultsPrepped(turnId: number): Promise<void> {
-    await this.pool.query(setTurnDefaultsPreparedQuery, [turnId]);
+    await this.pool.query(setTurnDefaultsPreparedQuery, [turnId])
+      .catch((error: Error) => terminalLog('setTurnDefaultsPrepped error: ' + error.message));
   }
 
   async getTurnUnitOrders(
@@ -284,11 +290,13 @@ export class OrdersRepository {
       'Submitted',
       orderSetId,
       unit.orderedUnitId
-    ]);
+    ])
+    .catch((error: Error) => terminalLog(`saveUnitOrder (${unit.orderedUnitId}) error: ` + error.message));
   }
 
   async saveBuildOrder(orderSetId: number, build: Build): Promise<void> {
-    await this.pool.query(saveBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, build.buildNumber]);
+    await this.pool.query(saveBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, build.buildNumber])
+      .catch((error: Error) => terminalLog(`saveBuildOrder (${build.nodeId}) error: ${error.message}`));
   }
 
   async saveTransfers(
@@ -335,7 +343,8 @@ export class OrdersRepository {
       nukeLocs,
       builds.increaseRange,
       orderSetId
-    ]);
+    ])
+    .catch((error: Error) => terminalLog('saveBuildOrders error: ' + error.message));
   }
 
   async saveDisbandOrders(orderSetId: number, disbands: DisbandOrders): Promise<void> {
@@ -344,7 +353,8 @@ export class OrdersRepository {
       disbands.increaseRange,
       disbands.nukeLocs,
       orderSetId
-    ]);
+    ])
+    .catch((error: Error) => terminalLog('saveDisbandOrders error: ' + error.message));
   }
 
   async getNukesReadyLocs(nextTurnId: number, countryId: number): Promise<NukeBuildInDisband[]> {
@@ -374,7 +384,8 @@ export class OrdersRepository {
   }
 
   async saveNominationOrder(orderSetId: number, nomination: number[]): Promise<void> {
-    await this.pool.query(saveNominationQuery, [nomination, orderSetId]);
+    await this.pool.query(saveNominationQuery, [nomination, orderSetId])
+      .catch((error: Error) => terminalLog('saveNominationOrder error: ' + error.message));
   }
 
   async getVotes(turnId: number, countryId: number): Promise<number[]> {
@@ -384,7 +395,8 @@ export class OrdersRepository {
   }
 
   async saveVotes(orderSetId: number, votes: number[]): Promise<void> {
-    await this.pool.query(saveVotesQuery, [votes, orderSetId]);
+    await this.pool.query(saveVotesQuery, [votes, orderSetId])
+      .catch((error: Error) => terminalLog('saveVotes error: ' + error.message));
   }
 
   resolveBuildType(buildTypeId: number): BuildType {
