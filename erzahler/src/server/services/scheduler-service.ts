@@ -409,7 +409,6 @@ export class SchedulerService {
           yearNumber: currentTurn.yearNumber,
           yearStylized: currentTurn.yearStylized
         };
-
       } else {
         nextTurns.resolved = {
           type: TurnType.SPRING_FINAL,
@@ -449,13 +448,14 @@ export class SchedulerService {
         if (nominationsStarted && nominateDuringAdjustments) {
           nextTurns.preliminary.type = TurnType.ADJ_AND_NOM;
         }
-
       } else {
-        nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
+        nextTurns.pending.deadline = this.findNextOccurence(
+          gameState.adjustmentsDay,
+          gameState.adjustmentsTime.toString()
+        );
 
         if (nominationsStarted && nominateDuringAdjustments) {
           nextTurns.pending.type = TurnType.ADJ_AND_NOM;
-
         } else {
           nextTurns.pending.type = TurnType.ADJUSTMENTS;
         }
@@ -474,7 +474,10 @@ export class SchedulerService {
 
       nextTurns.pending.type = TurnType.ADJUSTMENTS;
       nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
-      nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
+      nextTurns.pending.deadline = this.findNextOccurence(
+        gameState.adjustmentsDay,
+        gameState.adjustmentsTime.toString()
+      );
 
       if (nominationsStarted && nominateDuringAdjustments) {
         nextTurns.pending.type = TurnType.ADJ_AND_NOM;
@@ -507,8 +510,10 @@ export class SchedulerService {
 
       if (nominationsStarted) {
         nextTurns.pending.type = TurnType.NOMINATIONS;
-        nextTurns.pending.deadline = this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString());
-
+        nextTurns.pending.deadline = this.findNextOccurence(
+          gameState.nominationsDay,
+          gameState.nominationsTime.toString()
+        );
       } else {
         nextTurns.pending.type = TurnType.SPRING_ORDERS;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
@@ -531,11 +536,9 @@ export class SchedulerService {
       nextTurns.pending.yearNumber = currentTurn.yearNumber + 1;
       nextTurns.pending.yearStylized = currentTurn.yearStylized + 1;
 
-
       if (voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
-
       } else {
         nextTurns.pending.type = TurnType.VOTES;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.votesDay, gameState.votesTime.toString());
@@ -557,7 +560,6 @@ export class SchedulerService {
       if (voteDuringSpring) {
         nextTurns.pending.type = TurnType.ORDERS_AND_VOTES;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
-
       } else {
         nextTurns.pending.type = TurnType.VOTES;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.votesDay, gameState.votesTime.toString());

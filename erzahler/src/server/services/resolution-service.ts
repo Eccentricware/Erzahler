@@ -84,31 +84,31 @@ export class ResolutionService {
   async resolveTurn(turn: UpcomingTurn): Promise<void> {
     switch (turn.turnType) {
       case TurnType.ORDERS_AND_VOTES:
-        this.resolveSpringOrders(turn);
+        this.resolveOrdersAndVotes(turn);
         break;
       case TurnType.SPRING_ORDERS:
         this.resolveSpringOrders(turn);
         break;
       case TurnType.SPRING_RETREATS:
-        this.resolveSpringOrders(turn);
+        this.resolveSpringRetreats(turn);
         break;
       case TurnType.FALL_ORDERS:
-        this.resolveSpringOrders(turn);
+        this.resolveFallOrders(turn);
         break;
       case TurnType.FALL_RETREATS:
-        this.resolveSpringOrders(turn);
+        this.resolveFallRetreats(turn);
         break;
       case TurnType.ADJUSTMENTS:
-        this.resolveSpringOrders(turn);
+        this.resolveAdjustments(turn);
         break;
       case TurnType.ADJ_AND_NOM:
-        this.resolveSpringOrders(turn);
+        this.resolveAdjAndNom(turn);
         break;
       case TurnType.NOMINATIONS:
-        this.resolveSpringOrders(turn);
+        this.resolveNominations(turn);
         break;
       case TurnType.VOTES:
-        this.resolveSpringOrders(turn);
+        this.resolveVotes(turn);
         break;
     }
   }
@@ -304,6 +304,10 @@ export class ResolutionService {
   //   // Check Preliminary invalidation
   // }
 
+  async resolveOrdersAndVotes(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Orders and Votes resolution, which is not yet implemented`);
+  }
+
   async resolveSpringOrders(turn: UpcomingTurn): Promise<void> {
     const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
     const dbStates: DbStates = {
@@ -473,7 +477,6 @@ export class ResolutionService {
       // Convert preliminary to pending
       console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`);
       db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
-
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
@@ -488,6 +491,36 @@ export class ResolutionService {
 
     terminalLog('Triggering next turn defaults');
     this.optionsService.saveDefaultOrders(gameState.gameId);
+  }
+
+  async resolveSpringRetreats(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Spring Retreats resolution, which is not yet implemented`);
+  }
+
+  async resolveFallOrders(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Fall Orders resolution, which is not yet implemented`);
+  }
+
+  async resolveFallRetreats(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Fall Retreats resolution, which is not yet implemented`);
+  }
+
+  async resolveAdjustments(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Adjustments resolution, which is not yet implemented`);
+  }
+
+  async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
+    terminalLog(
+      `Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`
+    );
+  }
+
+  async resolveNominations(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Nominations resolution, which is not yet implemented`);
+  }
+
+  async resolveVotes(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Votes resolution, which is not yet implemented`);
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {

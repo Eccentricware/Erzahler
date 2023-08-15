@@ -76,19 +76,20 @@ export class ResolutionRepository {
 
   async updateOrders(orders: OrderRow[]): Promise<void> {
     orders.forEach(async (order: OrderRow) => {
-      await this.pool.query(updateOrderQuery, [
-        order.orderStatus,
-        order.orderSuccess,
-        order.power,
-        order.valid,
-        order.description,
-        order.primaryResolution,
-        order.secondaryResolution,
-        order.orderId
-      ])
-      .catch((error: Error) => {
-        terminalLog('Update Orders Error: ' + error.message);
-      });
+      await this.pool
+        .query(updateOrderQuery, [
+          order.orderStatus,
+          order.orderSuccess,
+          order.power,
+          order.valid,
+          order.description,
+          order.primaryResolution,
+          order.secondaryResolution,
+          order.orderId
+        ])
+        .catch((error: Error) => {
+          terminalLog('Update Orders Error: ' + error.message);
+        });
     });
   }
 
@@ -103,10 +104,9 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(unitHistoryValues, this.unitHistoryCols);
-    this.db.query(query)
-      .catch((error: Error) => {
-        terminalLog('Insert Unit Histories Error: ' + error.message);
-      });
+    this.db.query(query).catch((error: Error) => {
+      terminalLog('Insert Unit Histories Error: ' + error.message);
+    });
   }
 
   async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[], turnId: number): Promise<void> {
@@ -122,10 +122,9 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
-    this.db.query(query)
-      .catch((error: Error) => {
-        terminalLog('Insert Province Histories Error: ' + error.message);
-      });
+    this.db.query(query).catch((error: Error) => {
+      terminalLog('Insert Province Histories Error: ' + error.message);
+    });
   }
 
   async insertCountryHistories(countryHistories: Record<string, CountryHistoryRow>, turnId: number): Promise<void> {
@@ -146,10 +145,9 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(countryHistoryValues, this.countryHistoryCols);
-    this.db.query(query)
-      .catch((error: Error) => {
-        terminalLog('Insert Country Histories Error: ' + error.message);
-      });
+    this.db.query(query).catch((error: Error) => {
+      terminalLog('Insert Country Histories Error: ' + error.message);
+    });
   }
 
   async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {
@@ -165,10 +163,9 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
-    return this.db.query(query)
-      .catch((error: Error) => {
-        terminalLog('Insert Province Histories Error: ' + error.message);
-      });
+    return this.db.query(query).catch((error: Error) => {
+      terminalLog('Insert Province Histories Error: ' + error.message);
+    });
   }
 
   // Legacy Queries

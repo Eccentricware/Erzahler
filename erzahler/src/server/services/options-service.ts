@@ -518,7 +518,6 @@ export class OptionsService {
           preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
         }
       });
-
     } else if (upcomingTurn.turnType === TurnType.FALL_ORDERS) {
       unitOptions.forEach((option: SavedOption) => {
         if (!preppedOrderLibrary[option.unitId]) {
@@ -529,7 +528,6 @@ export class OptionsService {
           }
         }
       });
-
     } else if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)) {
       // Basic retreats for testing, may be necessary to flesh out in detail later
       unitOptions.forEach((option: SavedOption) => {

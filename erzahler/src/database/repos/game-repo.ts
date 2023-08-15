@@ -415,17 +415,15 @@ export class GameRepository {
   }
 
   async updateGameSettings(gameSettings: any[]): Promise<void> {
-    await this.pool.query(updateGameSettingsQuery, gameSettings)
-      .catch((error: Error) => {
-        terminalLog('Update Game Error: ' + error.message);
-      });
+    await this.pool.query(updateGameSettingsQuery, gameSettings).catch((error: Error) => {
+      terminalLog('Update Game Error: ' + error.message);
+    });
   }
 
   async updateTurn(gameStart: any, turnStatus: TurnStatus, turnNumber: number, gameId: number): Promise<void> {
-    await this.pool.query(updateTurnQuery, [gameStart, turnStatus, turnNumber, gameId])
-      .catch((error: Error) => {
-        terminalLog('Update Turn Error: ' + error.message);
-      });
+    await this.pool.query(updateTurnQuery, [gameStart, turnStatus, turnNumber, gameId]).catch((error: Error) => {
+      terminalLog('Update Turn Error: ' + error.message);
+    });
   }
 
   async checkGameNameAvailable(gameName: string): Promise<any> {
