@@ -91,8 +91,7 @@ export class OrdersRepository {
     });
 
     const query = this.pgp.helpers.insert(orderValues, this.orderCols);
-    return this.db.query(query)
-      .catch((error: Error) => terminalLog('saveDefaultOrders error: ' + error.message));
+    return this.db.query(query).catch((error: Error) => terminalLog('saveDefaultOrders error: ' + error.message));
   }
 
   //// Legacy Functions ////
@@ -118,7 +117,8 @@ export class OrdersRepository {
   }
 
   async setTurnDefaultsPrepped(turnId: number): Promise<void> {
-    await this.pool.query(setTurnDefaultsPreparedQuery, [turnId])
+    await this.pool
+      .query(setTurnDefaultsPreparedQuery, [turnId])
       .catch((error: Error) => terminalLog('setTurnDefaultsPrepped error: ' + error.message));
   }
 
@@ -283,19 +283,21 @@ export class OrdersRepository {
   }
 
   async saveUnitOrder(orderSetId: number, unit: Order): Promise<void> {
-    await this.pool.query(saveUnitOrderQuery, [
-      unit.orderType,
-      unit.secondaryUnitId,
-      unit.destinationId,
-      'Submitted',
-      orderSetId,
-      unit.orderedUnitId
-    ])
-    .catch((error: Error) => terminalLog(`saveUnitOrder (${unit.orderedUnitId}) error: ` + error.message));
+    await this.pool
+      .query(saveUnitOrderQuery, [
+        unit.orderType,
+        unit.secondaryUnitId,
+        unit.destinationId,
+        'Submitted',
+        orderSetId,
+        unit.orderedUnitId
+      ])
+      .catch((error: Error) => terminalLog(`saveUnitOrder (${unit.orderedUnitId}) error: ` + error.message));
   }
 
   async saveBuildOrder(orderSetId: number, build: Build): Promise<void> {
-    await this.pool.query(saveBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, build.buildNumber])
+    await this.pool
+      .query(saveBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, build.buildNumber])
       .catch((error: Error) => terminalLog(`saveBuildOrder (${build.nodeId}) error: ${error.message}`));
   }
 
@@ -337,24 +339,15 @@ export class OrdersRepository {
       nukeLocs = builds.nukesReady.map((nukeLoc: Build) => nukeLoc.nodeId);
     }
 
-    await this.pool.query(saveBuildOrdersQuery, [
-      buildLocs,
-      buildLocsTupleized,
-      nukeLocs,
-      builds.increaseRange,
-      orderSetId
-    ])
-    .catch((error: Error) => terminalLog('saveBuildOrders error: ' + error.message));
+    await this.pool
+      .query(saveBuildOrdersQuery, [buildLocs, buildLocsTupleized, nukeLocs, builds.increaseRange, orderSetId])
+      .catch((error: Error) => terminalLog('saveBuildOrders error: ' + error.message));
   }
 
   async saveDisbandOrders(orderSetId: number, disbands: DisbandOrders): Promise<void> {
-    await this.pool.query(saveDisbandOrdersQuery, [
-      disbands.unitsDisbanding,
-      disbands.increaseRange,
-      disbands.nukeLocs,
-      orderSetId
-    ])
-    .catch((error: Error) => terminalLog('saveDisbandOrders error: ' + error.message));
+    await this.pool
+      .query(saveDisbandOrdersQuery, [disbands.unitsDisbanding, disbands.increaseRange, disbands.nukeLocs, orderSetId])
+      .catch((error: Error) => terminalLog('saveDisbandOrders error: ' + error.message));
   }
 
   async getNukesReadyLocs(nextTurnId: number, countryId: number): Promise<NukeBuildInDisband[]> {
@@ -384,7 +377,8 @@ export class OrdersRepository {
   }
 
   async saveNominationOrder(orderSetId: number, nomination: number[]): Promise<void> {
-    await this.pool.query(saveNominationQuery, [nomination, orderSetId])
+    await this.pool
+      .query(saveNominationQuery, [nomination, orderSetId])
       .catch((error: Error) => terminalLog('saveNominationOrder error: ' + error.message));
   }
 
@@ -395,7 +389,8 @@ export class OrdersRepository {
   }
 
   async saveVotes(orderSetId: number, votes: number[]): Promise<void> {
-    await this.pool.query(saveVotesQuery, [votes, orderSetId])
+    await this.pool
+      .query(saveVotesQuery, [votes, orderSetId])
       .catch((error: Error) => terminalLog('saveVotes error: ' + error.message));
   }
 

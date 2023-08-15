@@ -477,7 +477,6 @@ export class ResolutionService {
       // Convert preliminary to pending
       console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`);
       db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
-
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
@@ -511,7 +510,9 @@ export class ResolutionService {
   }
 
   async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`);
+    terminalLog(
+      `Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`
+    );
   }
 
   async resolveNominations(turn: UpcomingTurn): Promise<void> {

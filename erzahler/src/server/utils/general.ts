@@ -42,4 +42,4 @@ export const terminalAddendum = (event: string, message: string): void => {
 export const formatTurnName = (turnType: TurnType, yearStylized: number): string => {
   const turnTypeSplit = turnType.split(' ');
   return `${turnTypeSplit[0]} ${yearStylized} ${turnTypeSplit[1]}`;
-}
+};

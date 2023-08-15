@@ -153,10 +153,9 @@ export class OptionsRepository {
     });
 
     const query = this.pgp.helpers.insert(optionsValues, this.orderOptionsCols);
-    await this.pool.query(query)
-      .catch((error: Error) => {
-        terminalLog('saveUnitOptions Error: ' + error.message);
-      });
+    await this.pool.query(query).catch((error: Error) => {
+      terminalLog('saveUnitOptions Error: ' + error.message);
+    });
   }
 
   /**
