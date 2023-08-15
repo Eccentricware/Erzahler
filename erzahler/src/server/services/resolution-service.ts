@@ -45,7 +45,7 @@ import {
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
-import { terminalLog } from '../utils/general';
+import { formatTurnName, terminalLog } from '../utils/general';
 import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
@@ -59,11 +59,10 @@ export class ResolutionService {
     const startDetails: StartDetails = await this.schedulerService.getStartDetails(gameId);
     terminalLog(`Starting game ${startDetails.gameName} (${gameId})`);
 
-    const turnNameSplit = TurnType.SPRING_ORDERS.split(' ');
     const firstTurn: TurnTS = {
       gameId: gameId,
       turnNumber: 1,
-      turnName: `${turnNameSplit[0]} ${startDetails.stylizedYear} ${turnNameSplit[1]}`,
+      turnName: formatTurnName(TurnType.SPRING_ORDERS, startDetails.stylizedYear),
       turnType: TurnType.SPRING_ORDERS,
       turnStatus: TurnStatus.PENDING,
       yearNumber: 1,
@@ -85,31 +84,31 @@ export class ResolutionService {
   async resolveTurn(turn: UpcomingTurn): Promise<void> {
     switch (turn.turnType) {
       case TurnType.ORDERS_AND_VOTES:
-        this.resolveSpringOrders(turn);
+        this.resolveOrdersAndVotes(turn);
         break;
       case TurnType.SPRING_ORDERS:
         this.resolveSpringOrders(turn);
         break;
       case TurnType.SPRING_RETREATS:
-        this.resolveSpringOrders(turn);
+        this.resolveSpringRetreats(turn);
         break;
       case TurnType.FALL_ORDERS:
-        this.resolveSpringOrders(turn);
+        this.resolveFallOrders(turn);
         break;
       case TurnType.FALL_RETREATS:
-        this.resolveSpringOrders(turn);
+        this.resolveFallRetreats(turn);
         break;
       case TurnType.ADJUSTMENTS:
-        this.resolveSpringOrders(turn);
+        this.resolveAdjustments(turn);
         break;
       case TurnType.ADJ_AND_NOM:
-        this.resolveSpringOrders(turn);
+        this.resolveAdjAndNom(turn);
         break;
       case TurnType.NOMINATIONS:
-        this.resolveSpringOrders(turn);
+        this.resolveNominations(turn);
         break;
       case TurnType.VOTES:
-        this.resolveSpringOrders(turn);
+        this.resolveVotes(turn);
         break;
     }
   }
@@ -305,6 +304,10 @@ export class ResolutionService {
   //   // Check Preliminary invalidation
   // }
 
+  async resolveOrdersAndVotes(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Orders and Votes resolution, which is not yet implemented`);
+  }
+
   async resolveSpringOrders(turn: UpcomingTurn): Promise<void> {
     const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
     const dbStates: DbStates = {
@@ -415,17 +418,17 @@ export class ResolutionService {
 
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
-      // db.resolutionRepo.updateOrders(dbUpdates.orders);
+      db.resolutionRepo.updateOrders(dbUpdates.orders);
     }
 
     if (dbUpdates.unitHistories.length > 0) {
       console.log('DB: Unit History Insert');
-      // await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
+      await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
     }
 
     if (dbUpdates.provinceHistories.length > 0) {
       console.log('DB: Province History Insert');
-      // await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
+      await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
     }
 
     const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, gameState.turnNumber);
@@ -456,16 +459,16 @@ export class ResolutionService {
 
     if (Object.keys(dbUpdates.countryHistories).length > 0) {
       console.log('DB: Country History Insert');
-      // await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
+      await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
     }
 
     // Every turn
     console.log('DB: Order Set Update');
-    // await db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId);
+    await db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId);
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
-    // await db.resolutionRepo.resolveTurn(turn.turnId);
+    await db.resolutionRepo.resolveTurn(turn.turnId);
 
     // Next turns needs to know retreats after resolution
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
@@ -473,22 +476,51 @@ export class ResolutionService {
     if (gameState.preliminaryTurnId) {
       // Convert preliminary to pending
       console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`);
-      // db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
-
+      db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
     } else {
       // Find next turn
       console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
-      // db.gameRepo.insertTurn([
-      //   gameState.gameId,
-      //   nextTurns.pending.deadline,
-      //   `${nextTurns.pending.type.split('_')[0]} YEAR HERE ${nextTurns.pending.type.split('_')[1]}`,
-      //   nextTurns.pending.type,
-      //   TurnStatus.PENDING
-      // ]);
+      db.gameRepo.insertTurn([
+        gameState.gameId,
+        nextTurns.pending.deadline,
+        nextTurns.pending.turnName,
+        nextTurns.pending.type,
+        TurnStatus.PENDING
+      ]);
     }
 
-    console.log('Triggering next turn defaults');
+    terminalLog('Triggering next turn defaults');
     this.optionsService.saveDefaultOrders(gameState.gameId);
+  }
+
+  async resolveSpringRetreats(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Spring Retreats resolution, which is not yet implemented`);
+  }
+
+  async resolveFallOrders(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Fall Orders resolution, which is not yet implemented`);
+  }
+
+  async resolveFallRetreats(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Fall Retreats resolution, which is not yet implemented`);
+  }
+
+  async resolveAdjustments(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Adjustments resolution, which is not yet implemented`);
+  }
+
+  async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
+    terminalLog(
+      `Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`
+    );
+  }
+
+  async resolveNominations(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Nominations resolution, which is not yet implemented`);
+  }
+
+  async resolveVotes(turn: UpcomingTurn): Promise<void> {
+    terminalLog(`Game ${turn.gameId} has triggered Votes resolution, which is not yet implemented`);
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
@@ -625,7 +657,7 @@ export class ResolutionService {
 
     if (options === undefined) {
       if (order.unit.type !== UnitType.GARRISON) {
-        console.log(
+        terminalLog(
           `orderId ${order.orderId} with unitId ${order.unit.id} doesn't even have matching options. This should be impossible but here we are!`
         );
 

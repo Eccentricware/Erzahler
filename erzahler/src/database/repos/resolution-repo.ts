@@ -38,6 +38,7 @@ import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-q
 import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
 import { getCountryUnitCityCountsQuery } from '../queries/resolution/get-country-unit-city-counts';
 import { advancePreliminaryTurnQuery } from '../queries/resolution/advance-preliminary-turn-query';
+import { terminalLog } from '../../server/utils/general';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -59,6 +60,7 @@ export class ResolutionRepository {
       [
         'country_id',
         'turn_id',
+        'country_status',
         'city_count',
         'unit_count',
         'banked_builds',
@@ -74,15 +76,20 @@ export class ResolutionRepository {
 
   async updateOrders(orders: OrderRow[]): Promise<void> {
     orders.forEach(async (order: OrderRow) => {
-      await this.pool.query(updateOrderQuery, [
-        order.orderStatus,
-        order.orderSuccess,
-        order.power,
-        order.valid,
-        order.description,
-        order.primaryResolution,
-        order.secondaryResolution
-      ]);
+      await this.pool
+        .query(updateOrderQuery, [
+          order.orderStatus,
+          order.orderSuccess,
+          order.power,
+          order.valid,
+          order.description,
+          order.primaryResolution,
+          order.secondaryResolution,
+          order.orderId
+        ])
+        .catch((error: Error) => {
+          terminalLog('Update Orders Error: ' + error.message);
+        });
     });
   }
 
@@ -97,7 +104,9 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(unitHistoryValues, this.unitHistoryCols);
-    this.db.query(query);
+    this.db.query(query).catch((error: Error) => {
+      terminalLog('Insert Unit Histories Error: ' + error.message);
+    });
   }
 
   async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[], turnId: number): Promise<void> {
@@ -113,7 +122,9 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
-    this.db.query(query);
+    this.db.query(query).catch((error: Error) => {
+      terminalLog('Insert Province Histories Error: ' + error.message);
+    });
   }
 
   async insertCountryHistories(countryHistories: Record<string, CountryHistoryRow>, turnId: number): Promise<void> {
@@ -121,6 +132,7 @@ export class ResolutionRepository {
       return {
         country_id: countryHistory.countryId,
         turn_id: turnId,
+        country_status: countryHistory.countryStatus,
         city_count: countryHistory.cityCount,
         unit_count: countryHistory.unitCount,
         banked_builds: countryHistory.bankedBuilds,
@@ -133,7 +145,9 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(countryHistoryValues, this.countryHistoryCols);
-    this.db.query(query);
+    this.db.query(query).catch((error: Error) => {
+      terminalLog('Insert Country Histories Error: ' + error.message);
+    });
   }
 
   async restoreBombardedProvinces(abandonedBombards: ProvinceHistoryRow[], turnId: number): Promise<void> {
@@ -149,7 +163,9 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
-    return this.db.query(query);
+    return this.db.query(query).catch((error: Error) => {
+      terminalLog('Insert Province Histories Error: ' + error.message);
+    });
   }
 
   // Legacy Queries
@@ -226,7 +242,7 @@ export class ResolutionRepository {
         })
       )
       .catch((error: Error) => {
-        console.log('Get Unit Orders For Resolution Error: ' + error.message);
+        terminalLog('Get Unit Orders For Resolution Error: ' + error.message);
         return [];
       });
   }
@@ -273,7 +289,7 @@ export class ResolutionRepository {
         });
       })
       .catch((error: Error) => {
-        console.log('getTransportNetworkInfo: ' + error.message);
+        terminalLog('getTransportNetworkInfo: ' + error.message);
         return [];
       });
 

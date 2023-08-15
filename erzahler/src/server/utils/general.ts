@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { TurnType } from '../../models/enumeration/turn-type-enum';
 
 export const formatNow = (): string => {
   let now = DateTime.now();
@@ -28,12 +29,17 @@ export const formatNow = (): string => {
   return `${date} ${time}${meridiem}`;
 };
 
-export const terminalLog = (message: string): void => {
+export const terminalLog = (message: string, addendum?: string): void => {
   const now = formatNow();
-  console.log(`${now} | ${message}`);
+  console.log(`${now} | ${message}${addendum ? ` | ${addendum}` : ''}`);
 };
 
 export const terminalAddendum = (event: string, message: string): void => {
   const eventMessage = event.padStart(20, ' ');
   console.log(`${eventMessage} | ${message}`);
+};
+
+export const formatTurnName = (turnType: TurnType, yearStylized: number): string => {
+  const turnTypeSplit = turnType.split(' ');
+  return `${turnTypeSplit[0]} ${yearStylized} ${turnTypeSplit[1]}`;
 };

@@ -495,16 +495,19 @@ export class OptionsService {
 
   async saveTurnDefaults(gameState: GameState, upcomingTurn: UpcomingTurn): Promise<void> {
     const orderSetLibrary: Record<string, number> = {};
+
     const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
       gameState.gameId,
       gameState.turnNumber,
       upcomingTurn.turnId
     );
+
     const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
       gameState.gameId,
       gameState.turnNumber,
       upcomingTurn.turnId
     );
+
     newOrderSets.forEach((orderSet: OrderSet) => (orderSetLibrary[orderSet.countryId] = orderSet.orderSetId));
     const preppedOrderLibrary: Record<string, OrderPrepping> = {};
     const defaultOrders: Order[] = [];

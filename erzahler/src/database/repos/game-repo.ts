@@ -52,6 +52,7 @@ import { getCurrentUnitHistoriesQuery } from '../queries/isolated-tables/get-cur
 import { getCurrentProvinceHistoryQuery } from '../queries/isolated-tables/get-current-province-histories-query';
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
 import { startGameQuery } from '../queries/game/start-game-query';
+import { terminalLog } from '../../server/utils/general';
 
 const gamesCols: string[] = [
   'game_name',
@@ -153,7 +154,7 @@ export class GameRepository {
   async insertRulesInGame(rules: any, gameName: string): Promise<any[]> {
     return rules.map(async (rule: any) => {
       return await this.pool.query(insertRuleInGameQuery, [gameName, rule.key, rule.enabled]).catch((error: Error) => {
-        console.log('Rule In Games Error:', error.message);
+        terminalLog('Rule In Games Error:', error.message);
       });
     });
   }
@@ -177,7 +178,7 @@ export class GameRepository {
         gameName
       ])
       .catch((error: Error) => {
-        console.log('Add Coalition Error:', error.message);
+        terminalLog('Add Coalition Error:', error.message);
       });
   }
 
@@ -188,7 +189,7 @@ export class GameRepository {
     gameName: string
   ): Promise<void> {
     await this.pool.query(insertAssignmentQuery, [userId, null, 'Creator', gameName]).catch((error: Error) => {
-      console.log('New Assignment Error:', error.message);
+      terminalLog('New Assignment Error:', error.message);
     });
   }
 
@@ -211,7 +212,7 @@ export class GameRepository {
             gameName
           ])
           .catch((error: Error) => {
-            console.log('Insert Province Error:', error.message);
+            terminalLog('Insert Province Error:', error.message);
           })
       );
     }
@@ -236,7 +237,7 @@ export class GameRepository {
             provinces[provinceName].name
           ])
           .catch((error: Error) => {
-            console.log('Insert Province History Error:', error.message);
+            terminalLog('Insert Province History Error:', error.message);
           })
       );
     }
@@ -261,7 +262,7 @@ export class GameRepository {
           terrain.province
         ])
         .catch((error: Error) => {
-          console.log('Insert Terrain Error:', error.message);
+          terminalLog('Insert Terrain Error:', error.message);
         });
     });
   }
@@ -280,7 +281,7 @@ export class GameRepository {
             nodes[nodeName].province
           ])
           .catch((error: Error) => {
-            console.log('Insert Node Error:', error.message);
+            terminalLog('Insert Node Error:', error.message);
           })
       );
     }
@@ -296,7 +297,7 @@ export class GameRepository {
         this.pool
           .query(insertNodeAdjacencyQuery, [gameName, links[linkName].alpha.name, links[linkName].omega.name])
           .catch((error: Error) => {
-            console.log('Insert Node Adjacency Error:', error.message);
+            terminalLog('Insert Node Adjacency Error:', error.message);
           })
       );
     }
@@ -318,7 +319,7 @@ export class GameRepository {
             gameName
           ])
           .catch((error: Error) => {
-            console.log('Insert Country Error:', error.message);
+            terminalLog('Insert Country Error:', error.message);
           })
       );
     }
@@ -343,7 +344,7 @@ export class GameRepository {
             countries[countryName].name
           ])
           .catch((error: Error) => {
-            console.log('Insert Country History Error:', error.message);
+            terminalLog('Insert Country History Error:', error.message);
           })
       );
     }
@@ -360,7 +361,7 @@ export class GameRepository {
         this.pool
           .query(insertUnitQuery, [units[unitName].fullName, units[unitName].type, gameName, units[unitName].country])
           .catch((error: Error) => {
-            console.log('Insert Unit Error:', error.message);
+            terminalLog('Insert Unit Error:', error.message);
           })
       );
     }
@@ -376,7 +377,7 @@ export class GameRepository {
         this.pool
           .query(insertInitialUnitHistoryQuery, ['Active', gameName, units[unitName].fullName, units[unitName].node])
           .catch((error: Error) => {
-            console.log('Insert Unit History Error:', error.message);
+            terminalLog('Insert Unit History Error:', error.message);
           })
       );
     }
@@ -389,7 +390,7 @@ export class GameRepository {
       await this.pool
         .query(insertLabelQuery, [label.name, label.type, label.loc, label.text, label.fill, gameName, label.province])
         .catch((error: Error) => {
-          console.log('Insert Label Error:', error.message);
+          terminalLog('Insert Label Error:', error.message);
         });
     });
   }
@@ -408,20 +409,20 @@ export class GameRepository {
           labelLine.province
         ])
         .catch((error: Error) => {
-          console.log('Insert Label Line Error:', error.message);
+          terminalLog('Insert Label Line Error:', error.message);
         });
     });
   }
 
   async updateGameSettings(gameSettings: any[]): Promise<void> {
     await this.pool.query(updateGameSettingsQuery, gameSettings).catch((error: Error) => {
-      console.log('Update Game Error: ' + error.message);
+      terminalLog('Update Game Error: ' + error.message);
     });
   }
 
   async updateTurn(gameStart: any, turnStatus: TurnStatus, turnNumber: number, gameId: number): Promise<void> {
     await this.pool.query(updateTurnQuery, [gameStart, turnStatus, turnNumber, gameId]).catch((error: Error) => {
-      console.log('Update Turn Error: ' + error.message);
+      terminalLog('Update Turn Error: ' + error.message);
     });
   }
 
@@ -443,7 +444,7 @@ export class GameRepository {
         });
       })
       .catch((error: Error) => {
-        console.log('Get Games Query Error', error.message);
+        terminalLog('Get Games Query Error', error.message);
       });
   }
 
@@ -457,7 +458,7 @@ export class GameRepository {
       .then((gameDataResults: any) => {
         return new GameDetailsBuilder(gameDataResults.rows[0], timeZone, meridiemTime);
       })
-      .catch((error: Error) => console.log('Get Game Data Results Error: ' + error.message));
+      .catch((error: Error) => terminalLog('Get Game Data Results Error: ' + error.message));
   }
 
   async getRulesInGame(gameId: number): Promise<any> {
@@ -466,7 +467,7 @@ export class GameRepository {
       .then((ruleDataResults: any) => {
         return ruleDataResults.rows.map((rule: any) => this.formattingService.convertKeysSnakeToCamel(rule));
       })
-      .catch((error: Error) => console.log('Get Rule Data Results Error: ' + error.message));
+      .catch((error: Error) => terminalLog('Get Rule Data Results Error: ' + error.message));
   }
 
   async getPlayerRegistrationStatus(gameId: number, userId: number): Promise<any> {
@@ -477,7 +478,7 @@ export class GameRepository {
           this.formattingService.convertKeysSnakeToCamel(registrationType)
         );
       })
-      .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
+      .catch((error: Error) => terminalLog('Get Player Registration Types Results Error: ' + error.message));
   }
 
   async getCountryState(gameId: number, turnNumber: number, countryId: number): Promise<CountryState[]> {
