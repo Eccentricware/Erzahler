@@ -153,10 +153,16 @@ export class AccountService {
 
         if (accountExists.value) {
           await this.restoreAccount(token.uid);
+          const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
+          return blitzkarteUser;
+
+        } else {
+          return {
+            userId: 0,
+            userStatus: 'void'
+          };
         }
 
-        const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
-        return blitzkarteUser;
       }
 
       return blitzkarteUser;
