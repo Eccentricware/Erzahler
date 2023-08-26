@@ -159,7 +159,8 @@ export class AccountService {
         } else {
           return {
             userId: 0,
-            userStatus: 'void'
+            userStatus: 'unregistered',
+            username: `Unregistered UUID (${token.uid})`
           };
         }
 
