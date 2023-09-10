@@ -8,7 +8,6 @@ CREATE DATABASE erzahler_dev;
 SET TIME ZONE 'utc';
 
 --\echo 'Attempting to create games table'
-
 CREATE TABLE IF NOT EXISTS games(
   game_id SERIAL,
   game_name VARCHAR(50) UNIQUE NOT NULL,
