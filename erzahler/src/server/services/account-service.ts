@@ -5,9 +5,10 @@ import {
   AddUserArgs,
   UserProfile
 } from '../../models/objects/user-profile-object';
-import { FormattingService } from './formatting-service';
 import { db } from '../../database/connection';
 import { NewUser } from '../../models/objects/new-user-objects';
+import { terminalLog } from '../utils/general';
+import { DetailedBoolean } from '../../models/objects/general-objects';
 
 export class AccountService {
   async validateToken(idToken: string, stillLoggedIn?: boolean): Promise<any> {
@@ -145,14 +146,29 @@ export class AccountService {
           await db.accountsRepo.clearAccountVerificationDeadline(firebaseUser.uid);
           await db.accountsRepo.clearEnvironmentVerificationDeadline(firebaseUser.uid);
         }
+
       } else {
+<<<<<<< HEAD
         const accountRestored = await this.restoreAccount(token.uid);
         if (!accountRestored) {
           return { warning: 'No Blitzkarte Account' };
+=======
+        const accountExists = await this.checkAccountExists(token.uid);
+
+        if (accountExists.value) {
+          await this.restoreAccount(token.uid);
+          const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
+          return blitzkarteUser;
+
+        } else {
+          return {
+            userId: 0,
+            userStatus: 'unregistered',
+            username: `Unregistered UUID (${token.uid})`
+          };
+>>>>>>> test
         }
 
-        const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
-        return blitzkarteUser;
       }
 
       return blitzkarteUser;
@@ -161,9 +177,39 @@ export class AccountService {
     }
   }
 
+  async checkAccountExists(uid: string): Promise<DetailedBoolean> {
+    const users: AccountsUserRow[] = await db.accountsRepo.getUserRowFromAccounts(uid);
+
+    if (users.length === 1) {
+      return {
+        value: true,
+        result: users[0].userId,
+        message: `Firebase UID ${uid} has precisely one account`
+      };
+
+    } else if (users.length > 1) {
+      terminalLog(`WARNING: Firebase UID ${uid} has ${users.length} instances in the Accounts DB!!`);
+
+      return {
+        value: false,
+        result: users.length,
+        message: `Firebase UID ${uid} has ${users.length} accounts!`,
+        alert: true
+      };
+
+    } else {
+      return {
+        value: false,
+        result: users.length,
+        message: `Firebase UID ${uid} is not in accounts DB!`
+      };
+    }
+  }
+
   async restoreAccount(uid: string): Promise<UserProfile | any> {
     const users: AccountsUserRow[] = await db.accountsRepo.getUserRowFromAccounts(uid);
-    if (users.length > 0) {
+
+    if (users.length === 1) {
       const user = users[0];
 
       const accountProviders: AccountsProviderRow[] = await db.accountsRepo.getProviderRowFromAccountsByUserId(
@@ -180,7 +226,14 @@ export class AccountService {
         await db.accountsRepo.createUserDetails(user, 'active');
         await db.accountsRepo.createUserSettings(user);
       }
+<<<<<<< HEAD
       return true;
+=======
+
+    } else if (users.length > 1) {
+      terminalLog(`WARNING: Firebase UID ${uid} has ${users.length} instances in the Accounts DB!!`);
+
+>>>>>>> test
     } else {
       return false;
     }
