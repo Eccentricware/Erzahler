@@ -146,7 +146,10 @@ export class AccountService {
           await db.accountsRepo.clearEnvironmentVerificationDeadline(firebaseUser.uid);
         }
       } else {
-        await this.restoreAccount(token.uid);
+        const accountRestored = await this.restoreAccount(token.uid);
+        if (!accountRestored) {
+          return { warning: 'No Blitzkarte Account' };
+        }
 
         const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
         return blitzkarteUser;
@@ -177,8 +180,9 @@ export class AccountService {
         await db.accountsRepo.createUserDetails(user, 'active');
         await db.accountsRepo.createUserSettings(user);
       }
+      return true;
     } else {
-      console.log('Firebase UID does not exist in accounts DB. How did you pull that off?');
+      return false;
     }
   }
 
