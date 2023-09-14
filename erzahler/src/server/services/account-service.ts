@@ -148,6 +148,11 @@ export class AccountService {
         }
 
       } else {
+<<<<<<< HEAD
+        const accountRestored = await this.restoreAccount(token.uid);
+        if (!accountRestored) {
+          return { warning: 'No Blitzkarte Account' };
+=======
         const accountExists = await this.checkAccountExists(token.uid);
 
         if (accountExists.value) {
@@ -161,6 +166,7 @@ export class AccountService {
             userStatus: 'unregistered',
             username: `Unregistered UUID (${token.uid})`
           };
+>>>>>>> test
         }
 
       }
@@ -220,12 +226,16 @@ export class AccountService {
         await db.accountsRepo.createUserDetails(user, 'active');
         await db.accountsRepo.createUserSettings(user);
       }
+<<<<<<< HEAD
+      return true;
+=======
 
     } else if (users.length > 1) {
       terminalLog(`WARNING: Firebase UID ${uid} has ${users.length} instances in the Accounts DB!!`);
 
+>>>>>>> test
     } else {
-      console.log('Firebase UID does not exist in accounts DB. How did you pull that off?');
+      return false;
     }
   }
 

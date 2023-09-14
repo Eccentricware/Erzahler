@@ -32,7 +32,7 @@ userRouter.get('/profile', (request, response) => {
     })
     .catch((error: Error) => {
       terminalLog(`Get Profile FAILURE: ${idToken}`);
-      response.send(error.message);
+      response.send({error: error.message});
     });
 });
 
