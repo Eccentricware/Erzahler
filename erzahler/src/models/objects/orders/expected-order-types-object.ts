@@ -2,6 +2,7 @@ import { TurnStatus } from '../../enumeration/turn-status-enum';
 import { TurnType } from '../../enumeration/turn-type-enum';
 
 export interface OrderTurnIds {
+  core?: number;
   votes?: number;
   units?: number;
   transfers?: number;

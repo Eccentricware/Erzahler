@@ -226,9 +226,9 @@ export class SchedulerService {
       forEach(async (turn: UpcomingTurn) => {
         if (Date.parse(turn.deadline) < Date.now()) {
           resolutionService.resolveTurn(turn);
-          console.log('Deadline in past: ' + true);
+          console.log(`Deadline ${turn.deadline} in past: true`);
         } else {
-          console.log('Deadline in past: ' + false);
+          console.log(`Deadline ${turn.deadline} in past: false`);
           schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
             resolutionService.resolveTurn(turn);
           });

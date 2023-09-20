@@ -425,6 +425,7 @@ export class OrdersService {
     const turnIds: OrderTurnIds = {};
 
     if (pendingOrderSet) {
+      turnIds.core = pendingOrderSet.orderSetId;
       // Standard Unit Movement
       if (
         [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingOrderSet.turnType)
@@ -466,6 +467,7 @@ export class OrdersService {
     }
 
     if (preliminaryOrderSet) {
+      turnIds.core = preliminaryOrderSet.orderSetId;
       // Standard Unit Movement
       if ([TurnType.SPRING_ORDERS, TurnType.FALL_ORDERS].includes(preliminaryOrderSet.turnType)) {
         turnIds.units = preliminaryOrderSet.orderSetId;
@@ -494,7 +496,7 @@ export class OrdersService {
 
     if (userAssigned) {
       const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
-      // orderSetIds.votes = 542;
+      let orderSetUpdated = false;
 
       if (orderSetIds.votes && orders.votes) {
         db.ordersRepo.saveVotes(orderSetIds.votes, orders.votes.nominations);
@@ -528,6 +530,10 @@ export class OrdersService {
 
       if (orderSetIds.nomination && orders.nomination) {
         db.ordersRepo.saveNominationOrder(orderSetIds.nomination, orders.nomination.countryIds);
+      }
+
+      if (!orderSetUpdated && orderSetIds.core) {
+        db.ordersRepo.updateOrderSetSubmissionTime(orderSetIds.core);
       }
     }
   }
