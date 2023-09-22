@@ -394,6 +394,12 @@ export class OrdersRepository {
       .catch((error: Error) => terminalLog('saveVotes error: ' + error.message));
   }
 
+  async updateOrderSetSubmissionTime(orderSetId: number): Promise<void> {
+    await this.pool
+      .query('UPDATE order_sets SET submission_time = NOW() WHERE order_set_id = $1', [orderSetId])
+      .catch((error: Error) => terminalLog('updateOrderSubmissionTime error: ' + error.message));
+  }
+
   resolveBuildType(buildTypeId: number): BuildType {
     switch (buildTypeId) {
       case -3:
