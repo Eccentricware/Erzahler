@@ -1,5 +1,5 @@
 import { Pool, Query, QueryResult } from 'pg';
-import { IDatabase, IMain } from 'pg-promise';
+import { IDatabase, IMain, ParameterizedQuery } from 'pg-promise';
 import { GameDetailsBuilder } from '../../models/classes/game-details-builder';
 import { GameSummaryBuilder } from '../../models/classes/game-summary-builder';
 import { CountryRank, CountryStatus } from '../../models/enumeration/country-enum';
@@ -33,7 +33,7 @@ import { insertNodeQuery } from '../queries/game/insert-node-query';
 import { insertProvinceQuery } from '../queries/game/insert-province-query';
 import { insertRuleInGameQuery } from '../queries/game/insert-rule-in-game-query';
 import { insertTerrainQuery } from '../queries/game/insert-terrain-query';
-import { insertTurnQuery } from '../queries/game/insert-turn-query';
+import { insertNextTurnQuery, insertTurnQuery } from '../queries/game/insert-turn-query';
 import { insertInitialUnitHistoryQuery } from '../queries/game/insert-initial-unit-history-query';
 import { insertUnitQuery } from '../queries/game/insert-unit-query';
 import { updateGameSettingsQuery } from '../queries/game/update-game-settings-query';
@@ -193,8 +193,22 @@ export class GameRepository {
     });
   }
 
+  /**
+   * First turn
+   * @param turnArgs
+   * @returns
+   */
   async insertTurn(turnArgs: any[]): Promise<any> {
     return this.pool.query(insertTurnQuery, turnArgs);
+  }
+
+  async insertNextTurn(turnArgs: any[]): Promise<any> {
+    const nextTurnQuery: ParameterizedQuery = new ParameterizedQuery({
+      text: insertNextTurnQuery,
+      values: turnArgs
+    });
+
+    await this.db.none(nextTurnQuery);
   }
 
   async insertProvinces(provinces: any, gameName: string): Promise<any[]> {
