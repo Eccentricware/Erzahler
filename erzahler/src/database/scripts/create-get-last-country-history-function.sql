@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION get_last_country_history(
 )
 RETURNS TABLE(country_id INTEGER, turn_id INTEGER, turn_number INTEGER)
 AS $$
+
 	WITH last_turn_number AS (
 		SELECT ch.country_id,
 			MAX(t.turn_number) AS turn_number
