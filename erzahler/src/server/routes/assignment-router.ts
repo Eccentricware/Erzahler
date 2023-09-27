@@ -38,10 +38,6 @@ assignmentRouter.post('/unregister', (request, response) => {
   const gameId = Number(request.body.gameId);
   const assignmentType = <string>request.body.assignmentType;
 
-  console.log(<string>request.headers.idtoken);
-  console.log(Number(request.body.gameId));
-  console.log(<string>request.body.assignmentType);
-
   assignmentService
     .unregisterUser(idToken, gameId, assignmentType)
     .then((result: any) => {

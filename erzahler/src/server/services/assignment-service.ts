@@ -19,6 +19,7 @@ import { GameDetailsBuilder } from '../../models/classes/game-details-builder';
 import { lockAssignmentQuery } from '../../database/queries/assignments/lock-assignment-query';
 import { unlockAssignmentQuery } from '../../database/queries/assignments/unlock-assignment-query';
 import { db } from '../../database/connection';
+import { terminalAddendum, terminalLog } from '../utils/general';
 
 export class AssignmentService {
   user: any = undefined;
@@ -75,7 +76,7 @@ export class AssignmentService {
   async registerUser(idToken: string, gameId: number, assignmentType: string) {
     const accountService: AccountService = new AccountService();
     const pool = new Pool(envCredentials);
-    console.log('gameId', gameId, 'assignmentType', assignmentType, 'userId', this.user.userId);
+    terminalLog(`Registering ${this.user.username} (${this.user.userId}) as ${assignmentType} for game ${gameId}`);
 
     this.user = await accountService.getUserProfile(idToken);
     if (!this.user.error) {
@@ -107,9 +108,7 @@ export class AssignmentService {
   }
 
   async unregisterUser(idToken: string, gameId: number, assignmentType: string) {
-    console.log('gameId', gameId);
-    console.log('assignmentType', assignmentType);
-    console.log('userId', this.user);
+    terminalLog(`Unregistering ${this.user.username} (${this.user.userId}) as ${assignmentType} for game ${gameId}`);
     const accountService: AccountService = new AccountService();
     const pool = new Pool(envCredentials);
 
