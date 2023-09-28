@@ -9,13 +9,21 @@ CREATE OR REPLACE FUNCTION get_last_province_history(
 )
 RETURNS TABLE(province_id INTEGER, turn_id INTEGER, turn_number INTEGER)
 AS $$
-	SELECT ph.province_id,
-		ph.turn_id,
-		MAX(t.turn_number) AS turn_number
-	FROM province_histories ph
-	INNER JOIN turns t ON t.turn_id = ph.turn_id
+
+	WITH last_turn_number AS (
+		SELECT ph.province_id,
+			MAX(t.turn_number) AS turn_number
+		FROM province_histories ph
+		INNER JOIN turns t ON t.turn_id = ph.turn_id
+		WHERE t.game_id = $1
+			AND t.turn_number <= $2
+		GROUP BY ph.province_id
+	)
+	SELECT ltn.province_id,
+		t.turn_id,
+		t.turn_number
+	FROM turns t
+	INNER JOIN last_turn_number ltn ON ltn.turn_number = t.turn_number
 	WHERE t.game_id = $1
-		AND t.turn_number <= $2
-	GROUP BY ph.province_id,
-		ph.turn_id
+
 $$ LANGUAGE SQL;
