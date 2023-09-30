@@ -98,8 +98,10 @@ export class OrdersService {
             pendingTurn.turnId,
             playerCountry.countryId
           );
+
           if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
             orders.pendingDefault = false;
+
           } else {
             orders.pendingDefault = true;
           }
@@ -495,6 +497,7 @@ export class OrdersService {
     const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
 
     if (userAssigned) {
+      terminalLog(`Saving Orders: Game ${orders.gameId} | Country ${orders.countryId} | User ${userId}`);
       const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
       let orderSetUpdated = false;
 
@@ -535,6 +538,8 @@ export class OrdersService {
       if (!orderSetUpdated && orderSetIds.core) {
         db.ordersRepo.updateOrderSetSubmissionTime(orderSetIds.core);
       }
+    } else {
+      terminalLog(`Unassigned user (${userId}) attempted to save orders for Game ${orders.gameId} | Country ${orders.countryId}`)
     }
   }
 
