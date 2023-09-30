@@ -45,7 +45,7 @@ import {
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
-import { formatTurnName, terminalLog } from '../utils/general';
+import { formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
 import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
@@ -114,7 +114,7 @@ export class ResolutionService {
   }
 
   async resolveOrdersAndVotes(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Orders and Votes resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Orders and Votes resolution, which is not yet implemented`);
   }
 
   async resolveSpringOrders(turn: UpcomingTurn): Promise<void> {
@@ -301,12 +301,18 @@ export class ResolutionService {
             nextTurns.pending.turnNumber,
             nextTurns.pending.turnName,
             nextTurns.pending.type,
+            nextTurns.pending.yearNumber,
             TurnStatus.PENDING,
             nextTurns.pending.deadline
           ])
-          .then(async () => {
-            terminalLog('Triggering next turn defaults');
-            this.optionsService.saveDefaultOrders(gameState.gameId);
+          .then(async (result) => {
+            terminalLog('Saving options for next turn');
+
+            await this.optionsService.saveOptionsForNextTurn(gameState.gameId, result.turn_id)
+              .then(() => {
+                terminalLog('Triggering next turn defaults');
+                this.optionsService.saveDefaultOrders(gameState.gameId);
+              });
           });
         }
       });
@@ -315,31 +321,31 @@ export class ResolutionService {
   }
 
   async resolveSpringRetreats(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Spring Retreats resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Spring Retreats resolution, which is not yet implemented`);
   }
 
   async resolveFallOrders(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Fall Orders resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Fall Orders resolution, which is not yet implemented`);
   }
 
   async resolveFallRetreats(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Fall Retreats resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Fall Retreats resolution, which is not yet implemented`);
   }
 
   async resolveAdjustments(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Adjustments resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Adjustments resolution, which is not yet implemented`);
   }
 
   async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`);
   }
 
   async resolveNominations(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Nominations resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Nominations resolution, which is not yet implemented`);
   }
 
   async resolveVotes(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Votes resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Votes resolution, which is not yet implemented`);
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {

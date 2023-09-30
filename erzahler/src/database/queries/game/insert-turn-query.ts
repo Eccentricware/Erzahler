@@ -25,6 +25,7 @@ export const insertNextTurnQuery = `
     turn_number,
     turn_name,
     turn_type,
+    year_number,
     turn_status,
     deadline
   ) VALUES (
@@ -33,6 +34,7 @@ export const insertNextTurnQuery = `
     $3,
     $4,
     $5,
-    $6
-  );
+    $6,
+    $7
+  ) returning turn_id;
 `;

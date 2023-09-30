@@ -208,7 +208,7 @@ export class GameRepository {
       values: turnArgs
     });
 
-    await this.db.none(nextTurnQuery);
+    return await this.db.one(nextTurnQuery);
   }
 
   async insertProvinces(provinces: any, gameName: string): Promise<any[]> {

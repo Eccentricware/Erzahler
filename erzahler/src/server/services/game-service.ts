@@ -12,7 +12,7 @@ import { OrdersService } from './orders-service';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
-import { terminalLog } from '../utils/general';
+import { terminalAddendum, terminalLog } from '../utils/general';
 
 export class GameService {
   gameData: any = {};
@@ -341,7 +341,8 @@ export class GameService {
       }
     }
 
-    terminalLog(`Finding games for ${username} (${userId}): ${JSON.stringify(params)}}`);
+    terminalLog(`Finding games for ${username} (${userId})`);
+    terminalAddendum('Params', JSON.stringify(params));
     const gameResults: any = await db.gameRepo.getGames(userId, params, userTimeZone, meridiemTime);
 
     return gameResults;
