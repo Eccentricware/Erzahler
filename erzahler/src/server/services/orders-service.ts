@@ -129,8 +129,6 @@ export class OrdersService {
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            gameState.gameId,
-            gameState.turnNumber,
             pendingTurn.turnId,
             playerCountry.countryId
           );
@@ -197,8 +195,6 @@ export class OrdersService {
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            gameState.gameId,
-            gameState.turnNumber,
             preliminaryTurn.turnId,
             playerCountry.countryId
           );
@@ -319,8 +315,6 @@ export class OrdersService {
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            gameState.gameId,
-            gameState.turnNumber,
             pendingTurn.turnId,
             playerCountry.countryId
           );
@@ -380,8 +374,6 @@ export class OrdersService {
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
           const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            gameState.gameId,
-            gameState.turnNumber,
             preliminaryTurn.turnId,
             playerCountry.countryId
           );
