@@ -33,5 +33,5 @@ export const getTechTransferOrderQuery = `
   INNER JOIN countries c ON c.country_id = os.country_id
   WHERE os.turn_id = $1
     AND os.country_id = $2
-    AND ot.order_type IN (2, 3);
+    AND ot.order_type IN (2);
 `;

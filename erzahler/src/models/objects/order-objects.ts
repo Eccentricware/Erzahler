@@ -103,8 +103,8 @@ export interface TransferTechOrder {
   countryName: string;
   techPartnerId: number;
   techPartnerName: string;
-  hasNukes: boolean;
-  success: boolean;
+  hasNukes?: boolean;
+  success?: boolean;
 }
 
 export interface BuildOrdersResult {
