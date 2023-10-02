@@ -668,7 +668,7 @@ CREATE TABLE IF NOT EXISTS orders_transfers(
   order_type INTEGER NOT NULL, --1: banked_transfer, 2: tech_offer, 3: tech_receive
   quantity INTEGER,
   foreign_country_id INTEGER, --Can be null because SOMEDAY manual entry will be thing
-  foreign_country_entered VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW
+  foreign_country_name VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW
   order_success BOOLEAN,
   PRIMARY KEY(order_transfer_id),
   FOREIGN KEY(order_set_id)
