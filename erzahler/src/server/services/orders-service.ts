@@ -21,7 +21,7 @@ import {
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
 import assert from 'assert';
-import { terminalLog } from '../utils/general';
+import { terminalAddendum, terminalLog } from '../utils/general';
 
 export class OrdersService {
   async getTurnOrders(idToken: string, gameId: number): Promise<TurnOrders> {
@@ -490,6 +490,7 @@ export class OrdersService {
 
     if (userAssigned) {
       terminalLog(`Saving Orders: Game ${orders.gameId} | Country ${orders.countryId} | User ${userId}`);
+      terminalAddendum(`Orders`, `${JSON.stringify(orders)}`);
       const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
       let orderSetUpdated = false;
 
@@ -504,8 +505,13 @@ export class OrdersService {
         });
       }
 
-      if (orderSetIds.transfers && orders.techTransfer && orders.buildTransfers) {
-        await db.ordersRepo.saveTransfers(orderSetIds.transfers, orders.techTransfer, orders.buildTransfers);
+      // Grouped Transfers Obsolete
+      // if (orderSetIds.transfers && orders.techTransfer && orders.buildTransfers) {
+      //   await db.ordersRepo.saveTransfers(orderSetIds.transfers, orders.techTransfer, orders.buildTransfers);
+      // }
+
+      if (orderSetIds.transfers && orders.techTransfer) {
+        await db.ordersRepo.saveTechTransfer(orderSetIds.transfers, orders.techTransfer);
       }
 
       // if (orderSetIds.retreats && orders.units) {

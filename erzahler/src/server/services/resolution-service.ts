@@ -4,16 +4,9 @@ import {
   CountryStatCounts,
   DbStates,
   DbUpdates,
-  GameRow,
-  OrderRow,
-  OrderSetRow,
   ProvinceHistoryRow,
-  TurnRow,
-  UnitHistoryRow,
-  UnitRow
+  UnitHistoryRow
 } from '../../database/schema/table-fields';
-import { CountryStatus } from '../../models/enumeration/country-enum';
-import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { OrderStatus } from '../../models/enumeration/order-status-enum';
 import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration/province-enums';
@@ -21,8 +14,6 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 import { TurnTS } from '../../models/objects/database-objects';
-import { GameSchedule, StartSchedule } from '../../models/objects/games/game-schedule-objects';
-import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
@@ -40,7 +31,6 @@ import {
   TransferResources,
   TransportAttempt,
   TransportNetworkUnit,
-  UnitMovementResults,
   UnitOrderGroups,
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
@@ -1056,8 +1046,6 @@ export class ResolutionService {
       }
     };
     transferResources.techTransferResults = await this.validateTechTransfers(
-      gameState.gameId,
-      gameState.turnNumber,
       turn.turnId,
       transferResources
     );
@@ -1066,17 +1054,10 @@ export class ResolutionService {
   }
 
   async validateTechTransfers(
-    gameId: number,
-    turnNumber: number,
     orderTurnId: number,
     transferResources: TransferResources
   ): Promise<TransferTechOrder[]> {
-    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-      gameId,
-      turnNumber,
-      orderTurnId,
-      0
-    );
+    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(orderTurnId, 0);
 
     techTransferOrders.forEach((order: TransferTechOrder) => {
       const partnerCountry = techTransferOrders.find(

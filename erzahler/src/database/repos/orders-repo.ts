@@ -1,5 +1,5 @@
 import { Pool, QueryResult } from 'pg';
-import { ColumnSet, IDatabase, IMain } from 'pg-promise';
+import { ColumnSet, IDatabase, IMain, ParameterizedQuery } from 'pg-promise';
 import { BuildType } from '../../models/enumeration/unit-enum';
 import {
   NominatableCountry,
@@ -42,7 +42,7 @@ import { getVotesOrdersQuery } from '../queries/orders/orders-final/get-votes-or
 import { saveBuildOrdersQuery } from '../queries/orders/orders-final/save-build-orders-query';
 import { saveDisbandOrdersQuery } from '../queries/orders/orders-final/save-disband-orders-query';
 import { saveNominationQuery } from '../queries/orders/orders-final/save-nomination-query';
-import { saveTransferOrdersQuery } from '../queries/orders/orders-final/save-transfer-orders-query';
+import { insertTechTransferOrdersQuery, updateTechTransferOrdersQuery } from '../queries/orders/orders-final/save-transfer-orders-query';
 import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-order-query';
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
@@ -177,11 +177,17 @@ export class OrdersRepository {
     return transferBuildOrders;
   }
 
+  /**
+   * Retrieves tech transfer partners for a given country
+   * @param orderTurnId
+   * @param countryId
+   * @returns
+   */
   async getTechTransferPartner(
     orderTurnId: number,
     countryId: number
   ): Promise<TransferTechOrder[]> {
-    return await this.pool
+    const techTransferPartners = await this.pool
       .query(getTechTransferOrderQuery, [orderTurnId, countryId])
       .then((result: QueryResult) =>
         result.rows.map((order: TransferTechOrderResult) => {
@@ -195,6 +201,17 @@ export class OrdersRepository {
           };
         })
       );
+
+    return techTransferPartners.length === 0
+      ? [
+          <TransferTechOrder>{
+            countryId: countryId,
+            countryName: '',
+            techPartnerId: 0,
+            techPartnerName: 'No Tech Transfer Partner',
+          }
+        ]
+      : techTransferPartners;
   }
 
   async getBuildOrders(
@@ -299,27 +316,68 @@ export class OrdersRepository {
       .catch((error: Error) => terminalLog(`saveBuildOrder (${build.nodeId}) error: ${error.message}`));
   }
 
-  async saveTransfers(
-    orderSetId: number,
-    techTransfer: TransferTechOrder,
-    buildTransfers: TransferBuildsCountry[]
-  ): Promise<void> {
-    const buildRecipients: number[] = [];
-    const tupleizedBuildRecipients: number[] = [];
+  // async saveTransfers(
+  //   orderSetId: number,
+  //   techTransfer: TransferTechOrder,
+  //   buildTransfers: TransferBuildsCountry[]
+  // ): Promise<void> {
+  //   const buildRecipients: number[] = [];
+  //   const tupleizedBuildRecipients: number[] = [];
 
-    buildTransfers.forEach((transfer: TransferBuildsCountry) => {
-      buildRecipients.push(transfer.countryId);
-      tupleizedBuildRecipients.push(transfer.countryId, transfer.builds);
+  //   buildTransfers.forEach((transfer: TransferBuildsCountry) => {
+  //     buildRecipients.push(transfer.countryId);
+  //     tupleizedBuildRecipients.push(transfer.countryId, transfer.builds);
+  //   });
+
+  //   await this.pool
+  //     .query(saveTransferOrdersQuery, [
+  //       techTransfer.techPartnerId,
+  //       buildRecipients,
+  //       tupleizedBuildRecipients,
+  //       orderSetId
+  //     ])
+  //     .catch((error: Error) => terminalLog('saveTransfers error: ' + error.message));
+  // }
+
+  async saveTechTransfer(orderSetId: number, techTransfer: TransferTechOrder): Promise<void> {
+    const updateOrderPQ = new ParameterizedQuery({
+      text: updateTechTransferOrdersQuery,
+      values: [
+        techTransfer.techPartnerId,
+        techTransfer.techPartnerName,
+        orderSetId
+      ]
     });
 
-    await this.pool
-      .query(saveTransferOrdersQuery, [
-        techTransfer.techPartnerId,
-        buildRecipients,
-        tupleizedBuildRecipients,
-        orderSetId
-      ])
-      .catch((error: Error) => terminalLog('saveTransfers error: ' + error.message));
+    const updatedOrder = await this.db.oneOrNone(updateOrderPQ);
+    // const updatedOrder = await this.pool
+    //   .query(updateTechTransferOrdersQuery, [
+    //     techTransfer.techPartnerId,
+    //     techTransfer.techPartnerName,
+    //     orderSetId
+    //   ])
+    //   .catch((error: Error) => terminalLog('Update Tech Transfer Order Error: ' + error.message));
+
+    if (!updatedOrder) {
+      const insertOrderPQ = new ParameterizedQuery({
+        text: insertTechTransferOrdersQuery,
+        values: [
+          orderSetId,
+          techTransfer.techPartnerId,
+          techTransfer.techPartnerName
+        ]
+      });
+
+      await this.db.none(insertOrderPQ);
+      // await this.pool
+      //   .query(insertTechTransferOrdersQuery, [
+      //     orderSetId,
+      //     // techTransfer.countryId,
+      //     techTransfer.techPartnerId,
+      //     techTransfer.techPartnerName
+      //   ])
+      //   .catch((error: Error) => terminalLog('Insert Tech Transfer Order Error: ' + error.message));
+    }
   }
 
   async saveBuildOrders(orderSetId: number, builds: BuildOrders): Promise<void> {
