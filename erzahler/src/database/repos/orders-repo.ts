@@ -13,7 +13,6 @@ import {
 import { TransferBuildsCountry } from '../../models/objects/options-objects';
 import {
   TransferBuildOrder,
-  TransferBuildOrdersResults,
   TransferTechOrder,
   TransferTechOrderResult,
   BuildOrders,
@@ -25,7 +24,8 @@ import {
   NukeBuildInDisband,
   DisbandingUnitDetail,
   DisbandingUnitDetailResult,
-  BuildResult
+  BuildResult,
+  TransferBuildOrderResult
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, CountryOrderSetsResult } from '../../models/objects/orders/expected-order-types-object';
 import { envCredentials } from '../../secrets/dbCredentials';
@@ -151,28 +151,20 @@ export class OrdersRepository {
   }
 
   async getBuildTransferOrders(countryId: number, turnId: number): Promise<TransferBuildOrder[]> {
-    const transferBuildOrderResults: TransferBuildOrdersResults[] = await this.pool
+    const transferBuildOrders: TransferBuildOrder[] = await this.pool
       .query(getBuildTransferOrdersQuery, [turnId, countryId])
-      .then((result: QueryResult) => result.rows);
-
-    const transferBuildOrders: TransferBuildOrder[] = [];
-    transferBuildOrderResults.forEach((result: TransferBuildOrdersResults) => {
-      const tuples = result.build_transfer_tuples;
-      const recipients: TransferCountryResult[] = result.build_transfer_recipients;
-
-      for (let index = 0; index < tuples.length; index += 2) {
-        const recipient = recipients.find((country: TransferCountryResult) => country.country_id === tuples[index]);
-        if (recipient) {
-          transferBuildOrders.push({
-            playerCountryId: result.player_country_id,
-            playerCountryName: result.player_country_name,
-            countryId: recipient.country_id,
-            countryName: recipient.country_name,
-            builds: tuples[index + 1]
-          });
-        }
-      }
-    });
+      .then((result: QueryResult<TransferBuildOrderResult>) => result.rows.map((order: TransferBuildOrderResult) => {
+        return <TransferBuildOrder> {
+          orderTransferId: order.order_transfer_id,
+          orderSetId: order.order_set_id,
+          countryId: order.country_id,
+          countryName: order.country_name,
+          techPartnerId: order.tech_partner_id,
+          techPartnerName: order.tech_partner_name,
+          quantity: order.quantity,
+          uiRow: order.ui_row
+        };
+      }));
 
     return transferBuildOrders;
   }
@@ -191,7 +183,9 @@ export class OrdersRepository {
       .query(getTechTransferOrderQuery, [orderTurnId, countryId])
       .then((result: QueryResult) =>
         result.rows.map((order: TransferTechOrderResult) => {
-          return <TransferTechOrder>{
+          return <TransferTechOrder> {
+            orderTransferId: order.order_transfer_id,
+            orderSetId: order.order_set_id,
             countryId: order.country_id,
             countryName: order.country_name,
             techPartnerId: order.tech_partner_id,
@@ -204,11 +198,15 @@ export class OrdersRepository {
 
     return techTransferPartners.length === 0
       ? [
-          <TransferTechOrder>{
+          <TransferTechOrder> {
+            orderTransferId: 0,
+            orderSetId: 0,
             countryId: countryId,
             countryName: '',
             techPartnerId: 0,
             techPartnerName: 'No Tech Transfer Partner',
+            hasNukes: false,
+            success: false
           }
         ]
       : techTransferPartners;
@@ -350,13 +348,6 @@ export class OrdersRepository {
     });
 
     const updatedOrder = await this.db.oneOrNone(updateOrderPQ);
-    // const updatedOrder = await this.pool
-    //   .query(updateTechTransferOrdersQuery, [
-    //     techTransfer.techPartnerId,
-    //     techTransfer.techPartnerName,
-    //     orderSetId
-    //   ])
-    //   .catch((error: Error) => terminalLog('Update Tech Transfer Order Error: ' + error.message));
 
     if (!updatedOrder) {
       const insertOrderPQ = new ParameterizedQuery({
@@ -369,14 +360,6 @@ export class OrdersRepository {
       });
 
       await this.db.none(insertOrderPQ);
-      // await this.pool
-      //   .query(insertTechTransferOrdersQuery, [
-      //     orderSetId,
-      //     // techTransfer.countryId,
-      //     techTransfer.techPartnerId,
-      //     techTransfer.techPartnerName
-      //   ])
-      //   .catch((error: Error) => terminalLog('Insert Tech Transfer Order Error: ' + error.message));
     }
   }
 

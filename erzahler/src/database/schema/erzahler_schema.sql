@@ -669,7 +669,8 @@ CREATE TABLE IF NOT EXISTS orders_transfers(
   quantity INTEGER,
   foreign_country_id INTEGER, --Can be null because SOMEDAY manual entry will be thing
   foreign_country_name VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW
-  order_success BOOLEAN,
+  ui_row INTEGER, -- Maintains arbitrary ordering from browser, controls DB bloat
+  success BOOLEAN,
   PRIMARY KEY(order_transfer_id),
   FOREIGN KEY(order_set_id)
     REFERENCES order_sets(order_set_id)

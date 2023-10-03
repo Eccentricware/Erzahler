@@ -514,6 +514,10 @@ export class OrdersService {
         await db.ordersRepo.saveTechTransfer(orderSetIds.transfers, orders.techTransfer);
       }
 
+      if (orderSetIds.transfers && orders.buildTransfers) {
+        await db.ordersRepo.saveBuildTransfers(orderSetIds.transfers, orders.buildTransfers);
+      }
+
       // if (orderSetIds.retreats && orders.units) {
       //   orders.units.forEach((unit: Order) => {
       //     assert(orderSetIds.units);
