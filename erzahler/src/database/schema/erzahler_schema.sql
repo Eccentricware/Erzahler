@@ -1,13 +1,13 @@
---sudo -u postgres psql < database/schema/erzahler_schema.sql
+--sudo -u postgres psql < src/database/schema/erzahler_schema.sql
 
 DROP DATABASE IF EXISTS erzahler_dev;
 CREATE DATABASE erzahler_dev;
 
 \c erzahler_dev;
---\echo 'Attempting to set time zone to utc'
+\echo 'Attempting to set time zone to utc'
 SET TIME ZONE 'utc';
 
---\echo 'Attempting to create games table'
+\echo 'Attempting to create games table'
 CREATE TABLE IF NOT EXISTS games(
   game_id SERIAL,
   game_name VARCHAR(50) UNIQUE NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS games(
   PRIMARY KEY(game_id)
 );
 
---\echo 'Attempting to create coalition_schedules table'
+\echo 'Attempting to create coalition_schedules table'
 CREATE TABLE IF NOT EXISTS coalition_schedules(
   coalition_schedule_id SERIAL,
   game_id INTEGER NOT NULL,
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS coalition_schedules(
     REFERENCES games(game_id)
 );
 
---\echo 'Attempting to create rules table'
+\echo 'Attempting to create rules table'
 CREATE TABLE IF NOT EXISTS rules(
   rule_id SERIAL,
   rule_key VARCHAR(50) NOT NULL,
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS rules(
   PRIMARY KEY(rule_id)
 );
 
---\echo 'Attempting to create rules_in_games table'
+\echo 'Attempting to create rules_in_games table'
 CREATE TABLE IF NOT EXISTS rules_in_games(
   rule_in_game_id SERIAL,
   rule_id INTEGER NOT NULL,
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS rules_in_games(
     REFERENCES games(game_id)
 );
 
---\echo 'Attempting to create turns table'
+\echo 'Attempting to create turns table'
 CREATE TABLE IF NOT EXISTS turns(
   turn_id SERIAL,
   game_id INTEGER NOT NULL,
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS turns(
     REFERENCES games(game_id)
 );
 
---\echo 'Attempting to create countries table'
+\echo 'Attempting to create countries table'
 CREATE TABLE IF NOT EXISTS countries(
   country_id SERIAL,
   game_id INTEGER NOT NULL,
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS countries(
     REFERENCES games(game_id)
 );
 
---\echo 'Attempting to create country_histories table'
+\echo 'Attempting to create country_histories table'
 CREATE TABLE IF NOT EXISTS country_histories(
   country_history_id SERIAL,
   country_id INTEGER NOT NULL,
@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS country_histories(
 
 
 
---\echo 'Attempting to create alerts table'
+\echo 'Attempting to create alerts table'
 CREATE TABLE IF NOT EXISTS alerts(
   alert_id SERIAL,
   game_id INTEGER NOT NULL,
@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS alerts(
     REFERENCES games(game_id)
 );
 
---\echo 'Attempting to create alert_read_receipts table'
+\echo 'Attempting to create alert_read_receipts table'
 CREATE TABLE IF NOT EXISTS alert_read_receipts(
   alert_read_receipt_id SERIAL,
   alert_id INTEGER NOT NULL,
@@ -196,7 +196,7 @@ CREATE TABLE IF NOT EXISTS alert_read_receipts(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create provinces table'
+\echo 'Attempting to create provinces table'
 CREATE TABLE IF NOT EXISTS provinces(
   province_id SERIAL,
   game_id INTEGER NOT NULL,
@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS provinces(
     REFERENCES games(game_id)
 );
 
---\echo 'Attempting to create terrain table'
+\echo 'Attempting to create terrain table'
 CREATE TABLE IF NOT EXISTS terrain(
   terrain_id SERIAL,
   province_id INTEGER NOT NULL,
@@ -232,7 +232,7 @@ CREATE TABLE IF NOT EXISTS terrain(
     REFERENCES provinces(province_id)
 );
 
---\echo 'Attempting to create labels table'
+\echo 'Attempting to create labels table'
 CREATE TABLE IF NOT EXISTS labels(
   label_id SERIAL,
   province_id INTEGER NOT NULL,
@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS labels(
     REFERENCES provinces(province_id)
 );
 
---\echo 'Attempting to create label_lines table'
+\echo 'Attempting to create label_lines table'
 CREATE TABLE IF NOT EXISTS label_lines( -- NOT USED?!
   label_line_id SERIAL,
   province_id INTEGER NOT NULL,
@@ -261,7 +261,7 @@ CREATE TABLE IF NOT EXISTS label_lines( -- NOT USED?!
     REFERENCES provinces(province_id)
 );
 
---\echo 'Attempting to create province_histories table'
+\echo 'Attempting to create province_histories table'
 CREATE TABLE IF NOT EXISTS province_histories(
   province_history_id SERIAL,
   province_id INTEGER NOT NULL,
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS province_histories(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create nodes table'
+\echo 'Attempting to create nodes table'
 CREATE TABLE IF NOT EXISTS nodes(
   node_id SERIAL,
   province_id INTEGER NOT NULL,
@@ -297,7 +297,7 @@ CREATE TABLE IF NOT EXISTS nodes(
     REFERENCES provinces(province_id)
 );
 
---\echo 'Attempting to create node_adjacencies table'
+\echo 'Attempting to create node_adjacencies table'
 CREATE TABLE IF NOT EXISTS node_adjacencies(
   node_adjacency_id SERIAL,
   node_1_id INTEGER NOT NULL,
@@ -309,7 +309,7 @@ CREATE TABLE IF NOT EXISTS node_adjacencies(
     REFERENCES nodes(node_id)
 );
 
---\echo 'Attempting to create nominations table'
+\echo 'Attempting to create nominations table'
 CREATE TABLE IF NOT EXISTS nominations(
   nomination_id SERIAL,
   turn_id INTEGER NOT NULL,
@@ -336,7 +336,7 @@ CREATE TABLE IF NOT EXISTS nominations(
 --     REFERENCES countries(country_id)
 -- );
 
---\echo 'Attempting to create votes table'
+\echo 'Attempting to create votes table'
 CREATE TABLE IF NOT EXISTS votes(
   vote_id SERIAL,
   nomination_id INTEGER NOT NULL,
@@ -349,7 +349,7 @@ CREATE TABLE IF NOT EXISTS votes(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create units table'
+\echo 'Attempting to create units table'
 CREATE TABLE IF NOT EXISTS units(
   unit_id SERIAL,
   country_id INTEGER NOT NULL,
@@ -360,7 +360,7 @@ CREATE TABLE IF NOT EXISTS units(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create unit_histories table'
+\echo 'Attempting to create unit_histories table'
 CREATE TABLE IF NOT EXISTS unit_histories(
   unit_history_id SERIAL,
   unit_id INTEGER NOT NULL,
@@ -376,7 +376,7 @@ CREATE TABLE IF NOT EXISTS unit_histories(
     REFERENCES nodes(node_id)
 );
 
---\echo 'Attempting to create users table'
+\echo 'Attempting to create users table'
 CREATE TABLE IF NOT EXISTS users(
   user_id SERIAL,
   username VARCHAR(100) UNIQUE NOT NULL,
@@ -385,7 +385,7 @@ CREATE TABLE IF NOT EXISTS users(
   PRIMARY KEY(user_id)
 );
 
---\echo 'Attempting to create user_settings table'
+\echo 'Attempting to create user_settings table'
 CREATE TABLE IF NOT EXISTS user_settings(
   user_settings_id SERIAL,
   user_id INTEGER NOT NULL,
@@ -403,7 +403,7 @@ CREATE TABLE IF NOT EXISTS user_settings(
   FOREIGN KEY(user_id)
     REFERENCES users(user_id)
 );
---\echo 'Attempting to create user_details table'
+\echo 'Attempting to create user_details table'
 CREATE TABLE IF NOT EXISTS user_details(
   user_details_id SERIAL,
   user_id INTEGER NOT NULL,
@@ -423,7 +423,7 @@ CREATE TABLE IF NOT EXISTS user_details(
     REFERENCES users(user_id)
 );
 
---\echo 'Attempting to create providers table'
+\echo 'Attempting to create providers table'
 CREATE TABLE IF NOT EXISTS providers(
   provider_id SERIAL,
   user_id INTEGER NOT NULL,
@@ -441,7 +441,7 @@ CREATE TABLE IF NOT EXISTS providers(
     REFERENCES users(user_id)
 );
 
---\echo 'Attempting to create user_ratings table'
+\echo 'Attempting to create user_ratings table'
 CREATE TABLE IF NOT EXISTS user_ratings(
   user_rating_id SERIAL,
   rated_user_id INTEGER NOT NULL,
@@ -455,7 +455,7 @@ CREATE TABLE IF NOT EXISTS user_ratings(
     REFERENCES users(user_id)
 );
 
---\echo 'Attempting to create user_relationships table'
+\echo 'Attempting to create user_relationships table'
 CREATE TABLE IF NOT EXISTS user_relationships(
   user_relationship_id SERIAL,
   user_id INTEGER NOT NULL,
@@ -468,7 +468,7 @@ CREATE TABLE IF NOT EXISTS user_relationships(
     REFERENCES users(user_id)
 );
 
---\echo 'Attempting to create watched_countries table'
+\echo 'Attempting to create watched_countries table'
 CREATE TABLE IF NOT EXISTS watched_countries(
   watched_country_id SERIAL,
   user_id INTEGER NOT NULL,
@@ -481,7 +481,7 @@ CREATE TABLE IF NOT EXISTS watched_countries(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create user_reports table'
+\echo 'Attempting to create user_reports table'
 CREATE TABLE IF NOT EXISTS user_reports(
   report_id SERIAL,
   reporting_user_id INTEGER NOT NULL,
@@ -496,7 +496,7 @@ CREATE TABLE IF NOT EXISTS user_reports(
     REFERENCES users(user_id)
 );
 
---\echo 'Attempting to create assignments table'
+\echo 'Attempting to create assignments table'
 CREATE TABLE IF NOT EXISTS assignments(
   assignment_id SERIAL,
   user_id INTEGER NOT NULL,
@@ -520,14 +520,14 @@ CREATE TABLE IF NOT EXISTS assignments(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create message_groups table'
+\echo 'Attempting to create message_groups table'
 CREATE TABLE IF NOT EXISTS message_groups(
   message_group_id SERIAL,
   message_group_name VARCHAR(25),
   PRIMARY KEY(message_group_id)
 );
 
---\echo 'Attempting to create message_group_members table'
+\echo 'Attempting to create message_group_members table'
 CREATE TABLE IF NOT EXISTS message_group_members(
   message_group_member_id SERIAL,
   message_group_id INTEGER NOT NULL,
@@ -539,7 +539,7 @@ CREATE TABLE IF NOT EXISTS message_group_members(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create messages table'
+\echo 'Attempting to create messages table'
 CREATE TABLE IF NOT EXISTS messages(
   message_id SERIAL,
   sending_user_id INTEGER,
@@ -563,7 +563,7 @@ CREATE TABLE IF NOT EXISTS messages(
     REFERENCES message_groups(message_group_id)
 );
 
---\echo 'Attempting to create message_read_receipts table'
+\echo 'Attempting to create message_read_receipts table'
 CREATE TABLE IF NOT EXISTS message_read_receipts(
   message_read_receipt_id SERIAL,
   message_id INTEGER NOT NULL,
@@ -576,7 +576,7 @@ CREATE TABLE IF NOT EXISTS message_read_receipts(
     REFERENCES users(user_id)
 );
 
---\echo 'Attempting to create order_options table'
+\echo 'Attempting to create order_options table'
 CREATE TABLE IF NOT EXISTS order_options(
   order_option_id SERIAL,
   turn_id INTEGER NOT NULL,
@@ -594,7 +594,7 @@ CREATE TABLE IF NOT EXISTS order_options(
     REFERENCES units(unit_id)
 );
 
---\echo 'Attempting to create order_sets table'
+\echo 'Attempting to create order_sets table'
 CREATE TABLE IF NOT EXISTS order_sets(
   order_set_id SERIAL,
   country_id INTEGER NOT NULL,
@@ -635,7 +635,7 @@ CREATE TABLE IF NOT EXISTS order_sets(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create orders table'
+\echo 'Attempting to create orders table'
 CREATE TABLE IF NOT EXISTS orders(
   order_id SERIAL,
   order_set_id INTEGER NOT NULL,
@@ -661,7 +661,7 @@ CREATE TABLE IF NOT EXISTS orders(
     REFERENCES nodes(node_id)
 );
 
---\echo 'Attempting to create build_orders table'
+\echo 'Attempting to create build_orders table'
 CREATE TABLE IF NOT EXISTS build_orders(
   build_order_id SERIAL,
   order_set_id INTEGER NOT NULL,
@@ -677,7 +677,7 @@ CREATE TABLE IF NOT EXISTS build_orders(
     REFERENCES nodes(node_id)
 );
 
---\echo 'Attempting to create mad_conditions table'
+\echo 'Attempting to create mad_conditions table'
 CREATE TABLE IF NOT EXISTS mad_conditions(
   mad_condition_id SERIAL,
   order_set_id INTEGER NOT NULL,
@@ -696,7 +696,7 @@ CREATE TABLE IF NOT EXISTS mad_conditions(
     REFERENCES countries(country_id)
 );
 
---\echo 'Attempting to create indices'
+\echo 'Attempting to create indices'
 CREATE INDEX coalition_game_idx ON coalition_schedules(game_id);
 CREATE INDEX rule_in_game_core_idx ON rules_in_games(rule_id);
 CREATE INDEX rule_in_game_game_idx ON rules_in_games(game_id);
