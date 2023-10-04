@@ -381,7 +381,7 @@ CREATE TABLE IF NOT EXISTS users(
   user_id SERIAL,
   username VARCHAR(100) UNIQUE NOT NULL,
   username_locked BOOLEAN NOT NULL DEFAULT false,
-  signup_time TIMESTAMP NOT NULL
+  signup_time TIMESTAMP NOT NULL,
   PRIMARY KEY(user_id)
 );
 
