@@ -34,7 +34,7 @@ import {
 } from '../../models/objects/option-context-objects';
 import { OptionsFinal, BuildOptions, VotingOptions } from '../../models/objects/options-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
-import { terminalLog } from '../utils/general';
+import { terminalAddendum, terminalLog } from '../utils/general';
 import { AccountService } from './account-service';
 import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 
@@ -498,13 +498,13 @@ export class OptionsService {
 
     const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
       gameState.gameId,
-      gameState.turnNumber,
+      upcomingTurn.turnNumber,
       upcomingTurn.turnId
     );
 
     const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
       gameState.gameId,
-      gameState.turnNumber,
+      upcomingTurn.turnNumber,
       upcomingTurn.turnId
     );
 
@@ -554,9 +554,10 @@ export class OptionsService {
       db.ordersRepo.saveDefaultOrders(defaultOrders).then((success: any) => {
         db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
       });
+      terminalAddendum('Default Orders Saved', `${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`);
     } else {
-      terminalLog(
-        `Process Failure | No Default Orders: ${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`
+      terminalAddendum(
+        `Process Failure`, `No Default Orders: ${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`
       );
     }
   }

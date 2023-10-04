@@ -225,10 +225,11 @@ export class SchedulerService {
     pendingTurns.
       forEach(async (turn: UpcomingTurn) => {
         if (Date.parse(turn.deadline) < Date.now()) {
+          terminalAddendum(`Deadlines`, `${turn.deadline} has passed. Resolving.`);
           resolutionService.resolveTurn(turn);
-          console.log(`Deadline ${turn.deadline} in past: true`);
+
         } else {
-          console.log(`Deadline ${turn.deadline} in past: false`);
+          terminalAddendum(`Deadlines`, `${turn.deadline} is in the future. Scheduling.`);
           schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
             resolutionService.resolveTurn(turn);
           });

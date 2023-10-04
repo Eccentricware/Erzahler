@@ -15,9 +15,10 @@ ordersRouter.get(`/:gameId/orders`, (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const gameId = Number(request.params.gameId);
 
-  ordersService.getTurnOrders(idToken, gameId).then((orders: TurnOrders) => {
-    response.send(orders);
-  });
+  ordersService.getTurnOrders(idToken, gameId)
+    .then((orders: TurnOrders) => {
+      response.send(orders);
+    });
 });
 
 ordersRouter.post(`/submit`, (request, response) => {

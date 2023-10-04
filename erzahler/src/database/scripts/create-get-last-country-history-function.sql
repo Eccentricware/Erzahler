@@ -9,14 +9,21 @@ CREATE OR REPLACE FUNCTION get_last_country_history(
 )
 RETURNS TABLE(country_id INTEGER, turn_id INTEGER, turn_number INTEGER)
 AS $$
-	SELECT ch.country_id,
-		ch.turn_id,
-		MAX(t.turn_number) AS turn_number
-	FROM country_histories ch
-	INNER JOIN turns t ON t.turn_id = ch.turn_id
+
+	WITH last_turn_number AS (
+		SELECT ch.country_id,
+			MAX(t.turn_number) AS turn_number
+		FROM country_histories ch
+		INNER JOIN turns t ON t.turn_id = ch.turn_id
+		WHERE t.game_id = $1
+			AND t.turn_number <= $2
+		GROUP BY ch.country_id
+	)
+	SELECT ltn.country_id,
+		t.turn_id,
+		t.turn_number
+	FROM turns t
+	INNER JOIN last_turn_number ltn ON ltn.turn_number = t.turn_number
 	WHERE t.game_id = $1
-		AND t.turn_number <= $2
-	GROUP BY ch.country_id,
-		ch.turn_id
 
 $$ LANGUAGE SQL;

@@ -4,6 +4,7 @@ export const getGameStatsQuery = `
     c.rank,
     ch.city_count,
     ch.vote_count,
+    ch.banked_builds,
     ch.nuke_range,
     ch.adjustments
   FROM get_last_country_history($1, $2) lch

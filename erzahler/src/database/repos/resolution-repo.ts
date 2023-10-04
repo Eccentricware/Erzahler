@@ -104,7 +104,7 @@ export class ResolutionRepository {
     });
 
     const query = this.pgp.helpers.insert(unitHistoryValues, this.unitHistoryCols);
-    this.db.query(query).catch((error: Error) => {
+    this.db.none(query).catch((error: Error) => {
       terminalLog('Insert Unit Histories Error: ' + error.message);
     });
   }

@@ -1,3 +1,4 @@
+// For first turn
 export const insertTurnQuery = `
   INSERT INTO turns (
     game_id,
@@ -16,4 +17,24 @@ export const insertTurnQuery = `
     $5
   FROM games g
   WHERE g.game_name = $6
+`;
+
+export const insertNextTurnQuery = `
+  INSERT INTO turns (
+    game_id,
+    turn_number,
+    turn_name,
+    turn_type,
+    year_number,
+    turn_status,
+    deadline
+  ) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7
+  ) returning turn_id;
 `;
