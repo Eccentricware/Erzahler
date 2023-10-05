@@ -1,3 +1,4 @@
+import { CountryStatus } from '../enumeration/country-enum';
 import { BuildType } from '../enumeration/unit-enum';
 import { BuildLoc, NominatableCountry } from './option-context-objects';
 
@@ -71,11 +72,26 @@ export interface TransferCountry {
   countryId: number;
   countryName: string;
 }
-export interface TransferBuildOrdersResults {
-  player_country_id: number;
-  player_country_name: string;
-  build_transfer_recipients: TransferCountryResult[];
-  build_transfer_tuples: number[];
+export interface TransferBuildOrderResult {
+  order_transfer_id: number;
+  order_set_id: number;
+  country_id: number;
+  country_name: string;
+  tech_partner_id: number;
+  tech_partner_name: string;
+  quantity: number;
+  ui_row: number;
+}
+
+export interface TransferBuildOrder {
+  orderTransferId: number;
+  orderSetId: number;
+  countryId: number;
+  countryName: string;
+  techPartnerId: number;
+  techPartnerName: string;
+  quantity: number;
+  uiRow: number;
 }
 
 export interface TransferCountryResult {
@@ -83,24 +99,23 @@ export interface TransferCountryResult {
   country_name: string;
 }
 
-export interface TransferBuildOrder {
-  playerCountryId: number;
-  playerCountryName: string;
-  countryId: number;
-  countryName: string;
-  builds: number;
-}
-
 export interface TransferTechOrderResult {
+  order_transfer_id: number;
+  order_set_id: number;
   country_id: number;
   country_name: string;
+  country_status: CountryStatus;
   tech_partner_id: number;
   tech_partner_name: string;
   has_nukes: boolean;
+  success: boolean;
 }
 export interface TransferTechOrder {
+  orderTransferId: number;
+  orderSetId: number;
   countryId: number;
   countryName: string;
+  // countryStatus: CountryStatus;
   techPartnerId: number;
   techPartnerName: string;
   hasNukes: boolean;

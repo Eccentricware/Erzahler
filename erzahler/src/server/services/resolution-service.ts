@@ -4,16 +4,9 @@ import {
   CountryStatCounts,
   DbStates,
   DbUpdates,
-  GameRow,
-  OrderRow,
-  OrderSetRow,
   ProvinceHistoryRow,
-  TurnRow,
-  UnitHistoryRow,
-  UnitRow
+  UnitHistoryRow
 } from '../../database/schema/table-fields';
-import { CountryStatus } from '../../models/enumeration/country-enum';
-import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { OrderStatus } from '../../models/enumeration/order-status-enum';
 import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration/province-enums';
@@ -21,8 +14,6 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 import { TurnTS } from '../../models/objects/database-objects';
-import { GameSchedule, StartSchedule } from '../../models/objects/games/game-schedule-objects';
-import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
@@ -40,12 +31,11 @@ import {
   TransferResources,
   TransportAttempt,
   TransportNetworkUnit,
-  UnitMovementResults,
   UnitOrderGroups,
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
-import { formatTurnName, terminalLog } from '../utils/general';
+import { formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
 import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
@@ -114,7 +104,7 @@ export class ResolutionService {
   }
 
   async resolveOrdersAndVotes(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Orders and Votes resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Orders and Votes resolution, which is not yet implemented`);
   }
 
   async resolveSpringOrders(turn: UpcomingTurn): Promise<void> {
@@ -225,19 +215,21 @@ export class ResolutionService {
       }
     });
 
+    const stateUpdatePromises: Promise<any | void>[] = [];
+
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
-      db.resolutionRepo.updateOrders(dbUpdates.orders);
+      stateUpdatePromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
     }
 
     if (dbUpdates.unitHistories.length > 0) {
       console.log('DB: Unit History Insert');
-      await db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId);
+      stateUpdatePromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
     }
 
     if (dbUpdates.provinceHistories.length > 0) {
       console.log('DB: Province History Insert');
-      await db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId);
+      stateUpdatePromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
     }
 
     const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, gameState.turnNumber);
@@ -267,68 +259,83 @@ export class ResolutionService {
     });
 
     if (Object.keys(dbUpdates.countryHistories).length > 0) {
-      console.log('DB: Country History Insert');
-      await db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId);
+      stateUpdatePromises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
     }
 
     // Every turn
-    console.log('DB: Order Set Update');
-    await db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId);
+    stateUpdatePromises.push(db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId));
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
-    await db.resolutionRepo.resolveTurn(turn.turnId);
+    stateUpdatePromises.push(db.resolutionRepo.resolveTurn(turn.turnId));
 
     // Next turns needs to know retreats after resolution
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
 
-    if (gameState.preliminaryTurnId) {
-      // Convert preliminary to pending
-      console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`);
-      db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId);
+    Promise.all(stateUpdatePromises)
+      .then(async () => {
+        if (gameState.preliminaryTurnId) {
+          // Convert preliminary to pending
+          console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`);
+          db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId)
+            .then(async () => {
+              terminalLog('Triggering next turn defaults');
+              this.optionsService.saveDefaultOrders(gameState.gameId);
+            });
 
-    } else {
-      // Find next turn
-      console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
-      db.gameRepo.insertTurn([
-        gameState.gameId,
-        nextTurns.pending.deadline,
-        nextTurns.pending.turnName,
-        nextTurns.pending.type,
-        TurnStatus.PENDING
-      ]);
-    }
+        } else {
+          // Find next turn
+          console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
+          db.gameRepo.insertNextTurn([
+            gameState.gameId,
+            nextTurns.pending.turnNumber,
+            nextTurns.pending.turnName,
+            nextTurns.pending.type,
+            nextTurns.pending.yearNumber,
+            TurnStatus.PENDING,
+            nextTurns.pending.deadline
+          ])
+          .then(async (result) => {
+            terminalLog('Saving options for next turn');
 
-    terminalLog('Triggering next turn defaults');
-    this.optionsService.saveDefaultOrders(gameState.gameId);
+            await this.optionsService.saveOptionsForNextTurn(gameState.gameId, result.turn_id)
+              .then(() => {
+                terminalLog('Triggering next turn defaults');
+                this.optionsService.saveDefaultOrders(gameState.gameId);
+              });
+          });
+        }
+      });
+
+
   }
 
   async resolveSpringRetreats(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Spring Retreats resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Spring Retreats resolution, which is not yet implemented`);
   }
 
   async resolveFallOrders(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Fall Orders resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Fall Orders resolution, which is not yet implemented`);
   }
 
   async resolveFallRetreats(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Fall Retreats resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Fall Retreats resolution, which is not yet implemented`);
   }
 
   async resolveAdjustments(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Adjustments resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Adjustments resolution, which is not yet implemented`);
   }
 
   async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`);
   }
 
   async resolveNominations(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Nominations resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Nominations resolution, which is not yet implemented`);
   }
 
   async resolveVotes(turn: UpcomingTurn): Promise<void> {
-    terminalLog(`Game ${turn.gameId} has triggered Votes resolution, which is not yet implemented`);
+    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Votes resolution, which is not yet implemented`);
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
@@ -1039,8 +1046,6 @@ export class ResolutionService {
       }
     };
     transferResources.techTransferResults = await this.validateTechTransfers(
-      gameState.gameId,
-      gameState.turnNumber,
       turn.turnId,
       transferResources
     );
@@ -1049,17 +1054,10 @@ export class ResolutionService {
   }
 
   async validateTechTransfers(
-    gameId: number,
-    turnNumber: number,
     orderTurnId: number,
     transferResources: TransferResources
   ): Promise<TransferTechOrder[]> {
-    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-      gameId,
-      turnNumber,
-      orderTurnId,
-      0
-    );
+    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(orderTurnId, 0);
 
     techTransferOrders.forEach((order: TransferTechOrder) => {
       const partnerCountry = techTransferOrders.find(

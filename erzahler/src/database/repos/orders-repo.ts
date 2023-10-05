@@ -1,5 +1,5 @@
 import { Pool, QueryResult } from 'pg';
-import { ColumnSet, IDatabase, IMain } from 'pg-promise';
+import { ColumnSet, IDatabase, IMain, ParameterizedQuery } from 'pg-promise';
 import { BuildType } from '../../models/enumeration/unit-enum';
 import {
   NominatableCountry,
@@ -13,7 +13,6 @@ import {
 import { TransferBuildsCountry } from '../../models/objects/options-objects';
 import {
   TransferBuildOrder,
-  TransferBuildOrdersResults,
   TransferTechOrder,
   TransferTechOrderResult,
   BuildOrders,
@@ -25,7 +24,8 @@ import {
   NukeBuildInDisband,
   DisbandingUnitDetail,
   DisbandingUnitDetailResult,
-  BuildResult
+  BuildResult,
+  TransferBuildOrderResult
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, CountryOrderSetsResult } from '../../models/objects/orders/expected-order-types-object';
 import { envCredentials } from '../../secrets/dbCredentials';
@@ -42,7 +42,7 @@ import { getVotesOrdersQuery } from '../queries/orders/orders-final/get-votes-or
 import { saveBuildOrdersQuery } from '../queries/orders/orders-final/save-build-orders-query';
 import { saveDisbandOrdersQuery } from '../queries/orders/orders-final/save-disband-orders-query';
 import { saveNominationQuery } from '../queries/orders/orders-final/save-nomination-query';
-import { saveTransferOrdersQuery } from '../queries/orders/orders-final/save-transfer-orders-query';
+import { insertTechTransferOrdersQuery, updateTechTransferOrdersQuery } from '../queries/orders/orders-final/save-transfer-orders-query';
 import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-order-query';
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
@@ -151,43 +151,41 @@ export class OrdersRepository {
   }
 
   async getBuildTransferOrders(countryId: number, turnId: number): Promise<TransferBuildOrder[]> {
-    const transferBuildOrderResults: TransferBuildOrdersResults[] = await this.pool
+    const transferBuildOrders: TransferBuildOrder[] = await this.pool
       .query(getBuildTransferOrdersQuery, [turnId, countryId])
-      .then((result: QueryResult) => result.rows);
-
-    const transferBuildOrders: TransferBuildOrder[] = [];
-    transferBuildOrderResults.forEach((result: TransferBuildOrdersResults) => {
-      const tuples = result.build_transfer_tuples;
-      const recipients: TransferCountryResult[] = result.build_transfer_recipients;
-
-      for (let index = 0; index < tuples.length; index += 2) {
-        const recipient = recipients.find((country: TransferCountryResult) => country.country_id === tuples[index]);
-        if (recipient) {
-          transferBuildOrders.push({
-            playerCountryId: result.player_country_id,
-            playerCountryName: result.player_country_name,
-            countryId: recipient.country_id,
-            countryName: recipient.country_name,
-            builds: tuples[index + 1]
-          });
-        }
-      }
-    });
+      .then((result: QueryResult<TransferBuildOrderResult>) => result.rows.map((order: TransferBuildOrderResult) => {
+        return <TransferBuildOrder> {
+          orderTransferId: order.order_transfer_id,
+          orderSetId: order.order_set_id,
+          countryId: order.country_id,
+          countryName: order.country_name,
+          techPartnerId: order.tech_partner_id,
+          techPartnerName: order.tech_partner_name,
+          quantity: order.quantity,
+          uiRow: order.ui_row
+        };
+      }));
 
     return transferBuildOrders;
   }
 
+  /**
+   * Retrieves tech transfer partners for a given country
+   * @param orderTurnId
+   * @param countryId
+   * @returns
+   */
   async getTechTransferPartner(
-    gameId: number,
-    turnNumber: number,
     orderTurnId: number,
     countryId: number
   ): Promise<TransferTechOrder[]> {
-    return await this.pool
-      .query(getTechTransferOrderQuery, [gameId, turnNumber, orderTurnId, countryId])
+    const techTransferPartners = await this.pool
+      .query(getTechTransferOrderQuery, [orderTurnId, countryId])
       .then((result: QueryResult) =>
         result.rows.map((order: TransferTechOrderResult) => {
-          return <TransferTechOrder>{
+          return <TransferTechOrder> {
+            orderTransferId: order.order_transfer_id,
+            orderSetId: order.order_set_id,
             countryId: order.country_id,
             countryName: order.country_name,
             techPartnerId: order.tech_partner_id,
@@ -197,6 +195,21 @@ export class OrdersRepository {
           };
         })
       );
+
+    return techTransferPartners.length === 0
+      ? [
+          <TransferTechOrder> {
+            orderTransferId: 0,
+            orderSetId: 0,
+            countryId: countryId,
+            countryName: '',
+            techPartnerId: 0,
+            techPartnerName: 'No Tech Transfer Partner',
+            hasNukes: false,
+            success: false
+          }
+        ]
+      : techTransferPartners;
   }
 
   async getBuildOrders(
@@ -301,27 +314,53 @@ export class OrdersRepository {
       .catch((error: Error) => terminalLog(`saveBuildOrder (${build.nodeId}) error: ${error.message}`));
   }
 
-  async saveTransfers(
-    orderSetId: number,
-    techTransfer: TransferTechOrder,
-    buildTransfers: TransferBuildsCountry[]
-  ): Promise<void> {
-    const buildRecipients: number[] = [];
-    const tupleizedBuildRecipients: number[] = [];
+  // async saveTransfers(
+  //   orderSetId: number,
+  //   techTransfer: TransferTechOrder,
+  //   buildTransfers: TransferBuildsCountry[]
+  // ): Promise<void> {
+  //   const buildRecipients: number[] = [];
+  //   const tupleizedBuildRecipients: number[] = [];
 
-    buildTransfers.forEach((transfer: TransferBuildsCountry) => {
-      buildRecipients.push(transfer.countryId);
-      tupleizedBuildRecipients.push(transfer.countryId, transfer.builds);
+  //   buildTransfers.forEach((transfer: TransferBuildsCountry) => {
+  //     buildRecipients.push(transfer.countryId);
+  //     tupleizedBuildRecipients.push(transfer.countryId, transfer.builds);
+  //   });
+
+  //   await this.pool
+  //     .query(saveTransferOrdersQuery, [
+  //       techTransfer.techPartnerId,
+  //       buildRecipients,
+  //       tupleizedBuildRecipients,
+  //       orderSetId
+  //     ])
+  //     .catch((error: Error) => terminalLog('saveTransfers error: ' + error.message));
+  // }
+
+  async saveTechTransfer(orderSetId: number, techTransfer: TransferTechOrder): Promise<void> {
+    const updateOrderPQ = new ParameterizedQuery({
+      text: updateTechTransferOrdersQuery,
+      values: [
+        techTransfer.techPartnerId,
+        techTransfer.techPartnerName,
+        orderSetId
+      ]
     });
 
-    await this.pool
-      .query(saveTransferOrdersQuery, [
-        techTransfer.techPartnerId,
-        buildRecipients,
-        tupleizedBuildRecipients,
-        orderSetId
-      ])
-      .catch((error: Error) => terminalLog('saveTransfers error: ' + error.message));
+    const updatedOrder = await this.db.oneOrNone(updateOrderPQ);
+
+    if (!updatedOrder) {
+      const insertOrderPQ = new ParameterizedQuery({
+        text: insertTechTransferOrdersQuery,
+        values: [
+          orderSetId,
+          techTransfer.techPartnerId,
+          techTransfer.techPartnerName
+        ]
+      });
+
+      await this.db.none(insertOrderPQ);
+    }
   }
 
   async saveBuildOrders(orderSetId: number, builds: BuildOrders): Promise<void> {
