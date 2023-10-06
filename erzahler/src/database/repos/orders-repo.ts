@@ -42,7 +42,7 @@ import { getVotesOrdersQuery } from '../queries/orders/orders-final/get-votes-or
 import { saveBuildOrdersQuery } from '../queries/orders/orders-final/save-build-orders-query';
 import { saveDisbandOrdersQuery } from '../queries/orders/orders-final/save-disband-orders-query';
 import { saveNominationQuery } from '../queries/orders/orders-final/save-nomination-query';
-import { insertTechTransferOrdersQuery, updateTechTransferOrdersQuery } from '../queries/orders/orders-final/save-transfer-orders-query';
+import { clearBuildTransferOrdersQuery, insertTechTransferOrdersQuery, updateTechTransferOrdersQuery } from '../queries/orders/orders-final/save-transfer-orders-query';
 import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-order-query';
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
@@ -59,7 +59,14 @@ export class OrdersRepository {
    */
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.orderSetCols = new pgp.helpers.ColumnSet(
-      ['country_id', 'turn_id', 'message_id', 'submission_time', 'order_set_type', 'order_set_name'],
+      [
+        'country_id',
+        'turn_id',
+        'message_id',
+        'submission_time',
+        'order_set_type',
+        'order_set_name'
+      ],
       { table: 'order_sets' }
     );
 
@@ -86,7 +93,7 @@ export class OrdersRepository {
         destination_id: order.destinationId,
         secondary_unit_id: undefined,
         order_status: 'Default',
-        order_success: undefined
+        order_success: false
       };
     });
 
@@ -94,7 +101,115 @@ export class OrdersRepository {
     return this.db.query(query).catch((error: Error) => terminalLog('saveDefaultOrders error: ' + error.message));
   }
 
-  //// Legacy Functions ////
+  async saveTechTransfer(orderSetId: number, techTransfer: TransferTechOrder): Promise<void> {
+    const updateOrderPQ = new ParameterizedQuery({
+      text: updateTechTransferOrdersQuery,
+      values: [
+        techTransfer.techPartnerId,
+        techTransfer.techPartnerName,
+        orderSetId
+      ]
+    });
+
+    const updatedOrder = await this.db.oneOrNone(updateOrderPQ);
+
+    if (!updatedOrder) {
+      const insertOrderPQ = new ParameterizedQuery({
+        text: insertTechTransferOrdersQuery,
+        values: [
+          orderSetId,
+          techTransfer.techPartnerId,
+          techTransfer.techPartnerName
+        ]
+      });
+
+      await this.db.none(insertOrderPQ);
+    }
+  }
+
+  async saveBuildTransfers(orderSetId: number, buildsTransferred: TransferBuildOrder[]): Promise<void> {
+    const clearExtraPQ = new ParameterizedQuery({
+      text: clearBuildTransferOrdersQuery,
+      values: [orderSetId]
+    });
+
+    this.db.none(clearExtraPQ)
+      .then(async () => {
+        const values: any[] = [];
+
+        buildsTransferred.forEach((buildTransfer: TransferBuildOrder, index: number) => {
+          if (buildTransfer.foreignCountryId !== 0) {
+            values.push({
+              order_set_id: orderSetId,
+              order_type: 1,
+              foreign_country_id: buildTransfer.foreignCountryId,
+              foreign_country_name: buildTransfer.foreignCountryName,
+              quantity: buildTransfer.quantity,
+              ui_row: index + 1,
+              success: false
+            });
+          }
+        });
+
+        const query = this.pgp.helpers.insert(values, this.orderTransferCols);
+        return this.db.query(query)
+          .catch((error: Error) => terminalLog('saveBuildTransfers error: ' + error.message));
+      });
+  }
+
+  //////////////////// Helper Functions ////////////////////
+
+  resolveBuildType(buildTypeId: number): BuildType {
+    switch (buildTypeId) {
+      case -3:
+        return BuildType.NUKE_START;
+      case -2:
+        return BuildType.RANGE;
+      case -1:
+        return BuildType.DISBAND;
+      case 0:
+        return BuildType.BUILD;
+      case 1:
+        return BuildType.ARMY;
+      case 2:
+        return BuildType.FLEET;
+      case 3:
+        return BuildType.WING;
+      case 4:
+        return BuildType.NUKE_RUSH;
+      case 5:
+        return BuildType.NUKE_FINISH;
+      default:
+        return BuildType.BUILD;
+    }
+  }
+
+  resolveTypeId(buildType: BuildType): number {
+    switch (buildType) {
+      case BuildType.NUKE_START:
+        return -3;
+      case BuildType.RANGE:
+        return -2;
+      case BuildType.DISBAND:
+        return -1;
+      case BuildType.BUILD:
+        return 0;
+      case BuildType.ARMY:
+        return 1;
+      case BuildType.FLEET:
+        return 2;
+      case BuildType.WING:
+        return 3;
+      case BuildType.NUKE_RUSH:
+        return 4;
+      case BuildType.NUKE_FINISH:
+        return 5;
+      default:
+        return NaN;
+    }
+  }
+
+  //////////////////// Legacy Functions ////////////////////
 
   async insertTurnOrderSets(gameId: number, turnNumber: number, nextTurnId: number): Promise<OrderSet[]> {
     const orderSets: OrderSet[] = await this.pool
@@ -314,54 +429,7 @@ export class OrdersRepository {
       .catch((error: Error) => terminalLog(`saveBuildOrder (${build.nodeId}) error: ${error.message}`));
   }
 
-  // async saveTransfers(
-  //   orderSetId: number,
-  //   techTransfer: TransferTechOrder,
-  //   buildTransfers: TransferBuildsCountry[]
-  // ): Promise<void> {
-  //   const buildRecipients: number[] = [];
-  //   const tupleizedBuildRecipients: number[] = [];
 
-  //   buildTransfers.forEach((transfer: TransferBuildsCountry) => {
-  //     buildRecipients.push(transfer.countryId);
-  //     tupleizedBuildRecipients.push(transfer.countryId, transfer.builds);
-  //   });
-
-  //   await this.pool
-  //     .query(saveTransferOrdersQuery, [
-  //       techTransfer.techPartnerId,
-  //       buildRecipients,
-  //       tupleizedBuildRecipients,
-  //       orderSetId
-  //     ])
-  //     .catch((error: Error) => terminalLog('saveTransfers error: ' + error.message));
-  // }
-
-  async saveTechTransfer(orderSetId: number, techTransfer: TransferTechOrder): Promise<void> {
-    const updateOrderPQ = new ParameterizedQuery({
-      text: updateTechTransferOrdersQuery,
-      values: [
-        techTransfer.techPartnerId,
-        techTransfer.techPartnerName,
-        orderSetId
-      ]
-    });
-
-    const updatedOrder = await this.db.oneOrNone(updateOrderPQ);
-
-    if (!updatedOrder) {
-      const insertOrderPQ = new ParameterizedQuery({
-        text: insertTechTransferOrdersQuery,
-        values: [
-          orderSetId,
-          techTransfer.techPartnerId,
-          techTransfer.techPartnerName
-        ]
-      });
-
-      await this.db.none(insertOrderPQ);
-    }
-  }
 
   async saveBuildOrders(orderSetId: number, builds: BuildOrders): Promise<void> {
     const buildLocs: number[] = [];
@@ -437,55 +505,5 @@ export class OrdersRepository {
     await this.pool
       .query('UPDATE order_sets SET submission_time = NOW() WHERE order_set_id = $1', [orderSetId])
       .catch((error: Error) => terminalLog('updateOrderSubmissionTime error: ' + error.message));
-  }
-
-  resolveBuildType(buildTypeId: number): BuildType {
-    switch (buildTypeId) {
-      case -3:
-        return BuildType.NUKE_START;
-      case -2:
-        return BuildType.RANGE;
-      case -1:
-        return BuildType.DISBAND;
-      case 0:
-        return BuildType.BUILD;
-      case 1:
-        return BuildType.ARMY;
-      case 2:
-        return BuildType.FLEET;
-      case 3:
-        return BuildType.WING;
-      case 4:
-        return BuildType.NUKE_RUSH;
-      case 5:
-        return BuildType.NUKE_FINISH;
-      default:
-        return BuildType.BUILD;
-    }
-  }
-
-  resolveTypeId(buildType: BuildType): number {
-    switch (buildType) {
-      case BuildType.NUKE_START:
-        return -3;
-      case BuildType.RANGE:
-        return -2;
-      case BuildType.DISBAND:
-        return -1;
-      case BuildType.BUILD:
-        return 0;
-      case BuildType.ARMY:
-        return 1;
-      case BuildType.FLEET:
-        return 2;
-      case BuildType.WING:
-        return 3;
-      case BuildType.NUKE_RUSH:
-        return 4;
-      case BuildType.NUKE_FINISH:
-        return 5;
-      default:
-        return NaN;
-    }
   }
 }

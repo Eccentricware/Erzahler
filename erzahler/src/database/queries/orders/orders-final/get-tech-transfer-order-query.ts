@@ -5,8 +5,8 @@ export const getTechTransferOrderQuery = `
     c.country_id,
     c.country_name,
     --ch.country_status,
-    ot.foreign_country_id tech_partner_id,
-    ot.foreign_country_name tech_partner_name,
+    ot.foreign_country_id,
+    ot.foreign_country_name,
     --CASE WHEN ch.nuke_range IS NOT NULL THEN true ELSE false END has_nukes
     ot.success
   FROM orders_transfers ot
