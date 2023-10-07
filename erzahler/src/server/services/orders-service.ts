@@ -506,7 +506,7 @@ export class OrdersService {
       }
 
       if (orderSetIds.transfers && orders.techTransfer) {
-        // await db.ordersRepo.saveTechTransfer(orderSetIds.transfers, orders.techTransfer);
+        await db.ordersRepo.saveTechTransfer(orderSetIds.transfers, orders.techTransfer);
       }
 
       if (orderSetIds.transfers && orders.buildTransfers) {

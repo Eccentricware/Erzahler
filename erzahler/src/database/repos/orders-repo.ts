@@ -105,8 +105,8 @@ export class OrdersRepository {
     const updateOrderPQ = new ParameterizedQuery({
       text: updateTechTransferOrdersQuery,
       values: [
-        techTransfer.techPartnerId,
-        techTransfer.techPartnerName,
+        techTransfer.foreignCountryId,
+        techTransfer.foreignCountryName,
         orderSetId
       ]
     });
@@ -118,8 +118,8 @@ export class OrdersRepository {
         text: insertTechTransferOrdersQuery,
         values: [
           orderSetId,
-          techTransfer.techPartnerId,
-          techTransfer.techPartnerName
+          techTransfer.foreignCountryId,
+          techTransfer.foreignCountryName
         ]
       });
 
