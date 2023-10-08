@@ -73,23 +73,23 @@ export interface TransferCountry {
   countryName: string;
 }
 export interface TransferBuildOrderResult {
-  order_transfer_id: number;
+  build_transfer_order_id: number;
   order_set_id: number;
   country_id: number;
   country_name: string;
-  tech_partner_id: number;
-  tech_partner_name: string;
+  recipient_id: number;
+  recipient_name: string;
   quantity: number;
   ui_row: number;
 }
 
 export interface TransferBuildOrder {
-  orderTransferId: number;
+  buildTransferOrderId: number;
   orderSetId: number;
   countryId: number;
   countryName: string;
-  techPartnerId: number;
-  techPartnerName: string;
+  recipientId: number;
+  recipientName: string;
   quantity: number;
   uiRow: number;
 }

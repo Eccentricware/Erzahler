@@ -1,28 +1,26 @@
 export const clearBuildTransferOrdersQuery = `
-  DELETE FROM orders_transfers
+  DELETE FROM orders_transfer_builds
   WHERE order_set_id = $1
-    AND order_type = 1;
 `;
 
 export const insertBuildTransferOrdersQuery = `
-  INSERT INTO orders_transfers (
+  INSERT INTO orders_transfer_builds (
     order_set_id,
-    order_type,
-    foreign_country_id,
-    foreign_country_name,
+    recipient_id,
+    recipient_name,
     quantity,
     ui_row
   ) VALUES (
     $1,
-    2,
-    $2::INTEGER,
-    CASE
-      WHEN $2::INTEGER = NULL THEN $3
-      WHEN $2::INTEGER = 0 THEN '--Do Not Offer Tech--'
-      ELSE (SELECT country_name FROM countries WHERE country_id = $2::INTEGER)
-    END,
-    $3,
-    $4
+    $2,
+    (SELECT country_name FROM countries WHERE country_id = $2),
+    --CASE
+    --  WHEN $2 IS NULL THEN $3
+    --  --WHEN $2 = 0 THEN '--Do Not Offer Tech--'
+    --  ELSE (SELECT country_name FROM countries WHERE country_id = $2)
+   -- END,
+    $4,
+    $5
   );
 `;
 
