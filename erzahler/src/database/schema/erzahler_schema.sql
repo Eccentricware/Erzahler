@@ -662,16 +662,32 @@ CREATE TABLE IF NOT EXISTS orders(
 );
 
 --\echo 'Attempting to create orders_transfers table'
-CREATE TABLE IF NOT EXISTS orders_transfers(
-  order_transfer_id SERIAL,
+CREATE TABLE IF NOT EXISTS orders_transfer_builds(
+  build_transfer_order_id SERIAL,
   order_set_id INTEGER NOT NULL,
-  order_type INTEGER NOT NULL, --1: banked_transfer, 2: tech_transfer
   quantity INTEGER,
+  recipient_id INTEGER, --Can be null because SOMEDAY manual entry will be thing
+  recipient_name VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW
+  ui_row INTEGER, -- Maintains arbitrary ordering from browser, controls DB bloat
+  description VARCHAR(255),
+  resolution VARCHAR(255),
+  success BOOLEAN,
+  PRIMARY KEY(build_transfer_order_id),
+  FOREIGN KEY(order_set_id)
+    REFERENCES order_sets(order_set_id)
+);
+
+--\echo 'Attempting to create orders_transfers table'
+CREATE TABLE IF NOT EXISTS orders_transfer_tech(
+  tech_transfer_order_id SERIAL,
+  order_set_id INTEGER NOT NULL,
+  offering BOOLEAN NOT NULL DEFAULT false,
   foreign_country_id INTEGER, --Can be null because SOMEDAY manual entry will be thing
   foreign_country_name VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW
-  ui_row INTEGER, -- Maintains arbitrary ordering from browser, controls DB bloat
+  description VARCHAR(255),
+  resolution VARCHAR(255),
   success BOOLEAN,
-  PRIMARY KEY(order_transfer_id),
+  PRIMARY KEY(tech_transfer_order_id),
   FOREIGN KEY(order_set_id)
     REFERENCES order_sets(order_set_id)
 );

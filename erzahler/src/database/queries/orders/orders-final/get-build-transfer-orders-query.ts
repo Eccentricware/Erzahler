@@ -4,8 +4,8 @@ export const getBuildTransferOrdersQuery = `
     os.order_set_id,
     c.country_id,
     c.country_name,
-    ot.foreign_country_id tech_partner_id,
-    ot.foreign_country_name tech_partner_name,
+    ot.foreign_country_id,
+    ot.foreign_country_name,
     ot.quantity,
     ot.ui_row
   FROM orders_transfers ot

@@ -128,17 +128,17 @@ export class OrdersService {
 
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            pendingTurn.turnId,
-            playerCountry.countryId
-          );
-          orders.techTransfer = techTransferOrders[0];
+          // const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
+          //   pendingTurn.turnId,
+          //   playerCountry.countryId
+          // );
+          // orders.techTransfer = techTransferOrders[0];
 
-          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
-            playerCountry.countryId,
-            pendingTurn.turnId
-          );
-          orders.buildTransfers = pendingBuildTransferOrders;
+          // const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
+          //   playerCountry.countryId,
+          //   pendingTurn.turnId
+          // );
+          // orders.buildTransfers = pendingBuildTransferOrders;
         }
 
         // Adjustments
@@ -194,17 +194,17 @@ export class OrdersService {
 
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
-          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            preliminaryTurn.turnId,
-            playerCountry.countryId
-          );
-          orders.techTransfer = techTransferOrders[0];
+          // const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
+          //   preliminaryTurn.turnId,
+          //   playerCountry.countryId
+          // );
+          // orders.techTransfer = techTransferOrders[0];
 
-          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
-            playerCountry.countryId,
-            preliminaryTurn.turnId
-          );
-          orders.buildTransfers = pendingBuildTransferOrders;
+          // const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
+          //   playerCountry.countryId,
+          //   preliminaryTurn.turnId
+          // );
+          // orders.buildTransfers = pendingBuildTransferOrders;
         }
 
         // Adjustments
@@ -314,17 +314,17 @@ export class OrdersService {
 
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            pendingTurn.turnId,
-            playerCountry.countryId
-          );
-          orders.techTransfer = techTransferOrders[0];
+          // const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
+          //   pendingTurn.turnId,
+          //   playerCountry.countryId
+          // );
+          // orders.techTransfer = techTransferOrders[0];
 
-          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
-            playerCountry.countryId,
-            pendingTurn.turnId
-          );
-          orders.buildTransfers = pendingBuildTransferOrders;
+          // const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
+          //   playerCountry.countryId,
+          //   pendingTurn.turnId
+          // );
+          // orders.buildTransfers = pendingBuildTransferOrders;
         }
 
         // Adjustments
@@ -373,17 +373,17 @@ export class OrdersService {
 
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
-          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            preliminaryTurn.turnId,
-            playerCountry.countryId
-          );
-          orders.techTransfer = techTransferOrders[0];
+          // const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
+          //   preliminaryTurn.turnId,
+          //   playerCountry.countryId
+          // );
+          // orders.techTransfer = techTransferOrders[0];
 
-          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
-            playerCountry.countryId,
-            preliminaryTurn.turnId
-          );
-          orders.buildTransfers = pendingBuildTransferOrders;
+          // const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
+          //   playerCountry.countryId,
+          //   preliminaryTurn.turnId
+          // );
+          // orders.buildTransfers = pendingBuildTransferOrders;
         }
 
         // Adjustments
@@ -505,17 +505,12 @@ export class OrdersService {
         });
       }
 
-      // Grouped Transfers Obsolete
-      // if (orderSetIds.transfers && orders.techTransfer && orders.buildTransfers) {
-      //   await db.ordersRepo.saveTransfers(orderSetIds.transfers, orders.techTransfer, orders.buildTransfers);
-      // }
-
       if (orderSetIds.transfers && orders.techTransfer) {
-        await db.ordersRepo.saveTechTransfer(orderSetIds.transfers, orders.techTransfer);
+        // await db.ordersRepo.saveTechTransfer(orderSetIds.transfers, orders.techTransfer);
       }
 
       if (orderSetIds.transfers && orders.buildTransfers) {
-        await db.ordersRepo.saveBuildTransfers(orderSetIds.transfers, orders.buildTransfers);
+        // await db.ordersRepo.saveBuildTransfers(orderSetIds.transfers, orders.buildTransfers);
       }
 
       // if (orderSetIds.retreats && orders.units) {

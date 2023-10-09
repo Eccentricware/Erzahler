@@ -1,3 +1,31 @@
+export const clearBuildTransferOrdersQuery = `
+  DELETE FROM orders_transfers
+  WHERE order_set_id = $1
+    AND order_type = 1;
+`;
+
+export const insertBuildTransferOrdersQuery = `
+  INSERT INTO orders_transfers (
+    order_set_id,
+    order_type,
+    foreign_country_id,
+    foreign_country_name,
+    quantity,
+    ui_row
+  ) VALUES (
+    $1,
+    2,
+    $2::INTEGER,
+    CASE
+      WHEN $2::INTEGER = NULL THEN $3
+      WHEN $2::INTEGER = 0 THEN '--Do Not Offer Tech--'
+      ELSE (SELECT country_name FROM countries WHERE country_id = $2::INTEGER)
+    END,
+    $3,
+    $4
+  );
+`;
+
 export const updateTechTransferOrdersQuery = `
   UPDATE orders_transfers
   SET
@@ -29,3 +57,5 @@ export const insertTechTransferOrdersQuery = `
     END
   );
 `;
+
+
