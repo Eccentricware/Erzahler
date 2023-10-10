@@ -301,11 +301,13 @@ export class OrdersRepository {
    * @returns
    */
   async getTechTransferPartner(
+    gameId: number,
+    turnNumber: number,
     orderTurnId: number,
     countryId: number
   ): Promise<TransferTechOrder[]> {
     const techTransferPartners = await this.pool
-      .query(getTechTransferOrderQuery, [orderTurnId, countryId])
+      .query(getTechTransferOrderQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult) =>
         result.rows.map((order: TransferTechOrderResult) => {
           return <TransferTechOrder> {
