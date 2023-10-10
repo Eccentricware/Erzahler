@@ -100,25 +100,27 @@ export interface TransferCountryResult {
 }
 
 export interface TransferTechOrderResult {
-  order_transfer_id: number;
+  tech_transfer_order_id: number;
   order_set_id: number;
   country_id: number;
   country_name: string;
-  country_status: CountryStatus;
-  tech_partner_id: number;
-  tech_partner_name: string;
-  has_nukes: boolean;
+  offering: boolean;
+  foreign_country_id: number;
+  foreign_country_name: string;
+  description: string;
+  resolution: string;
   success: boolean;
 }
 export interface TransferTechOrder {
-  orderTransferId: number;
+  techTransferOrderId: number;
   orderSetId: number;
   countryId: number;
   countryName: string;
-  // countryStatus: CountryStatus;
-  techPartnerId: number;
-  techPartnerName: string;
-  hasNukes: boolean;
+  offering: boolean;
+  foreignCountryId: number;
+  foreignCountryName: string;
+  description: string;
+  resolution: string;
   success: boolean;
 }
 

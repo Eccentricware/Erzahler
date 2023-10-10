@@ -27,17 +27,16 @@ export const insertBuildTransferOrdersQuery = `
 `;
 
 export const updateTechTransferOrdersQuery = `
-  UPDATE orders_transfers
+  UPDATE orders_transfer_tech
   SET
     foreign_country_id = $1::INTEGER,
     foreign_country_name = CASE
       WHEN $1 = NULL THEN $2::TEXT
-      WHEN $1::INTEGER = 0 THEN '--Do Not Offer Tech--'
+      WHEN $1::INTEGER = 0 THEN null
       ELSE (SELECT country_name FROM countries WHERE country_id = $1::INTEGER)
     END
   WHERE order_set_id = $3
-    AND order_type = 2
-  RETURNING order_transfer_id;
+  RETURNING tech_transfer_order_id;
 `;
 
 export const insertTechTransferOrdersQuery = `

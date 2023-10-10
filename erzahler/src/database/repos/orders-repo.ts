@@ -299,14 +299,16 @@ export class OrdersRepository {
       .then((result: QueryResult) =>
         result.rows.map((order: TransferTechOrderResult) => {
           return <TransferTechOrder> {
-            orderTransferId: order.order_transfer_id,
+            techTransferOrderId: order.tech_transfer_order_id,
             orderSetId: order.order_set_id,
             countryId: order.country_id,
             countryName: order.country_name,
-            techPartnerId: order.tech_partner_id,
-            techPartnerName: order.tech_partner_name,
-            hasNukes: order.has_nukes,
-            success: false
+            offering: order.offering,
+            foreignCountryId: order.foreign_country_id,
+            foreignCountryName: order.foreign_country_name,
+            description: order.description,
+            resolution: order.resolution,
+            success: order.success
           };
         })
       );
@@ -314,13 +316,15 @@ export class OrdersRepository {
     return techTransferPartners.length === 0
       ? [
           <TransferTechOrder> {
-            orderTransferId: 0,
+            techTransferOrderId: 0,
             orderSetId: 0,
-            countryId: countryId,
+            countryId: 0,
             countryName: '',
-            techPartnerId: 0,
-            techPartnerName: 'No Tech Transfer Partner',
-            hasNukes: false,
+            offering: false,
+            foreignCountryId: 0,
+            foreignCountryName: '',
+            description: 'Orders not submitted',
+            resolution: '',
             success: false
           }
         ]
