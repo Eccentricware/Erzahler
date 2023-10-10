@@ -190,17 +190,17 @@ export class ResolutionService {
 
     transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
       if (result.quantity > 0) {
-        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.recipientId];
+        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.countryId];
         if (!playerCountry) {
           playerCountry = dbStates.countryHistories?.find(
-            (country: CountryHistoryRow) => country.countryId === result.playerCountryId
+            (country: CountryHistoryRow) => country.countryId === result.countryId
           );
         }
 
-        let partnerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.countryId];
+        let partnerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.recipientId];
         if (!partnerCountry) {
           partnerCountry = dbStates.countryHistories?.find(
-            (country: CountryHistoryRow) => country.countryId === result.countryId
+            (country: CountryHistoryRow) => country.countryId === result.recipientId
           );
         }
 
@@ -208,10 +208,10 @@ export class ResolutionService {
           const newPlayerCountryHistory = this.copyCountryHistory(playerCountry);
           const newPartnerCountryHistory = this.copyCountryHistory(partnerCountry);
 
-          newPlayerCountryHistory.bankedBuilds -= result.builds;
-          newPartnerCountryHistory.bankedBuilds += result.builds;
-          dbUpdates.countryHistories[result.playerCountryId] = newPlayerCountryHistory;
-          dbUpdates.countryHistories[result.countryId] = newPartnerCountryHistory;
+          newPlayerCountryHistory.bankedBuilds -= result.quantity;
+          newPartnerCountryHistory.bankedBuilds += result.quantity;
+          dbUpdates.countryHistories[result.countryId] = newPlayerCountryHistory;
+          dbUpdates.countryHistories[result.recipientId] = newPartnerCountryHistory;
         }
       }
     });
@@ -1102,7 +1102,7 @@ export class ResolutionService {
 
     buildTransferOrders.forEach((transferOrder: TransferBuildOrder) => {
       const playerCountry = transferResources.countryResources.find(
-        (country: CountryTransferResources) => country.countryId === transferOrder.recipientId
+        (country: CountryTransferResources) => country.countryId === transferOrder.countryId
       );
 
       if (playerCountry) {
@@ -1456,7 +1456,6 @@ export class ResolutionService {
    */
   copyCountryHistory(countryHistory: CountryHistoryRow): CountryHistoryRow {
     return {
-      builds: countryHistory.builds,
       turnId: countryHistory.turnId,
       countryId: countryHistory.countryId,
       countryStatus: countryHistory.countryStatus,

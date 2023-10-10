@@ -11,6 +11,9 @@ export const getBuildTransferOrdersQuery = `
   INNER JOIN order_sets os ON os.order_set_id = tb.order_set_id
   INNER JOIN countries c ON c.country_id = os.country_id
   WHERE os.turn_id = $1
-    AND os.country_id = $2
+    AND CASE
+      WHEN $2 = 0 then TRUE
+      ELSE os.country_id = $2
+    END
   ORDER BY tb.ui_row;
 `;
