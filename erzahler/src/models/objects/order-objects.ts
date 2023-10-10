@@ -104,7 +104,7 @@ export interface TransferTechOrderResult {
   order_set_id: number;
   country_id: number;
   country_name: string;
-  offering: boolean;
+  has_nukes: boolean;
   foreign_country_id: number;
   foreign_country_name: string;
   description: string;
@@ -116,7 +116,7 @@ export interface TransferTechOrder {
   orderSetId: number;
   countryId: number;
   countryName: string;
-  offering: boolean;
+  hasNukes: boolean;
   foreignCountryId: number;
   foreignCountryName: string;
   description: string;

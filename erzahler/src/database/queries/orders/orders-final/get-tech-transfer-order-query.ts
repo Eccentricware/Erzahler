@@ -7,7 +7,7 @@ export const getTechTransferOrderQuery = `
     CASE
       WHEN ch.nuke_range IS NULL THEN false
       ELSE true
-    END as offering,
+    END as has_nukes,
     tt.foreign_country_id,
     tt.foreign_country_name,
     tt.description,

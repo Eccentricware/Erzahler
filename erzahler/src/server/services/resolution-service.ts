@@ -176,20 +176,21 @@ export class ResolutionService {
     transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
       if (result.success && result.hasNukes) {
         const partnerHistory = dbStates.countryHistories?.find(
-          (country: CountryHistoryRow) => country.countryId === result.techPartnerId
+          (country: CountryHistoryRow) => country.countryId === result.foreignCountryId
         );
 
         if (partnerHistory) {
           const newCountryHistory = this.copyCountryHistory(partnerHistory);
           newCountryHistory.nukeRange = gameState.defaultNukeRange;
+          newCountryHistory.nukesInProduction = 0;
           dbUpdates.countryHistories[partnerHistory.countryId] = newCountryHistory;
         }
       }
     });
 
     transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
-      if (result.builds > 0) {
-        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.playerCountryId];
+      if (result.quantity > 0) {
+        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.recipientId];
         if (!playerCountry) {
           playerCountry = dbStates.countryHistories?.find(
             (country: CountryHistoryRow) => country.countryId === result.playerCountryId
@@ -1046,6 +1047,8 @@ export class ResolutionService {
       }
     };
     transferResources.techTransferResults = await this.validateTechTransfers(
+      gameState.gameId,
+      gameState.turnNumber,
       turn.turnId,
       transferResources
     );
@@ -1054,19 +1057,23 @@ export class ResolutionService {
   }
 
   async validateTechTransfers(
+    gameId: number,
+    turnNumber: number,
     orderTurnId: number,
     transferResources: TransferResources
   ): Promise<TransferTechOrder[]> {
-    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(orderTurnId, 0);
+    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(gameId, turnNumber, orderTurnId, 0);
 
     techTransferOrders.forEach((order: TransferTechOrder) => {
       const partnerCountry = techTransferOrders.find(
-        (resource: TransferTechOrder) => resource.countryId === order.techPartnerId
+        (resource: TransferTechOrder) => resource.countryId === order.foreignCountryId
       );
+
       if (partnerCountry) {
         const playerCountry = techTransferOrders.find(
           (resource: TransferTechOrder) => resource.countryId === order.countryId
         );
+
         if (playerCountry) {
           if (playerCountry.hasNukes && !partnerCountry.hasNukes) {
             transferResources.handshakes.offers[playerCountry.countryId] = partnerCountry.countryId;
@@ -1082,6 +1089,8 @@ export class ResolutionService {
             }
           }
         }
+      } else {
+        order.success = false;
       }
     });
 
@@ -1093,15 +1102,15 @@ export class ResolutionService {
 
     buildTransferOrders.forEach((transferOrder: TransferBuildOrder) => {
       const playerCountry = transferResources.countryResources.find(
-        (country: CountryTransferResources) => country.countryId === transferOrder.playerCountryId
+        (country: CountryTransferResources) => country.countryId === transferOrder.recipientId
       );
 
       if (playerCountry) {
-        if (playerCountry.buildsRemaining >= transferOrder.builds) {
-          playerCountry.buildsRemaining -= transferOrder.builds;
+        if (playerCountry.buildsRemaining >= transferOrder.quantity) {
+          playerCountry.buildsRemaining -= transferOrder.quantity;
         } else {
-          transferOrder.builds = playerCountry?.buildsRemaining;
-          playerCountry.buildsRemaining -= transferOrder.builds;
+          transferOrder.quantity = playerCountry?.buildsRemaining;
+          playerCountry.buildsRemaining -= transferOrder.quantity;
         }
       }
     });
