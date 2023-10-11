@@ -40,14 +40,12 @@ export const updateTechTransferOrdersQuery = `
 `;
 
 export const insertTechTransferOrdersQuery = `
-  INSERT INTO orders_transfers (
+  INSERT INTO orders_transfer_tech (
     order_set_id,
-    order_type,
     foreign_country_id,
     foreign_country_name
   ) VALUES (
     $1,
-    2,
     $2::INTEGER,
     CASE
       WHEN $2::INTEGER = NULL THEN $3
