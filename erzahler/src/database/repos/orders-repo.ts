@@ -52,6 +52,7 @@ import { terminalLog } from '../../server/utils/general';
 export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
   orderCols: ColumnSet<unknown>;
+  buildOrderTransferCols: ColumnSet<unknown>;
   pool: Pool = new Pool(envCredentials);
   /**
    * @param db
@@ -81,6 +82,17 @@ export class OrdersRepository {
         'order_success'
       ],
       { table: 'orders' }
+    );
+
+    this.buildOrderTransferCols = new pgp.helpers.ColumnSet(
+      [
+        'order_set_id',
+        'recipient_id',
+        'recipient_name',
+        'quantity',
+        'ui_row'
+      ],
+      { table: 'orders_transfer_builds' }
     );
   }
 
@@ -138,20 +150,18 @@ export class OrdersRepository {
         const values: any[] = [];
 
         buildsTransferred.forEach((buildTransfer: TransferBuildOrder, index: number) => {
-          if (buildTransfer.foreignCountryId !== 0) {
+          if (buildTransfer.recipientId !== 0) {
             values.push({
               order_set_id: orderSetId,
-              order_type: 1,
-              foreign_country_id: buildTransfer.foreignCountryId,
-              foreign_country_name: buildTransfer.foreignCountryName,
+              recipient_id: buildTransfer.recipientId,
+              recipient_name: buildTransfer.recipientName,
               quantity: buildTransfer.quantity,
-              ui_row: index + 1,
-              success: false
+              ui_row: index + 1
             });
           }
         });
 
-        const query = this.pgp.helpers.insert(values, this.orderTransferCols);
+        const query = this.pgp.helpers.insert(values, this.buildOrderTransferCols);
         return this.db.query(query)
           .catch((error: Error) => terminalLog('saveBuildTransfers error: ' + error.message));
       });
@@ -270,12 +280,12 @@ export class OrdersRepository {
       .query(getBuildTransferOrdersQuery, [turnId, countryId])
       .then((result: QueryResult<TransferBuildOrderResult>) => result.rows.map((order: TransferBuildOrderResult) => {
         return <TransferBuildOrder> {
-          orderTransferId: order.order_transfer_id,
+          buildTransferOrderId: order.build_transfer_order_id,
           orderSetId: order.order_set_id,
           countryId: order.country_id,
           countryName: order.country_name,
-          techPartnerId: order.tech_partner_id,
-          techPartnerName: order.tech_partner_name,
+          recipientId: order.recipient_id,
+          recipientName: order.recipient_name,
           quantity: order.quantity,
           uiRow: order.ui_row
         };

@@ -49,6 +49,7 @@ export class OrdersService {
       );
     });
 
+    const playerVision = playerCountries.length > 0;
     const adminVision = adminAssignments.length > 0;
 
     const orders: TurnOrders = {
@@ -58,7 +59,7 @@ export class OrdersService {
       countryId: 0
     };
 
-    if (playerCountries.length > 0) {
+    if (playerVision) {
       orders.role === 'player';
       const countryStates = await db.gameRepo.getCountryState(
         gameId,
@@ -134,11 +135,11 @@ export class OrdersService {
           );
           orders.techTransfer = techTransferOrders[0];
 
-          // const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
-          //   playerCountry.countryId,
-          //   pendingTurn.turnId
-          // );
-          // orders.buildTransfers = pendingBuildTransferOrders;
+          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
+            playerCountry.countryId,
+            pendingTurn.turnId
+          );
+          orders.buildTransfers = pendingBuildTransferOrders;
         }
 
         // Adjustments
@@ -200,11 +201,11 @@ export class OrdersService {
           );
           orders.techTransfer = techTransferOrders[0];
 
-          // const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
-          //   playerCountry.countryId,
-          //   preliminaryTurn.turnId
-          // );
-          // orders.buildTransfers = pendingBuildTransferOrders;
+          const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
+            playerCountry.countryId,
+            preliminaryTurn.turnId
+          );
+          orders.buildTransfers = pendingBuildTransferOrders;
         }
 
         // Adjustments
@@ -233,170 +234,7 @@ export class OrdersService {
         }
       }
     } else if (adminVision) {
-      let playerCountry: CountryState;
-      if (playerCountries[0]) {
-        const countryStates = await db.gameRepo.getCountryState(
-          gameId,
-          gameState.turnNumber,
-          playerCountries[0].countryId
-        );
-        playerCountry = countryStates[0];
-      } else {
-        playerCountry = {
-          countryId: 0,
-          name: 'Administrator',
-          unitCount: -1,
-          cityCount: -1,
-          builds: -1,
-          nukeRange: -1,
-          adjustments: -1,
-          countryStatus: 'Administrator',
-          retreating: false,
-          nukesInProduction: 0
-        };
-      }
 
-      let pendingTurn: UpcomingTurn | undefined = undefined;
-      let preliminaryTurn: UpcomingTurn | undefined = undefined;
-
-      const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
-
-      if (upcomingTurns.length === 0) {
-        console.log(`GameId ${gameId} has no upcoming turns!`);
-      }
-
-      if (upcomingTurns.length > 0) {
-        pendingTurn = upcomingTurns[0];
-      }
-
-      if (upcomingTurns.length === 2) {
-        preliminaryTurn = upcomingTurns[1];
-      }
-
-      if (upcomingTurns.length > 2) {
-        console.log(`GameId ${gameId} has too many upcoming turns! (${upcomingTurns.length})`);
-      }
-
-      if (pendingTurn) {
-        // Standard Unit Movement
-        if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
-          orders.units = await db.ordersRepo.getTurnUnitOrders(
-            gameId,
-            gameState.turnNumber,
-            pendingTurn.turnId,
-            playerCountry.countryId
-          );
-          if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
-            orders.pendingDefault = false;
-          } else {
-            orders.pendingDefault = true;
-          }
-        }
-
-        // Retreating Unit Movement
-        if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType)) {
-          if (playerCountry.countryStatus === CountryStatus.RETREAT) {
-            orders.units = await db.ordersRepo.getTurnUnitOrders(
-              gameId,
-              gameState.turnNumber,
-              pendingTurn.turnId,
-              playerCountry.countryId
-            );
-            if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
-              orders.pendingDefault = false;
-            } else {
-              orders.pendingDefault = true;
-            }
-          } else {
-            orders.render === 'preliminary';
-          }
-        }
-
-        // Transfers
-        if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            pendingTurn.turnId,
-            playerCountry.countryId
-          );
-          orders.techTransfer = techTransferOrders[0];
-
-          // const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
-          //   playerCountry.countryId,
-          //   pendingTurn.turnId
-          // );
-          // orders.buildTransfers = pendingBuildTransferOrders;
-        }
-
-        // Adjustments
-        if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-          if (playerCountry.adjustments >= 0) {
-            const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
-              gameState.gameId,
-              gameState.turnNumber,
-              gameState.turnId,
-              playerCountry.countryId
-            );
-            orders.builds = pendingBuildOrders[0];
-          } else {
-            // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.gameId, gameState.turnNumber, playerCountry.countryId);
-          }
-        }
-
-        // Nominations
-        if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-          // const pendingNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.gameId, gameState.turnNumber);
-        }
-
-        // Votes
-        if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-          // const pendingNominations: Nomination[] = await db.ordersRepo.getNominations(gameState.turnId);
-        }
-      }
-
-      if (preliminaryTurn) {
-        // Units
-        if (
-          [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(preliminaryTurn.turnType)
-        ) {
-          orders.units = await db.ordersRepo.getTurnUnitOrders(
-            gameId,
-            gameState.turnNumber,
-            preliminaryTurn.turnId,
-            playerCountry.countryId
-          );
-          if (orders.units.length > 0 && orders.units[0].orderStatus !== 'Default') {
-            orders.preliminaryDefault = false;
-          } else {
-            orders.preliminaryDefault = true;
-          }
-        }
-
-        // Transfers
-        if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
-          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
-            preliminaryTurn.turnId,
-            playerCountry.countryId
-          );
-          orders.techTransfer = techTransferOrders[0];
-
-          // const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
-          //   playerCountry.countryId,
-          //   preliminaryTurn.turnId
-          // );
-          // orders.buildTransfers = pendingBuildTransferOrders;
-        }
-
-        // Adjustments
-        if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-          // const preliminaryBuildLocs: BuildLoc[] = await db.ordersRepo.getAvailableBuildLocs(gameId, gameState.turnNumber, playerCountry.countryId);
-          // const preliminaryAtRiskUnits: AtRiskUnit[] = await db.ordersRepo.getAtRiskUnits(gameState.gameId, gameState.turnNumber, playerCountry.countryId);
-        }
-
-        // Nominations
-        if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-          // const preliminaryNominatableCountries: NominatableCountry[] = await db.ordersRepo.getNominatableCountries(gameState.gameId, gameState.turnNumber);
-        }
-      }
     }
 
     return orders;
@@ -510,7 +348,7 @@ export class OrdersService {
       }
 
       if (orderSetIds.transfers && orders.buildTransfers) {
-        // await db.ordersRepo.saveBuildTransfers(orderSetIds.transfers, orders.buildTransfers);
+        await db.ordersRepo.saveBuildTransfers(orderSetIds.transfers, orders.buildTransfers);
       }
 
       // if (orderSetIds.retreats && orders.units) {
