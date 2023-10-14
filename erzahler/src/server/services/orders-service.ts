@@ -351,7 +351,7 @@ export class OrdersService {
         await db.ordersRepo.saveTechTransfer(orderSetIds.transfers, orders.techTransfer);
       }
 
-      if (orderSetIds.transfers && orders.buildTransfers) {
+      if (orderSetIds.transfers && orders.buildTransfers && orders.buildTransfers.length > 0) {
         await db.ordersRepo.saveBuildTransfers(orderSetIds.transfers, orders.buildTransfers);
       }
 
