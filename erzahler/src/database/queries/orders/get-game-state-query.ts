@@ -45,12 +45,12 @@ export const getGameStateQuery = `
   FROM games g
   INNER JOIN turns t ON t.game_id = g.game_id
   INNER JOIN coalition_schedules c ON c.game_id = g.game_id
-  INNER JOIN unit_histories uh ON uh.turn_id = t.turn_id
+  LEFT JOIN unit_histories uh ON uh.turn_id = t.turn_id
   LEFT JOIN turns pt1 ON pt1.game_id = g.game_id AND pt1.turn_status = 'Pending'
   LEFT JOIN turns pt2 ON pt2.game_id = g.game_id AND pt2.turn_status = 'Preliminary'
   WHERE g.game_id = $1
     AND t.turn_status = 'Resolved'
-  ORDER BY turn_id DESC,
+  ORDER BY t.turn_number DESC,
     uh.unit_status DESC
   LIMIT 1;
 `;
