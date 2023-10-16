@@ -307,8 +307,6 @@ export class ResolutionService {
           });
         }
       });
-
-
   }
 
   async resolveSpringRetreats(turn: UpcomingTurn): Promise<void> {
