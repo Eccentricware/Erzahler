@@ -343,7 +343,7 @@ CREATE TABLE IF NOT EXISTS votes(
   vote_id SERIAL,
   nomination_id INTEGER NOT NULL,
   voting_country_id INTEGER NOT NULL,
-  vote VARCHAR(10) NOT NULL,
+  declaration VARCHAR(10) NOT NULL,
   PRIMARY KEY(vote_id),
   FOREIGN KEY(nomination_id)
     REFERENCES nominations(nomination_id),

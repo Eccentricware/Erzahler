@@ -104,7 +104,12 @@ export class ResolutionService {
   }
 
   async resolveOrdersAndVotes(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Orders and Votes resolution, which is not yet implemented`);
+
+    const winningCoalition = undefined;
+
+    if (!winningCoalition) {
+      this.resolveSpringOrders(turn);
+    }
   }
 
   async resolveSpringOrders(turn: UpcomingTurn): Promise<void> {
