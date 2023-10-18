@@ -167,7 +167,7 @@ export class ResolutionService {
       }
 
       // Includes province contesting
-      if (result.unit.status === UnitStatus.ACTIVE) {
+      if (result.orderType !== OrderDisplay.NUKE && result.unit.status !== UnitStatus.NUKED) {
         this.handleSpringMovement(result, dbStates, dbUpdates);
       }
 
@@ -889,7 +889,7 @@ export class ResolutionService {
       (challenger: UnitOrderResolution) =>
         challenger.origin.provinceId === order.destination.provinceId &&
         [OrderDisplay.AIRLIFT, OrderDisplay.CONVOY, OrderDisplay.HOLD].includes(challenger.orderType) &&
-        challenger.orderSuccess === null &&
+        // challenger.orderSuccess === null &&
         challenger.valid === true
     );
 
@@ -921,7 +921,7 @@ export class ResolutionService {
       const leavingUnit = unitOrders.find(
         (leavingUnit: UnitOrderResolution) => leavingUnit.origin.provinceId === order.destination.provinceId
       );
-      if (leavingUnit && order.power === 1) {
+      if (leavingUnit && order.power < 2) {
         this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Failed: Bounce 1v1`);
       } else if (leavingUnit && leavingUnit.unit.countryId === order.unit.countryId) {
         this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Invalid Order: Can't Self-Dislodge`);
@@ -945,7 +945,7 @@ export class ResolutionService {
     });
 
     const victory = movementOrder.power === maxPower && !challenges[maxPower];
-    if (movementOrder.power === challenges[maxPower][0]) {
+    if (challenges[maxPower] && movementOrder.power === challenges[maxPower][0]) {
       movementOrder.destination.contested = true;
     }
     let summary = victory ? `Victory: ${movementOrder.power}` : `Bounce: ${movementOrder.power}`;
@@ -1001,8 +1001,10 @@ export class ResolutionService {
 
     if (challengers.length > 0) {
       const victory = holdOrder.power === maxPower;
-      let summary = victory ? `Victory: ` : `Dislodged: `;
+
+      let summary = `${victory ? 'Victory' : 'Dislodged'}: ${holdOrder.power}`;
       holdOrder.orderSuccess = victory;
+      holdOrder.unit.status = victory ? UnitStatus.ACTIVE : UnitStatus.RETREAT;
 
       let currentPower = maxPower;
       while (currentPower > 0) {
