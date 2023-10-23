@@ -104,7 +104,12 @@ export class ResolutionService {
   }
 
   async resolveOrdersAndVotes(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Orders and Votes resolution, which is not yet implemented`);
+
+    const winningCoalition = undefined;
+
+    if (!winningCoalition) {
+      this.resolveSpringOrders(turn);
+    }
   }
 
   async resolveSpringOrders(turn: UpcomingTurn): Promise<void> {
@@ -162,7 +167,7 @@ export class ResolutionService {
       }
 
       // Includes province contesting
-      if (result.unit.status === UnitStatus.ACTIVE) {
+      if (result.orderType !== OrderDisplay.NUKE && result.unit.status !== UnitStatus.NUKED) {
         this.handleSpringMovement(result, dbStates, dbUpdates);
       }
 
@@ -176,30 +181,31 @@ export class ResolutionService {
     transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
       if (result.success && result.hasNukes) {
         const partnerHistory = dbStates.countryHistories?.find(
-          (country: CountryHistoryRow) => country.countryId === result.techPartnerId
+          (country: CountryHistoryRow) => country.countryId === result.foreignCountryId
         );
 
         if (partnerHistory) {
           const newCountryHistory = this.copyCountryHistory(partnerHistory);
           newCountryHistory.nukeRange = gameState.defaultNukeRange;
+          newCountryHistory.nukesInProduction = 0;
           dbUpdates.countryHistories[partnerHistory.countryId] = newCountryHistory;
         }
       }
     });
 
     transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
-      if (result.builds > 0) {
-        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.playerCountryId];
+      if (result.quantity > 0) {
+        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.countryId];
         if (!playerCountry) {
           playerCountry = dbStates.countryHistories?.find(
-            (country: CountryHistoryRow) => country.countryId === result.playerCountryId
+            (country: CountryHistoryRow) => country.countryId === result.countryId
           );
         }
 
-        let partnerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.countryId];
+        let partnerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.recipientId];
         if (!partnerCountry) {
           partnerCountry = dbStates.countryHistories?.find(
-            (country: CountryHistoryRow) => country.countryId === result.countryId
+            (country: CountryHistoryRow) => country.countryId === result.recipientId
           );
         }
 
@@ -207,10 +213,10 @@ export class ResolutionService {
           const newPlayerCountryHistory = this.copyCountryHistory(playerCountry);
           const newPartnerCountryHistory = this.copyCountryHistory(partnerCountry);
 
-          newPlayerCountryHistory.bankedBuilds -= result.builds;
-          newPartnerCountryHistory.bankedBuilds += result.builds;
-          dbUpdates.countryHistories[result.playerCountryId] = newPlayerCountryHistory;
-          dbUpdates.countryHistories[result.countryId] = newPartnerCountryHistory;
+          newPlayerCountryHistory.bankedBuilds -= result.quantity;
+          newPartnerCountryHistory.bankedBuilds += result.quantity;
+          dbUpdates.countryHistories[result.countryId] = newPlayerCountryHistory;
+          dbUpdates.countryHistories[result.recipientId] = newPartnerCountryHistory;
         }
       }
     });
@@ -306,8 +312,6 @@ export class ResolutionService {
           });
         }
       });
-
-
   }
 
   async resolveSpringRetreats(turn: UpcomingTurn): Promise<void> {
@@ -885,7 +889,7 @@ export class ResolutionService {
       (challenger: UnitOrderResolution) =>
         challenger.origin.provinceId === order.destination.provinceId &&
         [OrderDisplay.AIRLIFT, OrderDisplay.CONVOY, OrderDisplay.HOLD].includes(challenger.orderType) &&
-        challenger.orderSuccess === null &&
+        // challenger.orderSuccess === null &&
         challenger.valid === true
     );
 
@@ -917,7 +921,7 @@ export class ResolutionService {
       const leavingUnit = unitOrders.find(
         (leavingUnit: UnitOrderResolution) => leavingUnit.origin.provinceId === order.destination.provinceId
       );
-      if (leavingUnit && order.power === 1) {
+      if (leavingUnit && order.power < 2) {
         this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Failed: Bounce 1v1`);
       } else if (leavingUnit && leavingUnit.unit.countryId === order.unit.countryId) {
         this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Invalid Order: Can't Self-Dislodge`);
@@ -941,7 +945,7 @@ export class ResolutionService {
     });
 
     const victory = movementOrder.power === maxPower && !challenges[maxPower];
-    if (movementOrder.power === challenges[maxPower][0]) {
+    if (challenges[maxPower] && movementOrder.power === challenges[maxPower][0]) {
       movementOrder.destination.contested = true;
     }
     let summary = victory ? `Victory: ${movementOrder.power}` : `Bounce: ${movementOrder.power}`;
@@ -997,8 +1001,10 @@ export class ResolutionService {
 
     if (challengers.length > 0) {
       const victory = holdOrder.power === maxPower;
-      let summary = victory ? `Victory: ` : `Dislodged: `;
+
+      let summary = `${victory ? 'Victory' : 'Dislodged'}: ${holdOrder.power}`;
       holdOrder.orderSuccess = victory;
+      holdOrder.unit.status = victory ? UnitStatus.ACTIVE : UnitStatus.RETREAT;
 
       let currentPower = maxPower;
       while (currentPower > 0) {
@@ -1046,6 +1052,8 @@ export class ResolutionService {
       }
     };
     transferResources.techTransferResults = await this.validateTechTransfers(
+      gameState.gameId,
+      gameState.turnNumber,
       turn.turnId,
       transferResources
     );
@@ -1054,19 +1062,23 @@ export class ResolutionService {
   }
 
   async validateTechTransfers(
+    gameId: number,
+    turnNumber: number,
     orderTurnId: number,
     transferResources: TransferResources
   ): Promise<TransferTechOrder[]> {
-    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(orderTurnId, 0);
+    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(gameId, turnNumber, orderTurnId, 0);
 
     techTransferOrders.forEach((order: TransferTechOrder) => {
       const partnerCountry = techTransferOrders.find(
-        (resource: TransferTechOrder) => resource.countryId === order.techPartnerId
+        (resource: TransferTechOrder) => resource.countryId === order.foreignCountryId
       );
+
       if (partnerCountry) {
         const playerCountry = techTransferOrders.find(
           (resource: TransferTechOrder) => resource.countryId === order.countryId
         );
+
         if (playerCountry) {
           if (playerCountry.hasNukes && !partnerCountry.hasNukes) {
             transferResources.handshakes.offers[playerCountry.countryId] = partnerCountry.countryId;
@@ -1082,6 +1094,8 @@ export class ResolutionService {
             }
           }
         }
+      } else {
+        order.success = false;
       }
     });
 
@@ -1093,15 +1107,15 @@ export class ResolutionService {
 
     buildTransferOrders.forEach((transferOrder: TransferBuildOrder) => {
       const playerCountry = transferResources.countryResources.find(
-        (country: CountryTransferResources) => country.countryId === transferOrder.playerCountryId
+        (country: CountryTransferResources) => country.countryId === transferOrder.countryId
       );
 
       if (playerCountry) {
-        if (playerCountry.buildsRemaining >= transferOrder.builds) {
-          playerCountry.buildsRemaining -= transferOrder.builds;
+        if (playerCountry.buildsRemaining >= transferOrder.quantity) {
+          playerCountry.buildsRemaining -= transferOrder.quantity;
         } else {
-          transferOrder.builds = playerCountry?.buildsRemaining;
-          playerCountry.buildsRemaining -= transferOrder.builds;
+          transferOrder.quantity = playerCountry?.buildsRemaining;
+          playerCountry.buildsRemaining -= transferOrder.quantity;
         }
       }
     });
@@ -1447,7 +1461,6 @@ export class ResolutionService {
    */
   copyCountryHistory(countryHistory: CountryHistoryRow): CountryHistoryRow {
     return {
-      builds: countryHistory.builds,
       turnId: countryHistory.turnId,
       countryId: countryHistory.countryId,
       countryStatus: countryHistory.countryStatus,

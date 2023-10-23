@@ -1,18 +1,26 @@
 export const getTechTransferOrderQuery = `
   SELECT
-    ot.order_transfer_id,
-    os.order_set_id,
+    tt.tech_transfer_order_id,
+    tt.order_set_id,
     c.country_id,
     c.country_name,
-    --ch.country_status,
-    ot.foreign_country_id tech_partner_id,
-    ot.foreign_country_name tech_partner_name,
-    --CASE WHEN ch.nuke_range IS NOT NULL THEN true ELSE false END has_nukes
-    ot.success
-  FROM orders_transfers ot
-  INNER JOIN order_sets os ON os.order_set_id = ot.order_set_id
+    CASE
+      WHEN ch.nuke_range IS NULL THEN false
+      ELSE true
+    END as has_nukes,
+    tt.foreign_country_id,
+    tt.foreign_country_name,
+    tt.description,
+    tt.resolution,
+    tt.success
+  FROM orders_transfer_tech tt
+  INNER JOIN order_sets os ON os.order_set_id = tt.order_set_id
   INNER JOIN countries c ON c.country_id = os.country_id
-  WHERE os.turn_id = $1
-    AND os.country_id = $2
-    AND ot.order_type = 2;
+  INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
+  INNER JOIN country_histories ch ON ch.country_id = lch.country_id
+  WHERE os.turn_id = $3
+    AND CASE
+      WHEN $4 = 0 THEN true
+      ELSE os.country_id = $4
+    END;
 `;
