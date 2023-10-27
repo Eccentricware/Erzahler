@@ -3,5 +3,6 @@ export enum TurnStatus {
   PAUSED = 'Paused',
   PENDING = 'Pending',
   PRELIMINARY = 'Preliminary',
-  RESOLVED = 'Resolved'
+  RESOLVED = 'Resolved',
+  SKIPPED = 'Skipped'
 }
