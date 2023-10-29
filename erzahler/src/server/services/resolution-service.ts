@@ -275,42 +275,54 @@ export class ResolutionService {
     console.log('DB: Turn Update'); // Pending resolution
     stateUpdatePromises.push(db.resolutionRepo.resolveTurn(turn.turnId));
 
-    // Next turns needs to know retreats after resolution
-    const nextTurns = this.schedulerService.findNextTurns(turn, gameState, unitsRetreating);
 
     Promise.all(stateUpdatePromises)
-      .then(async () => {
-        if (gameState.preliminaryTurnId) {
-          // Convert preliminary to pending
-          console.log(`DB: Advancing Preliminary turn (${gameState.preliminaryTurnId})`);
-          db.resolutionRepo.advancePreliminaryTurn(gameState.preliminaryTurnId)
-            .then(async () => {
-              terminalLog('Triggering next turn defaults');
-              this.optionsService.saveDefaultOrders(gameState.gameId);
+    .then(async () => {
+        // Next turns needs to know retreats after resolution
+        const changedGameState = await db.gameRepo.getGameState(turn.gameId);
+        const nextTurns = this.schedulerService.findNextTurns(turn, changedGameState, unitsRetreating);
+
+        // Ensures pending turn_id < preliminary turn_id for sequential get_last_history functions
+        terminalLog('DB: Pending Turn Insert');
+        db.gameRepo.insertNextTurn([
+          gameState.gameId,
+          nextTurns.pending.turnNumber,
+          nextTurns.pending.turnName,
+          nextTurns.pending.type,
+          nextTurns.pending.yearNumber,
+          TurnStatus.PENDING,
+          nextTurns.pending.deadline
+        ])
+        .then(async (result) => {
+          if (nextTurns.preliminary) {
+            terminalLog('DB: Preliminary Turn Insert');
+            db.gameRepo.insertNextTurn([
+              gameState.gameId,
+              nextTurns.preliminary.turnNumber,
+              nextTurns.preliminary.turnName,
+              nextTurns.preliminary.type,
+              nextTurns.preliminary.yearNumber,
+              TurnStatus.PRELIMINARY,
+              nextTurns.preliminary.deadline
+            ])
+            .then(async (result) => {
+              this.initializeDefaultOrders(gameState.gameId, result.turn_id);
             });
 
-        } else {
-          // Find next turn
-          console.log('DB: Turn Insert'); // Unnecessary if preliminary. Update it to be pending
-          db.gameRepo.insertNextTurn([
-            gameState.gameId,
-            nextTurns.pending.turnNumber,
-            nextTurns.pending.turnName,
-            nextTurns.pending.type,
-            nextTurns.pending.yearNumber,
-            TurnStatus.PENDING,
-            nextTurns.pending.deadline
-          ])
-          .then(async (result) => {
-            terminalLog('Saving options for next turn');
+          } else {
+            this.initializeDefaultOrders(gameState.gameId, result.turn_id);
+          }
 
-            await this.optionsService.saveOptionsForNextTurn(gameState.gameId, result.turn_id)
-              .then(() => {
-                terminalLog('Triggering next turn defaults');
-                this.optionsService.saveDefaultOrders(gameState.gameId);
-              });
-          });
-        }
+        });
+      });
+  }
+
+  async initializeDefaultOrders(gameId: number, turnId: number): Promise<void> {
+    terminalLog('Saving options for next turn');
+    await this.optionsService.saveOptionsForNextTurn(gameId, turnId)
+      .then(() => {
+        terminalLog('Triggering next turn defaults');
+        this.optionsService.saveDefaultOrders(gameId);
       });
   }
 
