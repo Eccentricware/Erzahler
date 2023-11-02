@@ -4,6 +4,7 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitType } from '../../models/enumeration/unit-enum';
 import { UserAssignment } from '../../models/objects/assignment-objects';
+import { Turn } from '../../models/objects/database-objects';
 import { CountryState } from '../../models/objects/games/country-state-objects';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
@@ -39,19 +40,23 @@ import { AccountService } from './account-service';
 import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 
 export class OptionsService {
-  async saveOptionsForNextTurn(gameId: number, turnId?: number): Promise<void> {
-    const gameState: GameState = await db.gameRepo.getGameState(gameId);
+  async saveOptionsForTurn(turn: Turn): Promise<void> {
+    // const gameState: GameState = await db.gameRepo.getGameState(gameId);
+    const optionsContext: OptionsContext = await this.processUnitOrderOptions(turn);
 
-    const optionsContext: OptionsContext = await this.processUnitOrderOptions(gameState);
-
-    await this.saveUnitOrderOptions(optionsContext, turnId ? turnId : optionsContext.turnId);
+    await this.saveUnitOrderOptions(optionsContext, turn.turnId);
   }
 
-  async processUnitOrderOptions(gameState: GameState): Promise<OptionsContext> {
-    const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnNumber);
+  async processUnitOrderOptions(turn: Turn): Promise<OptionsContext> {
+    const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(
+      turn.gameId,
+      turn.turnNumber,
+      [TurnType.FALL_ORDERS, TurnType.FALL_RETREATS].includes(turn.turnType),
+      [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(turn.turnType)
+    );
 
     const optionsCtx: OptionsContext = {
-      gameId: gameState.gameId,
+      gameId: turn.gameId,
       unitInfo: unitInfo,
       unitIdToIndexLib: {},
       sharedAdjProvinces: {},
@@ -61,13 +66,13 @@ export class OptionsService {
       transports: {},
       transportables: {},
       transportDestinations: {},
-      turnId: gameState.turnId
+      turnId: turn.turnId
     };
 
     this.sortAdjacencyInfo(optionsCtx);
     this.processTransportPaths(optionsCtx);
     this.processMoveSupport(optionsCtx);
-    this.processNukeOptions(gameState, optionsCtx);
+    this.processNukeOptions(turn, optionsCtx);
 
     return optionsCtx;
   }
@@ -267,14 +272,28 @@ export class OptionsService {
     return optionsCtx.unitInfo[optionsCtx.unitIdToIndexLib[unitId]];
   }
 
-  async getUnitAdjacencyInfo(gameId: number, turnNumber: number): Promise<UnitOptions[]> {
-    const unitOtions: UnitOptions[] = await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber);
+  /**
+   * Returns valid adjacency options for units given their current position and the restrictions of the next turn.
+   * @param gameId
+   * @param turnNumber
+   * @param isFallTurn
+   * @param isRetreatTurn
+   * @returns
+   */
+  async getUnitAdjacencyInfo(
+    gameId: number,
+    turnNumber: number,
+    isFallTurn: boolean,
+    isRetreatTurn: boolean
+  ): Promise<UnitOptions[]> {
+    const unitOtions: UnitOptions[] =
+      await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber, isFallTurn, isRetreatTurn);
 
     return unitOtions;
   }
 
-  async processNukeOptions(gameState: GameState, optionsCtx: OptionsContext): Promise<void> {
-    const airAdjArray: AirAdjacency[] = await db.optionsRepo.getAirAdjacencies(gameState.gameId);
+  async processNukeOptions(turn: Turn, optionsCtx: OptionsContext): Promise<void> {
+    const airAdjArray: AirAdjacency[] = await db.optionsRepo.getAirAdjacencies(turn.gameId);
     const nukeTargetLib: any = {};
     const unlimitedRangeTargets: number[] = [];
 

@@ -101,5 +101,5 @@ interface Turn {
   deadline: Date | DateTime | string;
   yearNumber: number;
   yearStylized: number;
-  id?: number;
+  turnId?: number;
 }

@@ -5,7 +5,8 @@
 
 CREATE OR REPLACE FUNCTION get_node_adjacencies(
   INTEGER, -- game_id
-  INTEGER  -- turn_number
+  INTEGER, -- turn_number,
+  BOOLEAN  -- is_fall
 )
 RETURNS TABLE(node_id INTEGER, adjacencies JSON)
 AS $$
@@ -26,7 +27,7 @@ AS $$
   INNER JOIN nodes n2 ON n2.node_id = na.node_2_id
   LEFT JOIN provinces p1 ON p1.province_id = n1.province_id
     AND CASE
-      WHEN t.turn_type IN ('Spring Retreats', 'Fall Orders')
+      WHEN $3 = true
         AND n.node_id = na.node_2_id
         AND n2.node_type = 'sea'
       THEN p1.province_type != 'pole'
@@ -34,7 +35,7 @@ AS $$
     END
   LEFT JOIN provinces p2 ON p2.province_id = n2.province_id
     AND CASE
-      WHEN t.turn_type IN ('Spring Retreats', 'Fall Orders')
+      WHEN $3 = true
         AND n.node_id = na.node_1_id
         AND n1.node_type = 'sea'
       THEN p2.province_type != 'pole'

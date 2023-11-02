@@ -56,9 +56,9 @@ export class OptionsRepository {
 
   //// Legacy Functions ////
 
-  async getUnitAdjacencyInfo(gameId: number, turnNumber: number): Promise<UnitOptions[]> {
+  async getUnitAdjacencyInfo(gameId: number, turnNumber: number, isFallTurn: boolean, isRetreatTurn: boolean): Promise<UnitOptions[]> {
     const unitAdjacencyInfoResult: UnitOptions[] = await this.pool
-      .query(getUnitAdjacentInfoQuery, [gameId, turnNumber])
+      .query(getUnitAdjacentInfoQuery, [gameId, turnNumber, isFallTurn, isRetreatTurn])
       .then((results: QueryResult<any>) => {
         return results.rows.map((result: UnitAdjacyInfoResult) => {
           return <UnitOptions>{

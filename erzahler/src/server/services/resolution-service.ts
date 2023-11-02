@@ -13,7 +13,7 @@ import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
-import { TurnTS } from '../../models/objects/database-objects';
+import { Turn, TurnResult } from '../../models/objects/database-objects';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
@@ -49,7 +49,8 @@ export class ResolutionService {
     const startDetails: StartDetails = await this.schedulerService.getStartDetails(gameId);
     terminalLog(`Starting game ${startDetails.gameName} (${gameId})`);
 
-    const firstTurn: TurnTS = {
+    const firstTurn: Turn = {
+      turnId: 0,
       gameId: gameId,
       turnNumber: 1,
       turnName: formatTurnName(TurnType.SPRING_ORDERS, startDetails.stylizedYear),
@@ -61,8 +62,8 @@ export class ResolutionService {
 
     await db.schedulerRepo
       .insertTurn(firstTurn)
-      .then(async (nextTurn: TurnTS) => {
-        await this.optionsService.saveOptionsForNextTurn(gameId, nextTurn.turnId);
+      .then(async (nextTurn: Turn) => {
+        await this.optionsService.saveOptionsForTurn(nextTurn);
         await db.gameRepo.setGamePlaying(gameId);
         // Alert service call
       })
@@ -293,7 +294,10 @@ export class ResolutionService {
           TurnStatus.PENDING,
           nextTurns.pending.deadline
         ])
-        .then(async (result) => {
+        .then(async (pendingTurnResult: TurnResult) => {
+          const pendingTurn = this.convertTurnKeys(pendingTurnResult);
+          await this.initializeDefaultOrders(pendingTurn);
+
           if (nextTurns.preliminary) {
             terminalLog('DB: Preliminary Turn Insert');
             db.gameRepo.insertNextTurn([
@@ -305,24 +309,34 @@ export class ResolutionService {
               TurnStatus.PRELIMINARY,
               nextTurns.preliminary.deadline
             ])
-            .then(async (result) => {
-              this.initializeDefaultOrders(gameState.gameId, result.turn_id);
+            .then(async (preliminaryTurnResult: TurnResult) => {
+              const preliminaryTurn = this.convertTurnKeys(preliminaryTurnResult);
+              this.initializeDefaultOrders(preliminaryTurn);
             });
-
-          } else {
-            this.initializeDefaultOrders(gameState.gameId, result.turn_id);
           }
-
         });
       });
   }
 
-  async initializeDefaultOrders(gameId: number, turnId: number): Promise<void> {
+  convertTurnKeys(turnResult: TurnResult): Turn {
+    return {
+      turnId: turnResult.turn_id,
+      gameId: turnResult.game_id,
+      turnNumber: turnResult.turn_number,
+      turnName: turnResult.turn_name,
+      turnType: turnResult.turn_type,
+      turnStatus: turnResult.turn_status,
+      yearNumber: turnResult.year_number,
+      deadline: turnResult.deadline
+    }
+  }
+
+  async initializeDefaultOrders(turn: Turn): Promise<void> {
     terminalLog('Saving options for next turn');
-    await this.optionsService.saveOptionsForNextTurn(gameId, turnId)
+    await this.optionsService.saveOptionsForTurn(turn)
       .then(() => {
         terminalLog('Triggering next turn defaults');
-        this.optionsService.saveDefaultOrders(gameId);
+        this.optionsService.saveDefaultOrders(turn.gameId);
       });
   }
 

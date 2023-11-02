@@ -21,7 +21,7 @@ export const getUnitAdjacentInfoQuery = `
   INNER JOIN countries c ON c.country_id = u.country_id
   INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
   INNER JOIN country_histories ch ON ch.country_id = lch.country_id AND ch.turn_id = lch.turn_id
-  INNER JOIN get_node_adjacencies($1, $2) a ON a.node_id = uh.node_id
+  INNER JOIN get_node_adjacencies($1, $2, $3) a ON a.node_id = uh.node_id
   LEFT JOIN get_hold_supports($1, $2) hs ON hs.unit_id = u.unit_id
   LEFT JOIN get_adjacent_transports($1, $2) tu ON tu.unit_id = u.unit_id
   LEFT JOIN get_transport_destinations($1, $2) td ON td.unit_id = u.unit_id
@@ -29,6 +29,9 @@ export const getUnitAdjacentInfoQuery = `
   WHERE t.game_id = $1
     AND t.turn_number <= $2
     AND u.unit_type != 'Garrison'
-    AND uh.unit_status = 'Active'
+    AND uh.unit_status =
+      CASE when $4 = true THEN 'Retreat'
+        ELSE 'Active'
+      END
   ORDER BY u.unit_id;
 `;
