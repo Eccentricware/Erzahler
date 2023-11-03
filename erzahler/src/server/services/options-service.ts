@@ -42,12 +42,22 @@ import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 export class OptionsService {
   async saveOptionsForTurn(turn: Turn): Promise<void> {
     // const gameState: GameState = await db.gameRepo.getGameState(gameId);
-    const optionsContext: OptionsContext = await this.processUnitOrderOptions(turn);
+    if (turn.turnId) {
+      const optionsContext: OptionsContext = await this.processUnitOrderOptions(turn);
 
-    await this.saveUnitOrderOptions(optionsContext, turn.turnId);
+      await this.saveUnitOrderOptions(optionsContext, turn.turnId);
+    } else {
+      terminalLog(`Error saving Options: Turn for game (${turn.gameId}) has no turnId!`);
+    }
   }
 
   async processUnitOrderOptions(turn: Turn): Promise<OptionsContext> {
+    // Should always be called within saveOptionsForTurn, which checks turnId.
+    // Error message there. This is just to make linter happy. Everyone loves a happy linter.
+    if (!turn.turnId) {
+      return this.createBlankOptionsContext();
+    }
+
     const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(
       turn.gameId,
       turn.turnNumber,
@@ -1369,5 +1379,26 @@ export class OptionsService {
     }
 
     return description;
+  }
+
+  /**
+   * This is blank just to satisfy returns. Only instantiated if there's a problem.
+   *
+   * @returns OptionsContext
+   */
+  createBlankOptionsContext(): OptionsContext {
+    return {
+      gameId: 0,
+      unitInfo: [],
+      unitIdToIndexLib: undefined,
+      sharedAdjProvinces: undefined,
+      potentialConvoyProvinces: undefined,
+      validConvoyAssistProvinces: [],
+      transportPaths: undefined,
+      transports: undefined,
+      transportables: undefined,
+      transportDestinations: undefined,
+      turnId: 0
+    }
   }
 }

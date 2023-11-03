@@ -342,7 +342,7 @@ export class GameService {
     }
 
     terminalLog(`Finding games for ${username} (${userId})`);
-    terminalAddendum('Params', JSON.stringify(params));
+    terminalAddendum('Find Games Params', JSON.stringify(params));
     const gameResults: any = await db.gameRepo.getGames(userId, params, userTimeZone, meridiemTime);
 
     return gameResults;
