@@ -2,7 +2,7 @@ import { Pool, QueryResult } from 'pg';
 import { ColumnSet, IDatabase, IMain } from 'pg-promise';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
-import { TurnPG, TurnTS } from '../../models/objects/database-objects';
+import { TurnResult, Turn } from '../../models/objects/database-objects';
 import { ScheduleSettingsQueryResult } from '../../models/objects/schedule-settings-query-object';
 import { UpcomingTurn, UpcomingTurnResult } from '../../models/objects/scheduler/upcoming-turns-object';
 import { envCredentials } from '../../secrets/dbCredentials';
@@ -35,8 +35,8 @@ export class SchedulerRepository {
     );
   }
 
-  async insertTurn(input: TurnTS): Promise<TurnTS> {
-    const turnValues: TurnPG = {
+  async insertTurn(input: Turn): Promise<Turn> {
+    const turnValues: TurnResult = {
       game_id: input.gameId,
       turn_number: input.turnNumber,
       turn_name: input.turnName,
@@ -46,15 +46,23 @@ export class SchedulerRepository {
       deadline: input.deadline
     };
 
-    const query = this.pgp.helpers.insert(turnValues, this.turnCols) + 'RETURNING turn_id';
+    const query = this.pgp.helpers.insert(turnValues, this.turnCols)
+    + 'RETURNING game_id, turn_id, turn_number, turn_name, turn_type, turn_status, year_number, deadline';
 
-    const newTurn: TurnTS[] = await this.db.any(query).then((data: any) => {
-      return data.map((result: TurnPG) => {
-        return <TurnTS>{
-          turnId: result.turn_id
+    const newTurn: Turn[] = await this.db.any(query).then((data: any) =>
+      data.map((result: TurnResult): Turn => {
+        return {
+          gameId: result.game_id,
+          turnId: result.turn_id,
+          turnNumber: result.turn_number,
+          turnName: result.turn_name,
+          turnType: result.turn_type,
+          turnStatus: result.turn_status,
+          yearNumber: result.year_number,
+          deadline: result.deadline
         };
-      });
-    });
+      })
+    );
 
     return newTurn[0];
   }

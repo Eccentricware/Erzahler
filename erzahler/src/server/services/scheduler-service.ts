@@ -229,7 +229,7 @@ export class SchedulerService {
           resolutionService.resolveTurn(turn);
 
         } else {
-          terminalAddendum(`Deadlines`, `${turn.deadline} is in the future. Scheduling.`);
+          terminalAddendum(`Deadlines`, `Game (${turn.gameId}) deadline ${turn.deadline} is in the future. Scheduling.`);
           schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
             resolutionService.resolveTurn(turn);
           });

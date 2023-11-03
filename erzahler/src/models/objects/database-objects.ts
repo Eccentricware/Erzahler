@@ -3,7 +3,7 @@ import { TurnStatus } from '../enumeration/turn-status-enum';
 import { TurnType } from '../enumeration/turn-type-enum';
 
 export interface TurnResult {
-  turn_id: number;
+  turn_id?: number;
   game_id: number;
   turn_number: number;
   turn_name: string;
@@ -14,7 +14,7 @@ export interface TurnResult {
 }
 
 export interface Turn {
-  turnId: number;
+  turnId?: number;
   gameId: number;
   turnNumber: number;
   turnName: string;
