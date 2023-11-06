@@ -28,6 +28,8 @@ import { createEnvironmentProviderQuery } from '../queries/accounts/create-envir
 import { insertUserSettingsQuery } from '../queries/accounts/insert-user-settings-query';
 import { insertUserDetailsQuery } from '../queries/accounts/insert-user-details-query';
 import { updateUserSettingsQuery } from '../queries/dashboard/update-user-query';
+import { CustomException } from '../../models/objects/exception-objects';
+import { terminalLog } from '../../server/utils/general';
 
 export class AccountsRepository {
   pool = new Pool(envCredentials);
@@ -136,44 +138,55 @@ export class AccountsRepository {
       });
   }
 
-  async getUserProfile(uid: string): Promise<UserProfile | void> {
-    return await this.pool
+  async getUserProfile(uid: string): Promise<UserProfile | undefined> {
+    const userProfiles: UserProfile[] | undefined[] = await this.pool
       .query(getUserProfileQuery, [uid])
       .then((result: QueryResult<UserProfileResult>) => {
-        const user = result.rows[0];
-
-        if (result.rows.length > 0) {
-          return <UserProfile | void>{
-            userId: user.user_id,
-            username: user.username,
-            usernameLocked: user.username_locked,
-            userStatus: user.user_status,
-            classicUnitRender: user.classic_unit_render,
-            cityRenderSize: user.city_render_size,
-            labelRenderSize: user.label_render_size,
-            unitRenderSize: user.unit_render_size,
-            nmrTotal: user.nmr_total,
-            nmrOrders: user.nmr_orders,
-            nmrRetreats: user.nmr_retreats,
-            nmrAdjustments: user.nmr_adjustments,
-            dropouts: user.dropouts,
-            colorTheme: user.color_theme,
-            displayPresence: user.display_presence,
-            realName: user.real_name,
-            displayRealName: user.display_real_name,
-            uid: user.uid,
-            providerType: user.provider_type,
-            email: user.email,
-            emailVerified: user.email_verified,
-            verificationDeadline: user.verification_deadline,
-            timeZone: user.time_zone,
-            meridiemTime: user.meridiem_time
+        return result.rows.map((userProfileResult: UserProfileResult) => {
+          return <UserProfile>{
+            userId: userProfileResult.user_id,
+            username: userProfileResult.username,
+            usernameLocked: userProfileResult.username_locked,
+            userStatus: userProfileResult.user_status,
+            classicUnitRender: userProfileResult.classic_unit_render,
+            cityRenderSize: userProfileResult.city_render_size,
+            labelRenderSize: userProfileResult.label_render_size,
+            unitRenderSize: userProfileResult.unit_render_size,
+            nmrTotal: userProfileResult.nmr_total,
+            nmrOrders: userProfileResult.nmr_orders,
+            nmrRetreats: userProfileResult.nmr_retreats,
+            nmrAdjustments: userProfileResult.nmr_adjustments,
+            dropouts: userProfileResult.dropouts,
+            colorTheme: userProfileResult.color_theme,
+            displayPresence: userProfileResult.display_presence,
+            realName: userProfileResult.real_name,
+            displayRealName: userProfileResult.display_real_name,
+            uid: userProfileResult.uid,
+            providerType: userProfileResult.provider_type,
+            email: userProfileResult.email,
+            emailVerified: userProfileResult.email_verified,
+            verificationDeadline: userProfileResult.verification_deadline,
+            timeZone: userProfileResult.time_zone,
+            meridiemTime: userProfileResult.meridiem_time
           };
-        }
+        });
       })
       .catch((error: Error) => {
-        console.log('Get User Profile Error:', error.message);
+        terminalLog('Get User Profile Error:', error.message);
+        return [undefined];
       });
+
+      if (userProfiles.length > 1) {
+        terminalLog('Accounts', `Multiple User Profiles for uid (${uid})`);
+        return undefined;
+      }
+
+      if (userProfiles.length === 0) {
+        terminalLog('Accounts', `No User Profile for uid (${uid})`);
+        return undefined;
+      }
+
+      return userProfiles[0];
   }
 
   async getUserRowFromAccounts(uid: string): Promise<AccountsUserRow[]> {

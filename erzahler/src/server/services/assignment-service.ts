@@ -1,25 +1,12 @@
-import { Pool, QueryResult } from 'pg';
-import { getPlayerRegistrationStatusQuery } from '../../database/queries/assignments/get-player-registration-status';
-import { registerUserQuery } from '../../database/queries/assignments/register-user-query';
-import { unregisterUserQuery } from '../../database/queries/assignments/unregister-user-query';
-import { reregisterUserQuery } from '../../database/queries/assignments/reregister-user-query';
-import { getAssignmentsQuery } from '../../database/queries/game/get-assignments-query';
-import { getRegisteredPlayersQuery } from '../../database/queries/game/get-registered-players-query';
+import { Pool } from 'pg';
 import { AssignmentStatus } from '../../models/enumeration/assignment-status-enum';
 import { AssignmentDataObject } from '../../models/objects/assignment-objects';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { AccountService } from './account-service';
 import { FormattingService } from './formatting-service';
-import { getGameAdminsQuery } from '../../database/queries/game/get-game-admins-query';
-import { clearCountryAssignmentsQuery } from '../../database/queries/assignments/clear-country-assignments-query';
-import { assignUserQuery } from '../../database/queries/assignments/assign-user-query';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
-import { getGameDetailsQuery } from '../../database/queries/game/get-game-details-query';
-import { GameDetailsBuilder } from '../../models/classes/game-details-builder';
-import { lockAssignmentQuery } from '../../database/queries/assignments/lock-assignment-query';
-import { unlockAssignmentQuery } from '../../database/queries/assignments/unlock-assignment-query';
 import { db } from '../../database/connection';
-import { terminalAddendum, terminalLog } from '../utils/general';
+import { terminalLog } from '../utils/general';
 
 export class AssignmentService {
   user: any = undefined;
@@ -75,12 +62,11 @@ export class AssignmentService {
 
   async registerUser(idToken: string, gameId: number, assignmentType: string) {
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(envCredentials);
-    terminalLog(`Registering ${this.user.username} (${this.user.userId}) as ${assignmentType} for game ${gameId}`);
 
-    this.user = await accountService.getUserProfile(idToken);
-    if (!this.user.error) {
-      const userAssignmentTypes = await db.assignmentRepo.getPlayerRegistrationStatus(gameId, this.user.userId);
+    const user = await accountService.getUserProfile(idToken);
+    if (!user.error) {
+      terminalLog(`Registering ${user.username} (${user.userId}) as ${assignmentType} for game ${gameId}`);
+      const userAssignmentTypes = await db.assignmentRepo.getPlayerRegistrationStatus(gameId, user.userId);
 
       const blockedStatuses = [AssignmentStatus.BANNED];
 
@@ -89,9 +75,9 @@ export class AssignmentService {
       });
 
       if (existingAssignment.length === 0 && !blockedStatuses.includes(existingAssignment.assignment_type)) {
-        return await db.assignmentRepo.saveRegisterUser(gameId, this.user.userId, assignmentType);
+        return await db.assignmentRepo.saveRegisterUser(gameId, user.userId, assignmentType);
       } else if (existingAssignment[0].assignment_end !== null) {
-        return await db.assignmentRepo.saveReregisterUser(gameId, this.user.userId, assignmentType);
+        return await db.assignmentRepo.saveReregisterUser(gameId, user.userId, assignmentType);
       } else {
         console.log(`User is already registered as ${assignmentType}`);
         return {
