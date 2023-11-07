@@ -594,14 +594,18 @@ export class OptionsService {
   async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal | string> {
     const accountService = new AccountService();
     const userProfile = await accountService.getUserProfile(idToken);
-    const userId = userProfile.userId;
+
+    if (!userProfile) {
+      terminalAddendum('Turn Options', `User profile doesn't exist for idToken (${idToken})`);
+      return 'User profile doesn not exist';
+    }
 
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
     terminalLog(
-      `${userProfile.username} (${userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`
+      `${userProfile.username} (${userProfile.userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`
     );
     let playerCountry: CountryState | undefined = undefined;
-    const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
+    const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userProfile.userId);
     if (playerCountries.length > 0) {
       const countryStates = await db.gameRepo.getCountryState(
         gameId,
@@ -632,7 +636,7 @@ export class OptionsService {
     }
 
     const turnOptions: OptionsFinal = {
-      playerId: userId,
+      playerId: userProfile.userId,
       countryId: playerCountry.countryId,
       countryName: playerCountry.name
     };
