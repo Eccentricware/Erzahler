@@ -3,7 +3,6 @@ import { AssignmentStatus } from '../../models/enumeration/assignment-status-enu
 import { AssignmentDataObject } from '../../models/objects/assignment-objects';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { AccountService } from './account-service';
-import { FormattingService } from './formatting-service';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
 import { db } from '../../database/connection';
 import { terminalLog } from '../utils/general';
@@ -14,8 +13,6 @@ export class AssignmentService {
 
   async getGameAssignments(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
-    const formattingService: FormattingService = new FormattingService();
-    const pool: Pool = new Pool(envCredentials);
     let userId = 0;
 
     if (idToken) {
@@ -64,7 +61,7 @@ export class AssignmentService {
     const accountService: AccountService = new AccountService();
 
     const user = await accountService.getUserProfile(idToken);
-    if (!user.error) {
+    if (user) {
       terminalLog(`Registering ${user.username} (${user.userId}) as ${assignmentType} for game ${gameId}`);
       const userAssignmentTypes = await db.assignmentRepo.getPlayerRegistrationStatus(gameId, user.userId);
 
