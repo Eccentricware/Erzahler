@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { AssignmentStatus } from '../../models/enumeration/assignment-status-enum';
-import { AssignmentDataObject } from '../../models/objects/assignment-objects';
+import { Assignment, AssignmentDataObject } from '../../models/objects/assignment-objects';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { AccountService } from './account-service';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
@@ -30,8 +30,8 @@ export class AssignmentService {
       this.user.meridiemTime
     );
     const assignments: any = await db.assignmentRepo.getAssignments(gameId, userId);
-    const registeredUsers: any = await db.assignmentRepo.getRegisteredPlayers(gameId);
-    const userStatus: any = await db.assignmentRepo.getPlayerRegistrationStatus(gameId, userId);
+    const registeredUsers: any = await db.assignmentRepo.getUserRegistrations(gameId);
+    const userStatus: any = await db.assignmentRepo.getUserRegistrations(gameId, userId);
     const userIsAdmin: boolean = await this.isPlayerAdmin(gameId, userId);
 
     const assignmentData: AssignmentDataObject = {
@@ -63,22 +63,22 @@ export class AssignmentService {
     const user = await accountService.getUserProfile(idToken);
     if (user) {
       terminalLog(`Registering ${user.username} (${user.userId}) as ${assignmentType} for game ${gameId}`);
-      const userAssignmentTypes = await db.assignmentRepo.getPlayerRegistrationStatus(gameId, user.userId);
+      const userAssignmentTypes = await db.assignmentRepo.getUserRegistrations(gameId, user.userId);
+
+      const existingAssignment = userAssignmentTypes.filter((assignment: Assignment) => {
+        return assignment.assignmentType === assignmentType;
+      });
 
       const blockedStatuses = [AssignmentStatus.BANNED];
 
-      const existingAssignment = userAssignmentTypes.filter((assignment: any) => {
-        return assignment.assignment_type === assignmentType;
-      });
-
-      if (existingAssignment.length === 0 && !blockedStatuses.includes(existingAssignment.assignment_type)) {
-        return await db.assignmentRepo.saveRegisterUser(gameId, user.userId, assignmentType);
-      } else if (existingAssignment[0].assignment_end !== null) {
+      if (existingAssignment.length === 0 && !blockedStatuses.includes(existingAssignment[0].assignmentStatus)) {
         return await db.assignmentRepo.saveReregisterUser(gameId, user.userId, assignmentType);
+      } else if (existingAssignment[0].assignmentEnd !== null) {
+        return await db.assignmentRepo.saveRegisterUser(gameId, user.userId, assignmentType);
       } else {
         console.log(`User is already registered as ${assignmentType}`);
         return {
-          success: undefined,
+          success: false,
           message: `User is already registered as ${assignmentType}`
         };
       }
