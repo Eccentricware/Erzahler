@@ -373,7 +373,7 @@ export class GameService {
     terminalLog(`${username} (${userId}) Requested Game Data: ${gameId}`);
     const gameData: any = await db.gameRepo.getGameDetails(gameId, userId, userTimeZone, meridiemTime);
     const ruleData: any = await db.gameRepo.getRulesInGame(gameId);
-    const playerRegistration: any = await db.gameRepo.getPlayerRegistrationStatus(gameId, userId);
+    const playerRegistration: any = await db.assignmentRepo.getUserAssignments(gameId, userId);
 
     gameData.rules = ruleData;
     gameData.playerRegistration = playerRegistration;

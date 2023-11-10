@@ -24,11 +24,15 @@ import assert from 'assert';
 import { terminalAddendum, terminalLog } from '../utils/general';
 
 export class OrdersService {
-  async getTurnOrders(idToken: string, gameId: number): Promise<TurnOrders> {
+  async getTurnOrders(idToken: string, gameId: number): Promise<TurnOrders | undefined> {
     // Identify user
     const accountService = new AccountService();
 
     const user = await accountService.getUserProfile(idToken);
+    if (!user) {
+      return;
+    }
+
     const userId = user.userId;
     const gameState = await db.gameRepo.getGameState(gameId);
     // Identify Player Type (Player, Admin, Spectator)
