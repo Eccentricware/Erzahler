@@ -12,7 +12,7 @@ export const getUserRegistrationsQuery = `
   INNER JOIN assignments a ON a.user_id = u.user_id
   INNER JOIN games g ON g.game_id = a.game_id
   WHERE g.game_id = $1
-    AND CASE WHEN 0 = $2 THEN TRUE
+    AND CASE WHEN $2 = 0 THEN TRUE
       ELSE a.user_id = $2
     END
   ORDER BY a.assignment_type,
@@ -49,10 +49,7 @@ export const registerUserQuery = `
 `;
 
 export const unregisterUserQuery = `
-  UPDATE assignments
-  SET country_id = NULL,
-    assignment_end = NOW() AT TIME ZONE 'utc',
-    assignment_status = 'Unregistered'
+  DELETE FROM assignments
   WHERE game_id = $1
     AND user_id = $2
     AND assignment_type = $3;

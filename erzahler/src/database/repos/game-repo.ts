@@ -11,7 +11,6 @@ import { CountryStats, CountryStatsResult } from '../../models/objects/games/cou
 import { GameState, GameStateResult } from '../../models/objects/last-turn-info-object';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formatting-service';
-import { getPlayerRegistrationStatusQuery } from '../queries/assignments/get-player-registration-status';
 import { checkGameNameAvailabilityQuery } from '../queries/game/check-game-name-availability-query';
 import { checkUserGameAdminQuery } from '../queries/game/check-user-game-admin-query';
 import { getCoalitionScheduleQuery } from '../queries/game/get-coalition-schedule-query';
@@ -482,17 +481,6 @@ export class GameRepository {
         return ruleDataResults.rows.map((rule: any) => this.formattingService.convertKeysSnakeToCamel(rule));
       })
       .catch((error: Error) => terminalLog('Get Rule Data Results Error: ' + error.message));
-  }
-
-  async getPlayerRegistrationStatus(gameId: number, userId: number): Promise<any> {
-    return await this.pool
-      .query(getPlayerRegistrationStatusQuery, [gameId, userId])
-      .then((playerRegistrationResults: any) => {
-        return playerRegistrationResults.rows.map((registrationType: any) =>
-          this.formattingService.convertKeysSnakeToCamel(registrationType)
-        );
-      })
-      .catch((error: Error) => terminalLog('Get Player Registration Types Results Error: ' + error.message));
   }
 
   async getCountryState(gameId: number, turnNumber: number, countryId: number): Promise<CountryState[]> {

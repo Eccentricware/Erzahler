@@ -95,14 +95,15 @@ export class AssignmentRepository {
 
   async getUserRegistrations(gameId: number, userId?: number): Promise<Assignment[]> {
     return await this.pool
-      .query(getUserRegistrationsQuery, [gameId, userId])
+      .query(getUserRegistrationsQuery, [gameId, userId ? userId : 0])
       .then((playerRegistrationResults: QueryResult<AssignmentResult>) =>
         playerRegistrationResults.rows.map((assignmentResult: AssignmentResult) => {
-          return <Assignment> {
+          return {
             userId: assignmentResult.user_id,
             username: assignmentResult.username,
             assignmentId: assignmentResult.assignment_id,
             assignmentType: assignmentResult.assignment_type,
+            assignmentStatus: assignmentResult.assignment_status,
             assignmentStart: assignmentResult.assignment_start,
             assignmentEnd: assignmentResult.assignment_end,
             countryId: assignmentResult.country_id,

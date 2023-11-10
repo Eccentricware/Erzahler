@@ -5,7 +5,7 @@ import { envCredentials } from '../../secrets/dbCredentials';
 import { AccountService } from './account-service';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
 import { db } from '../../database/connection';
-import { terminalLog } from '../utils/general';
+import { terminalAddendum, terminalLog } from '../utils/general';
 
 export class AssignmentService {
   user: any = undefined;
@@ -30,8 +30,10 @@ export class AssignmentService {
       this.user.meridiemTime
     );
     const assignments: any = await db.assignmentRepo.getAssignments(gameId, userId);
-    const registeredUsers: any = await db.assignmentRepo.getUserRegistrations(gameId);
-    const userStatus: any = await db.assignmentRepo.getUserRegistrations(gameId, userId);
+    const registeredUsers: Assignment[] = await db.assignmentRepo.getUserRegistrations(gameId);
+    const userStatus: Assignment[] = registeredUsers.filter((assignment: Assignment) =>
+      assignment.userId === userId
+    );
     const userIsAdmin: boolean = await this.isPlayerAdmin(gameId, userId);
 
     const assignmentData: AssignmentDataObject = {
@@ -63,23 +65,22 @@ export class AssignmentService {
     const user = await accountService.getUserProfile(idToken);
     if (user) {
       terminalLog(`Registering ${user.username} (${user.userId}) as ${assignmentType} for game ${gameId}`);
-      const userAssignmentTypes = await db.assignmentRepo.getUserRegistrations(gameId, user.userId);
+      const userAssignments = await db.assignmentRepo.getUserRegistrations(gameId, user.userId);
 
-      const existingAssignment = userAssignmentTypes.filter((assignment: Assignment) => {
-        return assignment.assignmentType === assignmentType;
-      });
+      // Users wouldn't be banned as an admin at a per-game level. This would have to be set/get elsewhere.
+      //
+      const existingAssignment = this.getUserAssignment(userAssignments, AssignmentType.PLAYER);
 
       const blockedStatuses = [AssignmentStatus.BANNED];
 
-      if (existingAssignment.length === 0 && !blockedStatuses.includes(existingAssignment[0].assignmentStatus)) {
-        return await db.assignmentRepo.saveReregisterUser(gameId, user.userId, assignmentType);
-      } else if (existingAssignment[0].assignmentEnd !== null) {
+      // Users can't be banned if the assignment doesn't exist
+      if (!existingAssignment) {
         return await db.assignmentRepo.saveRegisterUser(gameId, user.userId, assignmentType);
       } else {
-        console.log(`User is already registered as ${assignmentType}`);
+        terminalAddendum('Registration', `${user.username} is already signed up as a ${assignmentType} for game (${gameId})`);
         return {
           success: false,
-          message: `User is already registered as ${assignmentType}`
+          message: `${user.username} is already signed up as a ${assignmentType} for game (${gameId})`
         };
       }
     }
@@ -88,6 +89,30 @@ export class AssignmentService {
       success: false,
       message: 'Invalid user'
     };
+  }
+
+  getUserAssignment(userAssignments: Assignment[], assignmentType: AssignmentType): Assignment | undefined {
+    const assignmentsOfType = userAssignments.filter((assignment: Assignment) => {
+      return assignment.assignmentType === assignmentType;
+    });
+
+    if (assignmentsOfType.length > 1) {
+      terminalAddendum(
+        'Assignments',
+        `Player has been registered as a ${
+          assignmentType
+        } ${
+          assignmentsOfType.length
+        } time${
+          assignmentsOfType.length === 1 ? '' : 's'
+        }`);
+    }
+
+    if (assignmentsOfType.length > 0) {
+      return assignmentsOfType[0];
+    }
+
+    return undefined;
   }
 
   async unregisterUser(idToken: string, gameId: number, assignmentType: string) {
