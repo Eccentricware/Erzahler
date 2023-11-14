@@ -919,13 +919,19 @@ export class ResolutionService {
         challenger.valid === true
     );
 
-    const incomingChallengers = unitOrders.filter(
-      (challenger: UnitOrderResolution) =>
-        challenger.destination.provinceId === order.destination.provinceId &&
-        [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(challenger.orderType) &&
-        challenger.unit.id !== order.unit.id &&
-        challenger.valid === true
-    );
+    const incomingChallengers = unitOrders.filter((challenger: UnitOrderResolution) => {
+      const challengerMoving = [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(challenger.orderType);
+      const notSameUnit = challenger.unit.id !== order.unit.id;
+      const challengerValid = challenger.valid === true;
+      const challengingAtDestination = challenger.destination.provinceId === order.destination.provinceId;
+      const challengingFromDestination = challenger.destination.provinceId === order.origin.provinceId
+        && challenger.origin.provinceId === order.destination.provinceId;
+
+      return (challengingAtDestination || challengingFromDestination) &&
+      challengerMoving &&
+      notSameUnit &&
+      challengerValid
+    });
 
     if (holdingChallenger) {
       if (holdingChallenger.unit.countryId === order.unit.countryId) {
@@ -1164,7 +1170,6 @@ export class ResolutionService {
     let finalPosition: OrderResolutionLocation = result.origin;
     if (
       (result.unit.status === UnitStatus.ACTIVE ||
-        result.unit.status === UnitStatus.RETREAT ||
         result.unit.status === UnitStatus.DETONATED) &&
       (result.orderType === OrderDisplay.MOVE ||
         result.orderType === OrderDisplay.MOVE_CONVOYED ||
@@ -1175,6 +1180,8 @@ export class ResolutionService {
     }
     return finalPosition;
   }
+
+  // getEventNode(provinceId: number):
 
   createProvinceHistory(
     result: UnitOrderResolution,
@@ -1317,8 +1324,10 @@ export class ResolutionService {
     const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
     if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
       const newUnitHistory = this.copyUnitHistory(unitHistory);
-      newUnitHistory.nodeId = finalPosition.nodeId;
       newUnitHistory.unitStatus = result.unit.status;
+      newUnitHistory.nodeId = (result.unit.status === UnitStatus.RETREAT && result.origin.eventNodeId)
+        ? result.origin.eventNodeId
+        : finalPosition.nodeId;
       dbUpdates.unitHistories?.push(newUnitHistory);
     }
 

@@ -31,6 +31,7 @@ export interface UnitOrderResolutionResult {
   province_id: number;
   province: string;
   province_type: string;
+  event_node_id: number;
   vote_type: string;
   province_status: string;
   controller_id: number;
@@ -91,6 +92,7 @@ export interface OrderResolutionLocation {
   provinceName: string;
   display: string;
   provinceType: ProvinceType;
+  eventNodeId?: number;
   voteType: VoteType;
   provinceStatus: ProvinceStatus;
   controllerId: number;

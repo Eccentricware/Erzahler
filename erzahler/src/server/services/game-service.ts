@@ -480,7 +480,8 @@ export class GameService {
 
     // TO-DO Restore to registration clause after troubleshooting && gameData.gameStatus === GameStatus.REGISTRATION
     if (gameData.isAdmin) {
-      await schedulerService.readyGame(gameData);
+      return await schedulerService.readyGame(gameData)
+        .then((result) => result);
     }
   }
 

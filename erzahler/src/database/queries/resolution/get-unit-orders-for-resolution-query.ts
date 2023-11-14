@@ -20,6 +20,7 @@ export const getUnitOrdersForResolutionQuery = `
     p.province_id,
     p.province_name province,
     p.province_type,
+    en.node_id event_node_id,
     p.vote_type,
     ph.province_status,
     ph.controller_id,
@@ -52,6 +53,7 @@ export const getUnitOrdersForResolutionQuery = `
   INNER JOIN province_histories ph ON ph.province_id = p.province_id
   INNER JOIN get_last_province_history($1, $2) lph
     ON lph.province_id = ph.province_id AND lph.turn_id = ph.turn_id
+  INNER JOIN nodes en ON en.province_id = p.province_id AND en.node_type = 'event'
   LEFT JOIN nodes dn ON dn.node_id = o.destination_id
   LEFT JOIN provinces dp ON dp.province_id = dn.province_id
   LEFT JOIN province_histories dph ON dph.province_id = dp.province_id
