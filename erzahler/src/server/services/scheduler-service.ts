@@ -225,7 +225,7 @@ export class SchedulerService {
     pendingTurns.
       forEach(async (turn: UpcomingTurn) => {
         if (Date.parse(turn.deadline) < Date.now()) {
-          terminalAddendum(`Deadlines`, `${turn.deadline} has passed. Resolving.`);
+          terminalAddendum(`Deadlines`, `Game (${turn.gameId}) deadline ${turn.deadline} has passed. Resolving.`);
           resolutionService.resolveTurn(turn);
 
         } else {

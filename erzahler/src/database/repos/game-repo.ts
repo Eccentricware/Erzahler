@@ -52,6 +52,7 @@ import { getCurrentProvinceHistoryQuery } from '../queries/isolated-tables/get-c
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
 import { startGameQuery } from '../queries/game/start-game-query';
 import { terminalLog } from '../../server/utils/general';
+import { Turn, TurnResult } from '../../models/objects/database-objects';
 
 const gamesCols: string[] = [
   'game_name',
@@ -201,7 +202,7 @@ export class GameRepository {
     return this.pool.query(insertTurnQuery, turnArgs);
   }
 
-  async insertNextTurn(turnArgs: any[]): Promise<any> {
+  async insertNextTurn(turnArgs: any[]): Promise<Turn> {
     const nextTurnQuery: ParameterizedQuery = new ParameterizedQuery({
       text: insertNextTurnQuery,
       values: turnArgs

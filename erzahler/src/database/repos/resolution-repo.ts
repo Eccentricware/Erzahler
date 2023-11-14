@@ -210,6 +210,7 @@ export class ResolutionRepository {
               provinceId: order.province_id,
               provinceName: order.province,
               provinceType: order.province_type,
+              eventNodeId: order.event_node_id,
               display: order.destination_display,
               voteType: order.vote_type,
               provinceStatus: order.province_status,
