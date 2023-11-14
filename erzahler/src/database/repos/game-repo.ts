@@ -208,7 +208,17 @@ export class GameRepository {
       values: turnArgs
     });
 
-    return await this.db.one(nextTurnQuery);
+    return await this.db.one(nextTurnQuery)
+      .then((nextTurnResult: TurnResult) => ({
+        turnId: nextTurnResult.turn_id,
+        gameId: nextTurnResult.game_id,
+        turnNumber: nextTurnResult.turn_number,
+        turnName: nextTurnResult.turn_name,
+        turnType: nextTurnResult.turn_type,
+        turnStatus: nextTurnResult.turn_status,
+        yearNumber: nextTurnResult.year_number,
+        deadline: nextTurnResult.deadline
+      }));
   }
 
   async insertProvinces(provinces: any, gameName: string): Promise<any[]> {

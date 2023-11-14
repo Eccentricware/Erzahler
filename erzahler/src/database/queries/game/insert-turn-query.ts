@@ -36,5 +36,12 @@ export const insertNextTurnQuery = `
     $5,
     $6,
     $7
-  ) returning turn_id;
+  ) returning turn_id,
+    game_id,
+    turn_number,
+    turn_name,
+    turn_type,
+    turn_status,
+    year_number,
+    deadline;
 `;
