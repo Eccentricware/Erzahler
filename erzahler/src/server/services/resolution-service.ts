@@ -294,8 +294,7 @@ export class ResolutionService {
           TurnStatus.PENDING,
           nextTurns.pending.deadline
         ])
-        .then(async (pendingTurnResult: TurnResult) => {
-          const pendingTurn = this.convertTurnKeys(pendingTurnResult);
+        .then(async (pendingTurn: Turn) => {
           await this.initializeDefaultOrders(pendingTurn);
 
           if (nextTurns.preliminary) {
@@ -309,26 +308,12 @@ export class ResolutionService {
               TurnStatus.PRELIMINARY,
               nextTurns.preliminary.deadline
             ])
-            .then(async (preliminaryTurnResult: TurnResult) => {
-              const preliminaryTurn = this.convertTurnKeys(preliminaryTurnResult);
+            .then(async (preliminaryTurn: Turn) => {
               this.initializeDefaultOrders(preliminaryTurn);
             });
           }
         });
       });
-  }
-
-  convertTurnKeys(turnResult: TurnResult): Turn {
-    return {
-      turnId: turnResult.turn_id,
-      gameId: turnResult.game_id,
-      turnNumber: turnResult.turn_number,
-      turnName: turnResult.turn_name,
-      turnType: turnResult.turn_type,
-      turnStatus: turnResult.turn_status,
-      yearNumber: turnResult.year_number,
-      deadline: turnResult.deadline
-    }
   }
 
   async initializeDefaultOrders(turn: Turn): Promise<void> {
