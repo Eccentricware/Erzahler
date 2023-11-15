@@ -92,7 +92,6 @@ export interface OrderResolutionLocation {
   provinceName: string;
   display: string;
   provinceType: ProvinceType;
-  eventNodeId?: number;
   voteType: VoteType;
   provinceStatus: ProvinceStatus;
   controllerId: number;

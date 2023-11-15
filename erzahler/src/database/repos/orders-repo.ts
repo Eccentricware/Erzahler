@@ -221,9 +221,9 @@ export class OrdersRepository {
 
   //////////////////// Legacy Functions ////////////////////
 
-  async insertTurnOrderSets(gameId: number, turnNumber: number, nextTurnId: number): Promise<OrderSet[]> {
+  async insertTurnOrderSets(gameId: number, turnNumber: number, nextTurnId: number, isRetreatTurn: boolean): Promise<OrderSet[]> {
     const orderSets: OrderSet[] = await this.pool
-      .query(insertTurnOrderSetsQuery, [nextTurnId, gameId, turnNumber])
+      .query(insertTurnOrderSetsQuery, [nextTurnId, gameId, turnNumber, isRetreatTurn])
       .then((result: QueryResult<any>) =>
         result.rows.map((orderSetResult: OrderSetResult) => {
           return <OrderSet>{

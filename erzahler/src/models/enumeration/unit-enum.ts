@@ -5,7 +5,8 @@ export enum UnitStatus {
   DISBANNED_RETREAT = 'Disbanned in Retreat',
   DETONATED = 'Detonated',
   NUKED = 'Nuked',
-  RETREAT = 'Retreat'
+  RETREAT = 'Retreat',
+  DISCARDED = 'Discarded' // Not an in-game status but a db row being ignored
 }
 
 export enum UnitType {
