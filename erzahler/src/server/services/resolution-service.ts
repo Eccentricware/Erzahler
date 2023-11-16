@@ -174,6 +174,22 @@ export class ResolutionService {
 
       if (result.unit.status === UnitStatus.RETREAT) {
         unitsRetreating = true;
+        if (dbUpdates.countryHistories[result.unit.countryId]) {
+          dbUpdates.countryHistories[result.unit.countryId].inRetreat = true;
+
+        } else {
+          const previousCountryHistory = dbStates.countryHistories.find((countryHistory: CountryHistoryRow) =>
+            countryHistory.countryId === result.unit.countryId
+          );
+
+          if (!previousCountryHistory) {
+            terminalAddendum('Resolution', `Can't find unit ${result.unit.id} country by countryId ${result.unit.countryId}`);
+            return;
+          }
+
+          dbUpdates.countryHistories[result.unit.countryId] = this.copyCountryHistory(previousCountryHistory);
+          dbUpdates.countryHistories[result.unit.countryId].inRetreat = true;
+        }
       }
     });
 
@@ -181,9 +197,13 @@ export class ResolutionService {
 
     transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
       if (result.success && result.hasNukes) {
-        const partnerHistory = dbStates.countryHistories?.find(
-          (country: CountryHistoryRow) => country.countryId === result.foreignCountryId
-        );
+        let partnerHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.foreignCountryId];
+
+        if (!partnerHistory) {
+          partnerHistory = dbStates.countryHistories?.find(
+            (country: CountryHistoryRow) => country.countryId === result.foreignCountryId
+          );
+        }
 
         if (partnerHistory) {
           const newCountryHistory = this.copyCountryHistory(partnerHistory);
