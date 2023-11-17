@@ -298,6 +298,7 @@ export interface ProvinceHistoryRow {
 }
 
 export interface CountryHistoryRowResult {
+  turn_id: number | undefined;
   country_id: number;
   country_status: CountryStatus;
   city_count: number;
@@ -311,7 +312,7 @@ export interface CountryHistoryRowResult {
 }
 
 export interface CountryHistoryRow {
-  turnId: number;
+  turnId: number | undefined;
   countryId: number;
   countryStatus: CountryStatus;
   cityCount: number;

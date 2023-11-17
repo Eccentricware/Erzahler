@@ -4,9 +4,11 @@ export enum CountryStatus {
   ELIMINATED = 'Eliminated',
   NPC = 'Non-Player Country',
   RETREAT = 'Retreat',
-  //
+  // End Behavior
   SURVIVED = 'Survived',
-  WON = 'Won'
+  WON = 'Won',
+  // Misc Behavior
+  DISCARDED = 'Discarded'
 }
 
 export enum CountryRank {
