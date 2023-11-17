@@ -1310,9 +1310,7 @@ export class ResolutionService {
     if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
       const newUnitHistory = this.copyUnitHistory(unitHistory);
       newUnitHistory.unitStatus = result.unit.status;
-      newUnitHistory.nodeId = (result.unit.status === UnitStatus.RETREAT && result.origin.eventNodeId)
-        ? result.origin.eventNodeId
-        : finalPosition.nodeId;
+
       dbUpdates.unitHistories?.push(newUnitHistory);
     }
 
