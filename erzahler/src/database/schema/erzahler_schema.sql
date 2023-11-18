@@ -601,6 +601,7 @@ CREATE TABLE IF NOT EXISTS order_sets(
   order_set_id SERIAL,
   country_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
+  order_set_status VARCHAR(15),
   message_id INTEGER,
   submission_time TIMESTAMP NOT NULL,
   order_set_type VARCHAR(15) NOT NULL,
@@ -667,6 +668,7 @@ CREATE TABLE IF NOT EXISTS orders(
 CREATE TABLE IF NOT EXISTS orders_transfer_builds(
   build_transfer_order_id SERIAL,
   order_set_id INTEGER NOT NULL,
+  status VARCHAR(15),
   quantity INTEGER,
   recipient_id INTEGER, --Can be null because SOMEDAY manual entry will be thing
   recipient_name VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW
@@ -683,6 +685,7 @@ CREATE TABLE IF NOT EXISTS orders_transfer_builds(
 CREATE TABLE IF NOT EXISTS orders_transfer_tech(
   tech_transfer_order_id SERIAL,
   order_set_id INTEGER NOT NULL,
+  status VARCHAR(15),
   offering BOOLEAN NOT NULL DEFAULT false,
   foreign_country_id INTEGER, --Can be null because SOMEDAY manual entry will be thing
   foreign_country_name VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW

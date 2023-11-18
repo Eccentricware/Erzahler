@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/scripts/create-get-transport_destinations-function.sql
+--sudo -u postgres psql < database/scripts/functions/create-get-transport_destinations-function.sql
 
 \c erzahler_dev;
 \echo 'Attempting to create get_transport_destinations function'

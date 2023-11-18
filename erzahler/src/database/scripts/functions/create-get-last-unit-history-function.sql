@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/scripts/create-get-last-unit-history-function.sql
+--sudo -u postgres psql < database/scripts/functions/create-get-last-unit-history-function.sql
 
 \c erzahler_dev;
 \echo 'Attempting to create get_last_unit_history function'
