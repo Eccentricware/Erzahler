@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/scripts/create-get-node-adjacencies-function.sql
+--sudo -u postgres psql < database/scripts/functions/create-get-node-adjacencies-function.sql
 
 \c erzahler_dev;
 \echo 'Attempting to create get_node_adjacencies function'
