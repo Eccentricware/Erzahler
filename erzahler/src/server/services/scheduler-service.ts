@@ -224,7 +224,7 @@ export class SchedulerService {
 
     pendingTurns.
       forEach(async (turn: UpcomingTurn) => {
-        if (Date.parse(turn.deadline) < Date.now()) {
+        if (Date.parse(turn.deadline.toISOString()) < Date.now()) {
           terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) has expired. Resolving`);
           resolutionService.resolveTurn(turn);
 
