@@ -1,4 +1,5 @@
 import { db } from '../../database/connection';
+import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
@@ -594,13 +595,17 @@ export class OptionsService {
     }
   }
 
-  async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal | string> {
+  async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal> {
     const accountService = new AccountService();
     const userProfile = await accountService.getUserProfile(idToken);
 
     if (!userProfile) {
       terminalAddendum('Turn Options', `User profile doesn't exist for idToken (${idToken})`);
-      return 'User profile doesn not exist';
+      return {
+        playerId: 0,
+        countryId: 0,
+        countryName: 'Guest'
+      };
     }
 
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
@@ -608,18 +613,32 @@ export class OptionsService {
       `${userProfile.username} (${userProfile.userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`
     );
     let playerCountry: CountryState | undefined = undefined;
-    const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userProfile.userId);
-    if (playerCountries.length > 0) {
+    const userAssignments: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userProfile.userId);
+
+    const userCountries = userAssignments.filter((assignment: UserAssignment) =>
+      assignment.assignmentType === AssignmentType.PLAYER
+    );
+
+    if (userCountries.length > 0) {
       const countryStates = await db.gameRepo.getCountryState(
         gameId,
         gameState.turnNumber,
-        playerCountries[0].countryId
+        userCountries[0].countryId
       );
       playerCountry = countryStates[0];
-    }
-
-    if (playerCountry === undefined) {
-      return 'User is not assigned an active country';
+    } else {
+      playerCountry = {
+        countryId: 0,
+        name: 'Spectator',
+        countryStatus: 'Spectator',
+        cityCount: 0,
+        unitCount: 0,
+        retreating: false,
+        builds: 0,
+        nukeRange: null,
+        adjustments: 0,
+        nukesInProduction: 0,
+      };
     }
 
     let pendingTurn: UpcomingTurn | undefined = undefined;
