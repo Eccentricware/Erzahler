@@ -97,7 +97,7 @@ export class SchedulerRepository {
   async getUpcomingTurns(gameId = 0): Promise<UpcomingTurn[]> {
     return await this.pool
       .query(getUpcomingTurnsQuery, [gameId])
-      .then((results: QueryResult<any>) => {
+      .then((results: QueryResult<UpcomingTurnResult>) => {
         return results.rows.map((turn: UpcomingTurnResult) => {
           const unitMovement = [
             TurnType.ORDERS_AND_VOTES,

@@ -38,6 +38,7 @@ export interface UnitOrderResolutionResult {
   capital_owner_id: number;
   secondary_unit_id: number;
   secondary_unit_type: UnitType;
+  secondary_unit_status: UnitStatus;
   secondary_country_id: number;
   secondary_country: string;
   secondary_unit_province: string;
@@ -77,6 +78,7 @@ export interface UnitOrderResolution {
   secondaryUnit: {
     id: number;
     type: UnitType;
+    status: UnitStatus;
     countryId: number;
     country: string;
     provinceName: string;

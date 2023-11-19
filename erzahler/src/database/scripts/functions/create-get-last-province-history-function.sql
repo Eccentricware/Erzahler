@@ -17,6 +17,7 @@ AS $$
 		INNER JOIN turns t ON t.turn_id = ph.turn_id
 		WHERE t.game_id = $1
 			AND t.turn_number <= $2
+			AND ph.province_status != 'Discarded'
 		GROUP BY ph.province_id
 	)
 	SELECT ltn.province_id,
@@ -25,5 +26,6 @@ AS $$
 	FROM turns t
 	INNER JOIN last_turn_number ltn ON ltn.turn_number = t.turn_number
 	WHERE t.game_id = $1
+
 
 $$ LANGUAGE SQL;
