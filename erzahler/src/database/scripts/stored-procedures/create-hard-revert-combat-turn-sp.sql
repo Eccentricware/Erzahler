@@ -12,50 +12,79 @@ AS $$
     AND turn_number = $2;
 
   DELETE FROM orders
-  USING orders o
-  INNER JOIN order_sets os ON os.order_set_id = o.order_set_id
-  INNER JOIN turns t ON t.turn_id = os.turn_id
-  WHERE t.game_id = $1
-    AND t.turn_number > $2;
+  WHERE order_id IN (
+    SELECT o.order_id
+    FROM orders o
+    INNER JOIN order_sets os ON os.order_set_id = o.order_set_id
+    INNER JOIN turns t ON t.turn_id = os.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number > $2
+  );
 
   DELETE FROM orders_transfer_builds
-  USING orders_transfer_builds otb
-  INNER JOIN order_sets os ON os.order_set_id = otb.order_set_id
-  INNER JOIN turns t ON t.turn_id = os.turn_id
-  WHERE t.game_id = $1
-    AND t.turn_number > $2;
+  WHERE build_transfer_order_id IN (
+    SELECT tbo.build_transfer_order_id
+    FROM orders_transfer_builds tbo
+    INNER JOIN order_sets os ON os.order_set_id = tbo.order_set_id
+    INNER JOIN turns t ON t.turn_id = os.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number > $2
+  );
 
   DELETE FROM orders_transfer_tech
-  USING orders_transfer_tech ott
-  INNER JOIN order_sets os ON os.order_set_id = ott.order_set_id
-  INNER JOIN turns t ON t.turn_id = os.turn_id
-  WHERE t.game_id = $1
-    AND t.turn_number > $2;
+  WHERE tech_transfer_order_id IN (
+    SELECT tto.tech_transfer_order_id
+    FROM orders_transfer_tech tto
+    INNER JOIN order_sets os ON os.order_set_id = tto.order_set_id
+    INNER JOIN turns t ON t.turn_id = os.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number > $2
+  );
 
   DELETE FROM order_sets
-  USING order_sets os
-  INNER JOIN turns t ON t.turn_id = os.turn_id
-  WHERE t.game_id = $1
-    AND t.turn_number > $2;
+  WHERE order_set_id IN (
+    SELECT os.order_set_id
+    FROM order_sets os
+    INNER JOIN turns t ON t.turn_id = os.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number > $2
+  );
 
+  DELETE FROM order_options
+  WHERE order_option_id IN (
+    SELECT oo.order_option_id
+    FROM order_options oo
+    INNER JOIN turns t ON t.turn_id = oo.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number > $2
+  );
 
   DELETE FROM unit_histories
-  USING unit_histories uh
-  INNER JOIN turns t ON t.turn_id = uh.turn_id
-  WHERE t.game_id = $1
-    AND t.turn_number > $2;
-
-  DELETE FROM country_histories
-  USING country_histories ch
-  INNER JOIN turns t ON t.turn_id = ch.turn_id
-  WHERE t.game_id = $1
-    AND t.turn_number > $2;
+  WHERE unit_history_id in (
+    SELECT uh.unit_history_id
+    FROM unit_histories uh
+    INNER JOIN turns t ON t.turn_id = uh.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number >= $2
+  );
 
   DELETE FROM province_histories
-  USING province_histories ph
-  INNER JOIN turns t ON t.turn_id = ph.turn_id
-  WHERE t.game_id = $1
-    AND t.turn_number > $2;
+  WHERE province_history_id in (
+    SELECT ph.province_history_id
+    FROM province_histories ph
+    INNER JOIN turns t ON t.turn_id = ph.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number >= $2
+  );
+
+  DELETE FROM country_histories
+  WHERE country_history_id in (
+    SELECT ch.country_history_id
+    FROM country_histories ch
+    INNER JOIN turns t ON t.turn_id = ch.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number >= $2
+  );
 
   DELETE FROM turns
   WHERE game_id = $1

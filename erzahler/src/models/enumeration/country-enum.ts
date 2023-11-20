@@ -8,7 +8,7 @@ export enum CountryStatus {
   SURVIVED = 'Survived',
   WON = 'Won',
   // Misc Behavior
-  DISCARDED = 'Discarded'
+  // DISCARDED = 'Discarded' // Suspending/Abandoning use as a db reversion
 }
 
 export enum CountryRank {
