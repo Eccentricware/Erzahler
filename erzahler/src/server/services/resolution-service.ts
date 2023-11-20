@@ -341,7 +341,7 @@ export class ResolutionService {
     await this.optionsService.saveOptionsForTurn(turn)
       .then(() => {
         terminalLog('Triggering next turn defaults');
-        this.optionsService.saveDefaultOrders(turn.gameId);
+        this.optionsService.saveTurnDefaults(turn);
       });
   }
 
