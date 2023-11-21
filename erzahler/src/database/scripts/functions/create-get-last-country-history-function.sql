@@ -17,7 +17,6 @@ AS $$
 		INNER JOIN turns t ON t.turn_id = ch.turn_id
 		WHERE t.game_id = $1
 			AND t.turn_number <= $2
-			AND ch.country_status != 'Discarded'
 		GROUP BY ch.country_id
 	)
 	SELECT ltn.country_id,

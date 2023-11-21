@@ -17,7 +17,6 @@ AS $$
 		INNER JOIN turns t ON t.turn_id = ph.turn_id
 		WHERE t.game_id = $1
 			AND t.turn_number <= $2
-			AND ph.province_status != 'Discarded'
 		GROUP BY ph.province_id
 	)
 	SELECT ltn.province_id,

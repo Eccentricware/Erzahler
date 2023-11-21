@@ -48,9 +48,6 @@ AS $$
 			WHEN n.node_id = na.node_2_id
 				THEN (u1.unit_type = 'Fleet' AND p1.province_type != 'coast') OR u1.unit_type = 'Wing'
 		END
-		AND uh.unit_status = 'Active'
-		AND uh1.unit_status = 'Active'
-		AND uh2.unit_status = 'Active'
 	GROUP BY u.unit_id;
 
 $$ LANGUAGE SQL;

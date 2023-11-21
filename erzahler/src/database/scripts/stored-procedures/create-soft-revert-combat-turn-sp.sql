@@ -1,5 +1,6 @@
 --sudo -u postgres psql < database/scripts/stored-procedures/create-soft-revert-combat-turn-sp.sql
 
+-- DO NOT USE THIS. Follow up getter nightmare needs revisiting or abandoning completely
 CREATE PROCEDURE soft_revert_combat_turn(
   INTEGER, -- game_id
   INTEGER  -- turn_number

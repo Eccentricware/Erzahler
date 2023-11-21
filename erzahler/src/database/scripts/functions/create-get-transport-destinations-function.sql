@@ -41,7 +41,6 @@ AS $$
 			WHEN n.node_id = na.node_2_id
 				THEN p1.province_type IN ('inland', 'island', 'coast')
 		END
-		AND uh.unit_status = 'Active'
 	GROUP BY u.unit_id;
 
  $$ LANGUAGE SQL;
