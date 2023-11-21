@@ -221,6 +221,7 @@ export class ResolutionRepository {
             secondaryUnit: {
               id: order.secondary_unit_id,
               type: order.secondary_unit_type,
+              status: order.secondary_unit_status,
               countryId: order.secondary_country_id,
               country: order.secondary_country,
               provinceName: order.secondary_unit_province,
@@ -349,6 +350,7 @@ export class ResolutionRepository {
           secondaryUnit: {
             id: garrison.secondary_unit_id,
             type: garrison.secondary_unit_type,
+            status: garrison.secondary_unit_status,
             countryId: garrison.secondary_country_id,
             country: garrison.secondary_country,
             provinceName: garrison.secondary_unit_province,

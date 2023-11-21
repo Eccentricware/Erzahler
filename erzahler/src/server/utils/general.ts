@@ -6,8 +6,8 @@ import { TurnType } from '../../models/enumeration/turn-type-enum';
  * No argument defaults to now.
  * @returns yyyy-mm-dd hh:mm:ss formatted time string
  */
-export const formatDateTime = (unformattedTime?: string): string => {
-  let dateTime = DateTime.now();
+export const formatDateTime = (unformattedTime?: Date): string => {
+  let dateTime = unformattedTime ? DateTime.fromISO(unformattedTime.toISOString()) :DateTime.now();
   if (process.env.TIME_ZONE_OFFSET === undefined) {
     return `${dateTime} (TIME_ZONE_OFFSET is not initialized)`;
   }

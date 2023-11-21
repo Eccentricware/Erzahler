@@ -39,5 +39,8 @@ AS $$
 	INNER JOIN turns t ON t.turn_id = uh.turn_id
 	WHERE t.turn_id = $1
 		AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)
+		AND uh.unit_status != 'Discarded'
+		AND uh1.unit_status != 'Discarded'
+		AND uh2.unit_status != 'Discarded'
 	GROUP BY u.unit_id;
  $$ LANGUAGE SQL;

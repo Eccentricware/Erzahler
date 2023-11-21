@@ -12,7 +12,7 @@ export interface UpcomingTurnResult {
   turn_status: string;
   year_number: number;
   year_stylized: number;
-  deadline: string;
+  deadline: Date;
   defaults_ready: boolean;
 }
 export interface UpcomingTurn {
@@ -25,7 +25,7 @@ export interface UpcomingTurn {
   turnStatus: TurnStatus;
   yearNumber: number;
   yearStylized: number;
-  deadline: string;
+  deadline: Date;
   defaultsReady: boolean;
   hasCaptures: boolean;
   unitMovement: boolean;

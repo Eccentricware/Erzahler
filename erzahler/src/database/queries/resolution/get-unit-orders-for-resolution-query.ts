@@ -28,6 +28,7 @@ export const getUnitOrdersForResolutionQuery = `
     o.secondary_unit_id,
     su.unit_type secondary_unit_type,
     su.country_id secondary_country_id,
+    su.unit_status secondary_unit_status,
     sc.country_name secondary_country,
     sp.province_name secondary_unit_province,
     so.order_type secondary_unit_order_type,

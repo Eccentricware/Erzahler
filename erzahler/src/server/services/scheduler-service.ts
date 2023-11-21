@@ -16,7 +16,7 @@ import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-obje
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
-import { formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
+import { formatDateTime, formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
 import { StartSchedule } from '../../models/objects/games/game-schedule-objects';
 
 export class SchedulerService {
@@ -224,12 +224,12 @@ export class SchedulerService {
 
     pendingTurns.
       forEach(async (turn: UpcomingTurn) => {
-        if (Date.parse(turn.deadline) < Date.now()) {
-          terminalAddendum(`Deadlines`, `Game (${turn.gameId}) deadline ${turn.deadline} has passed. Resolving.`);
+        if (Date.parse(turn.deadline.toISOString()) < Date.now()) {
+          terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) has expired. Resolving`);
           resolutionService.resolveTurn(turn);
 
         } else {
-          terminalAddendum(`Deadlines`, `Game (${turn.gameId}) deadline ${turn.deadline} is in the future. Scheduling.`);
+          terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) pending. Scheduling`);
           schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
             resolutionService.resolveTurn(turn);
           });
