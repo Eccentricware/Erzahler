@@ -1,3 +1,9 @@
+/**
+ * $1: game_id
+ * $2: turn_number
+ * $3: is_fall_turn
+ * $4: is_retreat_turn
+ */
 export const getUnitAdjacentInfoQuery = `
   SELECT u.unit_id,
     u.unit_name,

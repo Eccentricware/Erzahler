@@ -59,7 +59,7 @@ export class OptionsService {
       return this.createBlankOptionsContext();
     }
 
-    const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(
+    const unitInfo: UnitOptions[] = await this.fetchUnitAdjacencyInfo(
       turn.gameId,
       turn.turnNumber,
       [TurnType.FALL_ORDERS, TurnType.FALL_RETREATS].includes(turn.turnType),
@@ -303,7 +303,7 @@ export class OptionsService {
    * @param isRetreatTurn
    * @returns
    */
-  async getUnitAdjacencyInfo(
+  async fetchUnitAdjacencyInfo(
     gameId: number,
     turnNumber: number,
     isFallTurn: boolean,
@@ -649,6 +649,7 @@ export class OptionsService {
         userCountries[0].countryId
       );
       playerCountry = countryStates[0];
+
     } else {
       playerCountry = {
         countryId: 0,

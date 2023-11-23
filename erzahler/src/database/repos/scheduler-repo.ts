@@ -52,8 +52,8 @@ export class SchedulerRepository {
     const newTurn: Turn[] = await this.db.any(query).then((data: any) =>
       data.map((result: TurnResult): Turn => {
         return {
-          gameId: result.game_id,
           turnId: result.turn_id,
+          gameId: result.game_id,
           turnNumber: result.turn_number,
           turnName: result.turn_name,
           turnType: result.turn_type,

@@ -205,14 +205,14 @@ export class SchedulerService {
     );
 
     gamesStarting.forEach(async (game: StartSchedule) => {
-      if (Date.parse(game.startTime) < Date.now()) {
+      if (Date.parse(game.startTime.toISOString()) < Date.now()) {
         terminalAddendum(
           'Deadlines',
-          `${game.gameName} (${game.gameId}) start time ${game.startTime} has passed. Starting now.`
+          `${game.gameName} (${game.gameId}) start time ${formatDateTime(game.startTime)} has passed. Starting now.`
         );
         await resolutionService.startGame(game.gameId);
       } else {
-        terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${game.startTime}`);
+        terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${formatDateTime(game.startTime)}`);
         schedule.scheduleJob(`${game.gameName} - Start`, game.startTime, () => {
           resolutionService.startGame(game.gameId);
         });
