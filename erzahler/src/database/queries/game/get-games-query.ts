@@ -86,6 +86,7 @@ export const getGamesQuery = `
   INNER JOIN games_user_administrating gua ON gua.game_id = g.game_id
   LEFT JOIN assignments ca ON ca.game_id = g.game_id AND ca.assignment_type = 'Creator'
   LEFT JOIN users cu ON cu.user_id = ca.user_id
+  WHERE g.game_status != 'Cancelled'
   GROUP BY g.game_id,
     cu.username,
     cig.country_count,
@@ -110,5 +111,5 @@ export const getGamesQuery = `
     g.votes_day,
     g.votes_time,
     g.votes_span
-  ORDER BY g.time_created;
+  ORDER BY g.time_created desc;
 `;

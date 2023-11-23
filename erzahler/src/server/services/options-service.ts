@@ -46,7 +46,7 @@ export class OptionsService {
     if (turn.turnId) {
       const optionsContext: OptionsContext = await this.processUnitOrderOptions(turn);
 
-      await this.saveUnitOrderOptions(optionsContext, turn.turnId);
+      await this.saveUnitOrderOptions(optionsContext, turn);
     } else {
       terminalLog(`Error saving Options: Turn for game (${turn.gameId}) has no turnId!`);
     }
@@ -355,8 +355,13 @@ export class OptionsService {
    * @param optionsContext
    * @param turnId
    */
-  async saveUnitOrderOptions(optionsContext: OptionsContext, turnId: number): Promise<any> {
+  async saveUnitOrderOptions(optionsContext: OptionsContext, turn: Turn): Promise<any> {
     const orderOptions: OrderOption[] = [];
+
+    if (!turn.turnId) {
+      terminalAddendum('Error: No Turn Id', JSON.stringify(turn));
+      return;
+    }
 
     optionsContext.unitInfo.forEach((unit: UnitOptions) => {
       if (unit.adjacencies.length > 0) {
@@ -389,11 +394,11 @@ export class OptionsService {
     });
 
     if (orderOptions.length > 0) {
-      await db.optionsRepo.saveUnitOptions(orderOptions, turnId).then(() => {
-        this.saveDefaultOrders(optionsContext.gameId);
+      await db.optionsRepo.saveUnitOptions(orderOptions, turn.turnId).then(() => {
+        this.saveTurnDefaults(turn);
       });
     } else {
-      terminalLog(`Operation Failure | No Options: Game ${optionsContext.gameId}, Turn ${turnId}`);
+      terminalLog(`Operation Failure | No Options: Game ${optionsContext.gameId}, Turn ${turn.turnId}`);
     }
   }
 
@@ -495,45 +500,49 @@ export class OptionsService {
     };
   }
 
-  /**
-   * Given a gameID, finds the pending and preliminary turns and saves the default orders for each.
-   *
-   * @param gameId
-   */
-  async saveDefaultOrders(gameId: number): Promise<void> {
-    const gameState = await db.gameRepo.getGameState(gameId);
+  // /**
+  //  * Given a gameID, finds the pending and preliminary turns and saves the default orders for each.
+  //  *
+  //  * @param gameId
+  //  */
+  // async deprecatedsaveDefaultOrders(gameId: number): Promise<void> {
+  //   const gameState = await db.gameRepo.getGameState(gameId);
 
-    const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
+  //   const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
 
-    const pendingTurn: UpcomingTurn | undefined = upcomingTurns.filter(
-      (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PENDING
-    )[0];
+  //   const pendingTurn: UpcomingTurn | undefined = upcomingTurns.filter(
+  //     (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PENDING
+  //   )[0];
 
-    const preliminaryTurn: UpcomingTurn | undefined = upcomingTurns.filter(
-      (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PRELIMINARY
-    )[0];
+  //   const preliminaryTurn: UpcomingTurn | undefined = upcomingTurns.filter(
+  //     (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PRELIMINARY
+  //   )[0];
 
-    if (pendingTurn && !pendingTurn.defaultsReady) {
-      // if (pendingTurn) {
-      await this.saveTurnDefaults(gameState, pendingTurn);
-    }
+  //   if (pendingTurn && !pendingTurn.defaultsReady) {
+  //     // if (pendingTurn) {
+  //     await this.saveTurnDefaults(gameState, pendingTurn);
+  //   }
 
-    if (preliminaryTurn && !preliminaryTurn.defaultsReady) {
-      await this.saveTurnDefaults(gameState, preliminaryTurn);
-    }
-  }
+  //   if (preliminaryTurn && !preliminaryTurn.defaultsReady) {
+  //     await this.saveTurnDefaults(gameState, preliminaryTurn);
+  //   }
+  // }
 
-  async saveTurnDefaults(gameState: GameState, upcomingTurn: UpcomingTurn): Promise<void> {
+  async saveTurnDefaults(upcomingTurn: Turn): Promise<void> {
     const orderSetLibrary: Record<string, number> = {};
 
+    if (!upcomingTurn.turnId) {
+      return;
+    }
+
     const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
-      gameState.gameId,
+      upcomingTurn.gameId,
       upcomingTurn.turnNumber,
       upcomingTurn.turnId
     );
 
     const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
-      gameState.gameId,
+      upcomingTurn.gameId,
       upcomingTurn.turnNumber,
       upcomingTurn.turnId,
       [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)
@@ -584,13 +593,15 @@ export class OptionsService {
     }
 
     if (defaultOrders.length > 0) {
-      db.ordersRepo.saveDefaultOrders(defaultOrders).then((success: any) => {
-        db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
+      db.ordersRepo.insertDefaultOrders(defaultOrders).then(() => {
+        if (upcomingTurn.turnId) {
+          db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
+        }
       });
-      terminalAddendum('Default Orders Saved', `${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`);
+      terminalAddendum('Default Orders Saved', `Game (${upcomingTurn.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`);
     } else {
       terminalAddendum(
-        `Process Failure`, `No Default Orders: ${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`
+        `Process Failure`, `No Default Orders: Game (${upcomingTurn.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`
       );
     }
   }

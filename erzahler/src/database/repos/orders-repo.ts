@@ -96,7 +96,7 @@ export class OrdersRepository {
     );
   }
 
-  async saveDefaultOrders(defaultOrders: Order[]): Promise<void> {
+  async insertDefaultOrders(defaultOrders: Order[]): Promise<void> {
     const orderValues = defaultOrders.map((order: Order) => {
       return {
         order_set_id: order.orderSetId,
@@ -110,7 +110,7 @@ export class OrdersRepository {
     });
 
     const query = this.pgp.helpers.insert(orderValues, this.orderCols);
-    return this.db.query(query).catch((error: Error) => terminalLog('saveDefaultOrders error: ' + error.message));
+    return this.db.query(query).catch((error: Error) => terminalLog('insertDefaultOrders error: ' + error.message));
   }
 
   async saveTechTransfer(orderSetId: number, techTransfer: TransferTechOrder): Promise<void> {
