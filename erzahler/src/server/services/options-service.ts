@@ -154,16 +154,19 @@ export class OptionsService {
   }
 
   processMoveSupport(optionsCtx: OptionsContext) {
+    let duplicateShareCount = 0;
+
     for (const province in optionsCtx.sharedAdjProvinces) {
       if (optionsCtx.sharedAdjProvinces[province].length > 1) {
         const unitsInReach: { unitId: number; nodeId: number; transported: boolean }[] =
           optionsCtx.sharedAdjProvinces[province];
 
+
         unitsInReach.forEach(
-          (commandedUnit: { unitId: number; nodeId: number; transported: boolean }, commandIdx: number) => {
+          (commandedUnit: { unitId: number; nodeId: number; transported: boolean }, commandedIndex: number) => {
             unitsInReach.forEach(
-              (supportedUnit: { unitId: number; nodeId: number; transported: boolean }, supportIdx: number) => {
-                if (commandIdx !== supportIdx) {
+              (supportedUnit: { unitId: number; nodeId: number; transported: boolean }, supportedIndex: number) => {
+                if (commandedUnit.unitId !== supportedUnit.unitId) {
                   const cmdUnitDetails = this.getDetailedUnit(optionsCtx, commandedUnit.unitId);
                   if (supportedUnit.transported) {
                     if (cmdUnitDetails.transportSupports[supportedUnit.unitId]) {
@@ -178,12 +181,21 @@ export class OptionsService {
                       cmdUnitDetails.moveSupports[supportedUnit.unitId] = [supportedUnit.nodeId];
                     }
                   }
+                } else if (commandedIndex !== supportedIndex) {
+                  duplicateShareCount++;
                 }
               }
             );
           }
         );
       }
+    }
+
+    if (duplicateShareCount > 0) {
+      terminalAddendum(
+        'Options Warning',
+        `Game ${optionsCtx.gameId} turn ${optionsCtx.turnId} has ${duplicateShareCount} duplicate units sharing provinces`
+      );
     }
   }
 
