@@ -121,8 +121,8 @@ export class ResolutionService {
       orderSets: [],
       orders: [],
       units: [],
-      unitHistories: [],
-      provinceHistories: [],
+      unitHistories: await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber),
+      provinceHistories: await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber),
       countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
     };
 
@@ -140,8 +140,8 @@ export class ResolutionService {
 
     let unitsRetreating = false;
 
-    dbStates.provinceHistories = await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber);
-    dbStates.unitHistories = await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber);
+    // dbStates.provinceHistories = await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber);
+    // dbStates.unitHistories = await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber);
 
     const unitMovementResults: UnitOrderResolution[] = await this.resolveUnitOrders(gameState, turn);
 
@@ -916,15 +916,7 @@ export class ResolutionService {
       return;
     }
 
-    const holdingChallenger = unitOrders.find(
-      (challenger: UnitOrderResolution) =>
-        challenger.origin.provinceId === order.destination.provinceId &&
-        [OrderDisplay.AIRLIFT, OrderDisplay.CONVOY, OrderDisplay.HOLD].includes(challenger.orderType) &&
-        // challenger.orderSuccess === null &&
-        challenger.valid === true
-    );
-
-    const incomingChallengers = unitOrders.filter((challenger: UnitOrderResolution) => {
+    const challengers = unitOrders.filter((challenger: UnitOrderResolution) => {
       const challengerMoving = [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(challenger.orderType);
       const notSameUnit = challenger.unit.id !== order.unit.id;
       const challengerValid = challenger.valid === true;
@@ -938,17 +930,31 @@ export class ResolutionService {
       challengerValid
     });
 
+    const holdingChallenger = unitOrders.find(
+      (challenger: UnitOrderResolution) =>
+        challenger.origin.provinceId === order.destination.provinceId &&
+        [
+          OrderDisplay.HOLD,
+          OrderDisplay.SUPPORT,
+          OrderDisplay.SUPPORT_CONVOYED,
+          OrderDisplay.AIRLIFT,
+          OrderDisplay.CONVOY
+        ].includes(challenger.orderType) &&
+        // challenger.orderSuccess === null &&
+        challenger.valid === true
+    );
+
     if (holdingChallenger) {
       if (holdingChallenger.unit.countryId === order.unit.countryId) {
         order.valid = false;
         order.primaryResolution = `Invalid Order: Can't Self-Dislodge`;
         return;
       }
-      incomingChallengers.push(holdingChallenger);
+      challengers.push(holdingChallenger);
     }
 
-    if (incomingChallengers.length > 0) {
-      this.resolveMovementChallenge(order, incomingChallengers);
+    if (challengers.length > 0) {
+      this.resolveMovementChallenge(order, challengers);
     } else {
       order.orderSuccess = true;
       order.primaryResolution = 'Success';
@@ -1330,6 +1336,7 @@ export class ResolutionService {
     if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
       const newUnitHistory = this.copyUnitHistory(unitHistory);
       newUnitHistory.unitStatus = result.unit.status;
+      newUnitHistory.nodeId = finalPosition.nodeId;
 
       dbUpdates.unitHistories?.push(newUnitHistory);
     }
