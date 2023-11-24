@@ -153,10 +153,16 @@ export interface OrderDependencies {
     number,
     {
       orderId: number;
-      explanation: string;
+      description: string;
     }
   >;
   heads: number[];
+}
+
+export interface OrderSupremacy {
+  supremeOrder: UnitOrderResolution;
+  secondaryOrderId: UnitOrderResolution;
+  description: string;
 }
 
 export interface TransferResourcesResults {

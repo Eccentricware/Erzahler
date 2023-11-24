@@ -28,6 +28,7 @@ import {
   CountryTransferResources,
   OrderDependencies,
   OrderResolutionLocation,
+  OrderSupremacy,
   TransferResources,
   TransportAttempt,
   TransportNetworkUnit,
@@ -412,10 +413,14 @@ export class ResolutionService {
     // };
     // const contestedProvinces: ProvinceHistoryRow[] = [];
 
+    // Otherwise successful orders become invalid and fail should these orders fail
     const dependencies: OrderDependencies = {
       dependency: {},
       heads: []
     };
+
+    // Successful orders get description updates should these orders fail
+    const supremacies: Record<string, OrderSupremacy> = {}
 
     // Order Possibility Verification
     unitOrders.forEach((order: UnitOrderResolution) => {
@@ -480,7 +485,7 @@ export class ResolutionService {
     unresolvedMovement.push(...moveTransported);
 
     unresolvedMovement.forEach((order: UnitOrderResolution) => {
-      this.resolveMovement(order, unitOrders, dependencies);
+      this.resolveMovement(order, unitOrders, dependencies, supremacies);
     });
 
     orderGroups.hold.forEach((holdOrder: UnitOrderResolution) => {
@@ -488,6 +493,7 @@ export class ResolutionService {
     });
 
     this.checkDependencies(dependencies, unitOrders);
+    this.checkSupremacies(supremacies);
 
     return unitOrders;
     // return <UnitMovementResults> {
@@ -713,10 +719,10 @@ export class ResolutionService {
     }
   }
 
-  setDependency(dependencies: OrderDependencies, orderId: number, dependendentId: number, explanation: string) {
+  setDependency(dependencies: OrderDependencies, orderId: number, dependendentId: number, description: string) {
     dependencies.dependency[dependendentId] = {
       orderId: orderId,
-      explanation: explanation
+      description: description
     };
     const depIndex = dependencies.heads.indexOf(orderId);
     if (depIndex > -1) {
@@ -725,6 +731,14 @@ export class ResolutionService {
       dependencies.heads.push(dependendentId);
     }
   }
+
+  // setSupremacy(supremacies: Record<string, OrderSupremacy>, orderId: number, secondaryOrderId: number, description: string) {
+  //   supremacies[orderId] = {
+  //     orderId: orderId,
+  //     secondaryOrderId: secondaryOrderId,
+  //     description: description
+  //   };
+  // }
 
   createTransportPaths(
     order: UnitOrderResolution,
@@ -904,7 +918,12 @@ export class ResolutionService {
     challenger.primaryResolution = summary;
   }
 
-  resolveMovement(order: UnitOrderResolution, unitOrders: UnitOrderResolution[], dependencies: OrderDependencies) {
+  resolveMovement(
+    order: UnitOrderResolution,
+    unitOrders: UnitOrderResolution[],
+    dependencies: OrderDependencies,
+    supremacies: Record<string, OrderSupremacy>
+  ) {
     const nuclearStrike = unitOrders.find(
       (strike: UnitOrderResolution) =>
         strike.orderType === OrderDisplay.NUKE && strike.destination.provinceId === order.destination.provinceId
@@ -964,10 +983,17 @@ export class ResolutionService {
       const leavingUnit = unitOrders.find(
         (leavingUnit: UnitOrderResolution) => leavingUnit.origin.provinceId === order.destination.provinceId
       );
-      if (leavingUnit && order.power < 2) {
-        this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Failed: Bounce 1v1`);
+
+      if (leavingUnit && order.power < 2) { // Nukes have 0 power
+        this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Failed: Bounce ${order.power}v1`);
       } else if (leavingUnit && leavingUnit.unit.countryId === order.unit.countryId) {
         this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Invalid Order: Can't Self-Dislodge`);
+      } else if (leavingUnit && leavingUnit.unit.countryId !== order.unit.countryId) {
+        supremacies[order.orderId] = {
+          supremeOrder: order,
+          secondaryOrderId: leavingUnit,
+          description: `Success: ${order.power}v1`
+        };
       }
     } else {
       this.resolveHold(order, unitOrders, true, 1);
@@ -1011,6 +1037,15 @@ export class ResolutionService {
     dependencies.heads.forEach((orderId: number) => {
       this.checkDependency(orderId, dependencies, unitOrders);
     });
+  }
+
+  checkSupremacies(supremacies: Record<string, OrderSupremacy>) {
+    for (let supremacy in supremacies) {
+      const supremacyOrder = supremacies[supremacy];
+      if (!supremacyOrder.secondaryOrderId.orderSuccess) {
+        supremacyOrder.supremeOrder.primaryResolution = supremacyOrder.description;
+      }
+    }
   }
 
   /**
@@ -1076,7 +1111,7 @@ export class ResolutionService {
       if (dependency) {
         if (!independency.orderSuccess) {
           dependency.orderSuccess = false;
-          dependency.primaryResolution = dependencies.dependency[orderId].explanation;
+          dependency.primaryResolution = dependencies.dependency[orderId].description;
         }
 
         if (dependencies.dependency[dependency.orderId]) {
