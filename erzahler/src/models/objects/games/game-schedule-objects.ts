@@ -57,8 +57,8 @@ export interface GameSchedule {
 export interface StartScheduleResult {
   game_id: number;
   game_name: string;
-  start_time: string;
-  first_turn_deadline: string;
+  start_time: Date;
+  first_turn_deadline: Date;
   stylized_year: number;
 }
 

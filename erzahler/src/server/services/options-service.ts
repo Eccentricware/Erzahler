@@ -557,7 +557,7 @@ export class OptionsService {
       upcomingTurn.gameId,
       upcomingTurn.turnNumber,
       upcomingTurn.turnId,
-      [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)
+      upcomingTurn.turnType
     );
 
     newOrderSets.forEach((orderSet: OrderSet) => orderSetLibrary[orderSet.countryId] = orderSet.orderSetId);

@@ -88,7 +88,9 @@ export class SchedulerRepository {
         return <StartSchedule>{
           gameId: game.game_id,
           gameName: game.game_name,
-          startTime: game.start_time
+          startTime: game.start_time,
+          firstTurnDeadline: game.first_turn_deadline,
+          stylizedYear: game.stylized_year
         };
       })
     );

@@ -194,6 +194,11 @@ export class ResolutionService {
       }
     });
 
+    // Cancel conflicts for retreats if there are no retreats
+    if (!unitsRetreating) {
+      this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
+    }
+
     const transferResults = await this.resolveTransfers(gameState, turn);
 
     transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
@@ -299,7 +304,7 @@ export class ResolutionService {
 
 
     Promise.all(stateUpdatePromises)
-    .then(async () => {
+      .then(async () => {
         // Next turns needs to know retreats after resolution
         const changedGameState = await db.gameRepo.getGameState(turn.gameId);
         const nextTurns = this.schedulerService.findNextTurns(turn, changedGameState, unitsRetreating);
@@ -1553,5 +1558,30 @@ export class ResolutionService {
       voteCount: countryHistory.voteCount,
       nukesInProduction: countryHistory.nukesInProduction
     };
+  }
+
+  revertContestedProvinces(currentProvinceHistories: ProvinceHistoryRow[], pendingProvinceHistories: ProvinceHistoryRow[]): void {
+    const spliceIndeces: number[] = [];
+
+    pendingProvinceHistories.forEach((pendingProvinceHistory: ProvinceHistoryRow, index: number) => {
+      const currentProvinceHistory = currentProvinceHistories.find((currentProvinceHistory: ProvinceHistoryRow) =>
+        pendingProvinceHistory.provinceId === currentProvinceHistory.provinceId
+      );
+
+      if (!currentProvinceHistory) {
+        terminalAddendum('Resolution', `Current Province History for ${pendingProvinceHistory.provinceId} not found!`);
+        return;
+      }
+
+      if (pendingProvinceHistory.controllerId === currentProvinceHistory.controllerId
+      && pendingProvinceHistory.capitalOwnerId === currentProvinceHistory.capitalOwnerId
+      && pendingProvinceHistory.provinceStatus === currentProvinceHistory.provinceStatus) {
+        spliceIndeces.unshift(index);
+      }
+    });
+
+    spliceIndeces.forEach((index: number) => {
+      pendingProvinceHistories.splice(index, 1);
+    });
   }
 }
