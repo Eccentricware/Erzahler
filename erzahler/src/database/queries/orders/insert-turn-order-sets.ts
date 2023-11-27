@@ -2,7 +2,7 @@
  * $1 = turn_id,
  * $2 = game_id,
  * $3 = turn_number,
- * $4 = isRetreatTurn
+ * $4 = turn_type
  */
 export const insertTurnOrderSetsQuery = `
   INSERT INTO order_sets (
@@ -21,7 +21,7 @@ export const insertTurnOrderSetsQuery = `
     ON lch.country_id = ch.country_id AND lch.turn_id = ch.turn_id
   WHERE ch.country_status IN ('Active', 'Civil Disorder')
     AND ch.in_retreat = CASE
-      WHEN $4 = true THEN true
+      WHEN $4 IN ('Spring Retreats', 'Fall Retreats') THEN true
       ELSE false
     END
   RETURNING order_set_id,

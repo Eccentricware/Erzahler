@@ -48,6 +48,7 @@ import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query'
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
 import { saveBuildOrderQuery } from '../queries/orders/orders-final/save-build-order-query';
 import { terminalLog } from '../../server/utils/general';
+import { TurnType } from '../../models/enumeration/turn-type-enum';
 
 export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
@@ -221,9 +222,9 @@ export class OrdersRepository {
 
   //////////////////// Legacy Functions ////////////////////
 
-  async insertTurnOrderSets(gameId: number, turnNumber: number, nextTurnId: number, isRetreatTurn: boolean): Promise<OrderSet[]> {
+  async insertTurnOrderSets(gameId: number, turnNumber: number, nextTurnId: number, nextTurnType: TurnType): Promise<OrderSet[]> {
     const orderSets: OrderSet[] = await this.pool
-      .query(insertTurnOrderSetsQuery, [nextTurnId, gameId, turnNumber, isRetreatTurn])
+      .query(insertTurnOrderSetsQuery, [nextTurnId, gameId, turnNumber, nextTurnType])
       .then((result: QueryResult<any>) =>
         result.rows.map((orderSetResult: OrderSetResult) => {
           return <OrderSet>{
