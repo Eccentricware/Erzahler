@@ -17,5 +17,5 @@ export const getUpcomingTurnsQuery = `
       WHEN $1 != 0 THEN g.game_id = $1
       ELSE true
     END
-  ORDER BY t.turn_type;
+  ORDER BY t.turn_number;
 `;
