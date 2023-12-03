@@ -595,13 +595,15 @@ export class OptionsService {
 
     for (const unitId in preppedOrderLibrary) {
       const unitOrder = preppedOrderLibrary[unitId];
-      defaultOrders.push({
-        orderSetId: orderSetLibrary[unitOrder.countryId],
-        orderedUnitId: unitOrder.unitId,
-        orderType: unitOrder.orderType,
-        destinationId: unitOrder.destinationId,
-        description: unitOrder.description
-      });
+      if (orderSetLibrary[unitOrder.countryId]) {
+        defaultOrders.push({
+          orderSetId: orderSetLibrary[unitOrder.countryId],
+          orderedUnitId: unitOrder.unitId,
+          orderType: unitOrder.orderType,
+          destinationId: unitOrder.destinationId,
+          description: unitOrder.description
+        });
+      }
     }
 
     if (defaultOrders.length > 0) {
