@@ -321,7 +321,7 @@ export class ResolutionService {
           nextTurns.pending.deadline
         ])
         .then(async (pendingTurn: Turn) => {
-          await this.initializeDefaultOrders(pendingTurn);
+          await this.optionsService.saveOptionsForTurn(pendingTurn);
 
           if (nextTurns.preliminary) {
             terminalLog('DB: Preliminary Turn Insert');
@@ -335,19 +335,10 @@ export class ResolutionService {
               nextTurns.preliminary.deadline
             ])
             .then(async (preliminaryTurn: Turn) => {
-              this.initializeDefaultOrders(preliminaryTurn);
+              this.optionsService.saveOptionsForTurn(preliminaryTurn);
             });
           }
         });
-      });
-  }
-
-  async initializeDefaultOrders(turn: Turn): Promise<void> {
-    terminalLog('Saving options for next turn');
-    await this.optionsService.saveOptionsForTurn(turn)
-      .then(() => {
-        terminalLog('Triggering next turn defaults');
-        this.optionsService.saveTurnDefaults(turn);
       });
   }
 
