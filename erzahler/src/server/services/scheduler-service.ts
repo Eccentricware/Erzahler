@@ -413,17 +413,17 @@ export class SchedulerService {
         };
 
       } else {
-        nextTurns.skipped = {
-          type: TurnType.SPRING_RETREATS,
-          turnName: formatTurnName(TurnType.SPRING_RETREATS, currentTurn.yearStylized),
-          turnNumber: currentTurn.turnNumber + 1,
-          yearNumber: currentTurn.yearNumber,
-          yearStylized: currentTurn.yearStylized,
-          deadline: this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString())
-        };
+        // nextTurns.skipped = {
+        //   type: TurnType.SPRING_RETREATS,
+        //   turnName: formatTurnName(TurnType.SPRING_RETREATS, currentTurn.yearStylized),
+        //   turnNumber: currentTurn.turnNumber + 1,
+        //   yearNumber: currentTurn.yearNumber,
+        //   yearStylized: currentTurn.yearStylized,
+        //   deadline: this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString())
+        // };
 
         nextTurns.pending.type = TurnType.FALL_ORDERS;
-        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
+        // nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
       }
     }
@@ -454,18 +454,18 @@ export class SchedulerService {
         }
 
       } else {
-        nextTurns.skipped = {
-          type: TurnType.FALL_RETREATS,
-          turnName: formatTurnName(TurnType.FALL_RETREATS, currentTurn.yearStylized),
-          turnNumber: currentTurn.turnNumber + 1,
-          yearNumber: currentTurn.yearNumber,
-          yearStylized: currentTurn.yearStylized,
-          deadline: this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString())
-        };
+        // nextTurns.skipped = {
+        //   type: TurnType.FALL_RETREATS,
+        //   turnName: formatTurnName(TurnType.FALL_RETREATS, currentTurn.yearStylized),
+        //   turnNumber: currentTurn.turnNumber + 1,
+        //   yearNumber: currentTurn.yearNumber,
+        //   yearStylized: currentTurn.yearStylized,
+        //   deadline: this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString())
+        // };
 
         nextTurns.pending.type = nominationsStarted && nominateDuringAdjustments ? TurnType.ADJ_AND_NOM : TurnType.ADJUSTMENTS;
+        // nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
-        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
       }
     }
 
