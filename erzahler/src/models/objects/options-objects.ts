@@ -13,12 +13,12 @@ export interface OptionsFinal {
   countryId: number;
   countryName: string;
   message?: string;
-  pending?: SpecificTurnDetails;
-  preliminary?: SpecificTurnDetails;
-  other?: SpecificTurnDetails;
+  pending?: SpecificTurnOptions;
+  preliminary?: SpecificTurnOptions;
+  finale?: FinaleDetails;
 }
 
-interface SpecificTurnDetails {
+interface SpecificTurnOptions {
   id: number;
   name: string;
   deadline: Date | string;
@@ -38,6 +38,10 @@ interface SpecificTurnDetails {
   disbands?: DisbandOptions;
   nominations?: NominationOptions;
   votes?: VotingOptions;
+}
+
+interface FinaleDetails {
+
 }
 
 export interface BuildOptions {

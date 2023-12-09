@@ -5,41 +5,23 @@ import { BuildLoc, NominatableCountry } from './option-context-objects';
 export interface TurnOrders {
   gameId: number;
   userId: number;
-  countryId: number;
-  pending?: {
-    orderSetId?: number;
-    default?: boolean;
-    restricted?: boolean;
-    skipped?: boolean;
-  };
-  preliminary?: {
-    orderSetId?: number;
-    default?: number;
-  };
   role?: string;
+  countryId?: number;
   countryName?: string;
-  turnType?: string;
+  pending?: SingleTurnOrders;
+  preliminary?: SingleTurnOrders;
   message?: string;
-  pendingDefault?: boolean;
-  preliminaryDefault?: boolean;
-  render?: string;
-  units?: any[];
-  buildTransfers?: TransferBuildOrder[];
-  techTransfer?: TransferTechOrder;
-  builds?: BuildOrders;
-  disbands?: DisbandOrders;
-  nomination?: NominationOrder;
-  votes?: {
-    nominations: number[];
-  };
 }
 
 export interface SingleTurnOrders {
+  orderSetId?: number;
+  default?: boolean;
   units?: any[]; // If (spring orders/retreats or fall orders/retreats)
-  transfers?: any[];
+  techTransfers?: any[];
+  buildTransfers?: any[];
   builds?: any[];
-  disbands?: any[];
-  nomination?: any;
+  disbands?: DisbandOrders;
+  nominations?: any;
   votes?: any[];
 }
 

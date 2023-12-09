@@ -256,9 +256,9 @@ export class OrdersRepository {
   ): Promise<Order[]> {
     const orders: Order[] = await this.pool
       .query(getTurnUnitOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
-      .then((result: QueryResult<any>) =>
-        result.rows.map((orderResult: OrderResult) => {
-          return <Order>{
+      .then((result: QueryResult<OrderResult>) =>
+        result.rows.map((orderResult: OrderResult) => (
+          <Order> {
             orderId: orderResult.order_id,
             orderSetId: orderResult.order_set_id,
             orderedUnitId: orderResult.ordered_unit_id,
@@ -269,8 +269,8 @@ export class OrdersRepository {
             destinationId: orderResult.destination_id,
             eventLoc: orderResult.event_loc,
             orderStatus: orderResult.order_status
-          };
-        })
+          }
+        ))
       );
 
     return orders;
