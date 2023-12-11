@@ -4,9 +4,7 @@
 \echo 'Attempting to create get_node_adjacencies function'
 
 CREATE OR REPLACE FUNCTION get_node_adjacencies(
-  INTEGER, -- game_id
-  INTEGER, -- turn_number,
-  BOOLEAN  -- is_fall
+  INTEGER -- game_id
 )
 RETURNS TABLE(node_id INTEGER, adjacencies JSON)
 AS $$
@@ -14,39 +12,29 @@ AS $$
   SELECT n.node_id,
     json_agg(CASE
       WHEN n.node_id = na.node_1_id
-        THEN json_build_object('node_id', na.node_2_id, 'province_id', p2.province_id, 'province_name', p2.province_name)
+        THEN json_build_object(
+          'node_id', na.node_2_id,
+          'province_id', p2.province_id,
+          'province_name', p2.province_name,
+          'province_type', p2.province_type
+        )
       WHEN n.node_id = na.node_2_id
-        THEN json_build_object('node_id', na.node_1_id, 'province_id', p1.province_id, 'province_name', p1.province_name)
+        THEN json_build_object(
+          'node_id', na.node_1_id,
+          'province_id', p1.province_id,
+          'province_name', p1.province_name,
+          'province_type', p1.province_type
+        )
     END) AS adjacencies
   FROM nodes n
   INNER JOIN provinces p ON p.province_id = n.province_id
   INNER JOIN games g ON g.game_id = p.game_id
-  INNER JOIN turns t ON t.game_id = g.game_id
   INNER JOIN node_adjacencies na ON na.node_1_id = n.node_id OR na.node_2_id = n.node_id
   INNER JOIN nodes n1 ON n1.node_id = na.node_1_id
   INNER JOIN nodes n2 ON n2.node_id = na.node_2_id
-  LEFT JOIN provinces p1 ON p1.province_id = n1.province_id
-    AND CASE
-      WHEN $3 = true
-        AND n.node_id = na.node_2_id
-        AND n2.node_type = 'sea'
-      THEN p1.province_type != 'pole'
-      ELSE true
-    END
-  LEFT JOIN provinces p2 ON p2.province_id = n2.province_id
-    AND CASE
-      WHEN $3 = true
-        AND n.node_id = na.node_1_id
-        AND n1.node_type = 'sea'
-      THEN p2.province_type != 'pole'
-      ELSE true
-    END
-  INNER JOIN get_last_province_history($1, $2) lph1 ON lph1.province_id = p1.province_id
-  INNER JOIN province_histories ph1 ON ph1.province_id = lph1.province_id AND ph1.valid_retreat = true AND ph1.turn_id = lph1.turn_id
-  INNER JOIN get_last_province_history($1, $2) lph2 ON lph2.province_id = p2.province_id
-  INNER JOIN province_histories ph2 ON ph2.province_id = lph2.province_id AND ph2.valid_retreat = true AND ph2.turn_id = lph2.turn_id
+  INNER JOIN provinces p1 ON p1.province_id = n1.province_id
+  INNER JOIN provinces p2 ON p2.province_id = n2.province_id
   WHERE g.game_id = $1
-    AND t.turn_number <= $2
     AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)
   GROUP BY n.node_id;
 

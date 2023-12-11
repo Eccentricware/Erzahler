@@ -1,3 +1,4 @@
+import { TurnStatus } from '../enumeration/turn-status-enum';
 import { TurnType } from '../enumeration/turn-type-enum';
 import {
   BuildLoc,
@@ -21,6 +22,7 @@ export interface OptionsFinal {
 interface SpecificTurnOptions {
   id: number;
   name: string;
+  status: TurnStatus;
   deadline: Date | string;
   applicable: boolean;
   message?: string;
@@ -42,6 +44,12 @@ interface SpecificTurnOptions {
 
 interface FinaleDetails {
 
+}
+
+export interface TransferBuildsOption {
+  countryId: number;
+  countryName: string;
+  builds: number;
 }
 
 export interface BuildOptions {

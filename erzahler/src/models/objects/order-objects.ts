@@ -1,4 +1,5 @@
 import { CountryStatus } from '../enumeration/country-enum';
+import { TurnStatus } from '../enumeration/turn-status-enum';
 import { BuildType } from '../enumeration/unit-enum';
 import { BuildLoc, NominatableCountry } from './option-context-objects';
 
@@ -14,6 +15,7 @@ export interface TurnOrders {
 }
 
 export interface SingleTurnOrders {
+  turnStatus: TurnStatus;
   orderSetId?: number;
   default?: boolean;
   units?: any[]; // If (spring orders/retreats or fall orders/retreats)
@@ -21,7 +23,7 @@ export interface SingleTurnOrders {
   buildTransfers?: any[];
   builds?: any[];
   disbands?: DisbandOrders;
-  nominations?: any;
+  nomination?: any;
   votes?: any[];
 }
 
