@@ -56,9 +56,19 @@ export class OptionsRepository {
 
   //// Legacy Functions ////
 
+  /**
+   * Gives nodes and their provinces adjacent to movement nodes.
+   *
+   *
+   * @param gameId
+   * @param turnNumber
+   * @param isFallTurn
+   * @param isRetreatTurn
+   * @returns
+   */
   async getUnitAdjacencyInfo(gameId: number, turnNumber: number, isFallTurn: boolean, isRetreatTurn: boolean): Promise<UnitOptions[]> {
     const unitAdjacencyInfoResult: UnitOptions[] = await this.pool
-      .query(getUnitAdjacentInfoQuery, [gameId, turnNumber, isFallTurn, isRetreatTurn])
+      .query(getUnitAdjacentInfoQuery, [gameId, turnNumber])
       .then((results: QueryResult<any>) => {
         return results.rows.map((result: UnitAdjacyInfoResult) => {
           return <UnitOptions>{

@@ -94,7 +94,7 @@ export class OrdersService {
       }
 
       if (pendingTurn) {
-        orders.pending = {};
+        orders.pending = { turnStatus: TurnStatus.PENDING };
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
           orders.pending.units = await db.ordersRepo.getTurnUnitOrders(
@@ -168,7 +168,7 @@ export class OrdersService {
 
         // Nominations
         if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-          orders.pending.nominations = await this.getNominationOrder(pendingTurn.turnId, playerCountry.countryId);
+          orders.pending.nomination = await this.getNominationOrder(pendingTurn.turnId, playerCountry.countryId);
         }
 
         // Votes
@@ -178,7 +178,7 @@ export class OrdersService {
       }
 
       if (preliminaryTurn) {
-        orders.preliminary = {};
+        orders.preliminary = { turnStatus: TurnStatus.PRELIMINARY };
         // Units
         if (
           [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(preliminaryTurn.turnType)
@@ -235,7 +235,7 @@ export class OrdersService {
 
         // Nominations
         if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-          orders.preliminary.nominations = await this.getNominationOrder(preliminaryTurn.turnId, playerCountry.countryId);
+          orders.preliminary.nomination = await this.getNominationOrder(preliminaryTurn.turnId, playerCountry.countryId);
         }
       }
     } else if (adminVision) {

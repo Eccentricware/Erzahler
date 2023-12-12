@@ -168,6 +168,7 @@ export class OptionsService {
               (supportedUnit: { unitId: number; nodeId: number; transported: boolean }, supportedIndex: number) => {
                 if (commandedUnit.unitId !== supportedUnit.unitId) {
                   const cmdUnitDetails = this.getDetailedUnit(optionsCtx, commandedUnit.unitId);
+                  const supportedUnitDetails = this.getDetailedUnit(optionsCtx, supportedUnit.unitId);
                   if (supportedUnit.transported) {
                     if (cmdUnitDetails.transportSupports[supportedUnit.unitId]) {
                       cmdUnitDetails.transportSupports[supportedUnit.unitId].push(supportedUnit.nodeId);
@@ -701,6 +702,7 @@ export class OptionsService {
 
       turnOptions.pending = {
         id: pendingTurn.turnId,
+        status: TurnStatus.PENDING,
         name: pendingTurn.turnName,
         deadline: pendingTurn.deadline,
         applicable: applicable,
@@ -720,7 +722,7 @@ export class OptionsService {
         turnOptions.pending.units = this.finalizeUnitOptions(
           await db.optionsRepo.getUnitOptions(
             gameState.gameId,
-            gameState.turnNumber,
+            pendingTurn.turnNumber,
             pendingTurn.turnId,
             playerCountry.countryId
           )
@@ -854,6 +856,7 @@ export class OptionsService {
 
       turnOptions.preliminary = {
         id: preliminaryTurn.turnId,
+        status: TurnStatus.PRELIMINARY,
         name: preliminaryTurn.turnName,
         deadline: preliminaryTurn.deadline,
         applicable: applicable,
@@ -865,7 +868,7 @@ export class OptionsService {
         turnOptions.preliminary.units = this.finalizeUnitOptions(
           await db.optionsRepo.getUnitOptions(
             gameState.gameId,
-            gameState.turnNumber,
+            preliminaryTurn.turnNumber,
             preliminaryTurn.turnId,
             playerCountry.countryId
           )
