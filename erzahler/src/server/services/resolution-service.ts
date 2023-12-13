@@ -492,6 +492,130 @@ export class ResolutionService {
     this.checkSupremacies(supremacies);
 
     return unitOrders;
+  }
+
+  async resolveRetreatingUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {
+    const unitOptions = this.optionsService.finalizeUnitOptions(
+      await db.optionsRepo.getRetreatingUnitOptions(gameState.gameId, gameState.turnNumber, turn.turnId, 0)
+    );
+
+    const unitOrders: UnitOrderResolution[] = await db.resolutionRepo.getUnitOrdersForResolution(
+      gameState.gameId,
+      gameState.turnNumber,
+      turn.turnId
+    );
+
+    const remainingGarrisons: UnitOrderResolution[] = await db.resolutionRepo.getRemainingGarrisons(
+      gameState.gameId,
+      gameState.turnNumber
+    );
+
+    unitOrders.push(...remainingGarrisons);
+
+    const orderGroups: UnitOrderGroups = {
+      transport: [],
+      hold: [],
+      invalid: [],
+      move: [],
+      moveTransported: [],
+      nuke: [],
+      support: []
+    };
+
+    // If transported unit attempts, add key with initial link
+    // Recursively expand all potential paths given compliant transports
+    const transportAttempts: Record<string, TransportAttempt> = {};
+
+    // For changes to province histories after resolution
+    // const provinceEvents: ProvinceEvents = {
+    //   contested: [],
+    //   nuked: []
+    // };
+    // const contestedProvinces: ProvinceHistoryRow[] = [];
+
+    // Otherwise successful orders become invalid and fail should these orders fail
+    const dependencies: OrderDependencies = {
+      dependency: {},
+      heads: []
+    };
+
+    // Successful orders get description updates should these orders fail
+    const supremacies: Record<string, OrderSupremacy> = {}
+
+    // Order Possibility Verification
+    unitOrders.forEach((order: UnitOrderResolution) => {
+      this.sortAndValidateUnitOrder(order, unitOptions, orderGroups);
+    });
+
+    // Nukes detonate or invalidate if self-targetting
+    // Will include MAD orders, some day
+    orderGroups.nuke.forEach((order: UnitOrderResolution) => {
+      this.resolveNuclearLaunch(order, unitOrders);
+    });
+
+    // Support Cuts and Compliance
+    orderGroups.support
+      .filter((order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE)
+      .forEach((order: UnitOrderResolution) => {
+        this.resolveSupport(order, unitOrders, dependencies);
+      });
+
+    // Convoy Compliance and success
+    if (orderGroups.transport.length > 0 || orderGroups.moveTransported.length > 0) {
+      const transportNetwork: TransportNetworkUnit[] = await db.resolutionRepo.getTransportNetworkInfo(
+        gameState.gameId,
+        gameState.turnNumber
+      );
+
+      // Stores filter logic for DRY operation
+      const activeMoveTransported = orderGroups.moveTransported.filter(
+        (order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE
+      );
+      const activeTransports = orderGroups.transport.filter(
+        (order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE
+      );
+
+      // Creates full paths of all fully compliant routes
+      activeMoveTransported.forEach((moveTransportedOrder: UnitOrderResolution) => {
+        this.createTransportPaths(moveTransportedOrder, orderGroups.transport, transportNetwork, transportAttempts);
+      });
+
+      // Checks carried unit compliance and full path existence for transports
+      activeTransports.forEach((transportOrder: UnitOrderResolution) => {
+        const attemptKey = `${transportOrder.secondaryUnit.id}-${transportOrder.destination.nodeId}`;
+        if (!transportAttempts[attemptKey]) {
+          transportOrder.valid = false;
+          transportOrder.primaryResolution = `Invalid Order: Noncompliance`;
+        } else if (transportAttempts[attemptKey].paths.length === 0) {
+          transportOrder.valid = false;
+          transportOrder.primaryResolution = `Invalid Order: Insufficient Compliance`;
+        } else {
+          this.checkTransportSuccess(transportOrder, orderGroups.move);
+        }
+      });
+    }
+
+    // Movement
+    const unresolvedMovement = orderGroups.move.filter(
+      (order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE
+    );
+    const moveTransported = orderGroups.moveTransported.filter(
+      (order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE
+    );
+    unresolvedMovement.push(...moveTransported);
+
+    unresolvedMovement.forEach((order: UnitOrderResolution) => {
+      this.resolveMovement(order, unitOrders, dependencies, supremacies);
+    });
+
+    orderGroups.hold.forEach((holdOrder: UnitOrderResolution) => {
+      this.resolveHold(holdOrder, unitOrders);
+    });
+
+    this.checkDependencies(dependencies, unitOrders);
+    this.checkSupremacies(supremacies);
+
+    return unitOrders;
     // return <UnitMovementResults> {
     //   orderResults: unitOrders
     //   // contestedProvinces: contestedProvinces
@@ -834,13 +958,16 @@ export class ResolutionService {
       (challengingOrder: UnitOrderResolution) =>
         challengingOrder.destination.nodeId === transportOrder.origin.nodeId && challengingOrder.valid
     );
+
     if (challengers.length === 0) {
       transportOrder.orderSuccess = true;
       transportOrder.primaryResolution = `Success`;
       return;
     }
+
     const challenges: Record<number, number[]> = {};
     let maxPower = transportOrder.power;
+    let winningChallenger: UnitOrderResolution = challengers[0];
     challengers.forEach((challenger: UnitOrderResolution) => {
       if (challenges[challenger.power]) {
         challenges[challenger.power].push(challenger.unit.id);
@@ -848,7 +975,10 @@ export class ResolutionService {
         challenges[challenger.power] = [challenger.unit.id];
       }
 
-      maxPower = challenger.power > maxPower ? challenger.power : maxPower;
+      if (challenger.power > maxPower) {
+        maxPower = challenger.power;
+        winningChallenger = challenger;
+      }
     });
 
     const transportPowerSummary = this.createTransportPowerConflictSummary(transportOrder.power, challenges, maxPower);
@@ -857,6 +987,7 @@ export class ResolutionService {
       transportOrder.orderSuccess = false;
       transportOrder.primaryResolution = `Hold Failed: ${transportPowerSummary}`;
       transportOrder.unit.status = UnitStatus.RETREAT;
+      transportOrder.displacerProvinceId = winningChallenger.origin.provinceId;
     } else if (maxPower > transportOrder.power) {
       transportOrder.orderSuccess = true;
       transportOrder.primaryResolution = `Hold Victory: Bouncing Challengers ${transportPowerSummary}`;
@@ -1064,21 +1195,28 @@ export class ResolutionService {
         [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(challenger.orderType)
     );
 
-    challengers.forEach((challenger: UnitOrderResolution) => {
-      if (challenges[challenger.power]) {
-        challenges[challenger.power].push(challenger.power);
-      } else {
-        challenges[challenger.power] = [challenger.power];
-      }
-      maxPower = challenger.power > maxPower ? challenger.power : maxPower;
-    });
-
     if (challengers.length > 0) {
+      let winningChallenger: UnitOrderResolution = challengers[0];
+
+      challengers.forEach((challenger: UnitOrderResolution) => {
+        if (challenges[challenger.power]) {
+          challenges[challenger.power].push(challenger.power);
+        } else {
+          challenges[challenger.power] = [challenger.power];
+        }
+
+        if (challenger.power > maxPower) {
+          maxPower = challenger.power;
+          winningChallenger = challenger;
+        }
+      });
+
       const victory = holdOrder.power === maxPower;
 
       let summary = `${victory ? 'Victory' : 'Dislodged'}: ${holdOrder.power}`;
       holdOrder.orderSuccess = victory;
       holdOrder.unit.status = victory ? UnitStatus.ACTIVE : UnitStatus.RETREAT;
+      holdOrder.displacerProvinceId = victory ? undefined : winningChallenger.origin.provinceId;
 
       let currentPower = maxPower;
       while (currentPower > 0) {
@@ -1368,6 +1506,9 @@ export class ResolutionService {
       const newUnitHistory = this.copyUnitHistory(unitHistory);
       newUnitHistory.unitStatus = result.unit.status;
       newUnitHistory.nodeId = finalPosition.nodeId;
+      if (result.unit.status === UnitStatus.RETREAT) {
+        newUnitHistory.displacerProvinceId = result.displacerProvinceId;
+      }
 
       dbUpdates.unitHistories?.push(newUnitHistory);
     }

@@ -1,4 +1,5 @@
 import { OrderDisplay, OrderSetType } from '../enumeration/order-display-enum';
+import { ProvinceType } from '../enumeration/province-enums';
 import { TurnStatus } from '../enumeration/turn-status-enum';
 
 export interface OrderOption {
@@ -12,6 +13,7 @@ export interface OrderOption {
 
 export interface OptionsContext {
   gameId: number;
+  turnId: number;
   unitInfo: UnitOptions[];
   unitIdToIndexLib: any;
   sharedAdjProvinces: any;
@@ -21,7 +23,6 @@ export interface OptionsContext {
   transports: any;
   transportables: any;
   transportDestinations: any;
-  turnId: number;
 }
 
 export interface UnitOptions {
@@ -49,11 +50,13 @@ export interface AdjacenctMovement {
   nodeId: number;
   provinceId: number;
   provinceName: string;
+  provinceType: ProvinceType;
 }
 
 export interface HoldSupport {
   unitId: number;
   unitName: string;
+  provinceId: number;
 }
 
 export interface MoveSupport {
@@ -93,15 +96,42 @@ export interface UnitAdjacyInfoResult {
   nuke_range: number;
 }
 
+export interface RetreatingUnitAdjacyInfoResult {
+  unit_id: number;
+  unit_name: string;
+  unit_type: string;
+  node_id: number;
+  node_name: string;
+  province_id: number;
+  province_name: string;
+  displacer_province_id: number;
+  adjacencies: AdjacenctMovementResult[];
+  unit_presence: HoldSupportResult[] | undefined;
+}
+export interface RetreatingUnitAdjacyInfo {
+  unitId: number;
+  unitName: string;
+  unitType: string;
+  nodeId: number;
+  nodeName: string;
+  provinceId: number;
+  provinceName: string;
+  displacerProvinceId: number;
+  adjacencies: AdjacenctMovement[];
+  unitPresence: HoldSupport[] | undefined;
+}
+
 export interface AdjacenctMovementResult {
   node_id: number;
   province_id: number;
   province_name: string;
+  province_type: ProvinceType;
 }
 
 interface HoldSupportResult {
   unit_id: number;
   unit_name: string;
+  province_id: number;
 }
 
 export interface AdjacentTransportResult {
@@ -153,6 +183,20 @@ export interface SavedOptionResult {
   secondary_province_name?: string;
   secondary_unit_loc?: number[];
   secondary_order_type?: string;
+  destinations: DestinationResult[];
+}
+
+export interface SavedRetreatOptionResult {
+  unit_id: number;
+  unit_type: string;
+  unit_country_id: string;
+  unit_country_name: string;
+  unit_country_rank: string;
+  unit_flag_key: string;
+  province_name: string;
+  node_id: number;
+  unit_loc: number[];
+  order_type: string;
   destinations: DestinationResult[];
 }
 

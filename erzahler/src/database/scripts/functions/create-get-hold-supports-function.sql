@@ -13,9 +13,17 @@ AS $$
   SELECT u.unit_id,
   	json_agg(CASE
 			WHEN n.node_id = na.node_1_id
-				THEN json_build_object('unit_id', u2.unit_id, 'unit_name', u2.unit_name)
+				THEN json_build_object(
+					'unit_id', u2.unit_id,
+					'unit_name', u2.unit_name,
+					'province_id', p2.province_id
+				)
 			WHEN n.node_id = na.node_2_id
-				THEN json_build_object('unit_id', u1.unit_id, 'unit_name', u1.unit_name)
+				THEN json_build_object(
+					'unit_id', u1.unit_id,
+					'unit_name', u1.unit_name,
+					'province_id', p1.province_id
+				)
 		END) AS hold_supports
 	FROM unit_histories uh
 	INNER JOIN get_last_unit_history($1, $2) luh
