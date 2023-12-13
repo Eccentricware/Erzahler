@@ -86,6 +86,7 @@ export interface UnitOrderResolution {
     canCapture: boolean;
   };
   destination: OrderResolutionLocation;
+  displacerProvinceId?: number;
 }
 
 export interface OrderResolutionLocation {

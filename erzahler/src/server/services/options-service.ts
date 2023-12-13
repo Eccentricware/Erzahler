@@ -32,7 +32,8 @@ import {
   Nomination,
   AdjacentTransportable,
   AdjacentTransport,
-  TransportDestination
+  TransportDestination,
+  RetreatingUnitAdjacyInfo
 } from '../../models/objects/option-context-objects';
 import { OptionsFinal, BuildOptions, VotingOptions } from '../../models/objects/options-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
@@ -59,15 +60,17 @@ export class OptionsService {
       return this.createBlankOptionsContext();
     }
 
+    const retreatTurn = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(turn.turnType);
+
     const unitInfo: UnitOptions[] = await this.fetchUnitAdjacencyInfo(
       turn.gameId,
       turn.turnNumber,
-      [TurnType.FALL_ORDERS, TurnType.FALL_RETREATS].includes(turn.turnType),
-      [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(turn.turnType)
+      retreatTurn
     );
 
     const optionsCtx: OptionsContext = {
       gameId: turn.gameId,
+      turnId: turn.turnId,
       unitInfo: unitInfo,
       unitIdToIndexLib: {},
       sharedAdjProvinces: {},
@@ -77,13 +80,15 @@ export class OptionsService {
       transports: {},
       transportables: {},
       transportDestinations: {},
-      turnId: turn.turnId
     };
 
-    this.sortAdjacencyInfo(optionsCtx);
-    this.processTransportPaths(optionsCtx);
-    this.processMoveSupport(optionsCtx);
-    this.processNukeOptions(turn, optionsCtx);
+    if (!retreatTurn) {
+      this.sortAdjacencyInfo(optionsCtx);
+      this.processTransportPaths(optionsCtx);
+      this.processMoveSupport(optionsCtx);
+      this.processNukeOptions(turn, optionsCtx);
+    }
+
 
     return optionsCtx;
   }
@@ -300,20 +305,55 @@ export class OptionsService {
    * Returns valid adjacency options for units given their current position and the restrictions of the next turn.
    * @param gameId
    * @param turnNumber
-   * @param isFallTurn
    * @param isRetreatTurn
    * @returns
    */
   async fetchUnitAdjacencyInfo(
     gameId: number,
     turnNumber: number,
-    isFallTurn: boolean,
     isRetreatTurn: boolean
   ): Promise<UnitOptions[]> {
-    const unitOtions: UnitOptions[] =
-      await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber, isFallTurn, isRetreatTurn);
+    const unitOtions: UnitOptions[] = isRetreatTurn
+      ? this.standardizeRetreatingUnitOptions(await db.optionsRepo.getRetreatingUnitAdjacencyInfo(gameId, turnNumber))
+      : await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber);
 
     return unitOtions;
+  }
+
+  standardizeRetreatingUnitOptions(retreatingAdjacencyInfo: RetreatingUnitAdjacyInfo[]): UnitOptions[] {
+    const unitOptions: UnitOptions[] = [];
+
+    retreatingAdjacencyInfo.forEach((unit: RetreatingUnitAdjacyInfo) => {
+      const invalidRetreats: number[] = unit.unitPresence?.map((unit: HoldSupport) => unit.provinceId) || [];
+      invalidRetreats.push(unit.displacerProvinceId);
+
+      const validRetreats: AdjacenctMovement[] = unit.adjacencies.filter((adjacency: AdjacenctMovement) =>
+        !invalidRetreats.includes(adjacency.provinceId)
+      );
+
+      unitOptions.push({
+        unitId: unit.unitId,
+        unitName: unit.unitName,
+        unitType: unit.unitType,
+        nodeId: unit.nodeId,
+        nodeName: unit.nodeName,
+        provinceId: unit.provinceId,
+        provinceName: unit.provinceName,
+        adjacencies: validRetreats,
+        moveTransported: [],
+        holdSupports: [],
+        moveSupports: {},
+        transportSupports: {},
+        nukeTargets: [],
+        allTransports: {},
+        adjacentTransports: undefined,
+        adjacentTransportables: undefined,
+        transportDestinations: undefined,
+        nukeRange: -1
+      });
+    });
+
+    return unitOptions;
   }
 
   async processNukeOptions(turn: Turn, optionsCtx: OptionsContext): Promise<void> {
@@ -548,11 +588,17 @@ export class OptionsService {
       return;
     }
 
-    const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
-      upcomingTurn.gameId,
-      upcomingTurn.turnNumber,
-      upcomingTurn.turnId
-    );
+    const unitOptions: SavedOption[] = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)
+        ? await db.optionsRepo.getRetreatingUnitOptions(
+            upcomingTurn.gameId,
+            upcomingTurn.turnNumber,
+            upcomingTurn.turnId
+          )
+        : await db.optionsRepo.getUnitOptions(
+            upcomingTurn.gameId,
+            upcomingTurn.turnNumber,
+            upcomingTurn.turnId
+          );
 
     const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
       upcomingTurn.gameId,
@@ -710,17 +756,20 @@ export class OptionsService {
       };
 
       // Units
-      if (applicable &&
-        [
-          TurnType.SPRING_ORDERS,
-          TurnType.ORDERS_AND_VOTES,
-          TurnType.SPRING_RETREATS,
-          TurnType.FALL_ORDERS,
-          TurnType.FALL_RETREATS
-        ].includes(pendingTurn.turnType)
-      ) {
+      if (applicable && [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
         turnOptions.pending.units = this.finalizeUnitOptions(
           await db.optionsRepo.getUnitOptions(
+            gameState.gameId,
+            pendingTurn.turnNumber,
+            pendingTurn.turnId,
+            playerCountry.countryId
+          )
+        );
+      }
+
+      if (applicable && [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType)) {
+        turnOptions.pending.units = this.finalizeUnitOptions(
+          await db.optionsRepo.getRetreatingUnitOptions(
             gameState.gameId,
             pendingTurn.turnNumber,
             pendingTurn.turnId,
@@ -847,10 +896,10 @@ export class OptionsService {
       }
     }
 
-    if (preliminaryTurn) {
-      const applicable = ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(preliminaryTurn.turnType) && !playerCountry.retreating)
+    if (pendingTurn && preliminaryTurn) {
+      const applicable = ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && !playerCountry.retreating)
         || ![TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(preliminaryTurn.turnType);
-      const message = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(preliminaryTurn.turnType) && playerCountry.retreating
+      const message = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && playerCountry.retreating
         ? 'You are not in retreat and must play the pending turn first!'
         : '';
 
@@ -1419,6 +1468,7 @@ export class OptionsService {
   createBlankOptionsContext(): OptionsContext {
     return {
       gameId: 0,
+      turnId: 0,
       unitInfo: [],
       unitIdToIndexLib: undefined,
       sharedAdjProvinces: undefined,
@@ -1427,8 +1477,7 @@ export class OptionsService {
       transportPaths: undefined,
       transports: undefined,
       transportables: undefined,
-      transportDestinations: undefined,
-      turnId: 0
+      transportDestinations: undefined
     }
   }
 }

@@ -269,6 +269,7 @@ export interface UnitHistoryRowResult {
   turn_id?: number;
   node_id: number;
   unit_status: UnitStatus;
+  displacer_province_id?: number;
 }
 
 export interface UnitHistoryRow {
@@ -277,6 +278,7 @@ export interface UnitHistoryRow {
   turnId?: number;
   nodeId: number;
   unitStatus: UnitStatus;
+  displacerProvinceId?: number;
 }
 
 export interface ProvinceHistoryRowResult {

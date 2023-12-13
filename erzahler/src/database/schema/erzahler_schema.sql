@@ -369,6 +369,7 @@ CREATE TABLE IF NOT EXISTS unit_histories(
   turn_id INTEGER NOT NULL,
   node_id INTEGER,
   unit_status VARCHAR(15) NOT NULL,
+  displacer_province_id INTEGER,
   PRIMARY KEY(unit_history_id),
   FOREIGN KEY(unit_id)
     REFERENCES units(unit_id),
