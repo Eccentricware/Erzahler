@@ -742,6 +742,8 @@ export class OptionsService {
         nukeRange: null,
         adjustments: 0,
         nukesInProduction: 0,
+        pendingOrderSetId: null,
+        preliminaryOrderSetId: null
       };
     }
 
