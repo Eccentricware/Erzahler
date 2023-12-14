@@ -172,9 +172,9 @@ export interface SavedOptionResult {
   unit_country_rank: string;
   unit_flag_key: string;
   province_name: string;
+  province_type: ProvinceType;
   node_id: number;
   unit_loc: number[];
-  can_hold: boolean;
   order_type: string;
   secondary_unit_id?: number;
   secondary_unit_type?: string;
@@ -194,6 +194,7 @@ export interface SavedRetreatOptionResult {
   unit_country_rank: string;
   unit_flag_key: string;
   province_name: string;
+  province_type: ProvinceType;
   node_id: number;
   unit_loc: number[];
   order_type: string;
@@ -215,9 +216,9 @@ export interface SavedOption {
   unitCountryRank: string;
   unitFlagKey: string;
   provinceName: string;
+  provinceType: ProvinceType;
   nodeId: number;
   unitLoc: number[];
-  canHold: boolean;
   orderType: OrderDisplay;
   secondaryUnitId?: number;
   secondaryUnitType?: string;
