@@ -508,7 +508,9 @@ export class GameRepository {
             builds: countryResult.banked_builds,
             nukeRange: countryResult.nuke_range,
             adjustments: countryResult.adjustments,
-            nukesInProduction: countryResult.nukes_in_production
+            nukesInProduction: countryResult.nukes_in_production,
+            pendingOrderSetId: countryResult.pending_order_set_id,
+            preliminaryOrderSetId: countryResult.preliminary_order_set_id
           };
         })
       );

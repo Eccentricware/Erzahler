@@ -9,6 +9,8 @@ export interface CountryStateResult {
   adjustments: number;
   country_status: string;
   nukes_in_production: number;
+  pending_order_set_id: number | null;
+  preliminary_order_set_id: number | null;
 }
 
 export interface CountryState {
@@ -22,4 +24,6 @@ export interface CountryState {
   adjustments: number;
   countryStatus: string;
   nukesInProduction: number;
+  pendingOrderSetId: number | null;
+  preliminaryOrderSetId: number | null;
 }

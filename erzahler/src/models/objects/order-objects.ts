@@ -16,10 +16,10 @@ export interface TurnOrders {
 
 export interface SingleTurnOrders {
   turnStatus: TurnStatus;
-  orderSetId?: number;
+  orderSetId?: number | null;
   default?: boolean;
   units?: any[]; // If (spring orders/retreats or fall orders/retreats)
-  techTransfers?: any[];
+  techTransfer?: any;
   buildTransfers?: any[];
   builds?: any[];
   disbands?: DisbandOrders;
@@ -96,7 +96,7 @@ export interface TransferTechOrderResult {
   success: boolean;
 }
 export interface TransferTechOrder {
-  techTransferOrderId: number;
+  // techTransferOrderId: number;
   orderSetId: number;
   countryId: number;
   countryName: string;

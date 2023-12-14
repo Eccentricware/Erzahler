@@ -1281,7 +1281,7 @@ export class ResolutionService {
     orderTurnId: number,
     transferResources: TransferResources
   ): Promise<TransferTechOrder[]> {
-    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(gameId, turnNumber, orderTurnId, 0);
+    const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartners(gameId, turnNumber, orderTurnId, 0);
 
     techTransferOrders.forEach((order: TransferTechOrder) => {
       const partnerCountry = techTransferOrders.find(
