@@ -167,7 +167,7 @@ export interface AirAdjacency {
 export interface SavedOptionResult {
   unit_id: number;
   unit_type: string;
-  unit_country_id: string;
+  unit_country_id: number;
   unit_country_name: string;
   unit_country_rank: string;
   unit_flag_key: string;
@@ -189,7 +189,7 @@ export interface SavedOptionResult {
 export interface SavedRetreatOptionResult {
   unit_id: number;
   unit_type: string;
-  unit_country_id: string;
+  unit_country_id: number;
   unit_country_name: string;
   unit_country_rank: string;
   unit_flag_key: string;
@@ -211,7 +211,7 @@ export interface DestinationResult {
 export interface SavedOption {
   unitId: number;
   unitType: string;
-  unitCountryId: string;
+  unitCountryId: number;
   unitCountryName: string;
   unitCountryRank: string;
   unitFlagKey: string;
@@ -242,7 +242,9 @@ export interface UnitOptionsFinalized {
   unitId: number;
   unitType: string;
   unitDisplay: string;
+  unitCountryId: number;
   unitLoc: number[];
+  unitProvinceName: string;
   nodeId: number;
   orderTypes: OrderDisplay[];
   moveDestinations: OptionDestination[];
