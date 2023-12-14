@@ -1,6 +1,7 @@
 import { db } from '../../database/connection';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { ProvinceType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitType } from '../../models/enumeration/unit-enum';
@@ -314,13 +315,17 @@ export class OptionsService {
     isRetreatTurn: boolean
   ): Promise<UnitOptions[]> {
     const unitOtions: UnitOptions[] = isRetreatTurn
-      ? this.standardizeRetreatingUnitOptions(await db.optionsRepo.getRetreatingUnitAdjacencyInfo(gameId, turnNumber))
-      : await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber);
+      ? this.refineRetreatingUnitOptions(await db.optionsRepo.getRetreatingUnitAdjacencyInfo(gameId, turnNumber))
+      : this.refineStandardUnitOptions(await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber));
 
     return unitOtions;
   }
 
-  standardizeRetreatingUnitOptions(retreatingAdjacencyInfo: RetreatingUnitAdjacyInfo[]): UnitOptions[] {
+  refineStandardUnitOptions(adjacencyInfo: UnitOptions[]): UnitOptions[] {
+    return adjacencyInfo;
+  }
+
+  refineRetreatingUnitOptions(retreatingAdjacencyInfo: RetreatingUnitAdjacyInfo[]): UnitOptions[] {
     const unitOptions: UnitOptions[] = [];
 
     retreatingAdjacencyInfo.forEach((unit: RetreatingUnitAdjacyInfo) => {

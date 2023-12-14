@@ -6,6 +6,7 @@ export const getRetreatingOrderOptionsQuery = `
     c.rank unit_country_rank,
     c.flag_key unit_country_flag_key,
     p.province_name,
+    p.province_type,
     n.node_id,
     n.loc unit_loc,
     json_agg(CASE WHEN dn.node_id IS NOT NULL
