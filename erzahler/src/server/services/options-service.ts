@@ -612,51 +612,59 @@ export class OptionsService {
       upcomingTurn.turnType
     );
 
+    const finalizedUnitOptions: UnitOptionsFinalized[] = this.finalizeUnitOptions(unitOptions, upcomingTurn.turnType);
+
     newOrderSets.forEach((orderSet: OrderSet) => orderSetLibrary[orderSet.countryId] = orderSet.orderSetId);
     const preppedOrderLibrary: Record<string, OrderPrepping> = {};
     const defaultOrders: Order[] = [];
 
-    if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(upcomingTurn.turnType)) {
-      unitOptions.forEach((option: SavedOption) => {
-        if (!preppedOrderLibrary[option.unitId]) {
-          preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
-        }
-      });
-
-    } else if (upcomingTurn.turnType === TurnType.FALL_ORDERS) {
-      unitOptions.forEach((option: SavedOption) => {
-        if (!preppedOrderLibrary[option.unitId]) {
-          if (option.canHold) {
-            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
-          } else if (option.orderType === OrderDisplay.MOVE) {
-            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
-          }
-        }
-      });
-
-    } else if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)) {
-      // Basic retreats for testing, may be necessary to flesh out in detail later
-      unitOptions.forEach((option: SavedOption) => {
-        if (!preppedOrderLibrary[option.unitId]) {
-          if (option.orderType === OrderDisplay.MOVE) {
-            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
-          }
-        }
-      });
-    }
-
-    for (const unitId in preppedOrderLibrary) {
-      const unitOrder = preppedOrderLibrary[unitId];
-      if (orderSetLibrary[unitOrder.countryId]) {
-        defaultOrders.push({
-          orderSetId: orderSetLibrary[unitOrder.countryId],
-          orderedUnitId: unitOrder.unitId,
-          orderType: unitOrder.orderType,
-          destinationId: unitOrder.destinationId,
-          description: unitOrder.description
-        });
+    finalizedUnitOptions.forEach((unit: UnitOptionsFinalized) => {
+      if (orderSetLibrary[unit.unitCountryId]) {
+        defaultOrders.push(this.prepDefaultOrder(unit, orderSetLibrary[unit.unitCountryId]));
       }
-    }
+    });
+
+    // if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(upcomingTurn.turnType)) {
+    //   unitOptions.forEach((option: SavedOption) => {
+    //     if (!preppedOrderLibrary[option.unitId]) {
+    //       preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
+    //     }
+    //   });
+
+    // } else if (upcomingTurn.turnType === TurnType.FALL_ORDERS) {
+    //   unitOptions.forEach((option: SavedOption) => {
+    //     if (!preppedOrderLibrary[option.unitId]) {
+    //       if (option.canHold) {
+    //         preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
+    //       } else if (option.orderType === OrderDisplay.MOVE) {
+    //         preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
+    //       }
+    //     }
+    //   });
+
+    // } else if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)) {
+    //   // Basic retreats for testing, may be necessary to flesh out in detail later
+    //   unitOptions.forEach((option: SavedOption) => {
+    //     if (!preppedOrderLibrary[option.unitId]) {
+    //       if (option.orderType === OrderDisplay.MOVE) {
+    //         preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
+    //       }
+    //     }
+    //   });
+    // }
+
+    // for (const unitId in preppedOrderLibrary) {
+    //   const unitOrder = preppedOrderLibrary[unitId];
+    //   if (orderSetLibrary[unitOrder.countryId]) {
+    //     defaultOrders.push({
+    //       orderSetId: orderSetLibrary[unitOrder.countryId],
+    //       orderedUnitId: unitOrder.unitId,
+    //       orderType: unitOrder.orderType,
+    //       destinationId: unitOrder.destinationId,
+    //       description: unitOrder.description
+    //     });
+    //   }
+    // }
 
     if (defaultOrders.length > 0) {
       db.ordersRepo.insertDefaultOrders(defaultOrders).then(() => {
@@ -768,7 +776,8 @@ export class OptionsService {
             pendingTurn.turnNumber,
             pendingTurn.turnId,
             playerCountry.countryId
-          )
+          ),
+          pendingTurn.turnType
         );
       }
 
@@ -779,7 +788,8 @@ export class OptionsService {
             pendingTurn.turnNumber,
             pendingTurn.turnId,
             playerCountry.countryId
-          )
+          ),
+          pendingTurn.turnType
         );
       }
 
@@ -925,7 +935,8 @@ export class OptionsService {
             preliminaryTurn.turnNumber,
             preliminaryTurn.turnId,
             playerCountry.countryId
-          )
+          ),
+          preliminaryTurn.turnType
         );
       }
 
@@ -1027,13 +1038,13 @@ export class OptionsService {
     return turnOptions;
   }
 
-  finalizeUnitOptions(options: SavedOption[]): UnitOptionsFinalized[] {
+  finalizeUnitOptions(options: SavedOption[], turnType: TurnType): UnitOptionsFinalized[] {
     const unitOptionsLibrary: Record<string, UnitOptionsFinalized> = {};
     const unitOptionsFormatted: UnitOptionsFinalized[] = [];
 
     options.forEach((option: SavedOption) => {
       if (!unitOptionsLibrary[option.unitId]) {
-        unitOptionsLibrary[option.unitId] = this.newUnitEssentialsKit(option);
+        unitOptionsLibrary[option.unitId] = this.newUnitEssentialsKit(option, turnType);
       }
 
       const unit = unitOptionsLibrary[option.unitId];
@@ -1172,14 +1183,29 @@ export class OptionsService {
     }
   }
 
-  newUnitEssentialsKit(option: SavedOption): UnitOptionsFinalized {
+  newUnitEssentialsKit(option: SavedOption, turnType: TurnType): UnitOptionsFinalized {
+    const initialOrderType: OrderDisplay[] = [];
+
+    if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(turnType)) {
+      initialOrderType.push(OrderDisplay.DISBAND);
+
+    } else if (
+      option.unitType !== UnitType.FLEET
+      || option.provinceType !== ProvinceType.POLE
+      || ![TurnType.FALL_ORDERS, TurnType.FALL_RETREATS].includes(turnType)
+    )  {
+      initialOrderType.push(OrderDisplay.HOLD);
+    }
+
     return {
       unitId: option.unitId,
       unitType: option.unitType,
       unitDisplay: `${option.unitType} ${option.provinceName}`,
+      unitCountryId: option.unitCountryId,
+      unitProvinceName: option.provinceName,
       unitLoc: option.unitLoc,
       nodeId: option.nodeId,
-      orderTypes: option.canHold ? [OrderDisplay.HOLD] : [],
+      orderTypes: initialOrderType,
       moveDestinations: [],
       moveTransportedDestinations: [],
       nukeTargets: [],
@@ -1225,6 +1251,10 @@ export class OptionsService {
       orderTypes.push(OrderDisplay.HOLD);
     }
 
+    if (unit.orderTypes.includes(OrderDisplay.DISBAND)) {
+      orderTypes.push(OrderDisplay.DISBAND);
+    }
+
     if (unit.orderTypes.includes(OrderDisplay.MOVE)) {
       orderTypes.push(OrderDisplay.MOVE);
     }
@@ -1251,10 +1281,6 @@ export class OptionsService {
 
     if (unit.orderTypes.includes(OrderDisplay.NUKE)) {
       orderTypes.push(OrderDisplay.NUKE);
-    }
-
-    if (unit.orderTypes.includes(OrderDisplay.DISBAND)) {
-      orderTypes.push(OrderDisplay.DISBAND);
     }
 
     unit.orderTypes = orderTypes;
@@ -1415,18 +1441,32 @@ export class OptionsService {
     };
   }
 
-  prepDefaultOrder(option: SavedOption, forcedHold: boolean): OrderPrepping {
-    const description = this.setOptionDescription(option);
+  prepDefaultOrder(unitOptions: UnitOptionsFinalized, orderSetId: number): Order {
+    let description = `${unitOptions.unitType.toUpperCase()[0]} ${unitOptions.unitProvinceName} `;
 
-    return <OrderPrepping>{
-      unitId: option.unitId,
-      orderType: forcedHold ? OrderDisplay.HOLD : OrderDisplay.MOVE,
+    const firstOrderType = unitOptions.orderTypes[0];
+
+    if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(firstOrderType)) {
+      description += firstOrderType;
+    } else {
+      description += `=> ${unitOptions.moveDestinations[0].nodeDisplay}`;
+    }
+
+    return <Order> {
+      orderedUnitId: unitOptions.unitId,
+      orderSetId: orderSetId,
+      orderType: firstOrderType,
       description: description,
-      destinationId: forcedHold ? undefined : option.destinations[0].nodeId,
-      countryId: Number(option.unitCountryId)
+      destinationId: [OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(firstOrderType)
+        ? undefined
+        : unitOptions.moveDestinations[0].nodeId,
+      countryId: unitOptions.unitCountryId
     };
   }
 
+  /**
+   * Deprecated
+  */
   setOptionDescription(option: SavedOption): string {
     let description = `${option.unitType[0].toUpperCase()} ${option.provinceName} `;
 

@@ -248,7 +248,6 @@ export class OptionsRepository {
             provinceType: result.province_type,
             nodeId: result.node_id,
             unitLoc: result.unit_loc,
-            canHold: true,
             orderType: result.order_type,
             secondaryUnitId: result.secondary_unit_id,
             secondaryUnitType: result.secondary_unit_type,
@@ -301,7 +300,6 @@ export class OptionsRepository {
             provinceType: result.province_type,
             nodeId: result.node_id,
             unitLoc: result.unit_loc,
-            canHold: false,
             orderType: OrderDisplay.MOVE,
             destinations:
               result.destinations[0] !== null
