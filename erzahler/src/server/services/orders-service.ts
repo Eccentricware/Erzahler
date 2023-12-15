@@ -170,7 +170,7 @@ export class OrdersService {
               pendingTurn.turnId,
               playerCountry.countryId
             );
-            orders.pending.builds = pendingBuildOrders;
+            orders.pending.builds = pendingBuildOrders[0];
           } else {
             orders.pending.disbands = await this.prepareDisbandOrders(
               gameId,
@@ -252,7 +252,7 @@ export class OrdersService {
               preliminaryTurn.turnId,
               playerCountry.countryId
             );
-            orders.preliminary.builds = pendingBuildOrders;
+            orders.preliminary.builds = pendingBuildOrders[0];
           } else {
             orders.preliminary.disbands = await this.prepareDisbandOrders(
               gameId,
@@ -412,29 +412,38 @@ export class OrdersService {
 
       // Adjustments
       // Adjustments | Adjustments and Nominations
-      if (orderSetIds.builds && orders.builds) {
-        db.ordersRepo.saveBuildOrders(orderSetIds.builds, orders.builds);
+      if (orders.pending && orders.pending.builds && orders.pending.orderSetId) {
+        await db.ordersRepo.saveBuildOrders(orders.pending.orderSetId, orders.pending.builds);
       }
 
-      if (orderSetIds.units && orders.disbands) {
-        db.ordersRepo.saveDisbandOrders(orderSetIds.units, orders.disbands);
+      if (orders.preliminary && orders.preliminary.builds && orders.preliminary.orderSetId) {
+        await db.ordersRepo.saveBuildOrders(orders.preliminary.orderSetId, orders.preliminary.builds);
+      }
+
+      if (orders.pending && orders.pending.disbands && orders.pending.orderSetId) {
+        await db.ordersRepo.saveDisbandOrders(orders.pending.orderSetId, orders.pending.disbands);
+      }
+
+      if (orders.preliminary && orders.preliminary.disbands && orders.preliminary.orderSetId) {
+        await db.ordersRepo.saveDisbandOrders(orders.preliminary.orderSetId, orders.preliminary.disbands);
       }
 
       // Nominations
       // Nominations | Adjustments and Nominations
-      if (orderSetIds.nomination && orders.nomination) {
-        db.ordersRepo.saveNominationOrder(orderSetIds.nomination, orders.nomination.countryIds);
+      if (orders.pending && orders.pending.nomination && orders.pending.orderSetId) {
+        await db.ordersRepo.saveNominationOrder(orders.pending.orderSetId, orders.pending.nomination.countryIds);
       }
+
 
       // Votes
       // Votes | Orders and Votes
-      if (orderSetIds.votes && orders.votes) {
-        db.ordersRepo.saveVotes(orderSetIds.votes, orders.votes.nominations);
+      if (orders.pending && orders.pending.votes && orders.pending.orderSetId) {
+        await db.ordersRepo.saveVotes(orders.pending.orderSetId, orders.pending.votes);
       }
 
-      if (!orderSetUpdated && orderSetIds.core) {
-        db.ordersRepo.updateOrderSetSubmissionTime(orderSetIds.core);
-      }
+      // if (!orderSetUpdated && orderSetIds.core) {
+      //   db.ordersRepo.updateOrderSetSubmissionTime(orderSetIds.core);
+      // }
     } else {
       terminalAddendum('ALERT', `Unassigned user (${userId}) attempted to save orders for Game ${orders.gameId} | Country ${orders.countryId}`)
     }
