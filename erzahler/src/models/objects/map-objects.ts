@@ -83,6 +83,7 @@ export interface UnitResult {
   loc: number[];
   flag_key: string;
   unit_status: string;
+  event_loc: number[];
 }
 export interface Unit {
   name: string;
@@ -90,4 +91,5 @@ export interface Unit {
   loc: number[];
   countryKey: string;
   status: string;
+  eventLoc: number[];
 }
