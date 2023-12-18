@@ -21,7 +21,7 @@ export interface SingleTurnOrders {
   units?: any[]; // If (spring orders/retreats or fall orders/retreats)
   techTransfer?: any;
   buildTransfers?: any[];
-  builds?: any[];
+  builds?: BuildOrders;
   disbands?: DisbandOrders;
   nomination?: any;
   votes?: any[];
