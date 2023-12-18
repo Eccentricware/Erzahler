@@ -114,13 +114,13 @@ export class OrdersRepository {
     return this.db.query(query).catch((error: Error) => terminalLog('insertDefaultOrders error: ' + error.message));
   }
 
-  async saveTechTransfer(orderSetId: number, techTransfer: TransferTechOrder): Promise<void> {
+  async saveTechTransfer(techTransfer: TransferTechOrder): Promise<void> {
     const updateOrderPQ = new ParameterizedQuery({
       text: updateTechTransferOrdersQuery,
       values: [
         techTransfer.foreignCountryId,
         techTransfer.foreignCountryName,
-        orderSetId
+        techTransfer.orderSetId
       ]
     });
 
@@ -130,7 +130,7 @@ export class OrdersRepository {
       const insertOrderPQ = new ParameterizedQuery({
         text: insertTechTransferOrdersQuery,
         values: [
-          orderSetId,
+          techTransfer.orderSetId,
           techTransfer.foreignCountryId,
           techTransfer.foreignCountryName
         ]
@@ -301,7 +301,7 @@ export class OrdersRepository {
    * @param countryId
    * @returns
    */
-  async getTechTransferPartner(
+  async getTechTransferPartners(
     gameId: number,
     turnNumber: number,
     orderTurnId: number,
@@ -326,22 +326,7 @@ export class OrdersRepository {
         })
       );
 
-    return techTransferPartners.length === 0
-      ? [
-          <TransferTechOrder> {
-            techTransferOrderId: 0,
-            orderSetId: 0,
-            countryId: 0,
-            countryName: '',
-            hasNukes: false,
-            foreignCountryId: 0,
-            foreignCountryName: '',
-            description: 'Orders not submitted',
-            resolution: '',
-            success: false
-          }
-        ]
-      : techTransferPartners;
+    return techTransferPartners;
   }
 
   async getBuildOrders(
@@ -427,17 +412,17 @@ export class OrdersRepository {
     );
   }
 
-  async saveUnitOrder(orderSetId: number, unit: Order): Promise<void> {
+  async saveUnitOrder( unitOrder: Order): Promise<void> {
     await this.pool
       .query(saveUnitOrderQuery, [
-        unit.orderType,
-        unit.secondaryUnitId,
-        unit.destinationId,
+        unitOrder.orderType,
+        unitOrder.secondaryUnitId,
+        unitOrder.destinationId,
         'Submitted',
-        orderSetId,
-        unit.orderedUnitId
+        unitOrder.orderSetId,
+        unitOrder.orderedUnitId
       ])
-      .catch((error: Error) => terminalLog(`saveUnitOrder (${unit.orderedUnitId}) error: ` + error.message));
+      .catch((error: Error) => terminalLog(`saveUnitOrder (${unitOrder.orderedUnitId}) error: ` + error.message));
   }
 
   async saveBuildOrder(orderSetId: number, build: Build): Promise<void> {
@@ -445,8 +430,6 @@ export class OrdersRepository {
       .query(saveBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, build.buildNumber])
       .catch((error: Error) => terminalLog(`saveBuildOrder (${build.nodeId}) error: ${error.message}`));
   }
-
-
 
   async saveBuildOrders(orderSetId: number, builds: BuildOrders): Promise<void> {
     const buildLocs: number[] = [];

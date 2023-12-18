@@ -94,7 +94,10 @@ export class OrdersService {
       }
 
       if (pendingTurn) {
-        orders.pending = { turnStatus: TurnStatus.PENDING };
+        orders.pending = {
+          turnStatus: TurnStatus.PENDING,
+          orderSetId: playerCountry.pendingOrderSetId
+        };
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
           orders.pending.units = await db.ordersRepo.getTurnUnitOrders(
@@ -131,13 +134,25 @@ export class OrdersService {
 
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
+          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartners(
             gameId,
             gameState.turnNumber,
             pendingTurn.turnId,
             playerCountry.countryId
           );
-          orders.pending.techTransfers = techTransferOrders;
+          orders.pending.techTransfer = techTransferOrders[0]
+            ? techTransferOrders[0]
+            : {
+                orderSetId: orders.pending.orderSetId,
+                countryId: playerCountry.countryId,
+                countryName: playerCountry.name,
+                hasNukes: playerCountry.nukeRange,
+                foreignCountryId: 0,
+                foreignCountryName: '---',
+                description: '',
+                resolution: '',
+                success: false
+              };
 
           const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
             playerCountry.countryId,
@@ -178,7 +193,10 @@ export class OrdersService {
       }
 
       if (preliminaryTurn) {
-        orders.preliminary = { turnStatus: TurnStatus.PRELIMINARY };
+        orders.preliminary = {
+          turnStatus: TurnStatus.PRELIMINARY,
+          orderSetId: playerCountry.preliminaryOrderSetId
+        };
         // Units
         if (
           [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(preliminaryTurn.turnType)
@@ -198,13 +216,25 @@ export class OrdersService {
 
         // Transfers
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
-          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartner(
+          const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartners(
             gameId,
             gameState.turnNumber,
             preliminaryTurn.turnId,
             playerCountry.countryId
           );
-          orders.preliminary.techTransfers = techTransferOrders;
+          orders.preliminary.techTransfer = techTransferOrders[0]
+            ? techTransferOrders[0]
+            : {
+                orderSetId: orders.preliminary.orderSetId,
+                countryId: playerCountry.countryId,
+                countryName: playerCountry.name,
+                hasNukes: playerCountry.nukeRange,
+                foreignCountryId: 0,
+                foreignCountryName: '---',
+                description: '',
+                resolution: '',
+                success: false
+              };
 
           const pendingBuildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
             playerCountry.countryId,
@@ -329,40 +359,59 @@ export class OrdersService {
     const accountService = new AccountService();
 
     const userId = await accountService.getUserIdFromToken(idToken);
+    if (!userId) {
+      terminalAddendum('Warning', `Attempt to save orders with invalid token (${idToken})`);
+      return;
+    }
+
+    if (!orders.countryId) {
+      terminalAddendum('Warning', `User ${userId} attempted to submit orders without countryId`);
+      return;
+    }
     const userAssigned = await db.assignmentRepo.confirmUserIsCountry(orders.gameId, userId, orders.countryId);
 
     if (userAssigned) {
       terminalLog(`Saving Orders: Game ${orders.gameId} | Country ${orders.countryId} | User ${userId}`);
       terminalAddendum(`Orders`, `${JSON.stringify(orders)}`);
-      const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
-      let orderSetUpdated = false;
+      // const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
+      // let orderSetUpdated = false;
 
-      if (orderSetIds.votes && orders.votes) {
-        db.ordersRepo.saveVotes(orderSetIds.votes, orders.votes.nominations);
-      }
-
-      if (orderSetIds.units && orders.units) {
-        orders.units.forEach(async (unit: Order) => {
-          assert(orderSetIds.units);
-          await db.ordersRepo.saveUnitOrder(orderSetIds.units, unit);
+      // Units
+      // Spring Orders | Spring Orders and Votes | Spring Retreats | Fall Orders | Fall Retreats
+      if (orders.pending && orders.pending.units) {
+        orders.pending.units.forEach(async (unitOrder: Order) => {
+          await db.ordersRepo.saveUnitOrder(unitOrder);
         });
       }
 
-      if (orderSetIds.transfers && orders.techTransfer) {
-        await db.ordersRepo.saveTechTransfer(orderSetIds.transfers, orders.techTransfer);
+      // Spring Orders | Spring Orders and Votes | Fall Orders
+      if (orders.preliminary && orders.preliminary.units) {
+        orders.preliminary.units.forEach(async (unitOrder: Order) => {
+          await db.ordersRepo.saveUnitOrder(unitOrder);
+        });
       }
 
-      if (orderSetIds.transfers && orders.buildTransfers && orders.buildTransfers.length > 0) {
-        await db.ordersRepo.saveBuildTransfers(orderSetIds.transfers, orders.buildTransfers);
+      // Transfers
+      // Spring Orders | Spring Orders and Votes
+      if (orders.pending && orders.pending.techTransfer) {
+        await db.ordersRepo.saveTechTransfer(orders.pending.techTransfer);
       }
 
-      // if (orderSetIds.retreats && orders.units) {
-      //   orders.units.forEach((unit: Order) => {
-      //     assert(orderSetIds.units);
-      //     db.ordersRepo.saveUnitOrder(orderSetIds.units, unit);
-      //   });
-      // }
+      // Spring Orders | Spring Orders and Votes
+      if (orders.preliminary && orders.preliminary.techTransfer) {
+        await db.ordersRepo.saveTechTransfer(orders.preliminary.techTransfer);
+      }
 
+      if (orders.pending && orders.pending.buildTransfers && orders.pending.orderSetId) {
+        await db.ordersRepo.saveBuildTransfers(orders.pending.orderSetId, orders.pending.buildTransfers);
+      }
+
+      if (orders.preliminary && orders.preliminary.buildTransfers && orders.preliminary.orderSetId) {
+        await db.ordersRepo.saveBuildTransfers(orders.preliminary.orderSetId, orders.preliminary.buildTransfers);
+      }
+
+      // Adjustments
+      // Adjustments | Adjustments and Nominations
       if (orderSetIds.builds && orders.builds) {
         db.ordersRepo.saveBuildOrders(orderSetIds.builds, orders.builds);
       }
@@ -371,15 +420,23 @@ export class OrdersService {
         db.ordersRepo.saveDisbandOrders(orderSetIds.units, orders.disbands);
       }
 
+      // Nominations
+      // Nominations | Adjustments and Nominations
       if (orderSetIds.nomination && orders.nomination) {
         db.ordersRepo.saveNominationOrder(orderSetIds.nomination, orders.nomination.countryIds);
+      }
+
+      // Votes
+      // Votes | Orders and Votes
+      if (orderSetIds.votes && orders.votes) {
+        db.ordersRepo.saveVotes(orderSetIds.votes, orders.votes.nominations);
       }
 
       if (!orderSetUpdated && orderSetIds.core) {
         db.ordersRepo.updateOrderSetSubmissionTime(orderSetIds.core);
       }
     } else {
-      terminalLog(`Unassigned user (${userId}) attempted to save orders for Game ${orders.gameId} | Country ${orders.countryId}`)
+      terminalAddendum('ALERT', `Unassigned user (${userId}) attempted to save orders for Game ${orders.gameId} | Country ${orders.countryId}`)
     }
   }
 
