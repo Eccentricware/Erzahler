@@ -4,16 +4,19 @@ export const insertProvinceQuery = `
     province_name,
     province_fullname,
     province_type,
-    vote_type,
-    city_loc
+    city_type,
+    city_loc,
+    capital_owner_id
   )
   SELECT
-    game_id,
+    g.game_id,
     $1,
     $2,
     $3,
     $4,
-    $5
-  FROM games
-  WHERE game_name = $6
+    $5,
+    c.country_id
+  FROM games g
+  LEFT JOIN countries c ON c.game_id = g.game_id AND c.country_name = $6
+  WHERE game_name = $7;
 `;

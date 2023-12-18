@@ -1,6 +1,6 @@
 import { ProvinceHistoryRow } from '../../../database/schema/table-fields';
 import { OrderDisplay } from '../../enumeration/order-display-enum';
-import { ProvinceStatus, ProvinceType, ResolutionEvent, VoteType } from '../../enumeration/province-enums';
+import { ProvinceStatus, ProvinceType, ResolutionEvent, CityType } from '../../enumeration/province-enums';
 import { UnitStatus, UnitType } from '../../enumeration/unit-enum';
 import {
   AdjacentTransportResult,
@@ -32,7 +32,7 @@ export interface UnitOrderResolutionResult {
   province: string;
   province_type: string;
   event_node_id: number;
-  vote_type: string;
+  city_type: string;
   province_status: string;
   controller_id: number;
   capital_owner_id: number;
@@ -50,7 +50,7 @@ export interface UnitOrderResolutionResult {
   destination_province_name: string;
   destination_province_status: string;
   destination_province_type: string;
-  destination_vote_type: string;
+  destination_city_type: string;
   destination_controller_id: number;
   destination_capital_owner_id: number;
 }
@@ -95,7 +95,7 @@ export interface OrderResolutionLocation {
   provinceName: string;
   display: string;
   provinceType: ProvinceType;
-  voteType: VoteType;
+  cityType: CityType;
   provinceStatus: ProvinceStatus;
   controllerId: number;
   capitalOwnerId: number;

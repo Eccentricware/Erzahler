@@ -1,7 +1,7 @@
 export const getAbandonedBombardsQuery = `
   SELECT ph.province_id,
     ph.controller_id,
-    ph.capital_owner_id,
+    p.capital_owner_id,
     'active' as province_status,
     ph.valid_retreat,
     ph.vote_color,

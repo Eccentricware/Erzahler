@@ -48,7 +48,7 @@ export class ResolutionRepository {
 
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.provinceHistoryCols = new pgp.helpers.ColumnSet(
-      ['province_id', 'turn_id', 'controller_id', 'capital_owner_id', 'province_status', 'valid_retreat'],
+      ['province_id', 'turn_id', 'controller_id', 'province_status', 'valid_retreat'],
       { table: 'province_histories' }
     );
 
@@ -158,7 +158,6 @@ export class ResolutionRepository {
         province_id: provinceHistory.provinceId,
         turn_id: turnId,
         controller_id: provinceHistory.controllerId,
-        capital_owner_id: provinceHistory.capitalOwnerId,
         province_status: provinceHistory.provinceStatus,
         valid_retreat: provinceHistory.validRetreat
       };
@@ -214,7 +213,7 @@ export class ResolutionRepository {
               provinceType: order.province_type,
               eventNodeId: order.event_node_id,
               display: order.destination_display,
-              voteType: order.vote_type,
+              cityType: order.city_type,
               provinceStatus: order.province_status,
               controllerId: order.controller_id,
               capitalOwnerId: order.capital_owner_id,
@@ -236,7 +235,7 @@ export class ResolutionRepository {
               provinceName: order.destination_province_name,
               provinceType: order.destination_province_type,
               display: order.destination_display,
-              voteType: order.destination_vote_type,
+              cityType: order.destination_city_type,
               provinceStatus: order.destination_province_status,
               controllerId: order.destination_controller_id,
               capitalOwnerId: order.destination_capital_owner_id,
@@ -343,7 +342,7 @@ export class ResolutionRepository {
             provinceName: garrison.province,
             provinceType: garrison.province_type,
             display: garrison.destination_province_name,
-            voteType: garrison.vote_type,
+            cityType: garrison.city_type,
             provinceStatus: garrison.province_status,
             controllerId: garrison.controller_id,
             capitalOwnerId: garrison.capital_owner_id,
@@ -365,7 +364,7 @@ export class ResolutionRepository {
             provinceName: garrison.destination_province_name,
             provinceType: garrison.destination_province_type,
             display: garrison.destination_province_name,
-            voteType: garrison.destination_vote_type,
+            cityType: garrison.destination_city_type,
             provinceStatus: garrison.destination_province_status,
             controllerId: garrison.destination_controller_id,
             capitalOwnerId: garrison.destination_capital_owner_id,

@@ -2,7 +2,6 @@ export const getCurrentProvinceHistoryQuery = `
   SELECT ph.province_id,
     ph.turn_id,
     ph.controller_id,
-    ph.capital_owner_id,
     ph.province_status,
     ph.valid_retreat
   FROM province_histories ph

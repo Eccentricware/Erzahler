@@ -9,7 +9,7 @@ import {
 } from '../../database/schema/table-fields';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { OrderStatus } from '../../models/enumeration/order-status-enum';
-import { ProvinceStatus, ProvinceType, VoteType } from '../../models/enumeration/province-enums';
+import { ProvinceStatus, ProvinceType, CityType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
@@ -1398,7 +1398,7 @@ export class ResolutionService {
     finalPosition: OrderResolutionLocation,
     turn: UpcomingTurn
   ): ProvinceStatus {
-    if (result.orderType === OrderDisplay.NUKE && [VoteType.CAPITAL, VoteType.VOTE].includes(finalPosition.voteType)) {
+    if (result.orderType === OrderDisplay.NUKE && [CityType.CAPITAL, CityType.VOTE].includes(finalPosition.cityType)) {
       return ProvinceStatus.NUKED;
     } else if (result.orderType === OrderDisplay.NUKE) {
       return ProvinceStatus.INERT;
