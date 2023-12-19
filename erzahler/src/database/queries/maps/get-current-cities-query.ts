@@ -2,11 +2,11 @@ export const getCitiesQuery = `
   SELECT p.province_id,
     p.province_name,
     p.city_type,
+    ph.province_status,
     ph.controller_id,
     p.capital_owner_id,
     coh.country_status capital_owner_status,
-    p.city_loc,
-    ph.province_status
+    p.city_loc
   FROM provinces p
   INNER JOIN get_last_province_history($1, $2) lph ON lph.province_id = p.province_id
   INNER JOIN province_histories ph
