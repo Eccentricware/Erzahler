@@ -96,7 +96,8 @@ export class MapRepository {
           type: result.unit_type,
           loc: result.loc,
           countryKey: result.flag_key,
-          status: result.unit_status
+          status: result.unit_status,
+          eventLoc: result.event_loc
         };
       })
     );
