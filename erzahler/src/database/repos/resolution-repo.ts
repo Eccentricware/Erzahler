@@ -39,6 +39,9 @@ import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
 import { getCountryUnitCityCountsQuery } from '../queries/resolution/get-country-unit-city-counts';
 import { advancePreliminaryTurnQuery } from '../queries/resolution/advance-preliminary-turn-query';
 import { terminalLog } from '../../server/utils/general';
+import { TurnStatus } from '../../models/enumeration/turn-status-enum';
+import { updateTurnProgressQuery } from '../queries/resolution/update-turn-progress-query';
+import { Turn, TurnResult } from '../../models/objects/database-objects';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -393,19 +396,40 @@ export class ResolutionRepository {
     await this.pool.query(resolveTurnQuery, [turnId]);
   }
 
+  async updateTurnProgress(turnId: number, newStatus: TurnStatus): Promise<Turn> {
+    const updatedTurns = await this.pool.query(updateTurnProgressQuery, [newStatus, turnId])
+      .then((result: QueryResult) =>
+        result.rows.map((updatedTurn: TurnResult) => {
+          return <Turn>{
+            turnId: updatedTurn.turn_id,
+            gameId: updatedTurn.game_id,
+            turnNumber: updatedTurn.turn_number,
+            turnName: updatedTurn.turn_name,
+            turnType: updatedTurn.turn_type,
+            turnStatus: updatedTurn.turn_status,
+            yearNumber: updatedTurn.year_number,
+            deadline: updatedTurn.deadline
+          };
+        })
+      )
+
+    return updatedTurns[0];
+  }
+
   async advancePreliminaryTurn(turnId: number): Promise<void> {
     await this.pool.query(advancePreliminaryTurnQuery, [turnId]);
   }
 
   async getCountryStatCounts(gameId: number, turnNumber: number): Promise<CountryStatCounts[]> {
-    return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber]).then((result: QueryResult) =>
-      result.rows.map((country: CountryStatCountsResult) => {
-        return <CountryStatCounts>{
-          countryId: country.country_id,
-          cityCount: Number(country.city_count),
-          unitCount: Number(country.unit_count)
-        };
-      })
-    );
+    return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber])
+      .then((result: QueryResult) =>
+        result.rows.map((country: CountryStatCountsResult) => {
+          return <CountryStatCounts>{
+            countryId: country.country_id,
+            cityCount: Number(country.city_count),
+            unitCount: Number(country.unit_count)
+          };
+        })
+      );
   }
 }

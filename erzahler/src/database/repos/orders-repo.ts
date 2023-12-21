@@ -7,10 +7,8 @@ import {
   Order,
   OrderResult,
   OrderSet,
-  OrderSetResult,
-  TransferCountryResult
+  OrderSetResult
 } from '../../models/objects/option-context-objects';
-import { TransferBuildsCountry } from '../../models/objects/options-objects';
 import {
   TransferBuildOrder,
   TransferTechOrder,
@@ -95,6 +93,33 @@ export class OrdersRepository {
       ],
       { table: 'orders_transfer_builds' }
     );
+  }
+
+
+  async insertRetreatedOrderSets(nowPendingTurnId: number, retreatingCountryIds: number[]): Promise<OrderSet[]> {
+    const orderSetValues = retreatingCountryIds.map((countryId: number) => {
+      return {
+        country_id: countryId,
+        turn_id: nowPendingTurnId,
+        message_id: null,
+        submission_time: new Date(),
+        order_set_type: 'Orders',
+        order_set_name: null
+      };
+    });
+
+    const query = this.pgp.helpers.insert(orderSetValues, this.orderSetCols)
+      + 'RETURNING order_set_id, country_id';
+
+    return this.db.query(query)
+      .then((result) =>
+        result.map((orderSetResult: OrderSetResult) =>
+          (<OrderSet>{
+            orderSetId: orderSetResult.order_set_id,
+            countryId: orderSetResult.country_id
+          })
+        )
+      );
   }
 
   async insertDefaultOrders(defaultOrders: Order[]): Promise<void> {

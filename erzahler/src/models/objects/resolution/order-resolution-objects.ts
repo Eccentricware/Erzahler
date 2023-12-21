@@ -108,6 +108,7 @@ export interface OrderResolutionLocation {
 export interface UnitOrderGroups {
   transport: UnitOrderResolution[];
   hold: UnitOrderResolution[];
+  disband?: UnitOrderResolution[];
   invalid: UnitOrderResolution[];
   move: UnitOrderResolution[];
   moveTransported: UnitOrderResolution[];
