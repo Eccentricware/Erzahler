@@ -10,5 +10,5 @@ export const getCurrentCountryHistoriesQuery = `
     ch.vote_count,
     ch.nukes_in_production
   FROM country_histories ch
-  INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = ch.country_id;
+  INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = ch.country_id and lch.turn_id = ch.turn_id;
 `;

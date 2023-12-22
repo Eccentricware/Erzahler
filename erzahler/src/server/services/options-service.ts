@@ -566,34 +566,6 @@ export class OptionsService {
     };
   }
 
-  // /**
-  //  * Given a gameID, finds the pending and preliminary turns and saves the default orders for each.
-  //  *
-  //  * @param gameId
-  //  */
-  // async deprecatedsaveDefaultOrders(gameId: number): Promise<void> {
-  //   const gameState = await db.gameRepo.getGameState(gameId);
-
-  //   const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
-
-  //   const pendingTurn: UpcomingTurn | undefined = upcomingTurns.filter(
-  //     (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PENDING
-  //   )[0];
-
-  //   const preliminaryTurn: UpcomingTurn | undefined = upcomingTurns.filter(
-  //     (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PRELIMINARY
-  //   )[0];
-
-  //   if (pendingTurn && !pendingTurn.defaultsReady) {
-  //     // if (pendingTurn) {
-  //     await this.saveTurnDefaults(gameState, pendingTurn);
-  //   }
-
-  //   if (preliminaryTurn && !preliminaryTurn.defaultsReady) {
-  //     await this.saveTurnDefaults(gameState, preliminaryTurn);
-  //   }
-  // }
-
   async saveTurnDefaults(upcomingTurn: Turn, retreatingCountryIds?: number[]): Promise<void> {
     const orderSetLibrary: Record<string, number> = {};
 
