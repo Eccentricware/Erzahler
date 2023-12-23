@@ -41,9 +41,11 @@ import { formatTurnName, terminalAddendum, terminalLog } from '../utils/general'
 import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
+import { OrdersService } from './orders-service';
 
 export class ResolutionService {
   optionsService: OptionsService = new OptionsService();
+  orderService: OrdersService = new OrdersService();
   schedulerService: SchedulerService = new SchedulerService();
   gameService: GameService = new GameService();
 
@@ -630,12 +632,9 @@ export class ResolutionService {
             nextTurns.pending.deadline
           ])
           .then(async (pendingTurn: Turn) => {
-
-            await this.optionsService.saveOptionsForTurn(pendingTurn);
             if (nextTurns.preliminary) {
-              // If there isn't a preliminary turn following Fall Orders, no Fall Retreats
+              await this.optionsService.saveOptionsForTurn(pendingTurn);
 
-              terminalLog('DB: Preliminary Turn Insert');
               db.gameRepo.insertNextTurn([
                 gameState.gameId,
                 nextTurns.preliminary.turnNumber,
@@ -646,8 +645,11 @@ export class ResolutionService {
                 nextTurns.preliminary.deadline
               ])
               .then(async (preliminaryTurn: Turn) => {
-                this.optionsService.saveOptionsForTurn(preliminaryTurn);
+                await this.orderService.createAdjustmentDefaults(preliminaryTurn);
               });
+
+            } else {
+              await this.orderService.createAdjustmentDefaults(pendingTurn);
             }
           });
         });

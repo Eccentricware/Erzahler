@@ -19,8 +19,10 @@ export const getCountryUnitCityCountsQuery = `
   )
   SELECT c.country_id,
     uc.unit_count,
-    cc.city_count
+    cc.city_count,
+    cc.city_count - uc.unit_count AS adjustments
   FROM countries c
   INNER JOIN unit_counts uc ON uc.country_id = c.country_id
-  INNER JOIN city_counts cc ON cc.controller_id = c.country_id;
+  INNER JOIN city_counts cc ON cc.controller_id = c.country_id
+  ORDER BY c.country_id;
 `;

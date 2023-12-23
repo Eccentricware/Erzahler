@@ -1,6 +1,6 @@
 import { GameState } from '../../models/objects/last-turn-info-object';
-import { NominatableCountry, Order } from '../../models/objects/option-context-objects';
-import { UnitType } from '../../models/enumeration/unit-enum';
+import { AtRiskUnit, BuildLocProvince, NominatableCountry, Order } from '../../models/objects/option-context-objects';
+import { BuildType, UnitType } from '../../models/enumeration/unit-enum';
 import { db } from '../../database/connection';
 import { AccountService } from './account-service';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
@@ -8,11 +8,12 @@ import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { UserAssignment } from '../../models/objects/assignment-objects';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
-import { CountryStatus } from '../../models/enumeration/country-enum';
 import { CountryState } from '../../models/objects/games/country-state-objects';
 import {
+  Build,
   BuildOrders,
   DisbandOrders,
+  DisbandingUnitDetail,
   NominationOrder,
   NukeBuildInDisband,
   TransferBuildOrder,
@@ -20,10 +21,14 @@ import {
   TurnOrders
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
-import assert from 'assert';
 import { terminalAddendum, terminalLog } from '../utils/general';
+import { Turn } from '../../models/objects/database-objects';
+import { OptionsService } from './options-service';
+import { CountryStats } from '../../models/objects/games/country-stats-objects';
 
 export class OrdersService {
+  optionsService = new OptionsService();
+
   async getTurnOrders(idToken: string, gameId: number): Promise<TurnOrders | undefined> {
     // Identify user
     const accountService = new AccountService();
@@ -170,7 +175,18 @@ export class OrdersService {
               pendingTurn.turnId,
               playerCountry.countryId
             );
-            orders.pending.builds = pendingBuildOrders[0];
+            orders.pending.builds = pendingBuildOrders[0]
+              ? pendingBuildOrders[0]
+              : {
+                  countryId: playerCountry.countryId,
+                  countryName: playerCountry.name,
+                  bankedBuilds: 0,
+                  buildCount: 0,
+                  nukeRange: playerCountry.nukeRange,
+                  increaseRange: 0,
+                  builds: [],
+                  nukesReady: []
+                };
           } else {
             orders.pending.disbands = await this.prepareDisbandOrders(
               gameId,
@@ -402,21 +418,21 @@ export class OrdersService {
         await db.ordersRepo.saveTechTransfer(orders.preliminary.techTransfer);
       }
 
-      if (orders.pending && orders.pending.buildTransfers && orders.pending.orderSetId) {
+      if (orders.pending?.buildTransfers && orders.pending?.buildTransfers.length > 0 && orders.pending.orderSetId) {
         await db.ordersRepo.saveBuildTransfers(orders.pending.orderSetId, orders.pending.buildTransfers);
       }
 
-      if (orders.preliminary && orders.preliminary.buildTransfers && orders.preliminary.orderSetId) {
+      if (orders.preliminary?.buildTransfers && orders.preliminary.buildTransfers.length > 0 && orders.preliminary.orderSetId) {
         await db.ordersRepo.saveBuildTransfers(orders.preliminary.orderSetId, orders.preliminary.buildTransfers);
       }
 
       // Adjustments
       // Adjustments | Adjustments and Nominations
-      if (orders.pending && orders.pending.builds && orders.pending.orderSetId) {
+      if (orders.pending?.builds && orders.pending.builds.builds.length > 0 && orders.pending.orderSetId) {
         await db.ordersRepo.saveBuildOrders(orders.pending.orderSetId, orders.pending.builds);
       }
 
-      if (orders.preliminary && orders.preliminary.builds && orders.preliminary.orderSetId) {
+      if (orders.preliminary?.builds && orders.preliminary.builds.builds.length > 0 && orders.preliminary.orderSetId) {
         await db.ordersRepo.saveBuildOrders(orders.preliminary.orderSetId, orders.preliminary.builds);
       }
 
@@ -447,6 +463,102 @@ export class OrdersService {
     } else {
       terminalAddendum('ALERT', `Unassigned user (${userId}) attempted to save orders for Game ${orders.gameId} | Country ${orders.countryId}`)
     }
+  }
+
+  async createAdjustmentDefaults(upcomingTurn: Turn, retreatingCountryIds?: number[]): Promise<void> {
+    if (!upcomingTurn.turnId) {
+      terminalAddendum('Warning', `Attempt to create adjustment defaults for turn without turnId`);
+      return;
+    }
+
+    const newOrderSets = retreatingCountryIds
+      ? await db.ordersRepo.insertRetreatedOrderSets(
+          upcomingTurn.turnId,
+          retreatingCountryIds
+        )
+      : await db.ordersRepo.insertTurnOrderSets(
+          upcomingTurn.gameId,
+          upcomingTurn.turnNumber,
+          upcomingTurn.turnId,
+          upcomingTurn.turnType
+        );
+
+
+
+    const newOrderSetLibrary: Record<number, number> = {};
+    newOrderSets.forEach((orderSet: any) => {
+      newOrderSetLibrary[orderSet.countryId] = orderSet.orderSetId;
+    });
+
+    const countryStats: CountryStats[] =
+      await db.gameRepo.getGameStats(upcomingTurn.gameId, upcomingTurn.turnNumber);
+
+    const buildOptions: BuildLocProvince[] =
+      await db.optionsRepo.getAvailableBuildLocs(upcomingTurn.turnNumber, upcomingTurn.gameId, 0);
+
+    const disbandOptions: AtRiskUnit[] =
+      await db.optionsRepo.getAtRiskUnits(upcomingTurn.gameId, upcomingTurn.turnNumber, 0);
+
+    const allBuilds: Build[] = [];
+
+    countryStats.forEach((country: CountryStats) => {
+      if (country.adjustments > 0) {
+        const countryBuildOptions = buildOptions.filter((buildOption: BuildLocProvince) =>
+          buildOption.countryId === country.id
+        );
+
+        const countryDefaultBuilds: Build[] = []
+        let currentOptionIndex = 0;
+        while (countryDefaultBuilds.length < country.adjustments) {
+          countryDefaultBuilds.push({
+            orderSetId: newOrderSetLibrary[country.id],
+            buildNumber: countryDefaultBuilds.length + 1,
+            buildType: BuildType.ARMY,
+            nodeId: countryBuildOptions[currentOptionIndex].landNodeId,
+            typeId: 1
+          });
+          currentOptionIndex++;
+        }
+
+        allBuilds.push(...countryDefaultBuilds);
+      }
+
+      if (country.adjustments < 0) {
+        const countryAtRiskUnits = disbandOptions.filter((atRiskUnit: AtRiskUnit) =>
+          atRiskUnit.countryId === country.id
+        );
+
+        const countryDisbands: DisbandingUnitDetail[] = [];
+        let disbandedIndex = 0
+        while (countryDisbands.length < Math.abs(country.adjustments)) {
+          countryDisbands.push({
+            unitId: countryAtRiskUnits[disbandedIndex].unitId,
+            unitType: countryAtRiskUnits[disbandedIndex].unitType,
+            provinceName: countryAtRiskUnits[disbandedIndex].provinceName,
+            loc: countryAtRiskUnits[disbandedIndex].loc
+          });
+          disbandedIndex++;
+
+        }
+
+        newOrderSets[country.id].disbands = countryDisbands;
+        db.ordersRepo.saveDisbandOrders(newOrderSetLibrary[country.id], {
+          countryId: country.id,
+          countryName: country.name,
+          bankedBuilds: 0,
+          disbands: Math.abs(country.adjustments),
+          unitDisbandingDetailed: countryDisbands,
+          nukeLocs: [],
+          nukeRange: country.nuke,
+          increaseRange: 0,
+          unitsDisbanding: countryDisbands.map((disband: DisbandingUnitDetail) => disband.unitId)
+        });
+      }
+    });
+
+    allBuilds.forEach(async (build: Build) => {
+      await db.ordersRepo.saveDefaultBuildOrder(build);
+    });
   }
 
   async prepareDisbandOrders(

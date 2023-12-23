@@ -420,6 +420,12 @@ export class ResolutionRepository {
     await this.pool.query(advancePreliminaryTurnQuery, [turnId]);
   }
 
+  /**
+   * This is deprecated and is being moved to another repo
+   * @param gameId
+   * @param turnNumber
+   * @returns
+   */
   async getCountryStatCounts(gameId: number, turnNumber: number): Promise<CountryStatCounts[]> {
     return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber])
       .then((result: QueryResult) =>

@@ -7,6 +7,7 @@ import {
   AtRiskUnit,
   AtRiskUnitResult,
   BuildLoc,
+  BuildLocProvince,
   BuildLocResult,
   DestinationResult,
   NominatableCountry,
@@ -406,12 +407,12 @@ export class OptionsRepository {
     return transferOptions;
   }
 
-  async getAvailableBuildLocs(turnNumber: number, gameId: number, countryId = 0): Promise<BuildLocResult[]> {
-    const buildLocs: BuildLocResult[] = await this.pool
+  async getAvailableBuildLocs(turnNumber: number, gameId: number, countryId = 0): Promise<BuildLocProvince[]> {
+    const buildLocs: BuildLocProvince[] = await this.pool
       .query(getEmptySupplyCentersQuery, [gameId, turnNumber, countryId])
       .then((result: QueryResult<any>) =>
         result.rows.map((province: BuildLocResult) => {
-          return <BuildLocResult>{
+          return <BuildLocProvince>{
             countryId: province.country_id,
             countryName: province.country_name,
             provinceName: province.province_name,
@@ -441,6 +442,7 @@ export class OptionsRepository {
         result.rows.map((unit: AtRiskUnitResult) => {
           return <AtRiskUnit>{
             unitId: unit.unit_id,
+            countryId: unit.country_id,
             unitType: unit.unit_type,
             loc: unit.loc,
             provinceName: unit.province_name
