@@ -285,7 +285,6 @@ export interface ProvinceHistoryRowResult {
   province_id: number;
   turn_id?: number;
   controller_id: number | null;
-  capital_owner_id: number | null;
   province_status: ProvinceStatus;
   valid_retreat: boolean;
 }

@@ -231,8 +231,9 @@ export class GameRepository {
             provinces[provinceName].name,
             provinces[provinceName].fullName,
             provinces[provinceName].type,
-            provinces[provinceName].voteType,
+            provinces[provinceName].cityType,
             provinces[provinceName].cityLoc,
+            provinces[provinceName].country,
             gameName
           ])
           .catch((error: Error) => {
@@ -252,11 +253,7 @@ export class GameRepository {
         this.pool
           .query(insertInitialProvinceHistoryQuery, [
             provinces[provinceName].status,
-            provinces[provinceName].voteColor,
-            provinces[provinceName].statusColor,
-            provinces[provinceName].strokeColor,
             provinces[provinceName].country,
-            provinces[provinceName].owner,
             gameName,
             provinces[provinceName].name
           ])
@@ -595,7 +592,6 @@ export class GameRepository {
           provinceId: provinceHistory.province_id,
           turnId: provinceHistory.turn_id,
           controllerId: provinceHistory.controller_id,
-          capitalOwnerId: provinceHistory.capital_owner_id,
           provinceStatus: provinceHistory.province_status,
           validRetreat: provinceHistory.valid_retreat
         };

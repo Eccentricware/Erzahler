@@ -203,11 +203,14 @@ CREATE TABLE IF NOT EXISTS provinces(
   province_name VARCHAR(15) NOT NULL,
   province_fullname VARCHAR(25),
   province_type VARCHAR(15) NOT NULL,
-  vote_type VARCHAR(15),
+  city_type VARCHAR(15),
   city_loc INTEGER[],
+  capital_owner_id INTEGER,
   PRIMARY KEY(province_id),
   FOREIGN KEY(game_id)
-    REFERENCES games(game_id)
+    REFERENCES games(game_id),
+  FOREIGN KEY(capital_owner_id)
+    REFERENCES countries(country_id)
 );
 
 \echo 'Attempting to create terrain table'
@@ -267,7 +270,6 @@ CREATE TABLE IF NOT EXISTS province_histories(
   province_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
   controller_id INTEGER,
-  capital_owner_id INTEGER,
   province_status VARCHAR NOT NULL,
   valid_retreat BOOLEAN NOT NULL DEFAULT true,
   vote_color VARCHAR(10),
@@ -279,8 +281,6 @@ CREATE TABLE IF NOT EXISTS province_histories(
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
   FOREIGN KEY(controller_id)
-    REFERENCES countries(country_id),
-  FOREIGN KEY(capital_owner_id)
     REFERENCES countries(country_id)
 );
 
@@ -752,7 +752,7 @@ CREATE INDEX label_line_province_idx ON label_lines(province_id); -- No label li
 CREATE INDEX province_history_core_idx ON province_histories(province_id);
 CREATE INDEX province_history_turn_idx ON province_histories(turn_id);
 CREATE INDEX province_history_controller_idx ON province_histories(controller_id);
-CREATE INDEX province_history_capital_owner_idx ON province_histories(capital_owner_id);
+CREATE INDEX province_history_capital_owner_idx ON provinces(capital_owner_id);
 CREATE INDEX node_province_idx ON nodes(province_id);
 CREATE INDEX node_adjacency_core_1_idx ON node_adjacencies(node_1_id);
 CREATE INDEX node_adjacency_core_2_idx ON node_adjacencies(node_2_id);

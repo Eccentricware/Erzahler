@@ -21,10 +21,10 @@ export const getUnitOrdersForResolutionQuery = `
     p.province_name province,
     p.province_type,
     en.node_id event_node_id,
-    p.vote_type,
+    p.city_type,
     ph.province_status,
     ph.controller_id,
-    ph.capital_owner_id,
+    p.capital_owner_id,
     o.secondary_unit_id,
     su.unit_type secondary_unit_type,
     su.country_id secondary_country_id,
@@ -39,9 +39,9 @@ export const getUnitOrdersForResolutionQuery = `
     dp.province_name destination_province_name,
     dph.province_status destination_province_status,
     dp.province_type destination_province_type,
-    dp.vote_type destination_vote_type,
+    dp.city_type destination_city_type,
     dph.controller_id destination_controller_id,
-    dph.capital_owner_id destination_capital_owner_id
+    dp.capital_owner_id destination_capital_owner_id
   FROM order_sets os
   INNER JOIN orders o ON o.order_set_id = os.order_set_id
   INNER JOIN units u ON u.unit_id = o.ordered_unit_id

@@ -47,12 +47,13 @@ export class MapRepository {
     return await this.pool.query(getCitiesQuery, [gameId, turnNumber]).then((queryResult: QueryResult<any>) =>
       queryResult.rows.map((result: CityResult) => {
         return <City>{
+          provinceId: result.province_id,
           loc: result.city_loc,
-          type: result.vote_type,
-          voteColor: result.vote_color,
-          statusColor: result.status_color,
-          strokeColor: result.stroke_color,
-          name: result.province_name
+          name: result.province_name,
+          type: result.city_type,
+          controllerId: result.controller_id,
+          capitalOwnerId: result.capital_owner_id,
+          status: result.province_status
         };
       })
     );

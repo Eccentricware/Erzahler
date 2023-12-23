@@ -12,10 +12,10 @@ export const getRemainingGarrisonsQuery = `
     n.province_id,
     p.province_name province,
     p.province_type,
-    p.vote_type,
+    p.city_type,
     ph.province_status,
     ph.controller_id,
-    capital_owner_id,
+    p.capital_owner_id,
     NULL secondary_unit_id,
     NULL secondary_unit_type,
     NULL secondary_country_id,
@@ -26,7 +26,7 @@ export const getRemainingGarrisonsQuery = `
     NULL destination_province_name,
     NULL destination_province_status,
     NULL destination_province_type,
-    NULL destination_vote_type,
+    NULL destination_city_type,
     NULL destination_controller_id,
     NULL destination_capital_owner_id
   FROM get_last_unit_history($1, $2) luh
