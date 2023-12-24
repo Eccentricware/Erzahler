@@ -1,3 +1,4 @@
+import { CountryStatus } from "../enumeration/country-enum";
 import { CityType } from "../enumeration/province-enums";
 
 export interface TerrainResult {
@@ -29,26 +30,23 @@ export interface Terrain {
 export interface CityResult {
   province_id: number;
   province_name: string;
-  province_status: string;
   city_type: CityType;
+  province_status: string;
   controller_id: number;
   capital_owner_id: number;
+  capital_owner_status: CountryStatus;
   city_loc: number[];
-  // vote_color: string;
-  // status_color: string;
-  // stroke_color: string;
 }
+
 export interface City {
   provinceId: number;
-  loc: number[];
   name: string;
-  status: string;
   type: CityType;
+  status: string;
   controllerId: number;
   capitalOwnerId: number;
-  // voteColor: string;
-  // statusColor: string;
-  // strokeColor: string;
+  capitalOwnerStatus: CountryStatus;
+  loc: number[];
 }
 
 export interface LabelResult {

@@ -48,11 +48,12 @@ export class MapRepository {
       queryResult.rows.map((result: CityResult) => {
         return <City>{
           provinceId: result.province_id,
-          loc: result.city_loc,
           name: result.province_name,
           type: result.city_type,
           controllerId: result.controller_id,
           capitalOwnerId: result.capital_owner_id,
+          capitalOwnerStatus: result.capital_owner_status,
+          loc: result.city_loc,
           status: result.province_status
         };
       })
