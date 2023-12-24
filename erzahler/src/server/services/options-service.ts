@@ -287,9 +287,9 @@ export class OptionsService {
       const adjProvince = optionsCtx.sharedAdjProvinces[convoyProvince.provinceId];
 
       const doesNotHaveUnit =
-        adjProvince.filter((adjProvince: any) => adjProvince.unitId === transportedUnitId).length === 0;
+        adjProvince?.filter((adjProvince: any) => adjProvince.unitId === transportedUnitId).length === 0;
 
-      if (doesNotHaveUnit) {
+      if (adjProvince && doesNotHaveUnit) {
         optionsCtx.sharedAdjProvinces[convoyProvince.provinceId].push({
           nodeId: contributionId,
           unitId: transportedUnitId,
