@@ -1,10 +1,12 @@
 export const getUnitsQuery = `
   SELECT u.unit_name,
     u.unit_type,
-    n.loc,
+    CASE
+      WHEN uh.unit_status = 'Active' THEN n.loc
+      ELSE en.loc
+    END loc,
     c.flag_key,
-    uh.unit_status,
-    en.loc AS event_loc
+    uh.unit_status
   FROM get_last_unit_history($1, $2) luh
   INNER JOIN units u ON u.unit_id = luh.unit_id
   INNER JOIN unit_histories uh ON uh.unit_id = luh.unit_id AND uh.turn_id = luh.turn_id

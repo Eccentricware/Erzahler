@@ -914,8 +914,7 @@ export class OptionsService {
     }
 
     if (pendingTurn && preliminaryTurn) {
-      const applicable = ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && !playerCountry.retreating)
-        || ![TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(preliminaryTurn.turnType);
+      const applicable = ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && !playerCountry.retreating);
       const message = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && playerCountry.retreating
         ? 'You are not in retreat and must play the pending turn first!'
         : '';

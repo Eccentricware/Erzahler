@@ -3,7 +3,10 @@ export const getTurnUnitOrdersQuery = `
     o.order_id,
     o.order_set_id,
     o.ordered_unit_id,
-    un.loc ordered_unit_loc,
+    CASE
+      WHEN uh.unit_status = 'Active' THEN un.loc
+      ELSE ron.loc
+    END ordered_unit_loc,
     o.order_type,
     o.secondary_unit_id,
     sn.loc secondary_unit_loc,
@@ -15,6 +18,8 @@ export const getTurnUnitOrdersQuery = `
   INNER JOIN unit_histories uh ON uh.unit_id = o.ordered_unit_id
   INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = uh.unit_id AND luh.turn_id = uh.turn_id
   INNER JOIN nodes un ON un.node_id = uh.node_id
+  INNER JOIN provinces up ON up.province_id = un.province_id
+  INNER JOIN nodes ron ON ron.province_id = up.province_id AND ron.node_type = 'event'
   LEFT JOIN unit_histories sh ON sh.unit_id = o.secondary_unit_id
   LEFT JOIN get_last_unit_history($1, $2) sluh ON sluh.unit_id = uh.unit_id AND sluh.turn_id = uh.turn_id
   LEFT JOIN nodes sn ON sn.node_id = sh.node_id AND sh.turn_id = uh.turn_id
