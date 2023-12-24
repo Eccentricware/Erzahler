@@ -175,6 +175,11 @@ export class OrdersService {
               pendingTurn.turnId,
               playerCountry.countryId
             );
+            const nullBuilds = pendingBuildOrders[0].builds[0].buildNumber === null;
+            if (nullBuilds) {
+              pendingBuildOrders[0].builds = [];
+            }
+
             orders.pending.builds = pendingBuildOrders[0]
               ? pendingBuildOrders[0]
               : {
@@ -483,8 +488,6 @@ export class OrdersService {
           upcomingTurn.turnType
         );
 
-
-
     const newOrderSetLibrary: Record<number, number> = {};
     newOrderSets.forEach((orderSet: any) => {
       newOrderSetLibrary[orderSet.countryId] = orderSet.orderSetId;
@@ -529,7 +532,8 @@ export class OrdersService {
         );
 
         const countryDisbands: DisbandingUnitDetail[] = [];
-        let disbandedIndex = 0
+        let disbandedIndex = 0;
+
         while (countryDisbands.length < Math.abs(country.adjustments)) {
           countryDisbands.push({
             unitId: countryAtRiskUnits[disbandedIndex].unitId,
@@ -537,11 +541,11 @@ export class OrdersService {
             provinceName: countryAtRiskUnits[disbandedIndex].provinceName,
             loc: countryAtRiskUnits[disbandedIndex].loc
           });
-          disbandedIndex++;
 
+          disbandedIndex++;
         }
 
-        newOrderSets[country.id].disbands = countryDisbands;
+        // newOrderSets[newOrderSetLibrary[country.id]].disbands = countryDisbands;
         db.ordersRepo.saveDisbandOrders(newOrderSetLibrary[country.id], {
           countryId: country.id,
           countryName: country.name,

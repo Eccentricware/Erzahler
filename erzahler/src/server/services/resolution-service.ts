@@ -435,12 +435,14 @@ export class ResolutionService {
         if (!countryHistory) {
           terminalLog(`Country History not found for ${countryStats.countryId}`);
         } else if (
-          countryHistory.cityCount !== countryStats.cityCount ||
-          countryHistory.unitCount !== countryStats.unitCount
+          countryHistory.cityCount !== countryStats.cityCount
+          || countryHistory.unitCount !== countryStats.unitCount
+          || countryHistory.inRetreat
         ) {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
+          countryHistory.inRetreat = false;
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });

@@ -21,8 +21,8 @@ export const getBuildOrdersQuery = `
   LEFT JOIN nodes n ON n.node_id = bo.node_id
   LEFT JOIN provinces p ON p.province_id = n.province_id
   LEFT JOIN countries c ON c.country_id = os.country_id
-  LEFT JOIN country_histories ch ON ch.country_id = c.country_id
-  LEFT JOIN get_last_country_history($1, $2) lch ON lch.country_id = ch.country_id AND lch.turn_id = ch.turn_id
+  LEFT JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
+  LEFT JOIN country_histories ch ON ch.country_id = lch.country_id AND ch.turn_id = lch.turn_id
   WHERE os.turn_id = $3
     AND order_set_type = 'Orders'
     AND CASE WHEN 0 = $4 THEN true ELSE os.country_id = $4 END
@@ -32,5 +32,5 @@ export const getBuildOrdersQuery = `
     ch.banked_builds,
     ch.adjustments,
     ch.nuke_range,
-    os.increase_range
+    os.increase_range;
 `;
