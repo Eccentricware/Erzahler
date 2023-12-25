@@ -20,7 +20,7 @@ import {
   TransferTechOrder,
   TurnOrders
 } from '../../models/objects/order-objects';
-import { CountryOrderSet, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
+import { CountryOrderSet, CountryOrderSetIds, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
 import { terminalAddendum, terminalLog } from '../utils/general';
 import { Turn } from '../../models/objects/database-objects';
 import { OptionsService } from './options-service';
@@ -81,6 +81,7 @@ export class OrdersService {
       let preliminaryTurn: UpcomingTurn | undefined = undefined;
 
       const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
+      const playerOrderSets: CountryOrderSetIds = await db.ordersRepo.getCountryOrderSetIds(playerCountry.countryId);
 
       if (upcomingTurns.length === 0) {
         console.log(`GameId ${gameId} has no upcoming turns!`);
@@ -101,7 +102,7 @@ export class OrdersService {
       if (pendingTurn) {
         orders.pending = {
           turnStatus: TurnStatus.PENDING,
-          orderSetId: playerCountry.pendingOrderSetId
+          orderSetId: playerOrderSets.pendingOrderSetId
         };
         // Standard Unit Movement
         if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
@@ -216,7 +217,7 @@ export class OrdersService {
       if (preliminaryTurn) {
         orders.preliminary = {
           turnStatus: TurnStatus.PRELIMINARY,
-          orderSetId: playerCountry.preliminaryOrderSetId
+          orderSetId: playerOrderSets.preliminaryOrderSetId
         };
         // Units
         if (
@@ -434,11 +435,11 @@ export class OrdersService {
       // Adjustments
       // Adjustments | Adjustments and Nominations
       if (orders.pending?.builds && orders.pending.builds.builds.length > 0 && orders.pending.orderSetId) {
-        await db.ordersRepo.saveBuildOrders(orders.pending.orderSetId, orders.pending.builds);
+        await this.saveBuildOrders(orders.pending.orderSetId, orders.pending.builds);
       }
 
       if (orders.preliminary?.builds && orders.preliminary.builds.builds.length > 0 && orders.preliminary.orderSetId) {
-        await db.ordersRepo.saveBuildOrders(orders.preliminary.orderSetId, orders.preliminary.builds);
+        await this.saveBuildOrders(orders.preliminary.orderSetId, orders.preliminary.builds);
       }
 
       if (orders.pending && orders.pending.disbands && orders.pending.orderSetId) {
@@ -563,6 +564,16 @@ export class OrdersService {
     allBuilds.forEach(async (build: Build) => {
       await db.ordersRepo.saveDefaultBuildOrder(build);
     });
+  }
+
+  async saveBuildOrders(orderSetId: number, buildOrders: BuildOrders): Promise<void> {
+    await db.ordersRepo.updateBuildOrderSet(orderSetId, buildOrders.increaseRange);
+
+    if (buildOrders.builds.length > 0) {
+      buildOrders.builds.forEach(async (build: Build, index: number) => {
+        await db.ordersRepo.saveBuildOrder(orderSetId, build, index + 1);
+      });
+    }
   }
 
   async prepareDisbandOrders(

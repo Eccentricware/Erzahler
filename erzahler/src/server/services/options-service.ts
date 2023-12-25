@@ -684,9 +684,7 @@ export class OptionsService {
         builds: 0,
         nukeRange: null,
         adjustments: 0,
-        nukesInProduction: 0,
-        pendingOrderSetId: null,
-        preliminaryOrderSetId: null
+        nukesInProduction: 0
       };
     }
 

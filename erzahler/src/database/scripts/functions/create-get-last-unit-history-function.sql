@@ -34,7 +34,7 @@ AS $$
 		uh.displacer_province_id
 	FROM turns t
 	INNER JOIN last_unit_turn_id lutid
-	ON lutid.turn_number = t.turn_number
+		ON lutid.turn_number = t.turn_number
 	INNER JOIN unit_histories uh
 		ON uh.turn_id = t.turn_id AND uh.unit_id = lutid.unit_id
 	WHERE t.game_id = $1;
