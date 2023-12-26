@@ -43,12 +43,12 @@ import { AccountService } from './account-service';
 import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 
 export class OptionsService {
-  async saveOptionsForTurn(turn: Turn): Promise<void> {
+  async saveOptionsForTurn(turn: Turn, retreatingCountryIds?: number[]): Promise<void> {
     // const gameState: GameState = await db.gameRepo.getGameState(gameId);
     if (turn.turnId) {
       const optionsContext: OptionsContext = await this.processUnitOrderOptions(turn);
 
-      await this.saveUnitOrderOptions(optionsContext, turn);
+      await this.saveUnitOrderOptions(optionsContext, turn, retreatingCountryIds);
     } else {
       terminalLog(`Error saving Options: Turn for game (${turn.gameId}) has no turnId!`);
     }
@@ -413,7 +413,7 @@ export class OptionsService {
    * @param optionsContext
    * @param turnId
    */
-  async saveUnitOrderOptions(optionsContext: OptionsContext, turn: Turn): Promise<any> {
+  async saveUnitOrderOptions(optionsContext: OptionsContext, turn: Turn, retreatingCountryIds?: number[]): Promise<any> {
     const orderOptions: OrderOption[] = [];
 
     if (!turn.turnId) {
@@ -452,9 +452,17 @@ export class OptionsService {
     });
 
     if (orderOptions.length > 0) {
-      await db.optionsRepo.saveUnitOptions(orderOptions, turn.turnId).then(() => {
-        this.saveTurnDefaults(turn);
-      });
+      if (retreatingCountryIds) {
+        db.optionsRepo.deleteUnitOptions(turn.turnId).then(() => {
+          db.optionsRepo.saveUnitOptions(orderOptions, turn.turnId!).then(() => {
+            this.saveTurnDefaults(turn, retreatingCountryIds);
+          });
+        });
+      } else {
+        await db.optionsRepo.saveUnitOptions(orderOptions, turn.turnId).then(() => {
+          this.saveTurnDefaults(turn);
+        });
+      }
     } else {
       terminalLog(`Operation Failure | No Options: Game ${optionsContext.gameId}, Turn ${turn.turnId}`);
     }
@@ -586,7 +594,7 @@ export class OptionsService {
   //   }
   // }
 
-  async saveTurnDefaults(upcomingTurn: Turn): Promise<void> {
+  async saveTurnDefaults(upcomingTurn: Turn, retreatingCountryIds?: number[]): Promise<void> {
     const orderSetLibrary: Record<string, number> = {};
 
     if (!upcomingTurn.turnId) {
@@ -605,17 +613,21 @@ export class OptionsService {
             upcomingTurn.turnId
           );
 
-    const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
-      upcomingTurn.gameId,
-      upcomingTurn.turnNumber,
-      upcomingTurn.turnId,
-      upcomingTurn.turnType
-    );
+    const newOrderSets = retreatingCountryIds
+      ? await db.ordersRepo.insertRetreatedOrderSets(
+          upcomingTurn.turnId,
+          retreatingCountryIds
+        )
+      : await db.ordersRepo.insertTurnOrderSets(
+          upcomingTurn.gameId,
+          upcomingTurn.turnNumber,
+          upcomingTurn.turnId,
+          upcomingTurn.turnType
+        );
 
     const finalizedUnitOptions: UnitOptionsFinalized[] = this.finalizeUnitOptions(unitOptions, upcomingTurn.turnType);
 
     newOrderSets.forEach((orderSet: OrderSet) => orderSetLibrary[orderSet.countryId] = orderSet.orderSetId);
-    const preppedOrderLibrary: Record<string, OrderPrepping> = {};
     const defaultOrders: Order[] = [];
 
     finalizedUnitOptions.forEach((unit: UnitOptionsFinalized) => {
@@ -623,48 +635,6 @@ export class OptionsService {
         defaultOrders.push(this.prepDefaultOrder(unit, orderSetLibrary[unit.unitCountryId]));
       }
     });
-
-    // if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(upcomingTurn.turnType)) {
-    //   unitOptions.forEach((option: SavedOption) => {
-    //     if (!preppedOrderLibrary[option.unitId]) {
-    //       preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
-    //     }
-    //   });
-
-    // } else if (upcomingTurn.turnType === TurnType.FALL_ORDERS) {
-    //   unitOptions.forEach((option: SavedOption) => {
-    //     if (!preppedOrderLibrary[option.unitId]) {
-    //       if (option.canHold) {
-    //         preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
-    //       } else if (option.orderType === OrderDisplay.MOVE) {
-    //         preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
-    //       }
-    //     }
-    //   });
-
-    // } else if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)) {
-    //   // Basic retreats for testing, may be necessary to flesh out in detail later
-    //   unitOptions.forEach((option: SavedOption) => {
-    //     if (!preppedOrderLibrary[option.unitId]) {
-    //       if (option.orderType === OrderDisplay.MOVE) {
-    //         preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
-    //       }
-    //     }
-    //   });
-    // }
-
-    // for (const unitId in preppedOrderLibrary) {
-    //   const unitOrder = preppedOrderLibrary[unitId];
-    //   if (orderSetLibrary[unitOrder.countryId]) {
-    //     defaultOrders.push({
-    //       orderSetId: orderSetLibrary[unitOrder.countryId],
-    //       orderedUnitId: unitOrder.unitId,
-    //       orderType: unitOrder.orderType,
-    //       destinationId: unitOrder.destinationId,
-    //       description: unitOrder.description
-    //     });
-    //   }
-    // }
 
     if (defaultOrders.length > 0) {
       db.ordersRepo.insertDefaultOrders(defaultOrders).then(() => {

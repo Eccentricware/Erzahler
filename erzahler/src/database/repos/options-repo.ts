@@ -222,6 +222,12 @@ export class OptionsRepository {
     });
   }
 
+  async deleteUnitOptions(turnId: number): Promise<void> {
+    await this.pool.query('DELETE FROM order_options WHERE turn_id = $1', [turnId]).catch((error: Error) => {
+      terminalLog('deleteUnitOptions Error: ' + error.message);
+    });
+  }
+
   /**
    * Fetches options for a turn
    * @param turnId    - Turn's ID

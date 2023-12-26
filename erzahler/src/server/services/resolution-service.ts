@@ -300,7 +300,7 @@ export class ResolutionService {
 
     // Find next turn will require an updated gameState first
     console.log('DB: Turn Update'); // Pending resolution
-    stateUpdatePromises.push(db.resolutionRepo.resolveTurn(turn.turnId));
+    stateUpdatePromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
 
 
     Promise.all(stateUpdatePromises)
@@ -343,7 +343,121 @@ export class ResolutionService {
   }
 
   async resolveSpringRetreats(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Spring Retreats resolution, which is not yet implemented`);
+    const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
+    const dbStates: DbStates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      orders: [],
+      units: [],
+      unitHistories: await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber),
+      provinceHistories: await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber),
+      countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
+    };
+
+    // DB Update
+    const dbUpdates: DbUpdates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      orders: [],
+      units: [],
+      unitHistories: [],
+      provinceHistories: [],
+      countryHistories: {}
+    };
+
+    const unitMovementResults: UnitOrderResolution[] = await this.resolveRetreatingUnitOrders(gameState, turn);
+
+    unitMovementResults.forEach((result: UnitOrderResolution) => {
+      if (result.orderId > 0) {
+        dbUpdates.orders.push({
+          orderId: result.orderId,
+          orderStatus: OrderStatus.PROCESSED,
+          orderSuccess: result.orderSuccess,
+          power: result.power,
+          description: result.description,
+          primaryResolution: result.primaryResolution,
+          secondaryResolution: result.secondaryResolution
+        });
+      }
+
+      if (result.orderType === OrderDisplay.MOVE) {
+        this.handleSpringMovement(result, dbStates, dbUpdates);
+      }
+
+      if (result.orderType === OrderDisplay.DISBAND) {
+        this.handleDisband(result, dbStates, dbUpdates);
+      }
+    });
+
+    this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
+
+    const stateUpdatePromises: Promise<any | void>[] = [];
+
+    if (dbUpdates.orders.length > 0) {
+      console.log('DB: Order Update');
+      stateUpdatePromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
+    }
+
+    if (dbUpdates.unitHistories.length > 0) {
+      console.log('DB: Unit History Insert');
+      stateUpdatePromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
+    }
+
+    if (dbUpdates.provinceHistories.length > 0) {
+      console.log('DB: Province History Insert');
+      stateUpdatePromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
+    }
+
+    const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, gameState.turnNumber);
+
+    countryStatCounts.forEach((countryStats: CountryStatCounts) => {
+      let countryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.countryId];
+      if (!countryHistory) {
+        const countryHistoryRow = dbStates.countryHistories.find(
+          (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+        );
+
+        if (countryHistoryRow) {
+          countryHistory = this.copyCountryHistory(countryHistoryRow);
+        }
+      }
+
+      if (!countryHistory) {
+        terminalLog(`Country History not found for ${countryStats.countryId}`);
+      } else if (
+        countryHistory.cityCount !== countryStats.cityCount ||
+        countryHistory.unitCount !== countryStats.unitCount
+      ) {
+        countryHistory.cityCount = countryStats.cityCount;
+        countryHistory.unitCount = countryStats.unitCount;
+        dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
+      }
+    });
+
+    if (Object.keys(dbUpdates.countryHistories).length > 0) {
+      stateUpdatePromises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
+    }
+
+    // Every turn
+    stateUpdatePromises.push(db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId));
+
+    // Find next turn will require an updated gameState first
+    console.log('DB: Turn Update'); // Pending resolution
+    stateUpdatePromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
+    const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING)
+    stateUpdatePromises.push(nowPendingTurnPromise);
+    const nowPendingTurn = await nowPendingTurnPromise;
+
+    Promise.all(stateUpdatePromises)
+      .then(async () => {
+        const retreatingCountryIds =
+          dbStates.countryHistories.filter((countryHistory: CountryHistoryRow) => countryHistory.inRetreat)
+            .map((countryHistory: CountryHistoryRow) => countryHistory.countryId);
+
+        await this.optionsService.saveOptionsForTurn(nowPendingTurn, retreatingCountryIds);
+      });
   }
 
   async resolveFallOrders(turn: UpcomingTurn): Promise<void> {
@@ -515,116 +629,144 @@ export class ResolutionService {
     unitOrders.push(...remainingGarrisons);
 
     const orderGroups: UnitOrderGroups = {
-      transport: [],
       hold: [],
-      invalid: [],
+      disband: [],
       move: [],
       moveTransported: [],
+      transport: [],
+      support: [],
       nuke: [],
-      support: []
+      invalid: []
     };
-
-    // If transported unit attempts, add key with initial link
-    // Recursively expand all potential paths given compliant transports
-    const transportAttempts: Record<string, TransportAttempt> = {};
-
-    // For changes to province histories after resolution
-    // const provinceEvents: ProvinceEvents = {
-    //   contested: [],
-    //   nuked: []
-    // };
-    // const contestedProvinces: ProvinceHistoryRow[] = [];
-
-    // Otherwise successful orders become invalid and fail should these orders fail
-    const dependencies: OrderDependencies = {
-      dependency: {},
-      heads: []
-    };
-
-    // Successful orders get description updates should these orders fail
-    const supremacies: Record<string, OrderSupremacy> = {}
 
     // Order Possibility Verification
     unitOrders.forEach((order: UnitOrderResolution) => {
       this.sortAndValidateUnitOrder(order, unitOptions, orderGroups);
     });
 
-    // Nukes detonate or invalidate if self-targetting
-    // Will include MAD orders, some day
-    orderGroups.nuke.forEach((order: UnitOrderResolution) => {
-      this.resolveNuclearLaunch(order, unitOrders);
-    });
-
-    // Support Cuts and Compliance
-    orderGroups.support
-      .filter((order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE)
-      .forEach((order: UnitOrderResolution) => {
-        this.resolveSupport(order, unitOrders, dependencies);
-      });
-
-    // Convoy Compliance and success
-    if (orderGroups.transport.length > 0 || orderGroups.moveTransported.length > 0) {
-      const transportNetwork: TransportNetworkUnit[] = await db.resolutionRepo.getTransportNetworkInfo(
-        gameState.gameId,
-        gameState.turnNumber
-      );
-
-      // Stores filter logic for DRY operation
-      const activeMoveTransported = orderGroups.moveTransported.filter(
-        (order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE
-      );
-      const activeTransports = orderGroups.transport.filter(
-        (order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE
-      );
-
-      // Creates full paths of all fully compliant routes
-      activeMoveTransported.forEach((moveTransportedOrder: UnitOrderResolution) => {
-        this.createTransportPaths(moveTransportedOrder, orderGroups.transport, transportNetwork, transportAttempts);
-      });
-
-      // Checks carried unit compliance and full path existence for transports
-      activeTransports.forEach((transportOrder: UnitOrderResolution) => {
-        const attemptKey = `${transportOrder.secondaryUnit.id}-${transportOrder.destination.nodeId}`;
-        if (!transportAttempts[attemptKey]) {
-          transportOrder.valid = false;
-          transportOrder.primaryResolution = `Invalid Order: Noncompliance`;
-        } else if (transportAttempts[attemptKey].paths.length === 0) {
-          transportOrder.valid = false;
-          transportOrder.primaryResolution = `Invalid Order: Insufficient Compliance`;
-        } else {
-          this.checkTransportSuccess(transportOrder, orderGroups.move);
-        }
-      });
-    }
-
     // Movement
     const unresolvedMovement = orderGroups.move.filter(
-      (order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE
+      (order: UnitOrderResolution) => order.unit.status === UnitStatus.RETREAT
     );
-    const moveTransported = orderGroups.moveTransported.filter(
-      (order: UnitOrderResolution) => order.unit.status === UnitStatus.ACTIVE
-    );
-    unresolvedMovement.push(...moveTransported);
 
     unresolvedMovement.forEach((order: UnitOrderResolution) => {
-      this.resolveMovement(order, unitOrders, dependencies, supremacies);
+      this.resolveRetreatingMovement(order, unitOrders);
     });
 
-    orderGroups.hold.forEach((holdOrder: UnitOrderResolution) => {
-      this.resolveHold(holdOrder, unitOrders);
+    orderGroups.disband?.forEach((disbandOrder: UnitOrderResolution) => {
+      disbandOrder.orderSuccess = true;
+      disbandOrder.primaryResolution = 'Retreated off the map';
     });
-
-    this.checkDependencies(dependencies, unitOrders);
-    this.checkSupremacies(supremacies);
 
     return unitOrders;
-    // return <UnitMovementResults> {
-    //   orderResults: unitOrders
-    //   // contestedProvinces: contestedProvinces
-    // };
   }
 
   sortAndValidateUnitOrder(
+    order: UnitOrderResolution,
+    unitOptions: UnitOptionsFinalized[],
+    orderGroups: UnitOrderGroups
+  ): void {
+    const options: UnitOptionsFinalized | undefined = unitOptions.find(
+      (option: UnitOptionsFinalized) => option.unitId === order.unit.id
+    );
+
+    if (options === undefined) {
+      if (order.unit.type !== UnitType.GARRISON) {
+        terminalLog(
+          `orderId ${order.orderId} with unitId ${order.unit.id} doesn't even have matching options. This should be impossible but here we are!`
+        );
+
+        this.invalidateOrder(order, `Incredibly Invalid`);
+      }
+    } else if (!options.orderTypes.includes(order.orderType)) {
+      this.invalidateOrder(order, `Invalid Order Type`);
+
+    } else if (order.orderType === OrderDisplay.HOLD) {
+      orderGroups.hold.push(order);
+
+    } else if (order.orderType === OrderDisplay.DISBAND) {
+      orderGroups.disband?.push(order);
+
+    }else if (order.orderType === OrderDisplay.MOVE) {
+      const destinationIds = options.moveDestinations.map((destination: OptionDestination) => destination.nodeId);
+
+      if (!destinationIds.includes(order.destination.nodeId)) {
+        this.invalidateOrder(order, `Invalid Destination`);
+      } else {
+        orderGroups.move.push(order);
+      }
+    } else if (order.orderType === OrderDisplay.MOVE_CONVOYED) {
+      const destinationIds = options.moveTransportedDestinations.map(
+        (destination: OptionDestination) => destination.nodeId
+      );
+
+      if (!destinationIds.includes(order.destination.nodeId)) {
+        this.invalidateOrder(order, `Invalid Destination`);
+      } else {
+        orderGroups.moveTransported.push(order);
+      }
+    } else if (order.orderType === OrderDisplay.NUKE) {
+      const targetIds = options.nukeTargets.map((destination: OptionDestination) => destination.nodeId);
+
+      if (!targetIds.includes(order.destination.nodeId)) {
+        this.invalidateOrder(order, `Invalid Target`);
+      } else {
+        orderGroups.nuke.push(order);
+      }
+    } else if (order.orderType === OrderDisplay.SUPPORT) {
+      const supportableUnitIds = options.supportStandardUnits.map((unit: SecondaryUnit) => unit.id);
+
+      if (!supportableUnitIds.includes(order.secondaryUnit.id)) {
+        this.invalidateOrder(order, 'Invalid Support Unit');
+      } else {
+        const supportDestinationIds = options.supportStandardDestinations[order.secondaryUnit.id].map(
+          (destination: OptionDestination) => destination.nodeId
+        );
+
+        if (!supportDestinationIds.includes(order.destination.nodeId)) {
+          this.invalidateOrder(order, 'Invalid Support Destination');
+        } else {
+          orderGroups.support.push(order);
+        }
+      }
+    } else if (order.orderType === OrderDisplay.SUPPORT_CONVOYED) {
+      const supportableUnitIds = options.supportTransportedUnits.map((unit: SecondaryUnit) => unit.id);
+
+      if (!supportableUnitIds.includes(order.secondaryUnit.id)) {
+        this.invalidateOrder(order, 'Invalid Support Unit');
+      } else {
+        const supportDestinationIds = options.supportTransportedDestinations[order.secondaryUnit.id].map(
+          (destination: OptionDestination) => destination.nodeId
+        );
+
+        if (!supportDestinationIds.includes(order.destination.nodeId)) {
+          this.invalidateOrder(order, 'Invalid Support Destination');
+        } else {
+          orderGroups.support.push(order);
+        }
+      }
+    } else if ([OrderDisplay.AIRLIFT, OrderDisplay.CONVOY].includes(order.orderType)) {
+      const transportableUnitIds = options.transportableUnits.map((unit: SecondaryUnit) => unit.id);
+
+      if (!transportableUnitIds.includes(order.secondaryUnit.id)) {
+        this.invalidateOrder(order, `Invalid ${order.orderType} Unit`);
+      } else {
+        const transportDestinationIds = options.transportDestinations[order.secondaryUnit.id].map(
+          (destination: OptionDestination) => destination.nodeId
+        );
+
+        if (!transportDestinationIds.includes(order.destination.nodeId)) {
+          this.invalidateOrder(order, `Invalid ${order.orderType} Destination`);
+        } else {
+          orderGroups.transport.push(order);
+        }
+      }
+    }
+
+    order.valid = true;
+  }
+
+  sortAndValidateRetreatingUnitOrder(
     order: UnitOrderResolution,
     unitOptions: UnitOptionsFinalized[],
     orderGroups: UnitOrderGroups
@@ -1113,8 +1255,11 @@ export class ResolutionService {
         (leavingUnit: UnitOrderResolution) => leavingUnit.origin.provinceId === order.destination.provinceId
       );
 
-      if (leavingUnit && order.power < 2) { // Nukes have 0 power
-        this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Failed: Bounce ${order.power}v1`);
+      // TO DO
+      if (leavingUnit && order.power === (leavingUnit.unit.type === UnitType.NUKE ? 0 : 1)) {
+        this.setDependency(dependencies, leavingUnit.orderId, order.orderId,
+          `Failed: Bounce ${order.power}v${leavingUnit.unit.type === UnitType.NUKE ? 0 : 1}`
+        );
       } else if (leavingUnit && leavingUnit.unit.countryId === order.unit.countryId) {
         this.setDependency(dependencies, leavingUnit.orderId, order.orderId, `Invalid Order: Can't Self-Dislodge`);
       } else if (leavingUnit && leavingUnit.unit.countryId !== order.unit.countryId) {
@@ -1126,6 +1271,30 @@ export class ResolutionService {
       }
     } else {
       this.resolveHold(order, unitOrders, true, 1);
+    }
+  }
+
+  resolveRetreatingMovement(order: UnitOrderResolution, unitOrders: UnitOrderResolution[]) {
+    const challengers = unitOrders.filter((challenger: UnitOrderResolution) => {
+      const challengerMoving = challenger.orderType === OrderDisplay.MOVE;
+      const notSameUnit = challenger.unit.id !== order.unit.id;
+      const challengerValid = challenger.valid === true;
+      const challengingAtDestination = challenger.destination.provinceId === order.destination.provinceId;
+
+      return challengingAtDestination
+        && challengerMoving
+        && notSameUnit
+        && challengerValid
+    });
+
+    if (challengers.length > 0) { // Retreating units can't do battle
+      order.orderSuccess = false;
+      order.primaryResolution = 'Disbanded: Conflicting Retreats';
+      order.unit.status = UnitStatus.DISBANDED_RETREAT;
+    } else {
+      order.orderSuccess = true;
+      order.primaryResolution = 'Success';
+      order.unit.status = UnitStatus.ACTIVE;
     }
   }
 
@@ -1336,18 +1505,6 @@ export class ResolutionService {
     return buildTransferOrders;
   }
 
-  // async resolveAdjustments(gameState: GameState, turn: UpcomingTurn): Promise<void> {
-
-  // }
-
-  // async resolveNominations(gameState: GameState, turn: UpcomingTurn): Promise<void> {
-
-  // }
-
-  // async resolveVotes(gameState: GameState, turn: UpcomingTurn): Promise<void> {
-
-  // }
-
   getFinalPosition(result: UnitOrderResolution): OrderResolutionLocation {
     let finalPosition: OrderResolutionLocation = result.origin;
     if (
@@ -1362,8 +1519,6 @@ export class ResolutionService {
     }
     return finalPosition;
   }
-
-  // getEventNode(provinceId: number):
 
   createProvinceHistory(
     result: UnitOrderResolution,
@@ -1515,40 +1670,6 @@ export class ResolutionService {
       dbUpdates.unitHistories?.push(newUnitHistory);
     }
 
-    // Okay this ain't MVP no mo
-    // let provinceHistory = dbStates.provinceHistories?.find(
-    //   (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
-    // );
-
-    // if (!provinceHistory) {
-    //   terminalLog(`No pre-existing province history for ${finalPosition.provinceName} (${finalPosition.provinceId})`);
-    //   return;
-    // }
-
-    // Movement and claiming will only aesthetically impact inert provinces
-    // if ([ProvinceType.COAST, ProvinceType.INLAND, ProvinceType.ISLAND].includes(finalPosition.provinceType)) {
-    //   let provinceStateChanged = false;
-    //   const newProvinceHistory = this.rowifyResultLocation(finalPosition);
-
-    //   // Control
-    //   if ([ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus)
-    //       && finalPosition.controllerId !== result.unit.countryId
-    //   ) {
-    //     newProvinceHistory.controllerId = result.unit.countryId;
-    //     provinceStateChanged = true;
-    //   }
-
-    //   // Status
-    //   if ([ProvinceStatus.BOMBARDED, ProvinceStatus.DORMANT].includes(finalPosition.provinceStatus)) {
-    //     newProvinceHistory.provinceStatus = ProvinceStatus.ACTIVE;
-    //     provinceStateChanged = true;
-    //   }
-
-    //   if (provinceStateChanged) {
-    //     dbUpdates.provinceHistories?.push(newProvinceHistory);
-    //   }
-    // }
-
     // Setting Province Contested
     if (
       [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(result.orderType) &&
@@ -1564,6 +1685,23 @@ export class ResolutionService {
         dbUpdates.provinceHistories?.push(newBounceProvinceHistory);
       }
     }
+  }
+
+  handleDisband(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbUpdates) {
+    const unitHistory = dbStates.unitHistories?.find(
+      (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
+    );
+
+    if (!unitHistory) {
+      terminalLog(
+        `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      );
+      return;
+    }
+
+    const newUnitHistory = this.copyUnitHistory(unitHistory);
+    newUnitHistory.unitStatus = UnitStatus.DISBANDED_RETREAT;
+    dbUpdates.unitHistories?.push(newUnitHistory);
   }
 
   prepareBombardRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates, claimingSeason: boolean) {
@@ -1673,6 +1811,16 @@ export class ResolutionService {
     };
   }
 
+  copyProvinceHistory(provinceHistory: ProvinceHistoryRow): ProvinceHistoryRow {
+    return {
+      provinceId: provinceHistory.provinceId,
+      controllerId: provinceHistory.controllerId,
+      capitalOwnerId: provinceHistory.capitalOwnerId,
+      provinceStatus: provinceHistory.provinceStatus,
+      validRetreat: provinceHistory.validRetreat
+    };
+  }
+
   /**
    * Duplicates a country history row for manipulation without undesired referencing behavior.
    * @param countryHistory
@@ -1697,25 +1845,43 @@ export class ResolutionService {
   revertContestedProvinces(currentProvinceHistories: ProvinceHistoryRow[], pendingProvinceHistories: ProvinceHistoryRow[]): void {
     const spliceIndeces: number[] = [];
 
-    pendingProvinceHistories.forEach((pendingProvinceHistory: ProvinceHistoryRow, index: number) => {
-      const currentProvinceHistory = currentProvinceHistories.find((currentProvinceHistory: ProvinceHistoryRow) =>
-        pendingProvinceHistory.provinceId === currentProvinceHistory.provinceId
-      );
+    // Existing invalid retreats could never be impacting by retreats
+    const currentInvalidRetreats = currentProvinceHistories.filter((currentProvinceHistory: ProvinceHistoryRow) =>
+      !currentProvinceHistory.validRetreat
+    );
 
-      if (!currentProvinceHistory) {
-        terminalAddendum('Resolution', `Current Province History for ${pendingProvinceHistory.provinceId} not found!`);
-        return;
-      }
+    if (currentInvalidRetreats.length > 0) {
+      currentInvalidRetreats.forEach((currentProvinceHistory: ProvinceHistoryRow) => {
+        const updatedProvinceHistory = this.copyProvinceHistory(currentProvinceHistory);
+        updatedProvinceHistory.validRetreat = true;
 
-      if (pendingProvinceHistory.controllerId === currentProvinceHistory.controllerId
-      && pendingProvinceHistory.capitalOwnerId === currentProvinceHistory.capitalOwnerId
-      && pendingProvinceHistory.provinceStatus === currentProvinceHistory.provinceStatus) {
-        spliceIndeces.unshift(index);
-      }
-    });
+        pendingProvinceHistories.push(updatedProvinceHistory);
+      });
 
-    spliceIndeces.forEach((index: number) => {
-      pendingProvinceHistories.splice(index, 1);
-    });
+    } else {
+      pendingProvinceHistories.forEach((pendingProvinceHistory: ProvinceHistoryRow, index: number) => {
+        const currentProvinceHistory = currentProvinceHistories.find((currentProvinceHistory: ProvinceHistoryRow) =>
+          pendingProvinceHistory.provinceId === currentProvinceHistory.provinceId
+        );
+
+        if (!currentProvinceHistory) {
+          terminalAddendum('Resolution', `Current Province History for ${pendingProvinceHistory.provinceId} not found!`);
+          return;
+        }
+
+        if (pendingProvinceHistory.controllerId === currentProvinceHistory.controllerId
+        && pendingProvinceHistory.capitalOwnerId === currentProvinceHistory.capitalOwnerId
+        && pendingProvinceHistory.provinceStatus === currentProvinceHistory.provinceStatus) {
+          spliceIndeces.unshift(index);
+        }
+        pendingProvinceHistory.validRetreat = true;
+      });
+
+      spliceIndeces.forEach((index: number) => {
+        pendingProvinceHistories.splice(index, 1);
+      });
+    }
+
+
   }
 }
