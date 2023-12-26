@@ -17,8 +17,8 @@ export const getBuildOrdersQuery = `
     ch.nuke_range,
     os.increase_range
   FROM order_sets os
-  LEFT JOIN build_orders bo ON bo.order_set_id = os.order_set_id
-  LEFT JOIN nodes n ON n.node_id = bo.location_id
+  LEFT JOIN orders_adjustments bo ON bo.order_set_id = os.order_set_id
+  LEFT JOIN nodes n ON n.node_id = bo.node_id
   LEFT JOIN provinces p ON p.province_id = n.province_id
   LEFT JOIN countries c ON c.country_id = os.country_id
   LEFT JOIN country_histories ch ON ch.country_id = c.country_id
@@ -31,7 +31,6 @@ export const getBuildOrdersQuery = `
     c.country_name,
     ch.banked_builds,
     ch.adjustments,
-    os.build_tuples,
     ch.nuke_range,
     os.increase_range
 `;
