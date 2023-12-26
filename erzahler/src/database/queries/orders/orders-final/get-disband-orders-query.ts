@@ -12,7 +12,6 @@ export const getDisbandOrdersQuery = `
             'loc', n.loc
           )
     ) AS unit_disbanding_detailed,
-    os.nuke_locs,
     ch.nuke_range,
     os.increase_range,
     os.units_disbanding
@@ -36,7 +35,6 @@ export const getDisbandOrdersQuery = `
     ch.banked_builds,
     ch.adjustments,
     ch.nuke_range,
-    os.nuke_locs,
     os.increase_range,
     os.units_disbanding;
 `;

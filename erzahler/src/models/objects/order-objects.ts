@@ -165,7 +165,7 @@ export interface DisbandOrdersResult {
   banked_builds: number;
   disbands: number;
   unit_disbanding_detailed: DisbandingUnitDetailResult[];
-  nuke_locs: number[];
+  // nuke_locs: number[];
   nuke_range: number;
   increase_range: number;
   units_disbanding: number[];
@@ -176,7 +176,7 @@ export interface DisbandOrders {
   bankedBuilds: number;
   disbands: number;
   unitDisbandingDetailed: DisbandingUnitDetail[];
-  nukeLocs: number[];
+  // nukeLocs: number[];
   nukeBuildDetails?: NukeBuildInDisband[];
   nukeRange: number;
   increaseRange: number;

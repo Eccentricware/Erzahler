@@ -553,7 +553,6 @@ export class OrdersService {
           bankedBuilds: 0,
           disbands: Math.abs(country.adjustments),
           unitDisbandingDetailed: countryDisbands,
-          nukeLocs: [],
           nukeRange: country.nuke,
           increaseRange: 0,
           unitsDisbanding: countryDisbands.map((disband: DisbandingUnitDetail) => disband.unitId)
@@ -589,34 +588,34 @@ export class OrdersService {
       countryId
     );
 
-    if (disbandOrders.nukeLocs.length > 0) {
-      disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(orderTurnId, countryId);
+    // if (disbandOrders.nukeLocs.length > 0) {
+    //   disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(orderTurnId, countryId);
 
-      if (disbandOrders.nukeBuildDetails && disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
-        while (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
-          disbandOrders.nukeBuildDetails.unshift({
-            unitId: disbandOrders.nukeBuildDetails.length * -1,
-            nodeId: 0,
-            province: '---',
-            display: '---',
-            loc: [0, 0]
-          });
-        }
+    //   if (disbandOrders.nukeBuildDetails && disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
+    //     while (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
+    //       disbandOrders.nukeBuildDetails.unshift({
+    //         unitId: disbandOrders.nukeBuildDetails.length * -1,
+    //         nodeId: 0,
+    //         province: '---',
+    //         display: '---',
+    //         loc: [0, 0]
+    //       });
+    //     }
 
-        if (disbandOrders.unitDisbandingDetailed.length < disbandOrders.unitsDisbanding.length) {
-          disbandOrders.nukeBuildDetails.forEach((nuke: NukeBuildInDisband, index: number) => {
-            if (nuke.nodeId === 0) {
-              disbandOrders.unitDisbandingDetailed.unshift({
-                unitId: index * -1,
-                unitType: UnitType.NUKE,
-                provinceName: nuke.province,
-                loc: nuke.loc
-              });
-            }
-          });
-        }
-      }
-    }
+    //     if (disbandOrders.unitDisbandingDetailed.length < disbandOrders.unitsDisbanding.length) {
+    //       disbandOrders.nukeBuildDetails.forEach((nuke: NukeBuildInDisband, index: number) => {
+    //         if (nuke.nodeId === 0) {
+    //           disbandOrders.unitDisbandingDetailed.unshift({
+    //             unitId: index * -1,
+    //             unitType: UnitType.NUKE,
+    //             provinceName: nuke.province,
+    //             loc: nuke.loc
+    //           });
+    //         }
+    //       });
+    //     }
+    //   }
+    // }
 
     return disbandOrders;
   }
