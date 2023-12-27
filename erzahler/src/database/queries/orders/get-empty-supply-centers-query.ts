@@ -19,11 +19,13 @@ export const getEmptySupplyCentersQuery = `
   LEFT JOIN nodes ln ON ln.province_id = p.province_id AND ln.node_type = 'land'
   LEFT JOIN nodes sn ON sn.province_id = p.province_id AND sn.node_type = 'sea'
   LEFT JOIN nodes an ON an.province_id = p.province_id AND an.node_type = 'air'
-  LEFT JOIN unit_histories uh ON uh.node_id IN (ln.node_id, sn.node_id, an.node_id)
-  LEFT JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = uh.unit_id AND luh.turn_id = uh.turn_id
+  LEFT JOIN get_last_unit_history($1, $2) luh
+    ON luh.node_id = ln.node_id
+      OR luh.node_id = sn.node_id
+      OR luh.node_id = an.node_id
   WHERE p.game_id = $1
     AND ph.province_status = 'active'
-    AND uh.unit_id IS NULL
+    AND luh.unit_id IS NULL
     AND CASE WHEN $3 != 0 THEN c.country_id = $3 END
   ORDER BY
     c.country_name,

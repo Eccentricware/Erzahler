@@ -631,9 +631,9 @@ export class ResolutionService {
           ])
           .then(async (pendingTurn: Turn) => {
 
+            await this.optionsService.saveOptionsForTurn(pendingTurn);
             if (nextTurns.preliminary) {
               // If there isn't a preliminary turn following Fall Orders, no Fall Retreats
-              await this.optionsService.saveOptionsForTurn(pendingTurn);
 
               terminalLog('DB: Preliminary Turn Insert');
               db.gameRepo.insertNextTurn([
@@ -644,7 +644,10 @@ export class ResolutionService {
                 nextTurns.preliminary.yearNumber,
                 TurnStatus.PRELIMINARY,
                 nextTurns.preliminary.deadline
-              ]);
+              ])
+              .then(async (preliminaryTurn: Turn) => {
+                this.optionsService.saveOptionsForTurn(preliminaryTurn);
+              });
             }
           });
         });
