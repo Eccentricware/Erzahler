@@ -130,29 +130,33 @@ export interface BuildOrders {
   countryName: string;
   bankedBuilds: number;
   buildCount: number;
-  nukeRange: number;
+  nukeRange: number | null;
   increaseRange: number;
   builds: Build[];
   nukesReady?: Build[];
 }
 
 export interface BuildResult {
+  build_order_id?: number;
+  order_set_id: number;
   build_number: number;
   build_type: BuildType;
   node_id: number;
-  node_name: string;
-  province_name: string;
-  loc: number[];
+  node_name?: string;
+  province_name?: string;
+  loc?: number[];
 }
 
 export interface Build {
+  buildOrderId?: number;
+  orderSetId: number;
   buildNumber: number;
   buildType: BuildType;
   typeId: number;
   nodeId: number;
-  nodeName: string;
-  provinceName: string;
-  loc: number[];
+  nodeName?: string;
+  provinceName?: string;
+  loc?: number[];
 }
 
 export interface DisbandOrdersResult {

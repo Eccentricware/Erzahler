@@ -44,7 +44,7 @@ import { clearBuildTransferOrdersQuery, insertTechTransferOrdersQuery, updateTec
 import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-order-query';
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
-import { saveBuildOrderQuery } from '../queries/orders/orders-final/save-build-order-query';
+import { insertBuildOrderQuery, saveBuildOrderQuery } from '../queries/orders/orders-final/save-build-order-query';
 import { terminalLog } from '../../server/utils/general';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 
@@ -450,6 +450,17 @@ export class OrdersRepository {
       .catch((error: Error) => terminalLog(`saveUnitOrder (${unitOrder.orderedUnitId}) error: ` + error.message));
   }
 
+  async saveDefaultBuildOrder(buildOrder: Build): Promise<void> {
+    await this.pool
+      .query(insertBuildOrderQuery, [
+        buildOrder.orderSetId,
+        buildOrder.buildNumber,
+        buildOrder.buildType,
+        buildOrder.nodeId
+      ])
+      .catch((error: Error) => terminalLog(`saveDefaultBuildOrder (${buildOrder.nodeId}) error: ${error.message}`));
+  }
+
   async saveBuildOrder(orderSetId: number, build: Build): Promise<void> {
     await this.pool
       .query(saveBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, build.buildNumber])
@@ -478,7 +489,12 @@ export class OrdersRepository {
 
   async saveDisbandOrders(orderSetId: number, disbands: DisbandOrders): Promise<void> {
     await this.pool
-      .query(saveDisbandOrdersQuery, [disbands.unitsDisbanding, disbands.increaseRange, disbands.nukeLocs, orderSetId])
+      .query(saveDisbandOrdersQuery, [
+        disbands.unitsDisbanding,
+        disbands.increaseRange,
+        disbands.nukeLocs,
+        orderSetId
+      ])
       .catch((error: Error) => terminalLog('saveDisbandOrders error: ' + error.message));
   }
 

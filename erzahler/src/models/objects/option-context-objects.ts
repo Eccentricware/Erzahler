@@ -1,6 +1,7 @@
 import { OrderDisplay, OrderSetType } from '../enumeration/order-display-enum';
 import { ProvinceType } from '../enumeration/province-enums';
 import { TurnStatus } from '../enumeration/turn-status-enum';
+import { DisbandingUnitDetail } from './order-objects';
 
 export interface OrderOption {
   turnId: number;
@@ -317,7 +318,7 @@ export interface BuildLocResult {
   air_node_loc: number[];
 }
 
-export interface BuildLocResult {
+export interface BuildLocProvince {
   countryId: number;
   countryName: string;
   provinceName: string;
@@ -340,6 +341,7 @@ export interface BuildLoc {
 
 export interface AtRiskUnitResult {
   unit_id: number;
+  country_id: number;
   unit_type: string;
   province_name: string;
   loc: number[];
@@ -347,6 +349,7 @@ export interface AtRiskUnitResult {
 }
 export interface AtRiskUnit {
   unitId: number;
+  countryId: number;
   unitType: string;
   provinceName: string;
   loc: number[];
@@ -382,6 +385,7 @@ export interface Nomination {
 export interface OrderSetResult {
   order_set_id: number;
   country_id: number;
+  disbands?: number[];
 }
 
 export interface OrderSet {
@@ -392,6 +396,7 @@ export interface OrderSet {
   submissionTime?: Date | string;
   orderSetType?: OrderSetType | string;
   orderSetName?: string;
+  disbands?: DisbandingUnitDetail[];
 }
 
 export interface OrderResult {

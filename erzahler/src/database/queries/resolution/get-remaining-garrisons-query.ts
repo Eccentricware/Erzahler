@@ -5,7 +5,7 @@ export const getRemainingGarrisonsQuery = `
     u.unit_id AS ordered_unit_id,
     true as valid,
     unit_type,
-    unit_status,
+    uh.unit_status,
     u.country_id,
     c.country_name country,
     uh.node_id,

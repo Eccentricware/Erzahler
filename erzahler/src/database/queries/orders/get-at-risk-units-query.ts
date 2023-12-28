@@ -1,5 +1,6 @@
 export const getAtRiskUnitsQuery = `
   SELECT u.unit_id,
+    u.country_id,
     u.unit_type,
     p.province_name,
     n.loc
@@ -12,8 +13,8 @@ export const getAtRiskUnitsQuery = `
   INNER JOIN provinces p ON p.province_id = n.province_id
   WHERE ch.adjustments < 0
     AND CASE
-      WHEN $3 != 0
-      THEN ch.country_id = $3
+      WHEN $3 != 0 THEN ch.country_id = $3
+      ELSE true
     END
   ORDER BY p.province_name;
 `;

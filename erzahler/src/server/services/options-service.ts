@@ -34,7 +34,8 @@ import {
   AdjacentTransportable,
   AdjacentTransport,
   TransportDestination,
-  RetreatingUnitAdjacyInfo
+  RetreatingUnitAdjacyInfo,
+  BuildLocProvince
 } from '../../models/objects/option-context-objects';
 import { OptionsFinal, BuildOptions, VotingOptions } from '../../models/objects/options-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
@@ -774,66 +775,9 @@ export class OptionsService {
       // Adjustments
       if (applicable && [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
         if (playerCountry.adjustments >= 0) {
-          const buildLocsResult: BuildLocResult[] = await db.optionsRepo.getAvailableBuildLocs(
-            gameState.turnNumber,
-            gameId,
-            playerCountry.countryId
+          const buildLocs: BuildOptions = this.convertProvinceResultToNodeType(
+            await db.optionsRepo.getAvailableBuildLocs(gameState.turnNumber, gameId, playerCountry.countryId)
           );
-          const buildLocs: BuildOptions = {
-            land: [],
-            sea: [],
-            air: []
-          };
-
-          buildLocsResult.forEach((loc: BuildLocResult) => {
-            if (loc.seaNodeName && loc.seaNodeName.split('_').length > 2 && loc.seaNodeId && loc.seaNodeLoc) {
-              if (buildLocs.land.filter((landLoc: BuildLoc) => landLoc.nodeId === loc.landNodeId).length === 0) {
-                buildLocs.land.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.landNodeId,
-                  loc: loc.landNodeLoc
-                });
-
-                buildLocs.air.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.airNodeId,
-                  loc: loc.airNodeLoc
-                });
-              }
-
-              const locDisplay = loc.seaNodeName.toUpperCase().split('_');
-              buildLocs.sea.push({
-                province: loc.provinceName,
-                display: locDisplay[0] + ' ' + locDisplay[2],
-                nodeId: loc.seaNodeId,
-                loc: loc.seaNodeLoc
-              });
-            } else {
-              buildLocs.land.push({
-                province: loc.provinceName,
-                display: loc.provinceName,
-                nodeId: loc.landNodeId,
-                loc: loc.landNodeLoc
-              });
-
-              if (loc.seaNodeId && loc.seaNodeLoc)
-                buildLocs.sea.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.seaNodeId,
-                  loc: loc.seaNodeLoc
-                });
-
-              buildLocs.air.push({
-                province: loc.provinceName,
-                display: loc.provinceName,
-                nodeId: loc.airNodeId,
-                loc: loc.airNodeLoc
-              });
-            }
-          });
 
           turnOptions.pending.builds = {
             locations: buildLocs,
@@ -887,81 +831,24 @@ export class OptionsService {
       if (applicable && [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
         if (playerCountry.builds > 0) {
           turnOptions.preliminary.buildTransfers = {
-            options: await db.optionsRepo.getBuildTransferOptions(gameId, gameState.turnId),
+            options: await db.optionsRepo.getBuildTransferOptions(gameId, preliminaryTurn.turnId),
             builds: playerCountry.builds
           };
         }
 
         if (playerCountry.nukeRange) {
-          turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechOfferOptions(gameId, gameState.turnId);
+          turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechOfferOptions(gameId, preliminaryTurn.turnId);
         } else {
-          turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechReceiveOptions(gameId, gameState.turnId);
+          turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechReceiveOptions(gameId, preliminaryTurn.turnId);
         }
       }
 
       // Adjustments
       if (applicable && [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
         if (playerCountry.adjustments >= 0) {
-          const buildLocsResult: BuildLocResult[] = await db.optionsRepo.getAvailableBuildLocs(
-            gameState.turnNumber,
-            gameId,
-            playerCountry.countryId
+          const buildLocs: BuildOptions = this.convertProvinceResultToNodeType(
+            await db.optionsRepo.getAvailableBuildLocs(preliminaryTurn.turnNumber, gameId, playerCountry.countryId)
           );
-          const buildLocs: BuildOptions = {
-            land: [],
-            sea: [],
-            air: []
-          };
-
-          buildLocsResult.forEach((loc: BuildLocResult) => {
-            if (loc.seaNodeName && loc.seaNodeName.split('_').length > 2 && loc.seaNodeId && loc.seaNodeLoc) {
-              if (buildLocs.land.filter((landLoc: BuildLoc) => landLoc.nodeId === loc.landNodeId).length === 0) {
-                buildLocs.land.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.landNodeId,
-                  loc: loc.landNodeLoc
-                });
-
-                buildLocs.air.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.airNodeId,
-                  loc: loc.airNodeLoc
-                });
-              }
-
-              const locDisplay = loc.seaNodeName.toUpperCase().split('_');
-              buildLocs.sea.push({
-                province: loc.provinceName,
-                display: locDisplay[0] + ' ' + locDisplay[2],
-                nodeId: loc.seaNodeId,
-                loc: loc.seaNodeLoc
-              });
-            } else {
-              buildLocs.land.push({
-                province: loc.provinceName,
-                display: loc.provinceName,
-                nodeId: loc.landNodeId,
-                loc: loc.landNodeLoc
-              });
-
-              if (loc.seaNodeId && loc.seaNodeLoc)
-                buildLocs.sea.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.seaNodeId,
-                  loc: loc.seaNodeLoc
-                });
-
-              buildLocs.air.push({
-                province: loc.provinceName,
-                display: loc.provinceName,
-                nodeId: loc.airNodeId,
-                loc: loc.airNodeLoc
-              });
-            }
-          });
 
           turnOptions.preliminary.builds = {
             locations: buildLocs,
@@ -974,7 +861,7 @@ export class OptionsService {
 
       // Nominations
       if (applicable && [TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-        turnOptions.preliminary.nominations = await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING);
+        turnOptions.preliminary.nominations = await this.getNominationOptions(gameState.gameId, preliminaryTurn.turnId, TurnStatus.PENDING);
       }
     }
 
@@ -1303,6 +1190,7 @@ export class OptionsService {
       for (let index = 0; index < countryState.nukesInProduction; index++) {
         disbandOptions.units.unshift({
           unitId: index * -1,
+          countryId: countryState.countryId,
           unitType: UnitType.NUKE,
           provinceName: 'Finished',
           loc: [0, 0]
@@ -1467,5 +1355,65 @@ export class OptionsService {
       transportables: undefined,
       transportDestinations: undefined
     }
+  }
+
+  convertProvinceResultToNodeType(buildProvinces: BuildLocProvince[]): BuildOptions {
+    const buildLocs: BuildOptions = {
+      land: [],
+      sea: [],
+      air: []
+    };
+
+    buildProvinces.forEach((loc: BuildLocProvince) => {
+      if (loc.seaNodeName && loc.seaNodeName.split('_').length > 2 && loc.seaNodeId && loc.seaNodeLoc) {
+        if (buildLocs.land.filter((landLoc: BuildLoc) => landLoc.nodeId === loc.landNodeId).length === 0) {
+          buildLocs.land.push({
+            province: loc.provinceName,
+            display: loc.provinceName,
+            nodeId: loc.landNodeId,
+            loc: loc.landNodeLoc
+          });
+
+          buildLocs.air.push({
+            province: loc.provinceName,
+            display: loc.provinceName,
+            nodeId: loc.airNodeId,
+            loc: loc.airNodeLoc
+          });
+        }
+
+        const locDisplay = loc.seaNodeName.toUpperCase().split('_');
+        buildLocs.sea.push({
+          province: loc.provinceName,
+          display: locDisplay[0] + ' ' + locDisplay[2],
+          nodeId: loc.seaNodeId,
+          loc: loc.seaNodeLoc
+        });
+      } else {
+        buildLocs.land.push({
+          province: loc.provinceName,
+          display: loc.provinceName,
+          nodeId: loc.landNodeId,
+          loc: loc.landNodeLoc
+        });
+
+        if (loc.seaNodeId && loc.seaNodeLoc)
+          buildLocs.sea.push({
+            province: loc.provinceName,
+            display: loc.provinceName,
+            nodeId: loc.seaNodeId,
+            loc: loc.seaNodeLoc
+          });
+
+        buildLocs.air.push({
+          province: loc.provinceName,
+          display: loc.provinceName,
+          nodeId: loc.airNodeId,
+          loc: loc.airNodeLoc
+        });
+      }
+    });
+
+    return buildLocs;
   }
 }
