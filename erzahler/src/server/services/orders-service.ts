@@ -76,6 +76,7 @@ export class OrdersService {
       );
       const playerCountry: CountryState = countryStates[0];
       orders.countryId = playerCountry.countryId;
+      orders.nukeRange = playerCountry.nukeRange;
 
       let pendingTurn: UpcomingTurn | undefined = undefined;
       let preliminaryTurn: UpcomingTurn | undefined = undefined;

@@ -9,6 +9,7 @@ export interface TurnOrders {
   role?: string;
   countryId?: number;
   countryName?: string;
+  nukeRange?: number | null;
   pending?: SingleTurnOrders;
   preliminary?: SingleTurnOrders;
   message?: string;

@@ -405,7 +405,7 @@ export class OrdersRepository {
             bankedBuilds: orderSet.banked_builds,
             disbands: orderSet.disbands,
             unitsDisbanding: orderSet.units_disbanding,
-            nukeLocs: orderSet.nuke_locs,
+            // nukeLocs: orderSet.nuke_locs,
             unitDisbandingDetailed: orderSet.unit_disbanding_detailed.map(
               (unit: DisbandingUnitDetailResult, index: number) => {
                 return <DisbandingUnitDetail>{
