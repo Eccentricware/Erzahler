@@ -1,7 +1,7 @@
 import { ProvinceHistoryRow } from '../../../database/schema/table-fields';
 import { OrderDisplay } from '../../enumeration/order-display-enum';
 import { ProvinceStatus, ProvinceType, ResolutionEvent, CityType } from '../../enumeration/province-enums';
-import { UnitStatus, UnitType } from '../../enumeration/unit-enum';
+import { BuildType, UnitStatus, UnitType } from '../../enumeration/unit-enum';
 import {
   AdjacentTransportResult,
   AdjacentTransportableResult,
@@ -195,4 +195,67 @@ export interface TransferResources {
 export interface UnitMovementResults {
   orderResults: UnitOrderResolution[];
   contestedProvinces: ProvinceHistoryRow[];
+}
+
+export interface AdjResolutionDataResult {
+  order_set_id: number;
+  country_id: number;
+  country_name: string;
+  adjustments: number;
+  banked_builds: number;
+  nuke_range: number | null;
+  nukes_in_production: number;
+  units_disbanding: UnitAndCountryIdsResult[] | null;
+  increase_range: number;
+  nomination: number[];
+  increase_range_success: boolean;
+  nomination_success: boolean;
+  build_order_id: number;
+  node_id: number;
+  build_type: BuildType;
+  success: boolean;
+  province_name: string;
+  controller_id: number;
+  province_status: ProvinceStatus;
+  unit_id: number | null;
+}
+
+export interface AdjResolutionData {
+  orderSetId: number;
+  countryId: number;
+  countryName: string;
+  adjustments: number;
+  bankedBuilds: number;
+  nukeRange: number | null;
+  nukesInProduction: number;
+  unitsDisbanding: UnitAndCountryIds[] | null;
+  increaseRange: number;
+  nomination: number[];
+  increaseRangeSuccess: boolean;
+  nominationSuccess: boolean;
+  buildOrderId: number;
+  nodeId: number;
+  buildType: BuildType;
+  success: boolean;
+  provinceName: string;
+  controllerId: number;
+  provinceStatus: ProvinceStatus;
+  unitId: number | null;
+}
+
+export interface AdjustmentResolutionResources {
+  adjRemaining: number;
+  bbriDone: boolean;
+  bbRemaining: number;
+  disbandsDone: boolean;
+  nipRemaining: number;
+}
+
+export interface UnitAndCountryIdsResult {
+  unit_id: number;
+  country_id: number;
+}
+export interface UnitAndCountryIds {
+  unitId: number;
+  countryId: number;
 }

@@ -7,7 +7,7 @@ import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { ProvinceStatus } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
-import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
+import { BuildType, UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 
 export interface GameRowResult {
   game_id?: number;
@@ -73,7 +73,6 @@ export interface DbStates {
   turn: TurnRow;
   orderSets: OrderSetRow[];
   orders: OrderRow[];
-  units: UnitRow[];
   unitHistories: UnitHistoryRow[];
   provinceHistories: ProvinceHistoryRow[];
   countryHistories: CountryHistoryRow[];
@@ -83,8 +82,10 @@ export interface DbUpdates {
   game: GameRow;
   turn: TurnRow;
   orderSets: OrderSetRow[];
+  adjOrderSets: Record<number, OrderSetRow>;
   orders: OrderRow[];
-  units: UnitRow[];
+  adjustmentOrders: OrderAdjustmentRow[];
+  newUnits: InitialUnit[];
   unitHistories: UnitHistoryRow[];
   provinceHistories: ProvinceHistoryRow[];
   countryHistories: Record<string, CountryHistoryRow>;
@@ -249,18 +250,34 @@ export interface OrderRow {
   secondaryResolution?: string;
 }
 
+export interface OrderAdjustmentRowResult {
+  build_order_id: number;
+  order_set_id: number;
+  node_id: number | null;
+  build_type: BuildType;
+  success: boolean;
+}
+
+export interface OrderAdjustmentRow {
+  buildOrderId: number;
+  orderSetId: number;
+  nodeId: number | null;
+  buildType: BuildType;
+  success: boolean;
+}
+
 export interface UnitRowResult {
   unit_id: number;
   country_id: number;
   unit_name: string;
-  unit_type: UnitType;
+  unit_type: UnitType | BuildType;
 }
 
 export interface UnitRow {
-  unitId: number;
+  unitId?: number;
   countryId: number;
   unitName: string;
-  unitType: UnitType;
+  unitType: UnitType | BuildType;
 }
 
 export interface UnitHistoryRowResult {
@@ -336,4 +353,13 @@ export interface CountryStatCounts {
   countryId: number;
   unitCount: number;
   cityCount: number;
+}
+
+export interface InitialUnit {
+  countryId: number;
+  unitName: string;
+  unitType: UnitType | BuildType;
+  turnId: number;
+  nodeId: number;
+  unitStatus: UnitStatus;
 }

@@ -374,8 +374,6 @@ export class GameRepository {
   }
 
   async insertUnits(units: any, gameName: string): Promise<any[]> {
-    const pool: Pool = new Pool(envCredentials);
-
     const unitPromises: Promise<any>[] = [];
     for (const unitName in units) {
       unitPromises.push(

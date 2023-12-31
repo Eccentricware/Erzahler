@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS country_histories(
   unit_count INTEGER NOT NULL,
   banked_builds INTEGER NOT NULL,
   nuke_range INTEGER,
-  nukes_in_production INTEGER,
+  nukes_in_production INTEGER DEFAULT 0,
   adjustments INTEGER NOT NULL,
   in_retreat BOOLEAN DEFAULT false,
   PRIMARY KEY(country_history_id),

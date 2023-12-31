@@ -379,7 +379,6 @@ export class SchedulerService {
   }
 
   findNextTurns(currentTurn: UpcomingTurn, gameState: GameState, unitsRetreating: boolean): NextTurns {
-    const currentYear = gameState.stylizedStartYear + currentTurn.yearNumber;
     const nextTurns: NextTurns = {
       pending: {
         turnNumber: currentTurn.turnNumber + 1,
@@ -388,7 +387,7 @@ export class SchedulerService {
         deadline: DateTime.utc(),
         yearNumber: currentTurn.yearNumber,
         yearStylized: gameState.stylizedStartYear + currentTurn.yearNumber,
-        turnName: formatTurnName(TurnType.SPRING_ORDERS, currentYear)
+        turnName: formatTurnName(TurnType.SPRING_ORDERS, gameState.stylizedStartYear + currentTurn.yearNumber)
       }
     };
 
@@ -413,15 +412,6 @@ export class SchedulerService {
         };
 
       } else {
-        // nextTurns.skipped = {
-        //   type: TurnType.SPRING_RETREATS,
-        //   turnName: formatTurnName(TurnType.SPRING_RETREATS, currentTurn.yearStylized),
-        //   turnNumber: currentTurn.turnNumber + 1,
-        //   yearNumber: currentTurn.yearNumber,
-        //   yearStylized: currentTurn.yearStylized,
-        //   deadline: this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString())
-        // };
-
         nextTurns.pending.type = TurnType.FALL_ORDERS;
         // nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
@@ -492,6 +482,7 @@ export class SchedulerService {
         nextTurns.pending.type = TurnType.SPRING_ORDERS;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
         nextTurns.pending.yearNumber = currentTurn.yearNumber + 1;
+        nextTurns.pending.yearStylized = currentTurn.yearStylized + 1;
       }
     }
 
