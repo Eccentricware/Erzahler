@@ -1,17 +1,14 @@
 export const insertBuildOrderQuery = `
-  INSERT INTO order_adjustments (
+  INSERT INTO orders_adjustments (
     order_set_id,
-    build_number
+    build_number,
     build_type,
-    node_id,
-    order_status,
+    node_id
   ) VALUES (
     $1,
     $2,
     $3,
-    $4,
-    $5,
-    $6
+    $4
   );
 `;
 

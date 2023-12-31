@@ -41,6 +41,16 @@ AS $$
       AND t.turn_number > $2
   );
 
+  DELETE FROM orders_adjustments
+  WHERE build_order_id IN (
+    SELECT oa.build_order_id
+    FROM orders_adjustments oa
+    INNER JOIN order_sets os ON os.order_set_id = oa.order_set_id
+    INNER JOIN turns t ON t.turn_id = os.turn_id
+    WHERE t.game_id = $1
+      AND t.turn_number > $2
+  );
+
   DELETE FROM order_sets
   WHERE order_set_id IN (
     SELECT os.order_set_id

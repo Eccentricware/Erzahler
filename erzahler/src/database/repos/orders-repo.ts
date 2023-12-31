@@ -373,6 +373,7 @@ export class OrdersRepository {
             increaseRange: result.increase_range,
             builds: result.builds.map((build: BuildResult) => {
               return <Build>{
+                orderSetId: build.order_set_id,
                 buildNumber: build.build_number,
                 buildType: build.build_type,
                 typeId: this.resolveTypeId(build.build_type),
@@ -492,7 +493,6 @@ export class OrdersRepository {
       .query(saveDisbandOrdersQuery, [
         disbands.unitsDisbanding,
         disbands.increaseRange,
-        disbands.nukeLocs,
         orderSetId
       ])
       .catch((error: Error) => terminalLog('saveDisbandOrders error: ' + error.message));

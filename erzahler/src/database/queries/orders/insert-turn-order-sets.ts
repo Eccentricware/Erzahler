@@ -9,12 +9,14 @@ export const insertTurnOrderSetsQuery = `
     country_id,
     turn_id,
     submission_time,
-    order_set_type
+    order_set_type,
+    increase_range
   )
   SELECT c.country_id,
     $1,
     NOW() AT TIME ZONE 'utc',
-    'Orders'
+    'Orders',
+    0
   FROM countries c
   INNER JOIN country_histories ch ON ch.country_id = c.country_id
   INNER JOIN get_last_country_history($2, $3) lch
