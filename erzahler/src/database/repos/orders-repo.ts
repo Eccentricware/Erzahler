@@ -25,7 +25,7 @@ import {
   BuildResult,
   TransferBuildOrderResult
 } from '../../models/objects/order-objects';
-import { CountryOrderSet, CountryOrderSetsResult } from '../../models/objects/orders/expected-order-types-object';
+import { CountryOrderSet, CountryOrderSetIds, CountryOrderSetsResult } from '../../models/objects/orders/expected-order-types-object';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { getTurnUnitOrdersQuery } from '../queries/orders/get-turn-unit-orders';
 import { insertTurnOrderSetsQuery } from '../queries/orders/insert-turn-order-sets';
@@ -44,9 +44,10 @@ import { clearBuildTransferOrdersQuery, insertTechTransferOrdersQuery, updateTec
 import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-order-query';
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
-import { insertBuildOrderQuery, saveBuildOrderQuery } from '../queries/orders/orders-final/save-build-order-query';
+import { insertBuildOrderQuery, updateBuildOrderQuery, updateBuildOrderSetQuery } from '../queries/orders/orders-final/save-build-order-query';
 import { terminalLog } from '../../server/utils/general';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
+import { getCountryOrderSetIdsQuery } from '../queries/orders/orders-prep/get-country-order-set-ids';
 
 export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
@@ -438,6 +439,18 @@ export class OrdersRepository {
     );
   }
 
+  async getCountryOrderSetIds(countryId: number): Promise<CountryOrderSetIds> {
+    return await this.pool
+      .query(getCountryOrderSetIdsQuery, [countryId])
+      .then((result: QueryResult) => {
+        return <CountryOrderSetIds>{
+          countryId: result.rows[0] ? result.rows[0].country_id : 0,
+          pendingOrderSetId: result.rows[0] ?result.rows[0].pending_order_set_id : 0,
+          preliminaryOrderSetId: result.rows[0] ? result.rows[0].preliminary_order_set_id : 0
+        };
+      });
+  }
+
   async saveUnitOrder( unitOrder: Order): Promise<void> {
     await this.pool
       .query(saveUnitOrderQuery, [
@@ -462,10 +475,16 @@ export class OrdersRepository {
       .catch((error: Error) => terminalLog(`saveDefaultBuildOrder (${buildOrder.nodeId}) error: ${error.message}`));
   }
 
-  async saveBuildOrder(orderSetId: number, build: Build): Promise<void> {
+  async updateBuildOrderSet(orderSetId: number, increaseRange: number): Promise<void> {
     await this.pool
-      .query(saveBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, build.buildNumber])
-      .catch((error: Error) => terminalLog(`saveBuildOrder (${build.nodeId}) error: ${error.message}`));
+      .query(updateBuildOrderSetQuery, [increaseRange, orderSetId])
+      .catch((error: Error) => terminalLog(`updateBuildOrderSet (${orderSetId}) error: ${error.message}`));
+  }
+
+  async saveBuildOrder(orderSetId: number, build: Build, buildNumber: number): Promise<void> {
+    await this.pool
+      .query(updateBuildOrderQuery, [build.buildType, build.nodeId, orderSetId, buildNumber])
+      .catch((error: Error) => terminalLog(`saveBuildOrder (${orderSetId}) error: ${error.message}`));
   }
 
   async saveBuildOrders(orderSetId: number, builds: BuildOrders): Promise<void> {

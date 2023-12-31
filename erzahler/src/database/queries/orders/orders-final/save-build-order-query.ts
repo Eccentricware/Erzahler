@@ -1,3 +1,12 @@
+export const updateBuildOrderSetQuery = `
+  UPDATE order_sets
+  SET increase_range = $1,
+    default_orders = false,
+    submission_time = NOW(),
+    order_set_status = 'Submitted'
+  WHERE order_set_id = $2;
+`;
+
 export const insertBuildOrderQuery = `
   INSERT INTO orders_adjustments (
     order_set_id,
@@ -12,12 +21,10 @@ export const insertBuildOrderQuery = `
   );
 `;
 
-export const saveBuildOrderQuery = `
-  UPDATE order_adjustments
+export const updateBuildOrderQuery = `
+  UPDATE orders_adjustments
   SET build_type = $1,
-    node_id = $2,
-    destination_id = $3,
-    order_status = $4
-  WHERE order_set_id = $5
-    AND build_number = $6;
+    node_id = $2
+  WHERE order_set_id = $3
+    AND build_number = $4;
 `;
