@@ -41,7 +41,7 @@ export const getAdjResolutionDataQuery = `
     lph.province_status,
     up.unit_id
   FROM order_sets os
-  INNER JOIN get_last_country_history(77, 4) lch ON lch.country_id = os.country_id
+  INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = os.country_id
   INNER JOIN countries c ON c.country_id = os.country_id
   LEFT JOIN orders_adjustments oa ON oa.order_set_id = os.order_set_id
   LEFT JOIN nodes n ON n.node_id = oa.node_id
