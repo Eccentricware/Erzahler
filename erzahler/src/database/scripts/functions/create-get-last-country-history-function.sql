@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION get_last_country_history(
 	INTEGER, --game_id
 	INTEGER  --turn_number
 )
-RETURNS TABLE(
+RETURNS TABLE (
 	country_history_id INTEGER,
 	country_id INTEGER,
 	turn_id INTEGER,

@@ -76,6 +76,7 @@ export class OrdersService {
       );
       const playerCountry: CountryState = countryStates[0];
       orders.countryId = playerCountry.countryId;
+      orders.nukeRange = playerCountry.nukeRange;
 
       let pendingTurn: UpcomingTurn | undefined = undefined;
       let preliminaryTurn: UpcomingTurn | undefined = undefined;
@@ -506,6 +507,10 @@ export class OrdersService {
     const allBuilds: Build[] = [];
 
     countryStats.forEach((country: CountryStats) => {
+      if (!newOrderSetLibrary[country.id]) {
+        return;
+      }
+
       if (country.adjustments > 0) {
         const countryBuildOptions = buildOptions.filter((buildOption: BuildLocProvince) =>
           buildOption.countryId === country.id
@@ -553,7 +558,6 @@ export class OrdersService {
           bankedBuilds: 0,
           disbands: Math.abs(country.adjustments),
           unitDisbandingDetailed: countryDisbands,
-          nukeLocs: [],
           nukeRange: country.nuke,
           increaseRange: 0,
           unitsDisbanding: countryDisbands.map((disband: DisbandingUnitDetail) => disband.unitId)
@@ -561,9 +565,11 @@ export class OrdersService {
       }
     });
 
-    allBuilds.forEach(async (build: Build) => {
-      await db.ordersRepo.saveDefaultBuildOrder(build);
-    });
+    if (allBuilds.length > 0) {
+      allBuilds.forEach(async (build: Build) => {
+        await db.ordersRepo.saveDefaultBuildOrder(build);
+      });
+    }
   }
 
   async saveBuildOrders(orderSetId: number, buildOrders: BuildOrders): Promise<void> {
@@ -589,34 +595,34 @@ export class OrdersService {
       countryId
     );
 
-    if (disbandOrders.nukeLocs.length > 0) {
-      disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(orderTurnId, countryId);
+    // if (disbandOrders.nukeLocs.length > 0) {
+    //   disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(orderTurnId, countryId);
 
-      if (disbandOrders.nukeBuildDetails && disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
-        while (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
-          disbandOrders.nukeBuildDetails.unshift({
-            unitId: disbandOrders.nukeBuildDetails.length * -1,
-            nodeId: 0,
-            province: '---',
-            display: '---',
-            loc: [0, 0]
-          });
-        }
+    //   if (disbandOrders.nukeBuildDetails && disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
+    //     while (disbandOrders.nukeBuildDetails.length < disbandOrders.nukeLocs.length) {
+    //       disbandOrders.nukeBuildDetails.unshift({
+    //         unitId: disbandOrders.nukeBuildDetails.length * -1,
+    //         nodeId: 0,
+    //         province: '---',
+    //         display: '---',
+    //         loc: [0, 0]
+    //       });
+    //     }
 
-        if (disbandOrders.unitDisbandingDetailed.length < disbandOrders.unitsDisbanding.length) {
-          disbandOrders.nukeBuildDetails.forEach((nuke: NukeBuildInDisband, index: number) => {
-            if (nuke.nodeId === 0) {
-              disbandOrders.unitDisbandingDetailed.unshift({
-                unitId: index * -1,
-                unitType: UnitType.NUKE,
-                provinceName: nuke.province,
-                loc: nuke.loc
-              });
-            }
-          });
-        }
-      }
-    }
+    //     if (disbandOrders.unitDisbandingDetailed.length < disbandOrders.unitsDisbanding.length) {
+    //       disbandOrders.nukeBuildDetails.forEach((nuke: NukeBuildInDisband, index: number) => {
+    //         if (nuke.nodeId === 0) {
+    //           disbandOrders.unitDisbandingDetailed.unshift({
+    //             unitId: index * -1,
+    //             unitType: UnitType.NUKE,
+    //             provinceName: nuke.province,
+    //             loc: nuke.loc
+    //           });
+    //         }
+    //       });
+    //     }
+    //   }
+    // }
 
     return disbandOrders;
   }

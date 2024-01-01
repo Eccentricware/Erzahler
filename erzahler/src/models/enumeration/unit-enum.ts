@@ -1,12 +1,13 @@
 export enum UnitStatus {
+  ABANDONED = 'Abandoned',
   ACTIVE = 'Active',
   DESTROYED_RETREAT = 'Destroyed in Retreat',
   DISBANDED_ADJUSTMENT = 'Disbanded as Adjustment',
   DISBANDED_RETREAT = 'Disbanded in Retreat',
   DETONATED = 'Detonated',
+  PRODUCTION = 'Production',
   NUKED = 'Nuked',
-  RETREAT = 'Retreat',
-  // DISCARDED = 'Discarded' // Not an in-game status but a db row being ignored
+  RETREAT = 'Retreat'
 }
 
 export enum UnitType {

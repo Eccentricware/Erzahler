@@ -17,14 +17,20 @@ export const insertBuildOrderQuery = `
     $1,
     $2,
     $3,
-    $4
+    CASE
+      WHEN $4 > 0 THEN $4
+      ELSE NULL
+    END
   );
 `;
 
 export const updateBuildOrderQuery = `
   UPDATE orders_adjustments
   SET build_type = $1,
-    node_id = $2
+    node_id = CASE
+    WHEN $2 > 0 THEN $2
+    ELSE NULL
+  END
   WHERE order_set_id = $3
     AND build_number = $4;
 `;

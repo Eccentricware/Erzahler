@@ -13,12 +13,13 @@ import { OrderStatus } from '../../models/enumeration/order-status-enum';
 import { ProvinceStatus, ProvinceType, CityType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
-import { UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
+import { BuildType, UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 import { Turn, TurnResult } from '../../models/objects/database-objects';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
   AdjacentTransport,
+  BuildLocProvince,
   OptionDestination,
   SecondaryUnit,
   TransportDestination,
@@ -26,6 +27,8 @@ import {
 } from '../../models/objects/option-context-objects';
 import { TransferBuildOrder, TransferTechOrder } from '../../models/objects/order-objects';
 import {
+  AdjResolutionData,
+  AdjustmentResolutionResources,
   CountryTransferResources,
   OrderDependencies,
   OrderResolutionLocation,
@@ -33,6 +36,7 @@ import {
   TransferResources,
   TransportAttempt,
   TransportNetworkUnit,
+  UnitAndCountryIds,
   UnitOrderGroups,
   UnitOrderResolution
 } from '../../models/objects/resolution/order-resolution-objects';
@@ -42,6 +46,7 @@ import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
 import { OrdersService } from './orders-service';
+import { BuildOptions } from '../../models/objects/options-objects';
 
 export class ResolutionService {
   optionsService: OptionsService = new OptionsService();
@@ -78,7 +83,7 @@ export class ResolutionService {
 
   async resolveTurn(turn: UpcomingTurn): Promise<void> {
     switch (turn.turnType) {
-      case TurnType.ORDERS_AND_VOTES:
+      case TurnType.ORDERS_AND_VOTES:     // To-do
         this.resolveOrdersAndVotes(turn);
         break;
       case TurnType.SPRING_ORDERS:
@@ -96,13 +101,13 @@ export class ResolutionService {
       case TurnType.ADJUSTMENTS:
         this.resolveAdjustments(turn);
         break;
-      case TurnType.ADJ_AND_NOM:
+      case TurnType.ADJ_AND_NOM:          // To-do
         this.resolveAdjAndNom(turn);
         break;
-      case TurnType.NOMINATIONS:
+      case TurnType.NOMINATIONS:          // To-do
         this.resolveNominations(turn);
         break;
-      case TurnType.VOTES:
+      case TurnType.VOTES:                // To-do
         this.resolveVotes(turn);
         break;
     }
@@ -124,7 +129,6 @@ export class ResolutionService {
       turn: {},
       orderSets: [],
       orders: [],
-      units: [],
       unitHistories: await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber),
       provinceHistories: await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber),
       countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
@@ -135,8 +139,10 @@ export class ResolutionService {
       game: {},
       turn: {},
       orderSets: [],
+      adjOrderSets: {},
       orders: [],
-      units: [],
+      adjustmentOrders: [],
+      newUnits: [],
       unitHistories: [],
       provinceHistories: [],
       countryHistories: {}
@@ -355,7 +361,6 @@ export class ResolutionService {
       turn: {},
       orderSets: [],
       orders: [],
-      units: [],
       unitHistories: await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber),
       provinceHistories: await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber),
       countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
@@ -366,8 +371,10 @@ export class ResolutionService {
       game: {},
       turn: {},
       orderSets: [],
+      adjOrderSets: {},
       orders: [],
-      units: [],
+      adjustmentOrders: [],
+      newUnits: [],
       unitHistories: [],
       provinceHistories: [],
       countryHistories: {}
@@ -481,7 +488,6 @@ export class ResolutionService {
       turn: {},
       orderSets: [],
       orders: [],
-      units: [],
       unitHistories: await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber),
       provinceHistories: await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber),
       countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
@@ -492,8 +498,10 @@ export class ResolutionService {
       game: {},
       turn: {},
       orderSets: [],
+      adjOrderSets: {},
       orders: [],
-      units: [],
+      adjustmentOrders: [],
+      newUnits: [],
       unitHistories: [],
       provinceHistories: [],
       countryHistories: {}
@@ -656,16 +664,441 @@ export class ResolutionService {
           });
         });
     });
-
-
   }
 
   async resolveFallRetreats(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Fall Retreats resolution, which is not yet implemented`);
+    const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
+    const dbStates: DbStates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      orders: [],
+      unitHistories: await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber),
+      provinceHistories: await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber),
+      countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
+    };
+
+    // DB Update
+    const dbUpdates: DbUpdates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      adjOrderSets: {},
+      orders: [],
+      adjustmentOrders: [],
+      newUnits: [],
+      unitHistories: [],
+      provinceHistories: [],
+      countryHistories: {}
+    };
+
+    const unitMovementResults: UnitOrderResolution[] = await this.resolveRetreatingUnitOrders(gameState, turn);
+
+    unitMovementResults.forEach((result: UnitOrderResolution) => {
+      if (result.orderId > 0) {
+        dbUpdates.orders.push({
+          orderId: result.orderId,
+          orderStatus: OrderStatus.PROCESSED,
+          orderSuccess: result.orderSuccess,
+          power: result.power,
+          description: result.description,
+          primaryResolution: result.primaryResolution,
+          secondaryResolution: result.secondaryResolution
+        });
+      }
+
+      if (result.orderType === OrderDisplay.MOVE) {
+        this.handleMovementResults(result, dbStates, dbUpdates, true, true);
+      }
+
+      if (result.orderType === OrderDisplay.DISBAND) {
+        this.handleDisband(result, dbStates, dbUpdates);
+      }
+    });
+
+    this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
+
+    const preStatCheckPromises: Promise<any | void>[] = [];
+    const postStatCheckPromises: Promise<any | void>[] = [];
+
+    if (dbUpdates.orders.length > 0) {
+      console.log('DB: Order Update');
+      preStatCheckPromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
+    }
+
+    if (dbUpdates.unitHistories.length > 0) {
+      console.log('DB: Unit History Insert');
+      preStatCheckPromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
+    }
+
+    if (dbUpdates.provinceHistories.length > 0) {
+      console.log('DB: Province History Insert');
+      preStatCheckPromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
+    }
+
+    Promise.all(preStatCheckPromises).then(async () => {
+      const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, turn.turnNumber);
+
+      countryStatCounts.forEach((countryStats: CountryStatCounts) => {
+        let countryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.countryId];
+        if (!countryHistory) {
+          const countryHistoryRow = dbStates.countryHistories.find(
+            (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+          );
+
+          if (countryHistoryRow) {
+            countryHistory = this.copyCountryHistory(countryHistoryRow);
+          }
+        }
+
+        if (!countryHistory) {
+          terminalLog(`Country History not found for ${countryStats.countryId}`);
+        } else if (
+          countryHistory.cityCount !== countryStats.cityCount
+          || countryHistory.unitCount !== countryStats.unitCount
+          || countryHistory.inRetreat
+        ) {
+          countryHistory.cityCount = countryStats.cityCount;
+          countryHistory.unitCount = countryStats.unitCount;
+          countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
+          countryHistory.inRetreat = false;
+          dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
+        }
+      });
+
+
+      if (Object.keys(dbUpdates.countryHistories).length > 0) {
+        postStatCheckPromises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
+      }
+
+      // Every turn
+      postStatCheckPromises.push(db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId));
+
+      // Find next turn will require an updated gameState first
+      console.log('DB: Turn Update'); // Pending resolution
+      postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
+      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING)
+      postStatCheckPromises.push(nowPendingTurnPromise);
+      const nowPendingTurn = await nowPendingTurnPromise;
+
+      Promise.all(postStatCheckPromises)
+        .then(async () => {
+          const retreatingCountryIds =
+            dbStates.countryHistories.filter((countryHistory: CountryHistoryRow) => countryHistory.inRetreat)
+              .map((countryHistory: CountryHistoryRow) => countryHistory.countryId);
+
+          await this.orderService.createAdjustmentDefaults(nowPendingTurn, retreatingCountryIds);
+        });
+    });
   }
 
   async resolveAdjustments(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Adjustments resolution, which is not yet implemented`);
+    const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
+    const dbStates: DbStates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      orders: [],
+      unitHistories: await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber),
+      provinceHistories: await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber),
+      countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
+    };
+
+    // DB Update
+    const dbUpdates: DbUpdates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      adjOrderSets: {},
+      orders: [],
+      adjustmentOrders: [],
+      newUnits: [],
+      unitHistories: [],
+      provinceHistories: [],
+      countryHistories: {}
+    };
+
+    const remainingResources: Record<number, AdjustmentResolutionResources> = {};
+    const newProvincesUsed: Set<string> = new Set<string>();
+
+    dbStates.countryHistories.forEach((country: CountryHistoryRow) => {
+      remainingResources[country.countryId] = {
+        adjRemaining: country.adjustments,
+        bbriDone: !(Number.isInteger(country.nukeRange) && country.bankedBuilds > 0),
+        bbRemaining: country.bankedBuilds,
+        disbandsDone: country.adjustments >= 0,
+        nipRemaining: country.nukesInProduction
+      };
+    });
+
+    // Countries do not interact with each other in the non-combat phases
+    // They can all be internally validated
+    // Check orders against options, then merge the arrays into the updates
+    const adjResolutionData = await db.resolutionRepo.getAdjResolutionData(turn.gameId, turn.turnNumber, turn.turnId);
+
+    adjResolutionData.forEach((adjOrder: AdjResolutionData) => {
+      let historyChanged = false;
+      const countryHistory = this.setNewHistory(dbStates, dbUpdates, 'countries', adjOrder.countryId);
+      const newCountryHistory = countryHistory.details as CountryHistoryRow;
+      const countryResources = remainingResources[adjOrder.countryId];
+
+      // Range Increases
+      if (!countryResources.bbriDone) {
+        if (adjOrder.increaseRange > 0 && adjOrder.increaseRange < countryResources.bbRemaining) {
+          adjOrder.increaseRangeSuccess = true;
+          newCountryHistory.nukeRange += adjOrder.increaseRange;
+          countryResources.bbRemaining -= adjOrder.increaseRange;
+          countryResources.bbriDone = true;
+          historyChanged = true;
+        }
+      }
+
+      // Disbands
+      if (!countryResources.disbandsDone) {
+        adjOrder.unitsDisbanding?.forEach((unit: UnitAndCountryIds) => {
+          if (adjOrder.countryId === unit.countryId) {
+            if (countryResources.adjRemaining < 0) {
+              const unitHistory  = this.setNewHistory(dbStates, dbUpdates, 'units', unit.unitId);
+              const unitHistoryDetails = unitHistory.details as UnitHistoryRow;
+
+              unitHistoryDetails.unitStatus = UnitStatus.DISBANDED_ADJUSTMENT;
+              countryResources.adjRemaining++;
+              newCountryHistory.adjustments++;
+
+              dbUpdates.unitHistories.push(unitHistoryDetails);
+
+              if (countryResources.adjRemaining === 0) {
+                countryResources.disbandsDone = true;
+              }
+
+              historyChanged = true;
+            } else {
+              terminalAddendum('Warning', `Too many units disbanding!`);
+            }
+
+          } else {
+            terminalAddendum('ALERT', `adjOrder.countryId (${adjOrder.countryId}) !== unit.countryId (${unit.countryId})`);
+          }
+        });
+      }
+
+      // Filters out stagnation
+      if (adjOrder.buildType !== null) {
+        // Requires Adjustment (Anything not placing a slow build nuke)
+        if (countryResources.adjRemaining > 0) {
+          // Requires Placement
+          if ([
+            BuildType.ARMY,
+            BuildType.FLEET,
+            BuildType.WING,
+            BuildType.NUKE_RUSH,
+            BuildType.NUKE_FINISH
+          ].includes(adjOrder.buildType)) {
+            if (adjOrder.countryId !== adjOrder.controllerId) {
+              adjOrder.success = false;
+              terminalAddendum('ALERT', `Country ${adjOrder.countryId} is attempting to build at uncontrolled province ${adjOrder.provinceName}`);
+
+            } else if (newProvincesUsed.has(adjOrder.provinceName)) {
+              adjOrder.success = false;
+              terminalAddendum('ALERT', `Country ${adjOrder.countryId} has already built at ${adjOrder.provinceName} this turn!`);
+
+            } else if (adjOrder.unitId !== null) {
+              adjOrder.success = false;
+              terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting build where unit already exists!`);
+
+            } else {
+
+              if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING].includes(adjOrder.buildType)) {
+                countryResources.adjRemaining--;
+                newProvincesUsed.add(adjOrder.provinceName);
+                adjOrder.success = true;
+                newCountryHistory.unitCount++;
+                newCountryHistory.adjustments--;
+                historyChanged = true;
+
+                dbUpdates.newUnits.push({
+                  unitType: adjOrder.buildType,
+                  countryId: adjOrder.countryId,
+                  unitName: `${adjOrder.countryName} ${adjOrder.buildType} X`, // To-Do?
+                  turnId: turn.turnId,
+                  nodeId: adjOrder.nodeId,
+                  unitStatus: UnitStatus.ACTIVE
+                });
+
+              } else if (adjOrder.buildType === BuildType.NUKE_RUSH) {
+                if (countryResources.bbRemaining > 0) {
+                  countryResources.adjRemaining--;
+                  countryResources.bbRemaining--;
+                  newProvincesUsed.add(adjOrder.provinceName);
+                  newCountryHistory.unitCount++;
+                  newCountryHistory.adjustments--;
+                  adjOrder.success = true;
+                  historyChanged = true;
+
+                  dbUpdates.newUnits.push({
+                    unitType: UnitType.NUKE,
+                    countryId: adjOrder.countryId,
+                    unitName: `${adjOrder.countryName} ${UnitType.NUKE} X`, // To-Do?
+                    turnId: turn.turnId,
+                    nodeId: adjOrder.nodeId,
+                    unitStatus: UnitStatus.ACTIVE
+                  });
+
+                } else {
+                  terminalAddendum('ALERT', `BO ${adjOrder.buildOrderId} failure: Country ${adjOrder.countryId} attempting rush nuke with insufficient builds!`);
+                }
+              }
+            }
+          }
+
+          if (adjOrder.buildType === BuildType.BUILD) {
+            countryResources.adjRemaining--;
+            adjOrder.success = true;
+            newCountryHistory.bankedBuilds++;
+            historyChanged = true;
+
+            newCountryHistory.bankedBuilds++;
+          } else if (adjOrder.buildType === BuildType.RANGE) {
+            if (Number.isInteger(adjOrder.nukeRange)) {
+              countryResources.adjRemaining--;
+              adjOrder.success = true;
+              newCountryHistory.nukeRange++;
+              historyChanged = true;
+
+              newCountryHistory.nukeRange++;
+            } else {
+              terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting increase nuke range without tech!`);
+            }
+
+          } else if (adjOrder.buildType === BuildType.NUKE_START) {
+            if (Number.isInteger(adjOrder.nukeRange)) {
+              countryResources.adjRemaining--;
+              adjOrder.success = true;
+              newCountryHistory.unitCount++;
+              newCountryHistory.adjustments--;
+              historyChanged = true;
+
+              newCountryHistory.nukesInProduction++;
+            } else {
+              terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting build a nuke without tech!`);
+            }
+          }
+        }
+
+        // Nukes finishing
+        if (adjOrder.buildType === BuildType.NUKE_FINISH) {
+          if (countryResources.nipRemaining > 0) {
+            if (Number.isInteger(adjOrder.nukeRange)) {
+              countryResources.nipRemaining--;
+              newCountryHistory.nukesInProduction--;
+              adjOrder.success = true;
+
+              dbUpdates.newUnits.push({
+                unitType: UnitType.NUKE,
+                countryId: adjOrder.countryId,
+                unitName: `${adjOrder.countryId} ${UnitType.NUKE} X`, // To-Do?
+                turnId: turn.turnId,
+                nodeId: adjOrder.nodeId,
+                unitStatus: UnitStatus.ACTIVE
+              });
+
+            } else {
+              terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting finish a slow nuke without tech?!?`);
+              adjOrder.success = false;
+            }
+
+          } else {
+            terminalAddendum('ALERT', `Country ${adjOrder.countryId} finish a nuke not in production!`)
+            adjOrder.success = false;
+          }
+        }
+      }
+
+      if (historyChanged) {
+        dbUpdates.countryHistories[adjOrder.countryId] = newCountryHistory;
+      }
+
+      dbUpdates.adjustmentOrders.push({
+        buildOrderId: adjOrder.buildOrderId,
+        orderSetId: adjOrder.orderSetId,
+        nodeId: adjOrder.nodeId,
+        buildType: adjOrder.buildType,
+        success: adjOrder.success
+      })
+    });
+
+    const promises: Promise<any | void>[] = [];
+
+    if (dbUpdates.adjustmentOrders.length > 0) {
+      console.log('DB: Updating Adjustment Orders');
+      promises.push(db.resolutionRepo.updateAdjustmentOrders(dbUpdates.adjustmentOrders));
+    }
+
+    // if (dbUpdates.orderSets.length > 0) {
+    //   for (let orderSet in dbUpdates.adjOrderSets) {
+    //     promises.push(db.resolutionRepo.updateOrderSets(dbUpdates.adjOrderSets));
+    //   }
+    // }
+
+    if (dbUpdates.newUnits.length > 0) {
+      console.log('DB: New Units Insert');
+      promises.push(db.resolutionRepo.insertNewUnit(dbUpdates.newUnits, turn.turnId));
+    }
+
+    if (dbUpdates.unitHistories.length > 0) {
+      console.log('DB: Unit History Insert');
+      promises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
+    }
+
+    if (Object.keys(dbUpdates.countryHistories).length > 0) {
+      promises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
+    }
+
+    Promise.all(promises).then(async () => {
+      // Find next turn will require an updated gameState first
+      console.log('DB: Turn Update'); // Pending resolution
+      db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED)
+        .then(async () => {
+          // Next turns needs to know retreats after resolution
+          const changedGameState = await db.gameRepo.getGameState(turn.gameId);
+          const nextTurns = this.schedulerService.findNextTurns(turn, changedGameState, false);
+
+          // Ensures pending turn_id < preliminary turn_id for sequential get_last_history functions
+          terminalLog('DB: Pending Turn Insert');
+          db.gameRepo.insertNextTurn([
+            gameState.gameId,
+            nextTurns.pending.turnNumber,
+            nextTurns.pending.turnName,
+            nextTurns.pending.type,
+            nextTurns.pending.yearNumber,
+            TurnStatus.PENDING,
+            nextTurns.pending.deadline
+          ])
+          .then(async (pendingTurn: Turn) => {
+            if (nextTurns.preliminary) {
+              // If prelim exists, pending = Nominations and prelim = Spring Orders
+              // Won't need to default any options for Nominations?!
+
+              db.gameRepo.insertNextTurn([
+                gameState.gameId,
+                nextTurns.preliminary.turnNumber,
+                nextTurns.preliminary.turnName,
+                nextTurns.preliminary.type,
+                nextTurns.preliminary.yearNumber,
+                TurnStatus.PRELIMINARY,
+                nextTurns.preliminary.deadline
+              ])
+              .then(async (preliminaryTurn: Turn) => {
+                await this.optionsService.saveOptionsForTurn(preliminaryTurn);
+              });
+
+            } else {
+              // If prelim doesn't exist, pending = Spring Orders
+              await this.optionsService.saveOptionsForTurn(pendingTurn);
+            }
+          });
+        });
+    });
   }
 
   async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
@@ -1785,7 +2218,7 @@ export class ResolutionService {
   setNewHistory(
     dbStates: DbStates,
     dbUpdates: DbUpdates,
-    table: string,
+    table: 'units' | 'provinces' | 'countries',
     coreId: number
   ): {
     details: ProvinceHistoryRow | UnitHistoryRow | CountryHistoryRow | undefined,

@@ -7,6 +7,12 @@ import { terminalLog } from '../utils/general';
 export const userRouter = express.Router();
 const accountService = new AccountService();
 
+userRouter.get('/report-guest/:guestId', (request, response) => {
+  const guestId = request.params.guestId;
+  terminalLog(`Guest reporting: ${guestId}`);
+  response.send({ message: 'Thanks for visiting! Just reporting a random number to help with guest metrics.' });
+});
+
 userRouter.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
   db.accountsRepo

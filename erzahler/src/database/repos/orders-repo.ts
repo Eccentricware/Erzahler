@@ -188,9 +188,11 @@ export class OrdersRepository {
           }
         });
 
-        const query = this.pgp.helpers.insert(values, this.buildOrderTransferCols);
-        return this.db.query(query)
-          .catch((error: Error) => terminalLog('saveBuildTransfers error: ' + error.message));
+        if (values.length > 0) {
+          const query = this.pgp.helpers.insert(values, this.buildOrderTransferCols);
+          return this.db.query(query)
+            .catch((error: Error) => terminalLog('saveBuildTransfers error: ' + error.message));
+        }
       });
   }
 
@@ -405,7 +407,7 @@ export class OrdersRepository {
             bankedBuilds: orderSet.banked_builds,
             disbands: orderSet.disbands,
             unitsDisbanding: orderSet.units_disbanding,
-            nukeLocs: orderSet.nuke_locs,
+            // nukeLocs: orderSet.nuke_locs,
             unitDisbandingDetailed: orderSet.unit_disbanding_detailed.map(
               (unit: DisbandingUnitDetailResult, index: number) => {
                 return <DisbandingUnitDetail>{

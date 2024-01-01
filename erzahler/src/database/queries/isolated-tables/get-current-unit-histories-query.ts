@@ -1,9 +1,8 @@
 export const getCurrentUnitHistoriesQuery = `
-  SELECT uh.unit_history_id,
-    uh.unit_id,
-    uh.turn_id,
-    uh.node_id,
-    uh.unit_status
-  FROM unit_histories uh
-  INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = uh.unit_id and luh.turn_id = uh.turn_id;
+  SELECT luh.unit_history_id,
+    luh.unit_id,
+    luh.turn_id,
+    luh.node_id,
+    luh.unit_status
+  FROM get_last_unit_history($1, $2) luh;
 `;
