@@ -169,8 +169,6 @@ CREATE TABLE IF NOT EXISTS country_histories(
     REFERENCES turns(turn_id)
 );
 
-
-
 \echo 'Attempting to create alerts table'
 CREATE TABLE IF NOT EXISTS alerts(
   alert_id SERIAL,

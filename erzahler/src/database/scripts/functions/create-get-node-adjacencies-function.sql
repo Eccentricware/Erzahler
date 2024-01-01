@@ -4,8 +4,7 @@
 \echo 'Attempting to create get_node_adjacencies function'
 
 CREATE OR REPLACE FUNCTION get_node_adjacencies(
-  INTEGER -- game_id,
-  INTEGER   --turn_number
+  INTEGER -- game_id
 )
 RETURNS TABLE(node_id INTEGER, adjacencies JSON)
 AS $$
