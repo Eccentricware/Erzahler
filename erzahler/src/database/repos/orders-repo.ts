@@ -48,11 +48,13 @@ import { insertBuildOrderQuery, updateBuildOrderQuery, updateBuildOrderSetQuery 
 import { terminalLog } from '../../server/utils/general';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { getCountryOrderSetIdsQuery } from '../queries/orders/orders-prep/get-country-order-set-ids';
+import { NominationRow } from '../../models/objects/database-objects';
 
 export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
   orderCols: ColumnSet<unknown>;
   buildOrderTransferCols: ColumnSet<unknown>;
+  nominationCols: ColumnSet<unknown>;
   pool: Pool = new Pool(envCredentials);
   /**
    * @param db
@@ -93,6 +95,17 @@ export class OrdersRepository {
         'ui_row'
       ],
       { table: 'orders_transfer_builds' }
+    );
+
+    this.nominationCols = new pgp.helpers.ColumnSet(
+      [
+        'turn_id',
+        'nominator_id',
+        'country_ids',
+        'signature',
+        'votes_required'
+      ],
+      { table: 'nominations' }
     );
   }
 
@@ -533,13 +546,15 @@ export class OrdersRepository {
     );
   }
 
-  async getNominationOrder(turnId: number, countryId: number): Promise<NominatableCountry[]> {
-    return await this.pool.query(getNominationOrderQuery, [turnId, countryId]).then((result: QueryResult) =>
+  async getNominationOrder(gameId: number, turnNumber: number, turnId: number, countryId: number): Promise<NominatableCountry[]> {
+    return await this.pool.query(getNominationOrderQuery, [gameId, turnNumber, turnId, countryId]).then((result: QueryResult) =>
       result.rows.map((country: NominatableCountryResult) => {
         return <NominatableCountry>{
+          nominatorId: country.nominator_id,
           countryId: country.country_id,
           countryName: country.country_name,
-          rank: country.rank
+          rank: country.rank,
+          countryStatus: country.country_status
         };
       })
     );
@@ -549,6 +564,22 @@ export class OrdersRepository {
     await this.pool
       .query(saveNominationQuery, [nomination, orderSetId])
       .catch((error: Error) => terminalLog('saveNominationOrder error: ' + error.message));
+  }
+
+  async insertNominations(nominations: NominationRow[], turnId: number): Promise<void> {
+    const nominationValues = nominations.map((nomination: NominationRow) => {
+      return {
+        turn_id: turnId,
+        nominator_id: nomination.nominatorId,
+        country_ids: nomination.countryIds,
+        signature: nomination.signature.toUpperCase(),
+        votes_required: nomination.votesRequired
+      };
+    });
+
+    const insertNomsQuery = this.pgp.helpers.insert(nominationValues, this.nominationCols);
+    return this.db.query(insertNomsQuery)
+      .catch((error: Error) => terminalLog('insertNominations error: ' + error.message));
   }
 
   async getVotes(turnId: number, countryId: number): Promise<number[]> {

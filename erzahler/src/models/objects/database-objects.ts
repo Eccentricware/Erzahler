@@ -23,3 +23,27 @@ export interface Turn {
   yearNumber: number;
   deadline: Date | DateTime | string;
 }
+
+export interface NominationRowResult {
+  nomination_id?: number;
+  turn_id: number;
+  nominator_id: number;
+  signature: string;
+  votes_required: number;
+  country_ids: number[];
+  votes_received?: number;
+  winner?: boolean;
+  valid?: boolean;
+}
+
+export interface NominationRow {
+  nominationId?: number;
+  turnId: number;
+  nominatorId: number;
+  signature: string;
+  votesRequired: number;
+  countryIds: number[];
+  votesReceived?: number;
+  winner?: boolean;
+  valid?: boolean;
+}

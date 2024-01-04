@@ -1,12 +1,13 @@
 import { db } from '../../database/connection';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
+import { CountryStatus } from '../../models/enumeration/country-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { ProvinceType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitType } from '../../models/enumeration/unit-enum';
 import { UserAssignment } from '../../models/objects/assignment-objects';
-import { Turn } from '../../models/objects/database-objects';
+import { NominationRow, Turn } from '../../models/objects/database-objects';
 import { CountryState } from '../../models/objects/games/country-state-objects';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
@@ -626,6 +627,10 @@ export class OptionsService {
   async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal> {
     const accountService = new AccountService();
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
+    if (!gameState) {
+      terminalLog(`No Game State for Game ${gameId}`);
+      return;
+    }
 
     let pendingTurn: UpcomingTurn | undefined = undefined;
     let preliminaryTurn: UpcomingTurn | undefined = undefined;
@@ -1222,9 +1227,11 @@ export class OptionsService {
     });
 
     nominatableCountries.unshift({
+      nominatorId: 0,
       countryId: 0,
       countryName: '-- Select Country--',
       rank: '-',
+      countryStatus: CountryStatus.NPC,
       penalty: 0
     });
 
@@ -1293,9 +1300,6 @@ export class OptionsService {
     };
   }
 
-  /**
-   * Deprecated
-  */
   setOptionDescription(option: SavedOption): string {
     let description = `${option.unitType[0].toUpperCase()} ${option.provinceName} `;
 

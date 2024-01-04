@@ -22,7 +22,7 @@ import {
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, CountryOrderSetIds, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
 import { terminalAddendum, terminalLog } from '../utils/general';
-import { Turn } from '../../models/objects/database-objects';
+import { NominationRow, Turn } from '../../models/objects/database-objects';
 import { OptionsService } from './options-service';
 import { CountryStats } from '../../models/objects/games/country-stats-objects';
 
@@ -40,6 +40,10 @@ export class OrdersService {
 
     const userId = user.userId;
     const gameState = await db.gameRepo.getGameState(gameId);
+    if (!gameState) {
+      terminalLog(`${user.username} (${userId}) attempted to get orders for invalid game (${gameId})`);
+      return;
+    }
     // Identify Player Type (Player, Admin, Spectator)
 
     terminalLog(`Current orders requested for ${gameState.gameName} (${gameId}) by ${user.username} (${userId})`);
@@ -206,7 +210,12 @@ export class OrdersService {
 
         // Nominations
         if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-          orders.pending.nomination = await this.getNominationOrder(pendingTurn.turnId, playerCountry.countryId);
+          orders.pending.nomination = await this.getNominationOrder(
+            pendingTurn.gameId,
+            pendingTurn.turnNumber,
+            pendingTurn.turnId,
+            playerCountry.countryId
+          );
         }
 
         // Votes
@@ -288,7 +297,12 @@ export class OrdersService {
 
         // Nominations
         if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-          orders.preliminary.nomination = await this.getNominationOrder(preliminaryTurn.turnId, playerCountry.countryId);
+          orders.preliminary.nomination = await this.getNominationOrder(
+            preliminaryTurn.gameId,
+            preliminaryTurn.turnNumber,
+            preliminaryTurn.turnId,
+            playerCountry.countryId
+          );
         }
       }
     } else if (adminVision) {
@@ -627,11 +641,11 @@ export class OrdersService {
     return disbandOrders;
   }
 
-  async getNominationOrder(turnId: number, countryId: number): Promise<NominationOrder> {
-    const countryDetails: NominatableCountry[] = await db.ordersRepo.getNominationOrder(turnId, countryId);
+  async getNominationOrder(gameId: number, turnNumber: number, turnId: number, countryId: number): Promise<NominationOrder> {
+    const countryDetails: NominatableCountry[] = await db.ordersRepo.getNominationOrder(gameId, turnNumber, turnId, countryId);
     const countryIds: number[] = countryDetails.map((country: NominatableCountry) => country.countryId);
 
-    if (countryIds.length > 0) {
+    if (countryIds.length > 0 && countryIds[0] !== null) {
       return {
         countryDetails: countryDetails,
         countryIds: countryIds,

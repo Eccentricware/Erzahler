@@ -37,6 +37,14 @@ export const getGameStateQuery = `
     g.stylized_start_year,
     c.highest_ranked_req,
     c.all_votes_controlled,
+    c.base_final,
+    c.penalty_a,
+    c.penalty_b,
+    c.penalty_c,
+    c.penalty_d,
+    c.penalty_e,
+    c.penalty_f,
+    c.penalty_g,
     CASE
       WHEN uh.unit_status = 'Retreat'
       THEN true ELSE false

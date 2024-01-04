@@ -137,6 +137,18 @@ export class GameRepository {
           yearNumber: gameStateResult.year_number,
           stylizedStartYear: gameStateResult.stylized_start_year,
           highestRankedReq: gameStateResult.highest_ranked_req,
+          votingSchedule: {
+            baseFinal: gameStateResult.base_final,
+            penalties: {
+              a: gameStateResult.penalty_a,
+              b: gameStateResult.penalty_b,
+              c: gameStateResult.penalty_c,
+              d: gameStateResult.penalty_d,
+              e: gameStateResult.penalty_e,
+              f: gameStateResult.penalty_f,
+              g: gameStateResult.penalty_g
+            }
+          },
           allVotesControlled: gameStateResult.all_votes_controlled,
           unitsInRetreat: gameStateResult.unit_in_retreat,
           defaultNukeRange: gameStateResult.default_nuke_range
