@@ -18,5 +18,6 @@ export enum CountryRank {
   E = 'e',
   F = 'f',
   G = 'g',
-  N = 'n'
+  N = 'n',
+  DASH = '-' // Only for placeholder
 }

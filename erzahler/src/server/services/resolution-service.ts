@@ -1087,6 +1087,10 @@ export class ResolutionService {
               db.ordersRepo.insertNominations(validNominations, pendingTurn.turnId!);
             }
 
+            if (pendingTurn.turnType === TurnType.VOTES) {
+              await this.orderService.initializeVotingOrderSets(pendingTurn);
+            }
+
             if (nextTurns.preliminary) {
               // If prelim exists, pending = Nominations and prelim = Spring Orders
               // Won't need to default any options for Nominations?!
@@ -1133,8 +1137,9 @@ export class ResolutionService {
     .then(async (pendingTurn: Turn) => {
       // If prelim,  pending = Votes, prelim = Spring Orders
       // If !prelim, pending = Spring Orders and Votes
+      await this.orderService.initializeVotingOrderSets(pendingTurn);
       db.ordersRepo.insertNominations(validNominations, pendingTurn.turnId!)
-        .then(async () => {
+      .then(async () => {
           db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED);
         });
 

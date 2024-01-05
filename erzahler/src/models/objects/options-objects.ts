@@ -71,4 +71,5 @@ export interface TransferBuildsCountry {
 export interface VotingOptions {
   duplicateAlerts: string[];
   nominations: Nomination[];
+  voteCount: number;
 }

@@ -1,6 +1,6 @@
 import { db } from '../../database/connection';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
-import { CountryStatus } from '../../models/enumeration/country-enum';
+import { CountryRank, CountryStatus } from '../../models/enumeration/country-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { ProvinceType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
@@ -624,12 +624,12 @@ export class OptionsService {
     }
   }
 
-  async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal> {
+  async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal | string> {
     const accountService = new AccountService();
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
     if (!gameState) {
       terminalLog(`No Game State for Game ${gameId}`);
-      return;
+      return `No Game State for Game ${gameId}`;
     }
 
     let pendingTurn: UpcomingTurn | undefined = undefined;
@@ -685,6 +685,7 @@ export class OptionsService {
         countryStatus: 'Spectator',
         cityCount: 0,
         unitCount: 0,
+        voteCount: 0,
         retreating: false,
         builds: 0,
         nukeRange: null,
@@ -798,12 +799,14 @@ export class OptionsService {
 
       // Votes
       if (applicable && [TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-        turnOptions.pending.votes = await this.getVotingOptions(pendingTurn.turnId);
+        turnOptions.pending.votes = await this.getVotingOptions(pendingTurn.turnId, playerCountry.voteCount);
       }
     }
 
     if (pendingTurn && preliminaryTurn) {
-      const applicable = ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && !playerCountry.retreating);
+      const applicable = ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && !playerCountry.retreating)
+        || (pendingTurn.turnType === TurnType.ADJUSTMENTS && preliminaryTurn.turnType === TurnType.NOMINATIONS)
+        || (pendingTurn.turnType === TurnType.VOTES && preliminaryTurn.turnType === TurnType.SPRING_ORDERS);
       const message = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && playerCountry.retreating
         ? 'You are not in retreat and must play the pending turn first!'
         : '';
@@ -839,10 +842,10 @@ export class OptionsService {
           };
         }
 
-        if (playerCountry.nukeRange) {
+        if (Number.isInteger(playerCountry.nukeRange)) {
           turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechOfferOptions(gameId, preliminaryTurn.turnId);
         } else {
-          turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechReceiveOptions(gameId, preliminaryTurn.turnId);
+          turnOptions.preliminary.receiveTechOptions = await db.optionsRepo.getTechReceiveOptions(gameId, preliminaryTurn.turnId);
         }
       }
 
@@ -1230,7 +1233,7 @@ export class OptionsService {
       nominatorId: 0,
       countryId: 0,
       countryName: '-- Select Country--',
-      rank: '-',
+      rank: CountryRank.DASH,
       countryStatus: CountryStatus.NPC,
       penalty: 0
     });
@@ -1241,7 +1244,7 @@ export class OptionsService {
     };
   }
 
-  async getVotingOptions(turnId: number): Promise<VotingOptions> {
+  async getVotingOptions(turnId: number, voteCount: number): Promise<VotingOptions> {
     const nominations: Nomination[] = await db.optionsRepo.getNominations(turnId);
 
     const duplicateAlerts: string[] = [];
@@ -1273,7 +1276,8 @@ export class OptionsService {
 
     return {
       duplicateAlerts: duplicateAlerts,
-      nominations: nominations
+      nominations: nominations,
+      voteCount: voteCount
     };
   }
 

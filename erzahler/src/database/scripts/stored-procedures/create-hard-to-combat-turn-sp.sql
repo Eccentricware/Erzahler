@@ -1,6 +1,6 @@
---sudo -u postgres psql < database/scripts/stored-procedures/create-hard-revert-combat-turn-sp.sql
+--sudo -u postgres psql < database/scripts/stored-procedures/create-hard-revert-to-turn-sp.sql
 
-CREATE PROCEDURE hard_revert_combat_turn(
+CREATE PROCEDURE hard_revert_to_turn(
   INTEGER, -- game_id
   INTEGER  -- turn_number
 )
@@ -10,6 +10,15 @@ AS $$
   SET turn_status = 'Pending'
   WHERE game_id = $1
     AND turn_number = $2;
+
+  DELETE FROM nominations
+  WHERE nomination_id IN (
+    SELECT n.nomination_id
+  FROM nominations n
+  INNER JOIN turns t ON t.turn_id = n.turn_id
+    WHERE t.game_id = $1
+    AND t.turn_number > $2
+  );
 
   DELETE FROM orders
   WHERE order_id IN (

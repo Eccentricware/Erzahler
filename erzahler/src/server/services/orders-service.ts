@@ -1,6 +1,6 @@
 import { GameState } from '../../models/objects/last-turn-info-object';
 import { AtRiskUnit, BuildLocProvince, NominatableCountry, Order } from '../../models/objects/option-context-objects';
-import { BuildType, UnitType } from '../../models/enumeration/unit-enum';
+import { BuildType } from '../../models/enumeration/unit-enum';
 import { db } from '../../database/connection';
 import { AccountService } from './account-service';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
@@ -15,14 +15,13 @@ import {
   DisbandOrders,
   DisbandingUnitDetail,
   NominationOrder,
-  NukeBuildInDisband,
   TransferBuildOrder,
   TransferTechOrder,
   TurnOrders
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, CountryOrderSetIds, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
 import { terminalAddendum, terminalLog } from '../utils/general';
-import { NominationRow, Turn } from '../../models/objects/database-objects';
+import { Turn } from '../../models/objects/database-objects';
 import { OptionsService } from './options-service';
 import { CountryStats } from '../../models/objects/games/country-stats-objects';
 
@@ -475,7 +474,7 @@ export class OrdersService {
       // Votes
       // Votes | Orders and Votes
       if (orders.pending && orders.pending.votes && orders.pending.orderSetId) {
-        await db.ordersRepo.saveVotes(orders.pending.orderSetId, orders.pending.votes);
+        await db.ordersRepo.saveVotes(orders.pending.votes, orders.pending.orderSetId);
       }
 
       // if (!orderSetUpdated && orderSetIds.core) {
@@ -658,6 +657,13 @@ export class OrdersService {
         coalitionSignature: '---'
       };
     }
+  }
+
+  async initializeVotingOrderSets(turn: Turn): Promise<void> {
+    // 1:1 Match between nominatble countries and voting countries
+    const survivingCountries: NominatableCountry[] = await db.optionsRepo.getNominatableCountries(turn.gameId, turn.turnNumber);
+    const survivingCountryIds: number[] = survivingCountries.map((country: NominatableCountry) => country.countryId);
+    db.ordersRepo.insertVotingOrderSets(turn.turnId!, survivingCountryIds);
   }
 
   // setDescription(order: UnitOrderResolution): string {

@@ -585,10 +585,10 @@ export class OrdersRepository {
   async getVotes(turnId: number, countryId: number): Promise<number[]> {
     return await this.pool
       .query(getVotesOrdersQuery, [turnId, countryId])
-      .then((result: QueryResult) => (result.rows[0].votes ? result.rows[0].votes : []));
+      .then((result: QueryResult) => (result.rows[0] && result.rows[0].votes ? result.rows[0].votes : []));
   }
 
-  async saveVotes(orderSetId: number, votes: number[]): Promise<void> {
+  async saveVotes(votes: number[], orderSetId: number): Promise<void> {
     await this.pool
       .query(saveVotesQuery, [votes, orderSetId])
       .catch((error: Error) => terminalLog('saveVotes error: ' + error.message));
@@ -598,5 +598,22 @@ export class OrdersRepository {
     await this.pool
       .query('UPDATE order_sets SET submission_time = NOW() WHERE order_set_id = $1', [orderSetId])
       .catch((error: Error) => terminalLog('updateOrderSubmissionTime error: ' + error.message));
+  }
+
+  async insertVotingOrderSets(turnId: number, survivingCountryIds: number[]): Promise<void> {
+    const orderSetValues = survivingCountryIds.map((countryId: number) => {
+      return {
+        country_id: countryId,
+        turn_id: turnId,
+        message_id: null,
+        submission_time: new Date(),
+        order_set_type: 'Orders',
+        order_set_name: null
+      };
+    });
+
+    const query = this.pgp.helpers.insert(orderSetValues, this.orderSetCols);
+    return this.db.query(query)
+      .catch((error: Error) => terminalLog('insertVotingOrderSets error: ' + error.message));
   }
 }

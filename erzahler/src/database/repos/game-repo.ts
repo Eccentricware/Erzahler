@@ -511,6 +511,7 @@ export class GameRepository {
             name: countryResult.country_name,
             cityCount: countryResult.city_count,
             unitCount: countryResult.unit_count,
+            voteCount: countryResult.vote_count,
             retreating: countryResult.in_retreat,
             builds: countryResult.banked_builds,
             nukeRange: countryResult.nuke_range,
