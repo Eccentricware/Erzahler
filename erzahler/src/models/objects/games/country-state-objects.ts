@@ -3,6 +3,7 @@ export interface CountryStateResult {
   country_name: string;
   city_count: number;
   unit_count: number;
+  vote_count: number;
   in_retreat: boolean;
   banked_builds: number;
   nuke_range: number | null;
@@ -16,6 +17,7 @@ export interface CountryState {
   name: string;
   cityCount: number;
   unitCount: number;
+  voteCount: number;
   retreating: boolean;
   builds: number;
   nukeRange: number | null;

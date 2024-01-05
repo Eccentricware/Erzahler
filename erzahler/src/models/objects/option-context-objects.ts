@@ -1,3 +1,4 @@
+import { CountryRank, CountryStatus } from '../enumeration/country-enum';
 import { OrderDisplay, OrderSetType } from '../enumeration/order-display-enum';
 import { ProvinceType } from '../enumeration/province-enums';
 import { TurnStatus } from '../enumeration/turn-status-enum';
@@ -356,15 +357,19 @@ export interface AtRiskUnit {
 }
 
 export interface NominatableCountryResult {
+  nominator_id: number;
   country_id: number;
   country_name: string;
-  rank: string;
+  country_status: CountryStatus;
+  rank: CountryRank;
 }
 
 export interface NominatableCountry {
+  nominatorId: number;
   countryId: number;
   countryName: string;
-  rank: string;
+  rank: CountryRank;
+  countryStatus: CountryStatus;
   penalty?: number;
 }
 

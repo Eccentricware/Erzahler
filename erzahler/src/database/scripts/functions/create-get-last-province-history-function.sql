@@ -12,7 +12,6 @@ RETURNS TABLE (
 	province_id INTEGER,
 	turn_id INTEGER,
 	controller_id INTEGER,
-	capital_owner_id INTEGER,
 	province_status VARCHAR,
 	valid_retreat BOOLEAN
 )
@@ -31,7 +30,6 @@ AS $$
 		ph.province_id,
 		ph.turn_id,
 		ph.controller_id,
-		ph.capital_owner_id,
 		ph.province_status,
 		ph.valid_retreat
 	FROM turns t
