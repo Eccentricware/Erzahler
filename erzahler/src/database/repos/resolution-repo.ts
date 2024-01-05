@@ -6,6 +6,7 @@ import {
   AdjacentTransportable,
   AdjacentTransportableResult,
   AdjacentTransportResult,
+  Nomination,
   TransportDestination,
   TransportDestinationResult
 } from '../../models/objects/option-context-objects';
@@ -49,6 +50,7 @@ import { Turn, TurnResult } from '../../models/objects/database-objects';
 import { getAdjResolutionDataQuery } from '../queries/resolution/get-adj-resolution-data-query';
 import { insertNewUnitQuery, insertUnitHistoryQUery } from '../queries/resolution/insert-unit-queries';
 import { updateAdjOrderQuery } from '../queries/resolution/adjustment-orders-query';
+import { updateNominationQuery } from '../queries/resolution/update-nomination-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -454,6 +456,18 @@ export class ResolutionRepository {
       )
 
     return updatedTurns[0];
+  }
+
+  async saveVoteResults(nominations: Nomination[]): Promise<void> {
+    nominations.forEach(async (nomination: Nomination) => {
+      await this.pool.query(updateNominationQuery, [
+        nomination.yayVoterIds,
+        nomination.votesReceived,
+        nomination.winDiff,
+        nomination.winner,
+        nomination.nominationId
+      ]);
+    });
   }
 
   async advancePreliminaryTurn(turnId: number): Promise<void> {

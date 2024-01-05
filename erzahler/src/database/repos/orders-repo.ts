@@ -2,6 +2,8 @@ import { Pool, QueryResult } from 'pg';
 import { ColumnSet, IDatabase, IMain, ParameterizedQuery } from 'pg-promise';
 import { BuildType } from '../../models/enumeration/unit-enum';
 import {
+  CountryVotes,
+  CountryVotesResult,
   NominatableCountry,
   NominatableCountryResult,
   Order,
@@ -36,7 +38,7 @@ import { getDisbandOrdersQuery } from '../queries/orders/orders-final/get-disban
 import { getFinishedNukesOrdersQuery } from '../queries/orders/orders-final/get-finished-nuke-orders-query';
 import { getNominationOrderQuery } from '../queries/orders/orders-final/get-nomination-order-query';
 import { getTechTransferOrderQuery } from '../queries/orders/orders-final/get-tech-transfer-order-query';
-import { getVotesOrdersQuery } from '../queries/orders/orders-final/get-votes-orders-query';
+import { getVotesForResolutionQuery, getVotesOrdersQuery } from '../queries/orders/orders-final/get-votes-orders-query';
 import { saveBuildOrdersQuery } from '../queries/orders/orders-final/save-build-orders-query';
 import { saveDisbandOrdersQuery } from '../queries/orders/orders-final/save-disband-orders-query';
 import { saveNominationQuery } from '../queries/orders/orders-final/save-nomination-query';
@@ -49,6 +51,7 @@ import { terminalLog } from '../../server/utils/general';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { getCountryOrderSetIdsQuery } from '../queries/orders/orders-prep/get-country-order-set-ids';
 import { NominationRow } from '../../models/objects/database-objects';
+import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
 
 export class OrdersRepository {
   orderSetCols: ColumnSet<unknown>;
@@ -586,6 +589,20 @@ export class OrdersRepository {
     return await this.pool
       .query(getVotesOrdersQuery, [turnId, countryId])
       .then((result: QueryResult) => (result.rows[0] && result.rows[0].votes ? result.rows[0].votes : []));
+  }
+
+  async getVotesForResolution(turn: UpcomingTurn): Promise<CountryVotes[]> {
+    return await this.pool
+      .query(getVotesForResolutionQuery, [turn.gameId, turn.turnNumber, turn.turnId])
+      .then((result: QueryResult<CountryVotesResult>) =>
+        result.rows.map((vote: CountryVotesResult) => {
+          return <CountryVotes>{
+            countryId: vote.country_id,
+            votes: vote.votes,
+            voteCount: vote.vote_count
+          };
+        })
+      );
   }
 
   async saveVotes(votes: number[], orderSetId: number): Promise<void> {
