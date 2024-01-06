@@ -20,7 +20,9 @@ import { GameState } from '../../models/objects/last-turn-info-object';
 import {
   AdjacentTransport,
   BuildLocProvince,
+  CountryVotes,
   NominatableCountry,
+  Nomination,
   OptionDestination,
   SecondaryUnit,
   TransportDestination,
@@ -84,9 +86,6 @@ export class ResolutionService {
 
   async resolveTurn(turn: UpcomingTurn): Promise<void> {
     switch (turn.turnType) {
-      case TurnType.ORDERS_AND_VOTES:     // To-do
-        this.resolveOrdersAndVotes(turn);
-        break;
       case TurnType.SPRING_ORDERS:
         this.resolveSpringOrders(turn);
         break;
@@ -107,6 +106,7 @@ export class ResolutionService {
         this.resolveNominations(turn);
         break;
       case TurnType.VOTES:                // To-do
+      case TurnType.ORDERS_AND_VOTES:     // To-do
         this.resolveVotes(turn);
         break;
     }
@@ -1161,7 +1161,54 @@ export class ResolutionService {
   }
 
   async resolveVotes(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Votes resolution, which is not yet implemented`);
+    const globalVotes = await db.ordersRepo.getVotesForResolution(turn);
+    const nominations = await db.optionsRepo.getNominations(turn.turnId);
+
+    const nominationLibrary: Record<number, Nomination> = {};
+    nominations.forEach((nomination: Nomination) => {
+      nominationLibrary[nomination.nominationId] = nomination;
+    });
+
+    globalVotes.forEach((countryVotes: CountryVotes) => {
+      countryVotes.votes?.forEach((vote: number) => {
+        const nomination = nominationLibrary[vote];
+        if (nomination) {
+          nomination.yayVoterIds.push(countryVotes.countryId);
+          nomination.votesReceived += countryVotes.voteCount;
+        }
+      });
+    });
+
+    let winningNominationId: number | undefined;
+    let winningDiff = -1;
+
+    nominations.forEach((nomination: Nomination) => {
+      nomination.winDiff = nomination.votesReceived - nomination.votesRequired;
+      if (nomination.winDiff > winningDiff) {
+        winningNominationId = nomination.nominationId;
+        winningDiff = nomination.winDiff;
+      }
+    });
+
+    if (winningNominationId) { // Game Over
+      nominationLibrary[winningNominationId].winner = true;
+
+      const gameState = await db.gameRepo.getGameState(turn.gameId);
+      db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.FINAL);
+      if (turn.turnType === TurnType.VOTES) {
+        db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.CANCELLED);
+      }
+
+    } else if (turn.turnType === TurnType.VOTES) { // Continue
+      const gameState = await db.gameRepo.getGameState(turn.gameId);
+      db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED);
+      db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING);
+
+    } else {
+      this.resolveSpringOrders(turn);
+    }
+
+    db.resolutionRepo.saveVoteResults(nominations);
   }
 
   async resolveUnitOrders(gameState: GameState, turn: UpcomingTurn): Promise<UnitOrderResolution[]> {

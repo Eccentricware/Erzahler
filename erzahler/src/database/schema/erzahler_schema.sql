@@ -315,8 +315,10 @@ CREATE TABLE IF NOT EXISTS nominations(
   signature VARCHAR(3) NOT NULL,
   votes_required INTEGER NOT NULL,
   country_ids INTEGER[] NOT NULL,
-  votes_received INTEGER,
-  winner BOOLEAN,
+  yay_votes INTEGER[] DEFAULT '{}',
+  votes_received INTEGER DEFAULT 0,
+  win_diff INTEGER DEFAULT 0,
+  winner BOOLEAN DEFAULT false,
   PRIMARY KEY(nomination_id),
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),

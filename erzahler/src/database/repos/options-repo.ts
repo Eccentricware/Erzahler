@@ -492,7 +492,11 @@ export class OptionsRepository {
                 rank: country.rank
               };
             }),
-            votesRequired: nomination.votes_required
+            votesRequired: nomination.votes_required,
+            yayVoterIds: nomination.yay_voter_ids,
+            votesReceived: nomination.votes_received,
+            winDiff: nomination.win_diff,
+            winner: nomination.winner
           };
         })
       )
@@ -533,11 +537,4 @@ export class OptionsRepository {
       })
     );
   }
-
-  // async getVoteOptions(turnId: number): Promise<Nomination[]> {
-  //   const coalitions: Nomination[] = await this.pool.query(getNominationsQuery, [turnId])
-  //     .then((result: QueryResult) => result.rows.map((coalition: NominationResult) => {
-
-  //     }));
-  // }
 }
