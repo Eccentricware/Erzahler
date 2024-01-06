@@ -137,6 +137,30 @@ export class AssignmentRepository {
     await this.pool.query(unlockAssignmentQuery, [gameId, playerId]);
   }
 
+  // async getUserAssignments(gameId: number, userId: number): Promise<UserAssignment[]> {
+  //   const assignments = await this.pool
+  //     .query(getUserGameAssignmentsQuery, [gameId, userId])
+  //     .then((queryResult: QueryResult<any>) =>
+  //       queryResult.rows.map((result: UserAssignmentResult) => {
+  //         return <UserAssignment>{
+  //           username: result.username,
+  //           assignmentType: result.assignment_type,
+  //           countryId: result.country_id ? result.country_id : 0,
+  //           countryName: result.country_name,
+  //           countryStatus: result.country_status,
+  //           nukeTech: result.nuke_range !== null,
+  //           blindAdministrators: result.blind_administrators
+  //         };
+  //       })
+  //     )
+  //     .catch((error: Error) => {
+  //       console.log('getUserAssignments Error: ' + error.message);
+  //       return [];
+  //     });
+
+  //   return assignments;
+  // }
+
   async getUserAssignments(gameId: number, userId: number): Promise<UserAssignment[]> {
     const assignments = await this.pool
       .query(getUserGameAssignmentsQuery, [gameId, userId])
@@ -145,7 +169,8 @@ export class AssignmentRepository {
           return <UserAssignment>{
             username: result.username,
             assignmentType: result.assignment_type,
-            countryId: result.country_id ? result.country_id : 0,
+            assignmentStart: result.assignment_start,
+            countryId: result.country_id,
             countryName: result.country_name,
             countryStatus: result.country_status,
             nukeTech: result.nuke_range !== null,

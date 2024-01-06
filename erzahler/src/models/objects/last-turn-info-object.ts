@@ -14,8 +14,10 @@ export interface GameStateResult {
   turn_status: string;
   pending_turn_id: number;
   pending_turn_type: string;
+  pending_deadline: Date;
   preliminary_turn_id: number;
   preliminary_turn_type: string;
+  preliminary_deadline: Date;
   orders_day: DayOfWeek;
   orders_time: Date;
   orders_span: number;
@@ -65,8 +67,10 @@ export interface GameState {
   turnStatus: string;
   pendingTurnId: number;
   pendingTurnType: TurnType;
+  pendingDeadline: Date;
   preliminaryTurnId?: number;
   preliminaryTurnType?: TurnType;
+  preliminaryDeadline?: Date;
   ordersDay: DayOfWeek;
   ordersTime: Date;
   ordersSpan: number;

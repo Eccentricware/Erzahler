@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { AssignmentStatus } from '../enumeration/assignment-status-enum';
 import { AssignmentType } from '../enumeration/assignment-type-enum';
+import { as } from 'pg-promise';
 
 export interface AssignmentDataObject {
   gameId: number;
@@ -16,6 +17,8 @@ export interface AssignmentDataObject {
 export interface UserAssignmentResult {
   username: string;
   assignment_type?: string;
+  assignment_start?: string | Date | DateTime | null;
+  assignment_end?: string | Date | DateTime | null;
   country_id?: number;
   country_name?: string;
   country_status?: string;
@@ -26,6 +29,8 @@ export interface UserAssignmentResult {
 export interface UserAssignment {
   username: string;
   assignmentType?: AssignmentType;
+  assignmentStart?: string | Date | DateTime | null;
+  assignmentEnd?: string | Date | DateTime | null;
   countryId: number;
   countryName?: string;
   countryStatus?: string;
