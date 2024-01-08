@@ -89,16 +89,3 @@ gameRouter.post('/declare-ready', (request, response) => {
       response.send({ success: false });
     });
 });
-
-gameRouter.get('/stats/:gameId', (request, response) => {
-  const gameId = Number(request.params.gameId);
-
-  gameService
-    .getGameStats(gameId)
-    .then((result: any) => {
-      response.send(result);
-    })
-    .catch((error: Error) => {
-      response.send({ error: 'GetGameStatsError: ' + error.message });
-    });
-});

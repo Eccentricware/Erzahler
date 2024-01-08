@@ -9,6 +9,11 @@ ordersRouter.get(`/:gameId/orders`, (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const gameId = Number(request.params.gameId);
 
+  if (idToken === '') {
+    response.send({ success: false, error: 'Guests cannot have orders.' });
+    return;
+  }
+
   ordersService.getTurnOrders(idToken, gameId)
     .then((orders: TurnOrders | undefined) => {
       response.send(orders);
@@ -18,6 +23,11 @@ ordersRouter.get(`/:gameId/orders`, (request, response) => {
 ordersRouter.post(`/submit`, (request, response) => {
   const idToken = <string>request.headers.idtoken;
   const orders = request.body.orders;
+
+  if (idToken === '') {
+    response.send({ success: false, error: 'Guests cannot have orders.' });
+    return;
+  }
 
   ordersService
     .saveOrders(idToken, orders)

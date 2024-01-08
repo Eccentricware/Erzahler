@@ -16,7 +16,7 @@ import { checkUserGameAdminQuery } from '../queries/game/check-user-game-admin-q
 import { getCoalitionScheduleQuery } from '../queries/game/get-coalition-schedule-query';
 import { getCountryStateQuery } from '../queries/game/get-country-state-query';
 import { getGameDetailsQuery } from '../queries/game/get-game-details-query';
-import { getGameStatsQuery } from '../queries/game/get-game-stats-query';
+import { getGameStatsQuery, getTurnHistoryQuery } from '../queries/game/get-game-stats-query';
 import { getGamesQuery } from '../queries/game/get-games-query';
 import { getRulesInGameQuery } from '../queries/game/get-rules-in-game-query';
 import { insertAssignmentQuery } from '../queries/game/insert-assignment-query';
@@ -541,6 +541,24 @@ export class GameRepository {
     );
   }
 
+  async getTurnHistory(gameId: number): Promise<Turn[]> {
+    return await this.pool.query(getTurnHistoryQuery, [gameId])
+      .then((result: QueryResult) =>
+        result.rows.map((turn: TurnResult) => {
+          return <Turn>{
+            turnId: turn.turn_id,
+            gameId: turn.game_id,
+            turnNumber: turn.turn_number,
+            turnName: turn.turn_name,
+            turnType: turn.turn_type,
+            turnStatus: turn.turn_status,
+            yearNumber: turn.year_number,
+            deadline: turn.deadline
+          };
+        })
+      );
+  }
+
   async getCoalitionSchedule(gameId: number): Promise<CoalitionSchedule> {
     const coalitionSchedules = await this.pool.query(getCoalitionScheduleQuery, [gameId]).then((result: QueryResult) =>
       result.rows.map((schedule: CoalitionScheduleResult) => {
@@ -613,4 +631,6 @@ export class GameRepository {
   async setGamePlaying(gameId: number): Promise<void> {
     await this.pool.query(startGameQuery, [gameId]);
   }
+
+
 }

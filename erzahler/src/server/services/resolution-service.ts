@@ -918,6 +918,7 @@ export class ResolutionService {
             } else {
 
               if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING].includes(adjOrder.buildType)) {
+
                 countryResources.adjRemaining--;
                 newProvincesUsed.add(adjOrder.provinceName);
                 adjOrder.success = true;
@@ -928,7 +929,7 @@ export class ResolutionService {
                 dbUpdates.newUnits.push({
                   unitType: adjOrder.buildType,
                   countryId: adjOrder.countryId,
-                  unitName: `${adjOrder.countryName} ${adjOrder.buildType} X`, // To-Do?
+                  unitName: `${adjOrder.countryName} ${adjOrder.buildType} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
                   turnId: turn.turnId,
                   nodeId: adjOrder.nodeId,
                   unitStatus: UnitStatus.ACTIVE
@@ -947,7 +948,7 @@ export class ResolutionService {
                   dbUpdates.newUnits.push({
                     unitType: UnitType.NUKE,
                     countryId: adjOrder.countryId,
-                    unitName: `${adjOrder.countryName} ${UnitType.NUKE} X`, // To-Do?
+                    unitName: `${adjOrder.countryName} ${UnitType.NUKE} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
                     turnId: turn.turnId,
                     nodeId: adjOrder.nodeId,
                     unitStatus: UnitStatus.ACTIVE
@@ -1005,7 +1006,7 @@ export class ResolutionService {
               dbUpdates.newUnits.push({
                 unitType: UnitType.NUKE,
                 countryId: adjOrder.countryId,
-                unitName: `${adjOrder.countryId} ${UnitType.NUKE} X`, // To-Do?
+                unitName: `${adjOrder.countryId} ${UnitType.NUKE} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
                 turnId: turn.turnId,
                 nodeId: adjOrder.nodeId,
                 unitStatus: UnitStatus.ACTIVE

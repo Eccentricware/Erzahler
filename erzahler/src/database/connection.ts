@@ -8,11 +8,13 @@ import { OptionsRepository } from './repos/options-repo';
 import { OrdersRepository } from './repos/orders-repo';
 import { ResolutionRepository } from './repos/resolution-repo';
 import { SchedulerRepository } from './repos/scheduler-repo';
+import { HistoryRepository } from './repos/history-repo';
 
 interface IExtensions {
   accountsRepo: AccountsRepository;
   assignmentRepo: AssignmentRepository;
   gameRepo: GameRepository;
+  historyRepo: HistoryRepository;
   mapRepo: MapRepository;
   optionsRepo: OptionsRepository;
   ordersRepo: OrdersRepository;
@@ -26,6 +28,7 @@ const initOptions: IInitOptions<IExtensions> = {
     obj.accountsRepo = new AccountsRepository(obj, pgp);
     obj.assignmentRepo = new AssignmentRepository(obj, pgp);
     obj.gameRepo = new GameRepository(obj, pgp);
+    obj.historyRepo = new HistoryRepository(obj, pgp);
     obj.mapRepo = new MapRepository(obj, pgp);
     obj.optionsRepo = new OptionsRepository(obj, pgp);
     obj.ordersRepo = new OrdersRepository(obj, pgp);

@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { TurnStatus } from '../enumeration/turn-status-enum';
 import { TurnType } from '../enumeration/turn-type-enum';
+import { CountryStats } from './games/country-stats-objects';
 
 export interface TurnResult {
   turn_id?: number;
@@ -46,4 +47,9 @@ export interface NominationRow {
   votesReceived?: number;
   winner?: boolean;
   valid?: boolean;
+}
+
+export interface GameStats {
+  countries: CountryStats[];
+  turns: Turn[];
 }

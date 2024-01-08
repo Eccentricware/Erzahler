@@ -1,6 +1,22 @@
 import { CountryStatus } from "../enumeration/country-enum";
 import { CityType } from "../enumeration/province-enums";
 
+export interface Map {
+  terrain: {
+    sea: Terrain[];
+    land: Terrain[];
+    canal: Terrain[];
+    line: Terrain[];
+  };
+  cities: {
+    supplyCenters: City[];
+    votingCenters: City[];
+  };
+  labels: Label[];
+  labelLines: LabelLine[];
+  units: Unit[];
+};
+
 export interface TerrainResult {
   province_name: string;
   render_category: string;
