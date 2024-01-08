@@ -1,4 +1,3 @@
-import { as } from 'pg-promise';
 import { db } from '../../database/connection';
 import {
   CountryHistoryRow,
@@ -19,7 +18,6 @@ import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
   AdjacentTransport,
-  BuildLocProvince,
   CountryVotes,
   NominatableCountry,
   Nomination,
@@ -49,7 +47,6 @@ import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
 import { OrdersService } from './orders-service';
-import { BuildOptions } from '../../models/objects/options-objects';
 
 export class ResolutionService {
   optionsService: OptionsService = new OptionsService();
@@ -84,30 +81,37 @@ export class ResolutionService {
       });
   }
 
-  async resolveTurn(turn: UpcomingTurn): Promise<void> {
+  async resolveTurn(turnId: number): Promise<void> {
+    const turn: UpcomingTurn | undefined = await db.schedulerRepo.getUpcomingTurnDetails(turnId);
+
+    if (!turn) {
+      terminalAddendum('Resolution', `Can't find turn by turnId ${turnId}`);
+      return;
+    }
+
     switch (turn.turnType) {
       case TurnType.SPRING_ORDERS:
-        this.resolveSpringOrders(turn);
+        await this.resolveSpringOrders(turn);
         break;
       case TurnType.SPRING_RETREATS:
-        this.resolveSpringRetreats(turn);
+        await this.resolveSpringRetreats(turn);
         break;
       case TurnType.FALL_ORDERS:
-        this.resolveFallOrders(turn);
+        await this.resolveFallOrders(turn);
         break;
       case TurnType.FALL_RETREATS:
-        this.resolveFallRetreats(turn);
+        await this.resolveFallRetreats(turn);   // Needs scheduler followup
         break;
       case TurnType.ADJUSTMENTS:
       case TurnType.ADJ_AND_NOM:
-        this.resolveAdjustments(turn);
+        await this.resolveAdjustments(turn);    // Needs scheduler followup
         break;
       case TurnType.NOMINATIONS:
-        this.resolveNominations(turn);
+        await this.resolveNominations(turn);
         break;
-      case TurnType.VOTES:                // To-do
-      case TurnType.ORDERS_AND_VOTES:     // To-do
-        this.resolveVotes(turn);
+      case TurnType.VOTES:
+      case TurnType.ORDERS_AND_VOTES:
+        await this.resolveVotes(turn);          // Needs scheduler followup
         break;
     }
   }
@@ -331,6 +335,7 @@ export class ResolutionService {
             nextTurns.pending.deadline
           ])
           .then(async (pendingTurn: Turn) => {
+            this.schedulerService.scheduleTurn(pendingTurn.turnId!, pendingTurn.deadline);
             await this.optionsService.saveOptionsForTurn(pendingTurn);
 
             if (nextTurns.preliminary) {
@@ -464,7 +469,8 @@ export class ResolutionService {
       // Find next turn will require an updated gameState first
       console.log('DB: Turn Update'); // Pending resolution
       postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
-      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING)
+      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING);
+      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId!, gameState.preliminaryDeadline!);
       postStatCheckPromises.push(nowPendingTurnPromise);
       const nowPendingTurn = await nowPendingTurnPromise;
 
@@ -641,6 +647,8 @@ export class ResolutionService {
             nextTurns.pending.deadline
           ])
           .then(async (pendingTurn: Turn) => {
+            this.schedulerService.scheduleTurn(pendingTurn.turnId!, pendingTurn.deadline);
+
             if (nextTurns.preliminary) {
               await this.optionsService.saveOptionsForTurn(pendingTurn);
 
@@ -776,7 +784,9 @@ export class ResolutionService {
       // Find next turn will require an updated gameState first
       console.log('DB: Turn Update'); // Pending resolution
       postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
-      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING)
+      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING);
+      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId!, gameState.preliminaryDeadline!);
+
       postStatCheckPromises.push(nowPendingTurnPromise);
       const nowPendingTurn = await nowPendingTurnPromise;
 
@@ -1078,6 +1088,8 @@ export class ResolutionService {
             nextTurns.pending.deadline
           ])
           .then(async (pendingTurn: Turn) => {
+            this.schedulerService.scheduleTurn(pendingTurn.turnId!, pendingTurn.deadline);
+
             if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
               await this.optionsService.saveOptionsForTurn(pendingTurn);
             }
@@ -1113,10 +1125,6 @@ export class ResolutionService {
     });
   }
 
-  // async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
-  //   terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`);
-  // }
-
   async resolveNominations(turn: UpcomingTurn): Promise<void> {
     const gameState = await db.gameRepo.getGameState(turn.gameId);
     const nextTurns = this.schedulerService.findNextTurns(turn, gameState, false);
@@ -1135,6 +1143,8 @@ export class ResolutionService {
       nextTurns.pending.deadline
     ])
     .then(async (pendingTurn: Turn) => {
+      this.schedulerService.scheduleTurn(pendingTurn.turnId!, pendingTurn.deadline);
+
       // If prelim,  pending = Votes, prelim = Spring Orders
       // If !prelim, pending = Spring Orders and Votes
       await this.orderService.initializeVotingOrderSets(pendingTurn);
@@ -1203,6 +1213,7 @@ export class ResolutionService {
       const gameState = await db.gameRepo.getGameState(turn.gameId);
       db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED);
       db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING);
+      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId!, gameState.preliminaryDeadline!);
 
     } else {
       this.resolveSpringOrders(turn);

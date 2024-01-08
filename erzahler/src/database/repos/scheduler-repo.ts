@@ -11,7 +11,7 @@ import { setAssignmentsActiveQuery } from '../queries/assignments/set-assignment
 import { readyGameQuery } from '../queries/game/ready-game-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
 import { getScheduleSettingsQuery } from '../queries/scheduler/get-schedule-settings-query';
-import { getUpcomingTurnsQuery } from '../queries/scheduler/get-upcoming-turns-query';
+import { getUpcomingTurnDetailsQuery, getUpcomingTurnsQuery } from '../queries/scheduler/get-upcoming-turns-query';
 import { getGamesStartingQuery } from '../queries/scheduler/get-games-starting-query';
 import { StartSchedule, StartScheduleResult } from '../../models/objects/games/game-schedule-objects';
 import { terminalLog } from '../../server/utils/general';
@@ -139,6 +139,53 @@ export class SchedulerRepository {
         terminalLog('getUpcomingTurns Error: ' + error);
         return [];
       });
+  }
+
+  async getUpcomingTurnDetails(turnId: number): Promise<UpcomingTurn | undefined> {
+    const upcomingTurns = await this.pool
+      .query(getUpcomingTurnDetailsQuery, [turnId])
+      .then((results: QueryResult<UpcomingTurnResult>) => {
+        return results.rows.map((turn: UpcomingTurnResult) => {
+          const unitMovement = [
+            TurnType.ORDERS_AND_VOTES,
+            TurnType.SPRING_ORDERS,
+            TurnType.SPRING_RETREATS,
+            TurnType.FALL_ORDERS,
+            TurnType.FALL_RETREATS
+          ].includes(turn.turn_type);
+          const transfers = [TurnType.ORDERS_AND_VOTES, TurnType.SPRING_ORDERS].includes(turn.turn_type);
+          const capturing = [TurnType.FALL_ORDERS, TurnType.FALL_RETREATS].includes(turn.turn_type);
+          const adjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(turn.turn_type);
+          const nominations = [TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS].includes(turn.turn_type);
+          const votes = [TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(turn.turn_type);
+
+          return <UpcomingTurn>{
+            gameId: turn.game_id,
+            turnId: turn.turn_id,
+            gameName: turn.game_name,
+            turnName: turn.turn_name,
+            turnNumber: turn.turn_number,
+            turnType: turn.turn_type,
+            turnStatus: turn.turn_status,
+            yearNumber: turn.year_number,
+            yearStylized: turn.year_stylized,
+            deadline: turn.deadline,
+            defaultsReady: turn.defaults_ready,
+            unitMovement: unitMovement,
+            transfers: transfers,
+            hasCaptures: capturing,
+            adjustments: adjustments,
+            nominations: nominations,
+            votes: votes
+          };
+        });
+      })
+      .catch((error: Error) => {
+        terminalLog('getUpcomingTurns Error: ' + error);
+        return [];
+      });
+
+    return upcomingTurns[0] ? upcomingTurns[0] : undefined;
   }
 
   async readyGame(readyGameArgs: any[]): Promise<any> {

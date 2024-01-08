@@ -18,6 +18,8 @@ import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
 import { formatDateTime, formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
 import { StartSchedule } from '../../models/objects/games/game-schedule-objects';
+import { Turn } from '../../models/objects/database-objects';
+import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 
 export class SchedulerService {
   timeZones: TimeZone[];
@@ -194,6 +196,8 @@ export class SchedulerService {
   //   return game;
   // }
 
+
+
   async syncDeadlines(): Promise<void> {
     terminalLog('Syncing Deadlines');
     const resolutionService: ResolutionService = new ResolutionService();
@@ -213,28 +217,45 @@ export class SchedulerService {
         await resolutionService.startGame(game.gameId);
       } else {
         terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${formatDateTime(game.startTime)}`);
-        schedule.scheduleJob(`${game.gameName} - Start`, game.startTime, () => {
-          resolutionService.startGame(game.gameId);
-        });
+        schedule.scheduleJob(
+          `G-${game.gameId}`,
+          game.startTime,
+          () => { resolutionService.startGame(game.gameId); }
+        );
       }
     });
 
-    const pendingTurns = await db.schedulerRepo.getUpcomingTurns(0);
-    terminalAddendum('Deadlines', `Found ${pendingTurns.length} pending turns`);
+    const upcomingTurns = await db.schedulerRepo.getUpcomingTurns(0);
+    terminalAddendum('Deadlines', `Found ${upcomingTurns.length} pending turns`);
 
-    pendingTurns.
-      forEach(async (turn: UpcomingTurn) => {
-        if (Date.parse(turn.deadline.toISOString()) < Date.now()) {
-          terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) has expired. Resolving`);
-          resolutionService.resolveTurn(turn);
+    upcomingTurns.forEach(async (turn: UpcomingTurn) => {
+      if (turn.turnStatus === TurnStatus.PENDING && Date.parse(turn.deadline.toISOString()) < Date.now()) {
+        terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) has expired. Resolving`);
+        resolutionService.resolveTurn(turn.turnId);
 
-        } else {
-          terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) pending. Scheduling`);
-          schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
-            resolutionService.resolveTurn(turn);
-          });
-        }
-      });
+      } else if (turn.turnStatus === TurnStatus.PENDING) {
+        terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) pending`);
+        this.scheduleTurn(turn.turnId, turn.deadline);
+        // schedule.scheduleJob(
+        //   `T-${turn.turnId}`,
+        //   turn.deadline,
+        //   () => { resolutionService.resolveTurn(turn.turnId); }
+        // );
+      }
+    });
+  }
+
+  async scheduleTurn(turnId: number, deadline: Date | DateTime | string): Promise<void> {
+    const resolutionService: ResolutionService = new ResolutionService();
+    if (deadline instanceof Date) {
+      terminalLog(`Scheduling turn ${turnId} for ${formatDateTime(deadline)}`);
+    }
+
+    schedule.scheduleJob(
+      `T-${turnId}`,
+     deadline,
+      () => { resolutionService.resolveTurn(turnId); }
+    );
   }
 
   /**
@@ -254,9 +275,11 @@ export class SchedulerService {
     if (startDetails.gameStatus === GameStatus.PLAYING) {
       resolutionService.startGame(gameId);
     } else {
-      schedule.scheduleJob(`${gameData.gameName} - Game Start`, startDetails.gameStart, () => {
-        resolutionService.startGame(gameId);
-      });
+      schedule.scheduleJob(
+        `G-${gameData.gameId}`,
+        startDetails.gameStart,
+        () => { resolutionService.startGame(gameId); }
+      );
     }
   }
 
@@ -594,9 +617,8 @@ export class SchedulerService {
         start: start.toJSDate(),
         rule: `*/${minuteInterval} * * * *`
       },
-      () => {
-        terminalLog('Check In');
-      }
+
+      () => { terminalLog('Check In'); }
     );
   }
 

@@ -61,7 +61,7 @@ export class OrdersService {
       );
     });
 
-    const playerVision = playerCountries.length > 0;
+    const playerVision = playerCountries[0]?.countryId > 0;
     const adminVision = adminAssignments.length > 0;
 
     const orders: TurnOrders = {
