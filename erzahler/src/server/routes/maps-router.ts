@@ -10,7 +10,7 @@ mapRouter.get('/:gameId/current', (request, response) => {
 
   if (gameId > 0) {
     mapService
-      .getCurrentMap(gameId)
+      .getMap(gameId)
       .then((result: any) => {
         response.send(result);
       })

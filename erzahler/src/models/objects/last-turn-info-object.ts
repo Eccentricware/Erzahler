@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import { DayOfWeek } from '../enumeration/day_of_week-enum';
 import { TurnType } from '../enumeration/turn-type-enum';
 import { CountryRank } from '../enumeration/country-enum';
+import { CountryStats } from './games/country-stats-objects';
 
 export interface GameStateResult {
   game_id: number;

@@ -14,3 +14,19 @@ export const getGameStatsQuery = `
   ORDER BY c.rank,
     c.country_name;
 `;
+
+export const getTurnHistoryQuery = `
+  SELECT turn_id,
+    game_id,
+    turn_number,
+    turn_name,
+    turn_type,
+    turn_status,
+    deadline,
+    resolved_time,
+    deadline_missed
+  FROM turns
+  WHERE game_id = $1
+    AND turn_status IN ('Resolved', 'Final')
+  ORDER BY turn_number;
+`;
