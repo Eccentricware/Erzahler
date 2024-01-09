@@ -1,15 +1,30 @@
 import express from 'express';
 import { AssignmentService } from '../services/assignment-service';
+import { ValidationService } from '../services/validation-service';
 
 export const assignmentRouter = express.Router();
 const assignmentService = new AssignmentService();
+const validationService = new ValidationService();
 
 assignmentRouter.get(`/:gameId`, (request, response) => {
-  const idToken = <string>request.headers.idtoken;
-  const gameId = Number(request.params.gameId);
+  const validationResponse = validationService.validateRequest({
+    route: `assignments/:gameId`,
+    gameId: request.params.gameId,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: true
+    }
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const { gameId, idToken } = validationResponse.sanitizedVariables;
 
   assignmentService
-    .getGameAssignments(idToken, gameId)
+    .getGameAssignments(idToken!, gameId!)
     .then((result: any) => {
       response.send(result);
     })
@@ -19,12 +34,26 @@ assignmentRouter.get(`/:gameId`, (request, response) => {
 });
 
 assignmentRouter.post('/register', (request, response) => {
-  const idToken = <string>request.headers.idtoken;
-  const gameId = Number(request.body.gameId);
-  const assignmentType = <string>request.body.assignmentType;
+  const validationResponse = validationService.validateRequest({
+    route: `assignments/register`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    },
+    gameId: request.body.gameId,
+    assignmentType: request.body.assignmentType
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const { idToken, gameId, assignmentType } = validationResponse.sanitizedVariables;
+
 
   assignmentService
-    .registerUser(idToken, gameId, assignmentType)
+    .registerUser(idToken!, gameId!, assignmentType!)
     .then((result: any) => {
       response.send(result);
     })
@@ -34,12 +63,25 @@ assignmentRouter.post('/register', (request, response) => {
 });
 
 assignmentRouter.post('/unregister', (request, response) => {
-  const idToken = <string>request.headers.idtoken;
-  const gameId = Number(request.body.gameId);
-  const assignmentType = <string>request.body.assignmentType;
+  const validationResponse = validationService.validateRequest({
+    route: `assignments/unregister`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    },
+    gameId: request.body.gameId,
+    assignmentType: request.body.assignmentType
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const { idToken, gameId, assignmentType } = validationResponse.sanitizedVariables;
 
   assignmentService
-    .unregisterUser(idToken, gameId, assignmentType)
+    .unregisterUser(idToken!, gameId!, assignmentType!)
     .then((result: any) => {
       response.send(result);
     })
@@ -49,13 +91,26 @@ assignmentRouter.post('/unregister', (request, response) => {
 });
 
 assignmentRouter.post('/assign-player', (request, response) => {
-  const idToken = <string>request.headers.idtoken;
-  const gameId = request.body.gameId;
-  const playerId = request.body.userId;
-  const countryId = request.body.countryId;
+  const validationResponse = validationService.validateRequest({
+    route: `assignments/assign-player`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    },
+    gameId: request.body.gameId,
+    playerId: request.body.playerId,
+    countryId: request.body.countryId
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const { idToken, gameId, playerId, countryId } = validationResponse.sanitizedVariables;
 
   assignmentService
-    .assignPlayer(idToken, gameId, playerId, countryId)
+    .assignPlayer(idToken!, gameId!, playerId!, countryId!)
     .then((result: any) => {
       response.send({ success: true });
     })
@@ -65,12 +120,20 @@ assignmentRouter.post('/assign-player', (request, response) => {
 });
 
 assignmentRouter.put('/lock-assignment', (request, response) => {
-  const idToken = <string>request.headers.idtoken;
-  const gameId = request.body.gameId;
-  const playerId = request.body.userId;
+  const validationResponse = validationService.validateRequest({
+    route: `assignments/lock-assignment`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    },
+    gameId: request.body.gameId,
+    playerId: request.body.playerId
+  });
+
+  const { idToken, gameId, playerId } = validationResponse.sanitizedVariables;
 
   assignmentService
-    .lockAssignment(idToken, gameId, playerId)
+    .lockAssignment(idToken!, gameId!, playerId!)
     .then((result: any) => {
       response.send({ success: true });
     })
@@ -80,12 +143,20 @@ assignmentRouter.put('/lock-assignment', (request, response) => {
 });
 
 assignmentRouter.put('/unlock-assignment', (request, response) => {
-  const idToken = <string>request.headers.idtoken;
-  const gameId = request.body.gameId;
-  const playerId = request.body.userId;
+  const validationResponse = validationService.validateRequest({
+    route: `assignments/unlock-assignment`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    },
+    gameId: request.body.gameId,
+    playerId: request.body.playerId
+  });
+
+  const { idToken, gameId, playerId } = validationResponse.sanitizedVariables;
 
   assignmentService
-    .unlockAssignment(idToken, gameId, playerId)
+    .unlockAssignment(idToken!, gameId!, playerId!)
     .then((result: any) => {
       response.send({ success: true });
     })

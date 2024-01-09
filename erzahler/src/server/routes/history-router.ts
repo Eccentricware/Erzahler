@@ -1,14 +1,29 @@
 import express from "express";
 import { HistoryService } from "../services/history-service";
+import { ValidationService } from "../services/validation-service";
 
 export const historyRouter = express.Router();
 const historyService = new HistoryService();
+const validationService = new ValidationService();
 
 historyRouter.get('/stats/:gameId', (request, response) => {
-  const gameId = Number(request.params.gameId);
+  const validationResponse = validationService.validateRequest({
+    route: `history/stats/:gameId`,
+    gameId: {
+      value: request.params.gameId,
+      guestAllowed: true
+    }
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const gameId = validationResponse.sanitizedVariables.gameId;
 
   historyService
-    .getGameStats(gameId)
+    .getGameStats(gameId!)
     .then((result: any) => {
       response.send(result);
     })
@@ -18,10 +33,20 @@ historyRouter.get('/stats/:gameId', (request, response) => {
 });
 
 historyRouter.get('/results/:gameId/:turnNumber', (request, response) => {
-  const gameId = Number(request.params.gameId);
-  const turnNumber = Number(request.params.turnNumber);
+  const validationResponse = validationService.validateRequest({
+    route: `history/results/:gameId/:turnNumber`,
+    gameId: request.params.gameId,
+    turnNumber: request.params.turnNumber
+  });
 
-  historyService.getTurnHistory(gameId, turnNumber).then((result: any) => {
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const { gameId, turnNumber } = validationResponse.sanitizedVariables;
+
+  historyService.getTurnHistory(gameId!, turnNumber!).then((result: any) => {
       response.send(result);
     })
     .catch((error: Error) => {
