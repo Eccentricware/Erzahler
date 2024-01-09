@@ -3,9 +3,11 @@ import { db } from '../../database/connection';
 import { UserProfile } from '../../models/objects/user-profile-object';
 import { AccountService } from '../services/account-service';
 import { terminalLog } from '../utils/general';
+import { ValidationService } from '../services/validation-service';
 
 export const userRouter = express.Router();
 const accountService = new AccountService();
+const validationService = new ValidationService();
 
 userRouter.get('/report-guest/:guestId', (request, response) => {
   const guestId = request.params.guestId;
@@ -15,6 +17,17 @@ userRouter.get('/report-guest/:guestId', (request, response) => {
 
 userRouter.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
+
+  if (username !== typeof 'string' || 'username === ') {
+    terminalLog(`Invalid request to users/check-username/:username: Username cannot be empty.`);
+    response.send({
+      success: false,
+      message: 'Username cannot be empty.'
+    });
+
+    return;
+  }
+
   db.accountsRepo
     .checkUsernameAvailable(username)
     .then((usernameAvailable: any) => {
@@ -28,10 +41,23 @@ userRouter.get('/check-username/:username', (request, response) => {
 });
 
 userRouter.get('/profile', (request, response) => {
-  const idToken: string = <string>request.headers.idtoken;
+  const validationResponse = validationService.validateRequest({
+    route: `users/profile`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: true // Might be elegant to enforce this but the service should already be handling guests
+    }
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const idToken = validationResponse.sanitizedVariables.idToken;
 
   accountService
-    .getUserProfile(idToken)
+    .getUserProfile(idToken!)
     .then((userProfile: UserProfile | undefined) => {
       if (userProfile) {
         terminalLog(`Get Profile: ${userProfile.username}`);
