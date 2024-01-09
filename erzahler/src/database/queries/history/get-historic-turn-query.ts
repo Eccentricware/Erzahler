@@ -30,6 +30,7 @@ export const getHistoricTurnQuery = `
   LEFT JOIN countries tpc ON tpc.country_id = os.tech_partner_id
   WHERE t.game_id = $1
     AND t.turn_number = $2
+    AND t.turn_status IN ('Resolved', 'Final')
     AND lch.country_status IN ('Active', 'Civil Disorder')
     AND c.rank != 'n'
   GROUP BY t.game_id,
