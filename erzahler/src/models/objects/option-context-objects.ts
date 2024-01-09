@@ -417,7 +417,7 @@ export interface OrderResult {
   order_set_id: number;
   ordered_unit_id: number;
   ordered_unit_loc: number[];
-  order_type: string;
+  order_type: OrderDisplay;
   secondary_unit_id?: number | undefined;
   secondary_unit_loc?: number[];
   destination_id?: number;
@@ -430,7 +430,7 @@ export interface Order {
   orderSetId: number;
   orderedUnitId: number;
   loc?: number[];
-  orderType: string;
+  orderType: OrderDisplay;
   description: string;
   secondaryUnitId?: number | undefined;
   secondaryUnitLoc?: number[];

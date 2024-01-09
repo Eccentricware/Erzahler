@@ -198,12 +198,13 @@ export class OrdersService {
                   nukesReady: []
                 };
           } else {
-            orders.pending.disbands = await this.prepareDisbandOrders(
+            const disbandOrders = await this.prepareDisbandOrders(
               gameId,
               gameState.turnId,
               pendingTurn.turnId,
               playerCountry.countryId
             );
+            orders.pending.disbands = disbandOrders[0]
           }
         }
 
@@ -285,12 +286,13 @@ export class OrdersService {
             );
             orders.preliminary.builds = pendingBuildOrders[0];
           } else {
-            orders.preliminary.disbands = await this.prepareDisbandOrders(
+            const disbandOrders = await this.prepareDisbandOrders(
               gameId,
               gameState.turnId,
               preliminaryTurn.turnId,
               playerCountry.countryId
             );
+            orders.preliminary.disbands = disbandOrders[0];
           }
         }
 
@@ -600,8 +602,8 @@ export class OrdersService {
     turnNumber: number,
     orderTurnId: number,
     countryId: number
-  ): Promise<DisbandOrders> {
-    const disbandOrders: DisbandOrders = await db.ordersRepo.getDisbandOrders(
+  ): Promise<DisbandOrders[]> {
+    return await db.ordersRepo.getDisbandOrders(
       gameId,
       turnNumber,
       orderTurnId,
@@ -637,7 +639,7 @@ export class OrdersService {
     //   }
     // }
 
-    return disbandOrders;
+    // return disbandOrders;
   }
 
   async getNominationOrder(gameId: number, turnNumber: number, turnId: number, countryId: number): Promise<NominationOrder> {
@@ -665,30 +667,4 @@ export class OrdersService {
     const survivingCountryIds: number[] = survivingCountries.map((country: NominatableCountry) => country.countryId);
     db.ordersRepo.insertVotingOrderSets(turn.turnId!, survivingCountryIds);
   }
-
-  // setDescription(order: UnitOrderResolution): string {
-  //   let description = `${order.unit.type[0].toUpperCase()} ${order.origin.provinceName} `;
-
-  //   if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(order.orderType)) {
-  //     description += order.orderType;
-  //   }
-
-  //   if ([OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.orderType)) {
-  //     description += `=> ${order.destination.display}`;
-  //   }
-
-  //   if (order.orderType === OrderDisplay.SUPPORT && ![OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
-  //     description += `S ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName}`;
-  //   }
-
-  //   if ([OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(order.orderType) && [OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.secondaryUnit.orderType)) {
-  //     description += `${order.orderType[0].toUpperCase()} ${order.secondaryUnit.type[0].toUpperCase()} ${order.secondaryUnit.provinceName} => ${order.destination.display}`;
-  //   }
-
-  //   if (order.orderType === OrderDisplay.NUKE) {
-  //     description += `! ${order.destination.display}`;
-  //   }
-
-  //   return description;
-  // }
 }

@@ -17,10 +17,9 @@ export const getDisbandOrdersQuery = `
     os.units_disbanding
   FROM order_sets os
   INNER JOIN units u ON u.unit_id = any(os.units_disbanding)
-  INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id
   INNER JOIN get_last_unit_history($1, $2) luh
-    ON luh.unit_id = uh.unit_id AND luh.turn_id = uh.turn_id
-  LEFT JOIN nodes n ON n.node_id = uh.node_id
+    ON luh.unit_id = u.unit_id
+  LEFT JOIN nodes n ON n.node_id = luh.node_id
   LEFT JOIN provinces p ON p.province_id = n.province_id
   LEFT JOIN countries c ON c.country_id = os.country_id
   LEFT JOIN get_last_country_history($1, $2) lch

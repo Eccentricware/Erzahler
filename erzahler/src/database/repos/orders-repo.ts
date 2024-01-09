@@ -391,6 +391,16 @@ export class OrdersRepository {
             nukeRange: result.nuke_range,
             increaseRange: result.increase_range,
             builds: result.builds.map((build: BuildResult) => {
+              let locDisplay: string | string[] | undefined;
+              if (!build.node_display) {
+                locDisplay= build.node_name?.toUpperCase().split('_');
+                if (locDisplay) {
+                  locDisplay = locDisplay[2]
+                    ? `${locDisplay[0]} ${locDisplay[2]}`
+                    : locDisplay[0];
+                }
+              }
+
               return <Build>{
                 orderSetId: build.order_set_id,
                 buildNumber: build.build_number,
@@ -398,6 +408,7 @@ export class OrdersRepository {
                 typeId: this.resolveTypeId(build.build_type),
                 nodeId: build.node_id,
                 nodeName: build.node_name,
+                nodeDisplay: build.node_display ? build.node_display : locDisplay,
                 provinceName: build.province_name,
                 loc: build.loc
               };
@@ -412,7 +423,7 @@ export class OrdersRepository {
     turnNumber: number,
     orderTurnId: number,
     countryId: number
-  ): Promise<DisbandOrders> {
+  ): Promise<DisbandOrders[]> {
     const disbandOrders: DisbandOrders[] = await this.pool
       .query(getDisbandOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult) =>
@@ -440,7 +451,7 @@ export class OrdersRepository {
         })
       );
 
-    return disbandOrders[0];
+    return disbandOrders;
   }
 
   async getCountryOrderSets(gameId: number, turnId: number, countryId: number): Promise<CountryOrderSet[]> {

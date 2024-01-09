@@ -1,7 +1,8 @@
 import { db } from "../../database/connection";
+import { OrderDisplay } from "../../models/enumeration/order-display-enum";
 import { TurnType } from "../../models/enumeration/turn-type-enum";
 import { GameStats } from "../../models/objects/database-objects";
-import { HistoricTurn, TurnHistory } from "../../models/objects/history-objects";
+import { CountryOrders, HistoricOrder, HistoricOrderDisplay, HistoricTurn, TurnHistory } from "../../models/objects/history-objects";
 import { TransferTechOrder, TransferBuildOrder, BuildOrders } from "../../models/objects/order-objects";
 import { terminalLog } from "../utils/general";
 import { MapService } from "./map-service";
@@ -30,7 +31,7 @@ export class HistoryService {
       ? await mapService.getMap(gameId, turnNumber - 1)
       : resultRender;
 
-    const countryLibrary: Record<number, any> = {};
+    const countryLibrary: Record<number, CountryOrders> = {};
     const historicTurn: HistoricTurn | undefined = await db.historyRepo.getHistoricTurn(gameId, turnNumber);
 
     if (!historicTurn) {
@@ -54,12 +55,11 @@ export class HistoryService {
       countryLibrary[country.countryId] = country;
       country.orders = {
         trades: {
-          tech: country.techPartnerName ? `${country.countryName} ${country.nukeRange ? 'offers nuke tech to' : 'requests nuke tech from'} ${country.techPartnerName}` : undefined,
+          tech: undefined,
           builds: []
         },
         units: [],
-        builds: [],
-        disbands: []
+        adjustments: []
       };
     });
 
@@ -70,29 +70,44 @@ export class HistoryService {
       TurnType.FALL_ORDERS,
       TurnType.FALL_RETREATS
     ].includes(historicTurn.turnType)) {
-      const unitOrdersDescriptions = await db.historyRepo.getHistoricUnitOrders(
+      const historicUnitOrders = await db.historyRepo.getHistoricUnitOrders(
+        gameId,
+        historicTurn.turnNumber > 0 ? historicTurn.turnNumber - 1 : 0,
+        historicTurn.turnId,
+        0
+      );
+
+      historicUnitOrders.forEach((unitOrder: HistoricOrder) => {
+        const orderDescription = this.setDescription(unitOrder);
+
+        const historicOrderDisplay: HistoricOrderDisplay = {
+          originProvince: unitOrder.originProvinceName,
+          description: orderDescription,
+          primaryResolution: unitOrder.primaryResolution,
+          secondaryResolution: unitOrder.secondaryResolution,
+          success: unitOrder.primaryResolution === 'Success',
+          secondarySuccess: unitOrder.secondaryResolution === 'Success'
+        };
+        const country = countryLibrary[unitOrder.countryId];
+        country.orders.units.push(historicOrderDisplay);
+      });
+    }
+
+    // Transfers
+    if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(historicTurn.turnType)) {
+      const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartners(
         gameId,
         historicTurn.turnNumber,
         historicTurn.turnId,
         0
       );
 
-      unitOrdersDescriptions.forEach((unitOrder: any) => {
-        const country = countryLibrary[unitOrder.countryId];
-        country.orders.units.push(unitOrder);
+      techTransferOrders.forEach((transferOrder: TransferTechOrder) => {
+        const country = countryLibrary[transferOrder.countryId];
+        country.orders.trades.tech = transferOrder.hasNukes
+          ? `Offers nuke tech to ${transferOrder.foreignCountryName}`
+          : `Requests nuke tech from ${transferOrder.foreignCountryName}`;
       });
-    }
-
-    // Transfers
-    if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(historicTurn.turnType)) {
-      // const techTransferOrders: TransferTechOrder[] = await db.ordersRepo.getTechTransferPartners(
-      //   gameId,
-      //   historicTurn.turnNumber,
-      //   historicTurn.turnId,
-      //   0
-      // );
-
-      // console.log(techTransferOrders);
 
       const buildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
         0,
@@ -101,7 +116,10 @@ export class HistoryService {
 
       buildTransferOrders.forEach((transferOrder: TransferBuildOrder) => {
         const country = countryLibrary[transferOrder.countryId];
-        country.orders.trades.builds.push(transferOrder);
+        country.orders.trades.builds.push({
+          recipientName: transferOrder.recipientName,
+          quantity: transferOrder.quantity
+        });
       });
     }
 
@@ -115,21 +133,33 @@ export class HistoryService {
       );
 
       buildOrders.forEach((buildOrder: BuildOrders) => {
-        const country = countryLibrary[buildOrder.countryId];
-        country.orders.builds.push(buildOrder);
+        buildOrder.builds.forEach((build: any) => {
+          if (build.buildType) {
+            const country = countryLibrary[buildOrder.countryId];
+            country.orders.adjustments.push({
+              location: build.nodeDisplay,
+              description: `Build ${build.buildType[0].toUpperCase()} ${build.nodeDisplay}`
+            });
+          }
+        });
       });
 
       const disbandOrders = await ordersService.prepareDisbandOrders(
         gameId,
-        historicTurn.turnId,
+        historicTurn.turnNumber > 0 ? historicTurn.turnNumber - 1 : 0,
         historicTurn.turnId,
         0
       );
 
-      // disbandOrders.forEach((disbandOrder: any) => {
-      //   const country = countryLibrary[disbandOrder.countryId];
-      //   country.orders.disbands.push(disbandOrder);
-      // });
+      disbandOrders.forEach((disbandOrder: any) => {
+        const country = countryLibrary[disbandOrder.countryId];
+        disbandOrder.unitDisbandingDetailed.forEach((disbandedUnit: any) => {
+          country.orders.adjustments.push({
+            location: disbandedUnit.provinceName,
+            description: `Disband ${disbandedUnit.unitType[0].toUpperCase()} ${disbandedUnit.provinceName}`
+          });
+        });
+      });
     }
 
     // Votes
@@ -137,13 +167,20 @@ export class HistoryService {
       const votes = await db.ordersRepo.getVotes(historicTurn.turnId, 0);
     }
 
-    const orderList = [];
+    const orderList: CountryOrders[] = [];
 
     for (let country in countryLibrary) {
+      countryLibrary[country].orders.units.sort((a: HistoricOrderDisplay, b: HistoricOrderDisplay) => {
+        return a.originProvince < b.originProvince ? -1 : 1;
+      });
       orderList.push(countryLibrary[country]);
     }
 
-    return <TurnHistory>{
+    orderList.sort((a: CountryOrders, b: CountryOrders) => {
+      return a.countryName < b.countryName ? -1 : 1;
+    });
+
+    return <TurnHistory> {
       orderList: orderList,
       maps: {
         orders: {
@@ -156,5 +193,31 @@ export class HistoryService {
         }
       }
     };
+  }
+
+  setDescription(order: HistoricOrder): string {
+    let description = `${order.unitType[0].toUpperCase()} ${order.originProvinceName} `;
+
+    if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(order.orderType)) {
+      description += order.orderType;
+    }
+
+    if ([OrderDisplay.MOVE, OrderDisplay.MOVE_CONVOYED].includes(order.orderType)) {
+      description += `=> ${order.destinationProvinceName}`;
+    }
+
+    if (order.orderType === OrderDisplay.SUPPORT && !order.destinationProvinceName) {
+      description += `S ${order.secondaryUnitType[0].toUpperCase()} ${order.secondaryProvinceName}`;
+    }
+
+    if ([OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(order.orderType) && order.destinationProvinceName) {
+      description += `${order.orderType[0].toUpperCase()} ${order.secondaryUnitType[0].toUpperCase()} ${order.secondaryProvinceName} => ${order.destinationProvinceName}`;
+    }
+
+    if (order.orderType === OrderDisplay.NUKE) {
+      description += `! ${order.destinationProvinceName}`;
+    }
+
+    return description;
   }
 }

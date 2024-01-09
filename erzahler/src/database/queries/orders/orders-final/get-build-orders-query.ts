@@ -10,6 +10,7 @@ export const getBuildOrdersQuery = `
         'build_type', bo.build_type,
         'node_id', n.node_id,
         'node_name', n.node_name,
+        'node_display', n.node_display,
         'province_name', p.province_name,
         'loc', n.loc
       )
