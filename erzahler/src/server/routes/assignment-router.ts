@@ -98,7 +98,7 @@ assignmentRouter.post('/assign-player', (request, response) => {
       guestAllowed: false
     },
     gameId: request.body.gameId,
-    playerId: request.body.playerId,
+    playerId: request.body.userId,
     countryId: request.body.countryId
   });
 
@@ -127,7 +127,7 @@ assignmentRouter.put('/lock-assignment', (request, response) => {
       guestAllowed: false
     },
     gameId: request.body.gameId,
-    playerId: request.body.playerId
+    playerId: request.body.userId
   });
 
   const { idToken, gameId, playerId } = validationResponse.sanitizedVariables;
@@ -150,7 +150,7 @@ assignmentRouter.put('/unlock-assignment', (request, response) => {
       guestAllowed: false
     },
     gameId: request.body.gameId,
-    playerId: request.body.playerId
+    playerId: request.body.userId
   });
 
   const { idToken, gameId, playerId } = validationResponse.sanitizedVariables;
