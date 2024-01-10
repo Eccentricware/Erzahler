@@ -7,8 +7,8 @@ import { terminalLog } from '../utils/general';
 export class MapService {
   async getMap(gameId: number, turnNumber?: number): Promise<any> {
     const gameState = await db.gameRepo.getGameState(gameId);
-    terminalLog(`map requested for ${gameState.gameName} (${gameId})`);
     const turnNumberToUse = turnNumber ? turnNumber : gameState.turnNumber;
+    terminalLog(`Map requested: ${gameState.gameName} (${gameId}-${turnNumberToUse})`);
 
     const terrain = await db.mapRepo.getTerrain(gameId, turnNumberToUse);
 

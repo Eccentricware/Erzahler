@@ -75,7 +75,8 @@ export class HistoryRepository {
             secondaryUnitType: orderResult.secondary_unit_type,
             secondaryProvinceName: orderResult.secondary_province_name,
             primaryResolution: orderResult.primary_resolution,
-            secondaryResolution: orderResult.secondary_resolution
+            secondaryResolution: orderResult.secondary_resolution,
+            secondaryUnitOrderType: orderResult.secondary_unit_order_type,
           }
         ))
       );

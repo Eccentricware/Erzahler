@@ -5,7 +5,7 @@ export const getTechTransferOrderQuery = `
     c.country_id,
     c.country_name,
     CASE
-      WHEN ch.nuke_range IS NULL THEN false
+      WHEN lch.nuke_range IS NULL THEN false
       ELSE true
     END as has_nukes,
     tt.foreign_country_id,
@@ -17,7 +17,6 @@ export const getTechTransferOrderQuery = `
   INNER JOIN order_sets os ON os.order_set_id = tt.order_set_id
   INNER JOIN countries c ON c.country_id = os.country_id
   INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
-  INNER JOIN country_histories ch ON ch.country_id = lch.country_id
   WHERE os.turn_id = $3
     AND CASE
       WHEN $4 = 0 THEN true

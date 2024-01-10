@@ -144,6 +144,7 @@ export interface BuildResult {
   build_type: BuildType;
   node_id: number;
   node_name?: string;
+  node_display?: string;
   province_name?: string;
   loc?: number[];
 }
@@ -156,6 +157,7 @@ export interface Build {
   typeId: number;
   nodeId: number;
   nodeName?: string;
+  nodeDisplay?: string;
   provinceName?: string;
   loc?: number[];
 }

@@ -76,19 +76,30 @@ export class ValidationService {
     }
 
     if (request.idToken) {
-      if (request.idToken.guestAllowed || request.idToken.value !== '') {
-        validationResponse.sanitizedVariables.idToken = String(request.idToken.value);
-      } else {
+      if (!request.idToken.value) {
         validationResponse.valid = false;
         validationResponse.errors.push('Invalid idToken');
+      } else if (request.idToken.guestAllowed || request.idToken.value !== '') {
+        validationResponse.sanitizedVariables.idToken = String(request.idToken.value);
+      } else if (!request.idToken.guestAllowed && request.idToken.value === '') {
+        validationResponse.valid = false;
+        validationResponse.errors.push('This operation does not accommodate guest users (idToken === \'\')');
       }
     }
 
     if (request.assignmentType) {
-      const assignmentType: AssignmentType | undefined =
-        AssignmentType[String(request.assignmentType) as keyof typeof AssignmentType];
-      if (assignmentType) {
-        validationResponse.sanitizedVariables.assignmentType = assignmentType;
+      // const assignmentType: AssignmentType | undefined =
+      //   AssignmentType[String(request.assignmentType) as keyof typeof AssignmentType];
+      if (
+        [
+          AssignmentType.ADMINISTRATOR,
+          AssignmentType.CREATOR,
+          AssignmentType.PLAYER,
+          AssignmentType.RESERVE,
+          AssignmentType.SPECTATOR
+        ].includes(request.assignmentType)
+      ) {
+        validationResponse.sanitizedVariables.assignmentType = request.assignmentType;
       } else {
         validationResponse.valid = false;
         validationResponse.errors.push('Invalid assignmentType');
