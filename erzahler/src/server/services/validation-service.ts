@@ -76,14 +76,14 @@ export class ValidationService {
     }
 
     if (request.idToken) {
-      if (!request.idToken.value) {
-        validationResponse.valid = false;
-        validationResponse.errors.push('Invalid idToken');
-      } else if (request.idToken.guestAllowed || request.idToken.value !== '') {
+      if (request.idToken.guestAllowed || request.idToken.value !== '') {
         validationResponse.sanitizedVariables.idToken = String(request.idToken.value);
       } else if (!request.idToken.guestAllowed && request.idToken.value === '') {
         validationResponse.valid = false;
         validationResponse.errors.push('This operation does not accommodate guest users (idToken === \'\')');
+      } else if (!request.idToken.value) {
+        validationResponse.valid = false;
+        validationResponse.errors.push('Invalid idToken');
       }
     }
 
