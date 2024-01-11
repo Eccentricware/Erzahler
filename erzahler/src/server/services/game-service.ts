@@ -482,6 +482,11 @@ export class GameService {
     if (gameData.isAdmin) {
       return await schedulerService.readyGame(gameData)
         .then((result) => result);
+    } else {
+      return {
+        success: false,
+        message: 'Non-administrator attempted to declare game ready.'
+      };
     }
   }
 }
