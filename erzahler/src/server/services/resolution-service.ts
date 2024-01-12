@@ -72,6 +72,7 @@ export class ResolutionService {
     await db.schedulerRepo
       .insertTurn(firstTurn)
       .then(async (nextTurn: Turn) => {
+        this.schedulerService.scheduleTurn(nextTurn.turnId!, nextTurn.deadline);
         await this.optionsService.saveOptionsForTurn(nextTurn);
         await db.gameRepo.setGamePlaying(gameId);
         // Alert service call

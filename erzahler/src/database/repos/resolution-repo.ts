@@ -43,7 +43,7 @@ import { updateOrderSetsQuery } from '../queries/resolution/resolve-order-sets-q
 import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
 import { getCountryUnitCityCountsQuery } from '../queries/resolution/get-country-unit-city-counts';
 import { advancePreliminaryTurnQuery } from '../queries/resolution/advance-preliminary-turn-query';
-import { terminalLog } from '../../server/utils/general';
+import { terminalAddendum, terminalLog } from '../../server/utils/general';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { updateTurnProgressQuery } from '../queries/resolution/update-turn-progress-query';
 import { Turn, TurnResult } from '../../models/objects/database-objects';
@@ -150,6 +150,11 @@ export class ResolutionRepository {
       };
     });
 
+    if (unitHistoryValues.length === 0) {
+      terminalAddendum('Warning', `Array for bulk inserting unit histories is empty. Turn ${turnId}`);
+      return;
+    }
+
     const query = this.pgp.helpers.insert(unitHistoryValues, this.unitHistoryCols);
     this.db.none(query).catch((error: Error) => {
       terminalLog('Insert Unit Histories Error: ' + error.message);
@@ -167,6 +172,11 @@ export class ResolutionRepository {
         valid_retreat: provinceHistory.validRetreat
       };
     });
+
+    if (provinceHistoryValues.length === 0) {
+      terminalAddendum('Warning', `Array for bulk inserting province histories is empty. Turn ${turnId}`);
+      return;
+    }
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
     this.db.query(query).catch((error: Error) => {
@@ -191,6 +201,11 @@ export class ResolutionRepository {
       };
     });
 
+    if (countryHistoryValues.length === 0) {
+      terminalAddendum('Warning', `Array for bulk inserting country histories is empty. Turn ${turnId}`);
+      return;
+    }
+
     const query = this.pgp.helpers.insert(countryHistoryValues, this.countryHistoryCols);
     this.db.query(query).catch((error: Error) => {
       terminalLog('Insert Country Histories Error: ' + error.message);
@@ -207,6 +222,11 @@ export class ResolutionRepository {
         valid_retreat: provinceHistory.validRetreat
       };
     });
+
+    if (provinceHistoryValues.length === 0) {
+      terminalAddendum('Warning', `Array for bulk inserting province histories for bombard restorations is empty. Turn ${turnId}`);
+      return;
+    }
 
     const query = this.pgp.helpers.insert(provinceHistoryValues, this.provinceHistoryCols);
     return this.db.query(query).catch((error: Error) => {

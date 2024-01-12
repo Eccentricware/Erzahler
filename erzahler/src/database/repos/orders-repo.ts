@@ -47,7 +47,7 @@ import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-ord
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
 import { insertBuildOrderQuery, updateBuildOrderQuery, updateBuildOrderSetQuery } from '../queries/orders/orders-final/save-build-order-query';
-import { terminalLog } from '../../server/utils/general';
+import { terminalAddendum, terminalLog } from '../../server/utils/general';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { getCountryOrderSetIdsQuery } from '../queries/orders/orders-prep/get-country-order-set-ids';
 import { NominationRow } from '../../models/objects/database-objects';
@@ -125,6 +125,12 @@ export class OrdersRepository {
       };
     });
 
+    if (orderSetValues.length === 0) {
+      terminalAddendum('Warning', `Array for bulk insert orderSetValues is empty. Turn ${nowPendingTurnId}`);
+      return [];
+    }
+
+
     const query = this.pgp.helpers.insert(orderSetValues, this.orderSetCols)
       + 'RETURNING order_set_id, country_id';
 
@@ -151,6 +157,11 @@ export class OrdersRepository {
         order_success: false
       };
     });
+
+    if (orderValues.length === 0) {
+      terminalAddendum('Warning', 'Array for bulk insert orderValues is empty.');
+      return;
+    }
 
     const query = this.pgp.helpers.insert(orderValues, this.orderCols);
     return this.db.query(query).catch((error: Error) => terminalLog('insertDefaultOrders error: ' + error.message));
@@ -591,6 +602,10 @@ export class OrdersRepository {
       };
     });
 
+    if (nominationValues.length === 0) {
+      terminalAddendum('Warning', 'Array for bulk insert nominationValues is empty. Turn ' + turnId);
+      return;
+    }
     const insertNomsQuery = this.pgp.helpers.insert(nominationValues, this.nominationCols);
     return this.db.query(insertNomsQuery)
       .catch((error: Error) => terminalLog('insertNominations error: ' + error.message));
@@ -639,6 +654,11 @@ export class OrdersRepository {
         order_set_name: null
       };
     });
+
+    if (orderSetValues.length === 0) {
+      terminalAddendum('Warning', `Array for bulk insert voting orderSetValues is empty. Turn ${turnId}`);
+      return;
+    }
 
     const query = this.pgp.helpers.insert(orderSetValues, this.orderSetCols);
     return this.db.query(query)
