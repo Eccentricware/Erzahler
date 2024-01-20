@@ -10,7 +10,7 @@ import { getUserRegistrationsQuery, registerUserQuery, reregisterUserQuery, unre
 import { unlockAssignmentQuery } from '../queries/assignments/unlock-assignment-query';
 import { getAssignmentsQuery } from '../queries/game/get-assignments-query';
 import { getGameAdminsQuery } from '../queries/game/get-game-admins-query';
-import { Assignment, AssignmentResult, UserAssignment, UserAssignmentResult } from '../../models/objects/assignment-objects';
+import { Assignment, AssignmentDetails, AssignmentDetailsResult, AssignmentResult, UserAssignment, UserAssignmentResult } from '../../models/objects/assignment-objects';
 import { getPlayerIsCountryQuery } from '../queries/assignments/get-player-is-country-query';
 import { terminalLog } from '../../server/utils/general';
 
@@ -32,15 +32,27 @@ export class AssignmentRepository {
       });
   }
 
-  async getAssignments(gameId: number, userId: number): Promise<any> {
+  async getAssignments(gameId: number, userId: number): Promise<AssignmentDetails[]> {
     return await this.pool
       .query(getAssignmentsQuery, [gameId, userId])
-      .then((assignmentDataResults: QueryResult<any>) => {
-        return assignmentDataResults.rows.map((assignment: any) =>
-          this.formattingService.convertKeysSnakeToCamel(assignment)
-        );
+      .then((assignmentDataResults: QueryResult<AssignmentDetailsResult>) => {
+        return assignmentDataResults.rows.map((assignment: AssignmentDetailsResult) => (
+          <AssignmentDetails> {
+            assignmentId: assignment.assignment_id,
+            countryId: assignment.country_id,
+            countryName: assignment.country_name,
+            rank: assignment.rank,
+            playerId: assignment.player_id,
+            username: assignment.username,
+            assignmentStatus: assignment.assignment_status,
+            contactPreferences: assignment.contact_preferences ? assignment.contact_preferences[0] : null
+          }
+        ));
       })
-      .catch((error: Error) => console.log('Get Assignment Data Results Error: ' + error.message));
+      .catch((error: Error) => {
+        terminalLog('Get Assignment Data Results Error: ' + error.message)
+        return [];
+      });
   }
 
   async saveRegisterUser(gameId: number, userId: number, assignmentType: string): Promise<any> {

@@ -46,4 +46,5 @@ export interface GameDetailsQueryObject {
   skill_min: number;
   skill_max: number;
   display_as_admin: boolean;
+  ready_time: string;
 }

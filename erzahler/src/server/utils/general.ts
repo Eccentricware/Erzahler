@@ -48,3 +48,11 @@ export const formatTurnName = (turnType: TurnType, yearStylized: number): string
   const turnTypeSplit = turnType.split(' ');
   return `${turnTypeSplit[0]} ${yearStylized} ${turnTypeSplit[1]}`;
 };
+
+export const titleCase = (text: string): string => {
+  const splitText = text.split(' ');
+  const titleCaseText = splitText.map((word: string) => {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  });
+  return titleCaseText.join(' ');
+}

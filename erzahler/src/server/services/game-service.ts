@@ -351,8 +351,8 @@ export class GameService {
   async getGameData(idToken: string, gameId: number): Promise<any> {
     const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
-    const formattingService: FormattingService = new FormattingService();
-    const pool: Pool = new Pool(envCredentials);
+    // const formattingService: FormattingService = new FormattingService();
+    // const pool: Pool = new Pool(envCredentials);
     let userId = 0;
     let username = 'Guest';
     let userTimeZone = 'Africa/Monrovia';

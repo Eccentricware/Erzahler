@@ -7,6 +7,7 @@ import {
   AccountsUserRow,
   AccountsUserRowResult,
   AddUserArgs,
+  ContactPreferences,
   UserProfile,
   UserProfileResult
 } from '../../models/objects/user-profile-object';
@@ -25,7 +26,7 @@ import { getAccountsProviderRowQuery } from '../queries/dashboard/get-accounts-p
 import { insertProviderFromAccountsQuery } from '../queries/accounts/insert-provider-from-accounts-query';
 import { NewUser, NewUserResult } from '../../models/objects/new-user-objects';
 import { createEnvironmentProviderQuery } from '../queries/accounts/create-environment-provider-query';
-import { insertUserSettingsQuery } from '../queries/accounts/insert-user-settings-query';
+import { insertUserContactPreferencesQuery, insertUserSettingsQuery } from '../queries/accounts/insert-user-settings-query';
 import { insertUserDetailsQuery } from '../queries/accounts/insert-user-details-query';
 import { updateUserSettingsQuery } from '../queries/dashboard/update-user-query';
 import { CustomException } from '../../models/objects/exception-objects';
@@ -114,6 +115,21 @@ export class AccountsRepository {
       });
   }
 
+  /**
+   * Deprecated Immediately. May still be used in the future.
+   * @param newUser
+   */
+  async createUserContactPreferences(newUser: NewUser): Promise<void> {
+    await this.pool
+      .query(insertUserContactPreferencesQuery, [newUser.userId])
+      .then((result: any) => {
+        console.log(`Add user contact preferences success:`, Boolean(result.rowCount));
+      })
+      .catch((error: Error) => {
+        console.log('Create Environment User Contact Preferences Query Error:', error.message);
+      });
+  }
+
   async createAccountProvider(providerArgs: any): Promise<number> {
     return await this.accountPool
       .query(createAccountProviderQuery, providerArgs)
@@ -167,7 +183,16 @@ export class AccountsRepository {
             emailVerified: userProfileResult.email_verified,
             verificationDeadline: userProfileResult.verification_deadline,
             timeZone: userProfileResult.time_zone,
-            meridiemTime: userProfileResult.meridiem_time
+            meridiemTime: userProfileResult.meridiem_time,
+            contactPreferences: {
+              preferredMethod: userProfileResult.preferred_method,
+              email: userProfileResult.contact_email,
+              discord: userProfileResult.contact_discord,
+              slack: userProfileResult.contact_slack,
+              inGame: userProfileResult.contact_in_game,
+              otherMethod: userProfileResult.other_contact_method,
+              otherHandle: userProfileResult.other_contact_handle
+            }
           };
         });
       })
@@ -327,9 +352,26 @@ export class AccountsRepository {
       });
   }
 
-  async updatePlayerSettings(timeZone: string, meridiemTime: boolean, userId: number, username: string) {
+  async updatePlayerSettings(
+    timeZone: string,
+    meridiemTime: boolean,
+    userId: number,
+    username: string,
+    contactPreferences: ContactPreferences
+  ) {
     return await this.pool
-      .query(updateUserSettingsQuery, [timeZone, meridiemTime, userId])
+      .query(updateUserSettingsQuery, [
+        timeZone,
+        meridiemTime,
+        contactPreferences.preferredMethod,
+        contactPreferences.email,
+        contactPreferences.discord,
+        contactPreferences.slack,
+        contactPreferences.inGame,
+        contactPreferences.otherMethod,
+        contactPreferences.otherHandle,
+        userId
+      ])
       .then(() => {
         return {
           username: username,
