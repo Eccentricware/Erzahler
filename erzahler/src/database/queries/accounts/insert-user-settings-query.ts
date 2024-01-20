@@ -5,3 +5,11 @@ export const insertUserSettingsQuery = `
     $1
   );
 `;
+
+export const insertUserContactPreferencesQuery = `
+  INSERT INTO user_contact_preferences (
+    user_id
+  ) VALUES (
+    $1
+  );
+`;

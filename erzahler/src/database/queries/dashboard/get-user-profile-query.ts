@@ -23,7 +23,14 @@ export const getUserProfileQuery = `
     p.provider_id as "provider_type",
     p.email,
     p.email_verified,
-    p.verification_deadline
+    p.verification_deadline,
+    us.preferred_contact_method,
+    us.contact_email,
+    us.contact_discord,
+    us.contact_slack,
+    us.contact_in_game,
+    us.other_contact_method,
+    us.other_contact_handle
   FROM users u
   INNER JOIN providers p ON u.user_id = p.user_id
   INNER JOIN user_settings us ON us.user_id = u.user_id

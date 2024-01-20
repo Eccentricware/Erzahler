@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import { AssignmentStatus } from '../enumeration/assignment-status-enum';
 import { AssignmentType } from '../enumeration/assignment-type-enum';
 import { as } from 'pg-promise';
+import { ContactPreferences } from './user-profile-object';
 
 export interface AssignmentDataObject {
   gameId: number;
@@ -60,4 +61,26 @@ export interface Assignment {
   assignmentEnd: string | Date | DateTime | undefined;
   countryId: number | undefined;
   gameId: number;
+}
+
+export interface AssignmentDetailsResult {
+  assignment_id: number;
+  country_id: number;
+  country_name: string;
+  rank: string;
+  player_id: number;
+  username: string;
+  assignment_status: string;
+  contact_preferences: ContactPreferences[];
+}
+
+export interface AssignmentDetails {
+  assignmentId: number;
+  countryId: number;
+  countryName: string;
+  rank: string;
+  playerId: number;
+  username: string;
+  assignmentStatus: string;
+  contactPreferences: ContactPreferences;
 }

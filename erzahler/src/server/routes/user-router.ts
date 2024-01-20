@@ -104,11 +104,31 @@ userRouter.post('/add-provider', (request, response) => {
 });
 
 userRouter.put('/update-settings', (request, response) => {
-  const idToken = request.headers.idtoken;
   const data = request.body;
 
+  if (!data) {
+    terminalLog(`Update User Profile Controller Error: No data received`);
+    response.send({ error: 'Update User Profile Controller Error: No data received' });
+    return;
+  }
+
+  const validationResponse = validationService.validateRequest({
+    route: `users/update-settings`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    }
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const idToken = validationResponse.sanitizedVariables.idToken;
+
   accountService
-    .updateUserSettings(<string>idToken, data)
+    .updateUserSettings(idToken!, data)
     .then((result: any) => {
       terminalLog(`Profile Updated: ${result.username}`);
       response.send({ success: true });

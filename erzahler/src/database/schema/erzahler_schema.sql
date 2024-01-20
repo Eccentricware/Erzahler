@@ -76,8 +76,8 @@ CREATE TABLE IF NOT EXISTS coalition_schedules(
   coalition_schedule_id SERIAL,
   game_id INTEGER NOT NULL,
   base_percent INTEGER DEFAULT 50, -- Math.floor(n * 100/[50]) + 1
-  base_adjust INTEGER DEFAULT 1,   -- Math.floor(n * 100/50) + [1]
-  base_final INTEGER, -- Counts from provinces table
+  base_adjust INTEGER DEFAULT 0,   -- Math.floor(n * 100/50) + [1]
+  base_final INTEGER 41, -- Math.ciel(n / 2)
   total_possible INTEGER,
   penalty_a INTEGER DEFAULT 9,
   penalty_b INTEGER DEFAULT 6,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS coalition_schedules(
   penalty_e INTEGER DEFAULT 0,
   penalty_f INTEGER DEFAULT NULL,
   penalty_g INTEGER DEFAULT NULL,
-  highest_ranked VARCHAR(3) DEFAULT 'ABB',
+  highest_ranked VARCHAR(3) DEFAULT 'ABB', --Maybe more than 1 A or only 1 B, etc...
   highest_ranked_req INTEGER,
   all_votes_controlled BOOLEAN DEFAULT false,
   PRIMARY KEY (coalition_schedule_id),
@@ -402,10 +402,18 @@ CREATE TABLE IF NOT EXISTS user_settings(
   display_presence BOOLEAN NOT NULL DEFAULT false,
   display_real_name BOOLEAN DEFAULT false,
   real_name VARCHAR(64),
+  preferred_method VARCHAR(15),
+  contact_email VARCHAR(50),
+  contact_discord VARCHAR(50),
+  contact_slack VARCHAR(50),
+  contact_in_game boolean,
+  other_contact_method VARCHAR(15),
+  other_contact_handle VARCHAR(50),
   PRIMARY KEY(user_settings_id),
   FOREIGN KEY(user_id)
     REFERENCES users(user_id)
 );
+
 \echo 'Attempting to create user_details table'
 CREATE TABLE IF NOT EXISTS user_details(
   user_details_id SERIAL,
@@ -425,6 +433,22 @@ CREATE TABLE IF NOT EXISTS user_details(
   FOREIGN KEY(user_id)
     REFERENCES users(user_id)
 );
+
+-- \echo 'Attempting to create user_contact_preferences table'
+-- CREATE TABLE IF NOT EXISTS user_contact_preferences(
+--   user_contact_preferences_id SERIAL,
+--   user_id INTEGER NOT NULL,
+--   preferred_method VARCHAR(15),
+--   email VARCHAR(50),
+--   discord VARCHAR(50),
+--   slack VARCHAR(50),
+--   in_game boolean,
+--   other VARCHAR(50),
+--   other_handle VARCHAR(50),
+--   PRIMARY KEY(user_contact_preferences_id),
+--   FOREIGN KEY(user_id)
+--     REFERENCES users(user_id)
+-- );
 
 \echo 'Attempting to create providers table'
 CREATE TABLE IF NOT EXISTS providers(

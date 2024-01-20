@@ -69,6 +69,7 @@ export class AccountService {
     await db.accountsRepo.createEnvironmentUser(newUser);
     await db.accountsRepo.createUserDetails(newUser, userArgs.userStatus);
     await db.accountsRepo.createUserSettings(newUser);
+    // await db.accountsRepo.createUserContactPreferences(newUser); // Possibly used in the future
 
     const providerArgs = this.createProviderArgs(newUser.userId, firebaseUser);
 
@@ -221,6 +222,7 @@ export class AccountService {
         await db.accountsRepo.insertProvidersFromBackup(missingProviders);
         await db.accountsRepo.createUserDetails(user, 'active');
         await db.accountsRepo.createUserSettings(user);
+        // await db.accountsRepo.createUserContactPreferences(user); // Possibly used in the future
       }
       return true;
     } else {
@@ -273,7 +275,8 @@ export class AccountService {
           data.timeZone,
           data.meridiemTime,
           blitzkarteUser.userId,
-          blitzkarteUser.username
+          blitzkarteUser.username,
+          data.contactPreferences
         );
       }
     }
