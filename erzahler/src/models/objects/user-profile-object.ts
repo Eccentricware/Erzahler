@@ -94,7 +94,7 @@ export interface UserProfileResult {
   email: string;
   email_verified: boolean;
   verification_deadline: Date | string | undefined;
-  preferred_method: string;
+  preferred_contact_method: string;
   contact_email: string;
   contact_discord: string;
   contact_slack: string;
