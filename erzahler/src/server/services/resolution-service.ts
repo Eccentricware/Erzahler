@@ -47,6 +47,7 @@ import { GameService } from './game-service';
 import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
 import { OrdersService } from './orders-service';
+import { CountryStatus } from '../../models/enumeration/country-enum';
 
 export class ResolutionService {
   optionsService: OptionsService = new OptionsService();
@@ -303,6 +304,9 @@ export class ResolutionService {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
+          if (countryHistory.cityCount === 0 && countryHistory.unitCount === 0 && countryHistory.voteCount === 1) {
+            countryHistory.countryStatus = CountryStatus.ELIMINATED;
+          }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });
@@ -455,6 +459,9 @@ export class ResolutionService {
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
           countryHistory.inRetreat = false;
+          if (countryHistory.cityCount === 0 && countryHistory.unitCount === 0 && countryHistory.voteCount === 1) {
+            countryHistory.countryStatus = CountryStatus.ELIMINATED;
+          }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });
@@ -615,6 +622,9 @@ export class ResolutionService {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
+          if (countryHistory.cityCount === 0 && countryHistory.unitCount === 0 && countryHistory.voteCount === 1) {
+            countryHistory.countryStatus = CountryStatus.ELIMINATED;
+          }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });
@@ -770,6 +780,9 @@ export class ResolutionService {
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
           countryHistory.inRetreat = false;
+          if (countryHistory.cityCount === 0 && countryHistory.unitCount === 0 && countryHistory.voteCount === 1) {
+            countryHistory.countryStatus = CountryStatus.ELIMINATED;
+          }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });
