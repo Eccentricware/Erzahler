@@ -32,7 +32,7 @@ export const getCountryUnitCityCountsQuery = `
       )
     GROUP BY lph.controller_id
   ), occupying_country_id AS (
-    SELECT p.country_id,
+    SELECT p.capital_owner_id,
       lph.controller_id AS occupying_country_id
     FROM get_last_province_history($1, $2) lph
     INNER JOIN provinces p ON p.province_id = lph.province_id
@@ -49,6 +49,6 @@ export const getCountryUnitCityCountsQuery = `
   INNER JOIN unit_counts uc ON uc.country_id = c.country_id
   INNER JOIN city_counts cc ON cc.controller_id = c.country_id
   INNER JOIN vote_counts vc ON vc.controller_id = c.country_id
-  INNER JOIN occupying_country_id oc ON oc.country_id = c.country_id
+  INNER JOIN occupying_country_id oc ON oc.capital_owner_id = c.country_id
   ORDER BY c.country_id;
 `;
