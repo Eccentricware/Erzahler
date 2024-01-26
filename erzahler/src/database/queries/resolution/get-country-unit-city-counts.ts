@@ -30,7 +30,7 @@ export const getCountryUnitCityCountsQuery = `
           OR
         (p.city_type = 'capital' AND lch.country_status = 'eliminated')
       )
-    GROUP BY ph.controller_id
+    GROUP BY lph.controller_id
   ), occupying_country_id AS (
     SELECT p.country_id,
       lph.controller_id AS occupying_country_id
