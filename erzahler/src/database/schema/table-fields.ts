@@ -348,6 +348,7 @@ export interface CountryStatCountsResult {
   unit_count: number;
   city_count: number;
   vote_count: number;
+  occupying_country_id: number;
 }
 
 export interface CountryStatCounts {
@@ -355,6 +356,7 @@ export interface CountryStatCounts {
   unitCount: number;
   cityCount: number;
   voteCount: number;
+  occupyingCountryId: number;
 }
 
 export interface InitialUnit {

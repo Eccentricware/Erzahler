@@ -508,7 +508,8 @@ export class ResolutionRepository {
             countryId: country.country_id,
             cityCount: country.city_count,
             unitCount: country.unit_count,
-            voteCount: country.vote_count
+            voteCount: country.vote_count,
+            occupyingCountryId: country.occupying_country_id
           };
         })
       );
