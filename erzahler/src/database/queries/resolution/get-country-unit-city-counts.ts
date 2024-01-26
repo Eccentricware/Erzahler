@@ -32,7 +32,7 @@ export const getCountryUnitCityCountsQuery = `
   SELECT c.country_id,
     uc.unit_count + lch.nukes_in_production AS unit_count,
     cc.city_count,
-    cc.city_count - uc.unit_count - lch.nukes_in_production AS adjustments
+    cc.city_count - uc.unit_count - lch.nukes_in_production AS adjustments,
     vc.vote_count
   FROM countries c
   INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
