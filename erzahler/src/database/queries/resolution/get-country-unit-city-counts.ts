@@ -36,7 +36,7 @@ export const getCountryUnitCityCountsQuery = `
       lph.controller_id AS occupying_country_id
     FROM get_last_province_history($1, $2) lph
     INNER JOIN provinces p ON p.province_id = lph.province_id
-    WHERE p.city_type = 'capital' AND p.capital_owner_id = c.controller_id
+    WHERE p.city_type = 'capital' AND p.capital_owner_id = lch.controller_id
   )
   SELECT c.country_id,
     uc.unit_count + lch.nukes_in_production AS unit_count,
