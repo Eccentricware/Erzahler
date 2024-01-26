@@ -506,8 +506,9 @@ export class ResolutionRepository {
         result.rows.map((country: CountryStatCountsResult) => {
           return <CountryStatCounts>{
             countryId: country.country_id,
-            cityCount: Number(country.city_count),
-            unitCount: Number(country.unit_count)
+            cityCount: country.city_count,
+            unitCount: country.unit_count,
+            voteCount: country.vote_count
           };
         })
       );
