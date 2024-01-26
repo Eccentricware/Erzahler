@@ -23,7 +23,10 @@ export const getCountryUnitCityCountsQuery = `
     INNER JOIN get_last_province_history($1, $2) lph
       ON lph.province_id = ph.province_id AND lph.turn_id = ph.turn_id
     WHERE ph.province_status IN ('active', 'bombarded', 'nuked')
-      AND p.city_type IN ('vote', 'capital')
+      AND (
+        p.city_type = 'vote' OR
+        (p.city_type = 'capital' AND p.capital_owner_id = ph.controller_id)
+      )
     GROUP BY ph.controller_id
   )
   SELECT c.country_id,
