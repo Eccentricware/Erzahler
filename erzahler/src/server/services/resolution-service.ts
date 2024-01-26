@@ -780,7 +780,7 @@ export class ResolutionService {
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
           countryHistory.inRetreat = false;
-          if (countryHistory.cityCount === 0 && countryHistory.unitCount === 0 && countryHistory.voteCount === 1) {
+          if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
             countryHistory.countryStatus = CountryStatus.ELIMINATED;
           }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
