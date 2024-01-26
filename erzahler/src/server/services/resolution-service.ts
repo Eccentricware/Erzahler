@@ -304,8 +304,21 @@ export class ResolutionService {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
-          if (countryHistory.cityCount === 0 && countryHistory.unitCount === 0 && countryHistory.voteCount === 1) {
+          if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
             countryHistory.countryStatus = CountryStatus.ELIMINATED;
+            let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
+            if (!occupyingCountryHistory) {
+              const occupyingCountryHistoryRow = dbStates.countryHistories.find(
+                (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+              );
+
+              if (occupyingCountryHistoryRow) {
+                occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
+              }
+            }
+
+            occupyingCountryHistory!.voteCount++;
+            dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
           }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
@@ -459,8 +472,21 @@ export class ResolutionService {
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
           countryHistory.inRetreat = false;
-          if (countryHistory.cityCount === 0 && countryHistory.unitCount === 0 && countryHistory.voteCount === 1) {
+          if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
             countryHistory.countryStatus = CountryStatus.ELIMINATED;
+            let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
+            if (!occupyingCountryHistory) {
+              const occupyingCountryHistoryRow = dbStates.countryHistories.find(
+                (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+              );
+
+              if (occupyingCountryHistoryRow) {
+                occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
+              }
+            }
+
+            occupyingCountryHistory!.voteCount++;
+            dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
           }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
@@ -622,8 +648,21 @@ export class ResolutionService {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
           countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
-          if (countryHistory.cityCount === 0 && countryHistory.unitCount === 0 && countryHistory.voteCount === 1) {
+          if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
             countryHistory.countryStatus = CountryStatus.ELIMINATED;
+            let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
+            if (!occupyingCountryHistory) {
+              const occupyingCountryHistoryRow = dbStates.countryHistories.find(
+                (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+              );
+
+              if (occupyingCountryHistoryRow) {
+                occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
+              }
+            }
+
+            occupyingCountryHistory!.voteCount++;
+            dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
           }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
@@ -782,6 +821,19 @@ export class ResolutionService {
           countryHistory.inRetreat = false;
           if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
             countryHistory.countryStatus = CountryStatus.ELIMINATED;
+            let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
+            if (!occupyingCountryHistory) {
+              const occupyingCountryHistoryRow = dbStates.countryHistories.find(
+                (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+              );
+
+              if (occupyingCountryHistoryRow) {
+                occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
+              }
+            }
+
+            occupyingCountryHistory!.voteCount++;
+            dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
           }
           dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
