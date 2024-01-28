@@ -512,7 +512,11 @@ export class ResolutionRepository {
             occupyingCountryId: country.occupying_country_id
           };
         })
-      );
+      )
+      .catch((error: Error) => {
+        terminalLog('Get Country Stat Counts Error: ' + error.message);
+        return [];
+      });
   }
 
   async getAdjResolutionData(gameId: number, turnNumber: number, orderSetTurnId: number): Promise<AdjResolutionData[]> {
