@@ -4,17 +4,21 @@ export const getBuildOrdersQuery = `
     c.country_name,
     ch.banked_builds,
     ch.adjustments builds,
-    json_agg(
-      json_build_object(
-        'build_number', bo.build_number,
-        'build_type', bo.build_type,
-        'node_id', n.node_id,
-        'node_name', n.node_name,
-        'node_display', n.node_display,
-        'province_name', p.province_name,
-        'loc', n.loc
-      )
-    ) AS builds,
+    CASE
+      WHEN lch.adjustments > 0 THEN
+        json_agg(
+          json_build_object(
+            'build_number', bo.build_number,
+            'build_type', bo.build_type,
+            'node_id', n.node_id,
+            'node_name', n.node_name,
+            'node_display', n.node_display,
+            'province_name', p.province_name,
+            'loc', n.loc
+          )
+        )
+      ELSE NULL
+    END AS builds,
     ch.nuke_range,
     os.increase_range
   FROM order_sets os
