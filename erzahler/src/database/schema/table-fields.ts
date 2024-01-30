@@ -269,6 +269,7 @@ export interface UnitHistoryRowResult {
   turn_id?: number;
   node_id: number;
   unit_status: UnitStatus;
+  displacer_province_id?: number;
 }
 
 export interface UnitHistoryRow {
@@ -277,13 +278,13 @@ export interface UnitHistoryRow {
   turnId?: number;
   nodeId: number;
   unitStatus: UnitStatus;
+  displacerProvinceId?: number;
 }
 
 export interface ProvinceHistoryRowResult {
   province_id: number;
   turn_id?: number;
   controller_id: number | null;
-  capital_owner_id: number | null;
   province_status: ProvinceStatus;
   valid_retreat: boolean;
 }
@@ -298,6 +299,7 @@ export interface ProvinceHistoryRow {
 }
 
 export interface CountryHistoryRowResult {
+  turn_id: number | undefined;
   country_id: number;
   country_status: CountryStatus;
   city_count: number;
@@ -311,7 +313,7 @@ export interface CountryHistoryRowResult {
 }
 
 export interface CountryHistoryRow {
-  turnId: number;
+  turnId: number | undefined;
   countryId: number;
   countryStatus: CountryStatus;
   cityCount: number;

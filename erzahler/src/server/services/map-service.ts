@@ -1,4 +1,5 @@
 import { db } from '../../database/connection';
+import { CityType } from '../../models/enumeration/province-enums';
 import { RenderCategory } from '../../models/enumeration/render-category-enum';
 import { City, Terrain } from '../../models/objects/map-objects';
 import { terminalLog } from '../utils/general';
@@ -17,8 +18,13 @@ export class MapService {
 
     const cities = await db.mapRepo.getCities(gameId, gameState.turnNumber);
 
-    const supplyCenters = cities.filter((city: City) => city.voteColor === null);
-    const votingCenters = cities.filter((city: City) => city.voteColor !== null);
+    const supplyCenters = cities.filter((city: City) =>
+      city.type === CityType.SUPPLY && ['active', 'dormant'].includes(city.status)
+    );
+
+    const votingCenters = cities.filter((city: City) =>
+      [CityType.VOTE, CityType.CAPITAL].includes(city.type)
+    );
 
     const labels = await db.mapRepo.getLabels(gameId);
     const labelLines = await db.mapRepo.getLabelLines(gameId);

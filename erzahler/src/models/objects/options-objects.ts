@@ -1,3 +1,5 @@
+import { TurnStatus } from '../enumeration/turn-status-enum';
+import { TurnType } from '../enumeration/turn-type-enum';
 import {
   BuildLoc,
   DisbandOptions,
@@ -11,50 +13,43 @@ export interface OptionsFinal {
   playerId: number;
   countryId: number;
   countryName: string;
-  pending?: {
-    id?: number;
-    name?: string;
-    deadline?: Date | string;
-  };
-  preliminary?: {
-    id?: number;
-    name?: string;
-    deadline?: Date | string;
-  };
-  units?: {
-    turnStatus: string;
-    options: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)}
-  };
+  message?: string;
+  pending?: SpecificTurnOptions;
+  preliminary?: SpecificTurnOptions;
+  finale?: FinaleDetails;
+}
+
+interface SpecificTurnOptions {
+  id: number;
+  name: string;
+  status: TurnStatus;
+  deadline: Date | string;
+  applicable: boolean;
+  message?: string;
+  units?: UnitOptionsFinalized[]; // If (spring orders/retreats or fall orders/retreats)}
   buildTransfers?: {
-    turnStatus: string;
     options: TransferCountry[];
     builds: number;
   };
-  offerTechOptions?: {
-    turnStatus: string;
-    options: TransferTechCountry[];
-  };
-  receiveTechOptions?: {
-    turnStatus: string;
-    options: TransferTechCountry[];
-  };
+  offerTechOptions?: TransferTechCountry[];
+  receiveTechOptions?: TransferTechCountry[];
   builds?: {
-    turnStatus: string;
     builds: number;
     locations: BuildOptions;
   };
-  disbands?: {
-    turnStatus: string;
-    options: DisbandOptions;
-  };
-  nominations?: {
-    turnStatus: string;
-    options: NominationOptions;
-  };
-  votes?: {
-    turnStatus: string;
-    options: VotingOptions;
-  };
+  disbands?: DisbandOptions;
+  nominations?: NominationOptions;
+  votes?: VotingOptions;
+}
+
+interface FinaleDetails {
+
+}
+
+export interface TransferBuildsOption {
+  countryId: number;
+  countryName: string;
+  builds: number;
 }
 
 export interface BuildOptions {

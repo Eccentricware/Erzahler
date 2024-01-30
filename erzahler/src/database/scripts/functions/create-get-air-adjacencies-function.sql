@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/scripts/create-get-air-adjacencies-function.sql
+--sudo -u postgres psql < database/scripts/functions/create-get-air-adjacencies-function.sql
 
 \c erzahler_dev;
 \echo 'Attempting to create get_air_adjacencies function'

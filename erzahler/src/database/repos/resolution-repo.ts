@@ -39,6 +39,9 @@ import { resolveTurnQuery } from '../queries/resolution/resolve-turn-query';
 import { getCountryUnitCityCountsQuery } from '../queries/resolution/get-country-unit-city-counts';
 import { advancePreliminaryTurnQuery } from '../queries/resolution/advance-preliminary-turn-query';
 import { terminalLog } from '../../server/utils/general';
+import { TurnStatus } from '../../models/enumeration/turn-status-enum';
+import { updateTurnProgressQuery } from '../queries/resolution/update-turn-progress-query';
+import { Turn, TurnResult } from '../../models/objects/database-objects';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -48,13 +51,14 @@ export class ResolutionRepository {
 
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.provinceHistoryCols = new pgp.helpers.ColumnSet(
-      ['province_id', 'turn_id', 'controller_id', 'capital_owner_id', 'province_status', 'valid_retreat'],
+      ['province_id', 'turn_id', 'controller_id', 'province_status', 'valid_retreat'],
       { table: 'province_histories' }
     );
 
-    this.unitHistoryCols = new pgp.helpers.ColumnSet(['unit_id', 'turn_id', 'node_id', 'unit_status'], {
-      table: 'unit_histories'
-    });
+    this.unitHistoryCols = new pgp.helpers.ColumnSet(
+      ['unit_id', 'turn_id', 'node_id', 'unit_status', 'displacer_province_id'],
+      { table: 'unit_histories' }
+    );
 
     this.countryHistoryCols = new pgp.helpers.ColumnSet(
       [
@@ -99,7 +103,8 @@ export class ResolutionRepository {
         unit_id: unitHistory.unitId,
         turn_id: turnId,
         node_id: unitHistory.nodeId,
-        unit_status: unitHistory.unitStatus
+        unit_status: unitHistory.unitStatus,
+        displacer_province_id: unitHistory.displacerProvinceId
       };
     });
 
@@ -156,7 +161,6 @@ export class ResolutionRepository {
         province_id: provinceHistory.provinceId,
         turn_id: turnId,
         controller_id: provinceHistory.controllerId,
-        capital_owner_id: provinceHistory.capitalOwnerId,
         province_status: provinceHistory.provinceStatus,
         valid_retreat: provinceHistory.validRetreat
       };
@@ -210,8 +214,9 @@ export class ResolutionRepository {
               provinceId: order.province_id,
               provinceName: order.province,
               provinceType: order.province_type,
+              eventNodeId: order.event_node_id,
               display: order.destination_display,
-              voteType: order.vote_type,
+              cityType: order.city_type,
               provinceStatus: order.province_status,
               controllerId: order.controller_id,
               capitalOwnerId: order.capital_owner_id,
@@ -220,6 +225,7 @@ export class ResolutionRepository {
             secondaryUnit: {
               id: order.secondary_unit_id,
               type: order.secondary_unit_type,
+              status: order.secondary_unit_status,
               countryId: order.secondary_country_id,
               country: order.secondary_country,
               provinceName: order.secondary_unit_province,
@@ -232,7 +238,7 @@ export class ResolutionRepository {
               provinceName: order.destination_province_name,
               provinceType: order.destination_province_type,
               display: order.destination_display,
-              voteType: order.destination_vote_type,
+              cityType: order.destination_city_type,
               provinceStatus: order.destination_province_status,
               controllerId: order.destination_controller_id,
               capitalOwnerId: order.destination_capital_owner_id,
@@ -339,7 +345,7 @@ export class ResolutionRepository {
             provinceName: garrison.province,
             provinceType: garrison.province_type,
             display: garrison.destination_province_name,
-            voteType: garrison.vote_type,
+            cityType: garrison.city_type,
             provinceStatus: garrison.province_status,
             controllerId: garrison.controller_id,
             capitalOwnerId: garrison.capital_owner_id,
@@ -348,6 +354,7 @@ export class ResolutionRepository {
           secondaryUnit: {
             id: garrison.secondary_unit_id,
             type: garrison.secondary_unit_type,
+            status: garrison.secondary_unit_status,
             countryId: garrison.secondary_country_id,
             country: garrison.secondary_country,
             provinceName: garrison.secondary_unit_province,
@@ -360,7 +367,7 @@ export class ResolutionRepository {
             provinceName: garrison.destination_province_name,
             provinceType: garrison.destination_province_type,
             display: garrison.destination_province_name,
-            voteType: garrison.destination_vote_type,
+            cityType: garrison.destination_city_type,
             provinceStatus: garrison.destination_province_status,
             controllerId: garrison.destination_controller_id,
             capitalOwnerId: garrison.destination_capital_owner_id,
@@ -389,19 +396,46 @@ export class ResolutionRepository {
     await this.pool.query(resolveTurnQuery, [turnId]);
   }
 
+  async updateTurnProgress(turnId: number, newStatus: TurnStatus): Promise<Turn> {
+    const updatedTurns = await this.pool.query(updateTurnProgressQuery, [newStatus, turnId])
+      .then((result: QueryResult) =>
+        result.rows.map((updatedTurn: TurnResult) => {
+          return <Turn>{
+            turnId: updatedTurn.turn_id,
+            gameId: updatedTurn.game_id,
+            turnNumber: updatedTurn.turn_number,
+            turnName: updatedTurn.turn_name,
+            turnType: updatedTurn.turn_type,
+            turnStatus: updatedTurn.turn_status,
+            yearNumber: updatedTurn.year_number,
+            deadline: updatedTurn.deadline
+          };
+        })
+      )
+
+    return updatedTurns[0];
+  }
+
   async advancePreliminaryTurn(turnId: number): Promise<void> {
     await this.pool.query(advancePreliminaryTurnQuery, [turnId]);
   }
 
+  /**
+   * This is deprecated and is being moved to another repo
+   * @param gameId
+   * @param turnNumber
+   * @returns
+   */
   async getCountryStatCounts(gameId: number, turnNumber: number): Promise<CountryStatCounts[]> {
-    return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber]).then((result: QueryResult) =>
-      result.rows.map((country: CountryStatCountsResult) => {
-        return <CountryStatCounts>{
-          countryId: country.country_id,
-          cityCount: Number(country.city_count),
-          unitCount: Number(country.unit_count)
-        };
-      })
-    );
+    return await this.pool.query(getCountryUnitCityCountsQuery, [gameId, turnNumber])
+      .then((result: QueryResult) =>
+        result.rows.map((country: CountryStatCountsResult) => {
+          return <CountryStatCounts>{
+            countryId: country.country_id,
+            cityCount: Number(country.city_count),
+            unitCount: Number(country.unit_count)
+          };
+        })
+      );
   }
 }

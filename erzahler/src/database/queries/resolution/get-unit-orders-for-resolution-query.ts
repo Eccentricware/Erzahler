@@ -20,13 +20,15 @@ export const getUnitOrdersForResolutionQuery = `
     p.province_id,
     p.province_name province,
     p.province_type,
-    p.vote_type,
+    en.node_id event_node_id,
+    p.city_type,
     ph.province_status,
     ph.controller_id,
-    ph.capital_owner_id,
+    p.capital_owner_id,
     o.secondary_unit_id,
     su.unit_type secondary_unit_type,
     su.country_id secondary_country_id,
+    suh.unit_status secondary_unit_status,
     sc.country_name secondary_country,
     sp.province_name secondary_unit_province,
     so.order_type secondary_unit_order_type,
@@ -37,9 +39,9 @@ export const getUnitOrdersForResolutionQuery = `
     dp.province_name destination_province_name,
     dph.province_status destination_province_status,
     dp.province_type destination_province_type,
-    dp.vote_type destination_vote_type,
+    dp.city_type destination_city_type,
     dph.controller_id destination_controller_id,
-    dph.capital_owner_id destination_capital_owner_id
+    dp.capital_owner_id destination_capital_owner_id
   FROM order_sets os
   INNER JOIN orders o ON o.order_set_id = os.order_set_id
   INNER JOIN units u ON u.unit_id = o.ordered_unit_id
@@ -52,6 +54,7 @@ export const getUnitOrdersForResolutionQuery = `
   INNER JOIN province_histories ph ON ph.province_id = p.province_id
   INNER JOIN get_last_province_history($1, $2) lph
     ON lph.province_id = ph.province_id AND lph.turn_id = ph.turn_id
+  INNER JOIN nodes en ON en.province_id = p.province_id AND en.node_type = 'event'
   LEFT JOIN nodes dn ON dn.node_id = o.destination_id
   LEFT JOIN provinces dp ON dp.province_id = dn.province_id
   LEFT JOIN province_histories dph ON dph.province_id = dp.province_id

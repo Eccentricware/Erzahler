@@ -1,6 +1,6 @@
 import { ProvinceHistoryRow } from '../../../database/schema/table-fields';
 import { OrderDisplay } from '../../enumeration/order-display-enum';
-import { ProvinceStatus, ProvinceType, ResolutionEvent, VoteType } from '../../enumeration/province-enums';
+import { ProvinceStatus, ProvinceType, ResolutionEvent, CityType } from '../../enumeration/province-enums';
 import { UnitStatus, UnitType } from '../../enumeration/unit-enum';
 import {
   AdjacentTransportResult,
@@ -31,12 +31,14 @@ export interface UnitOrderResolutionResult {
   province_id: number;
   province: string;
   province_type: string;
-  vote_type: string;
+  event_node_id: number;
+  city_type: string;
   province_status: string;
   controller_id: number;
   capital_owner_id: number;
   secondary_unit_id: number;
   secondary_unit_type: UnitType;
+  secondary_unit_status: UnitStatus;
   secondary_country_id: number;
   secondary_country: string;
   secondary_unit_province: string;
@@ -48,7 +50,7 @@ export interface UnitOrderResolutionResult {
   destination_province_name: string;
   destination_province_status: string;
   destination_province_type: string;
-  destination_vote_type: string;
+  destination_city_type: string;
   destination_controller_id: number;
   destination_capital_owner_id: number;
 }
@@ -76,6 +78,7 @@ export interface UnitOrderResolution {
   secondaryUnit: {
     id: number;
     type: UnitType;
+    status: UnitStatus;
     countryId: number;
     country: string;
     provinceName: string;
@@ -83,6 +86,7 @@ export interface UnitOrderResolution {
     canCapture: boolean;
   };
   destination: OrderResolutionLocation;
+  displacerProvinceId?: number;
 }
 
 export interface OrderResolutionLocation {
@@ -91,7 +95,7 @@ export interface OrderResolutionLocation {
   provinceName: string;
   display: string;
   provinceType: ProvinceType;
-  voteType: VoteType;
+  cityType: CityType;
   provinceStatus: ProvinceStatus;
   controllerId: number;
   capitalOwnerId: number;
@@ -104,6 +108,7 @@ export interface OrderResolutionLocation {
 export interface UnitOrderGroups {
   transport: UnitOrderResolution[];
   hold: UnitOrderResolution[];
+  disband?: UnitOrderResolution[];
   invalid: UnitOrderResolution[];
   move: UnitOrderResolution[];
   moveTransported: UnitOrderResolution[];
@@ -150,10 +155,16 @@ export interface OrderDependencies {
     number,
     {
       orderId: number;
-      explanation: string;
+      description: string;
     }
   >;
   heads: number[];
+}
+
+export interface OrderSupremacy {
+  supremeOrder: UnitOrderResolution;
+  secondaryOrderId: UnitOrderResolution;
+  description: string;
 }
 
 export interface TransferResourcesResults {

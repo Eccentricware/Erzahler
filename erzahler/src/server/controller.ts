@@ -21,7 +21,7 @@ const port = 8000;
 const schedulerService: SchedulerService = new SchedulerService();
 
 // const optionsService: OptionsService = new OptionsService();
-// optionsService.saveOptionsForNextTurn(33);
+// optionsService.saveOptionsForTurn(33);
 
 erzahler.use(cors());
 erzahler.use(bodyParser.json({ limit: '5mb' }));

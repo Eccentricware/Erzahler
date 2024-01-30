@@ -6,16 +6,9 @@ export const getOrderOptionsQuery = `
     c.rank unit_country_rank,
     c.flag_key unit_country_flag_key,
     p.province_name,
+    p.province_type,
     n.node_id,
     n.loc unit_loc,
-    CASE
-      WHEN t.turn_type in ('Fall Orders', 'Fall Retreats')
-        AND u.unit_type = 'Fleet'
-        AND p.province_type = 'pole'
-      THEN false
-      WHEN uh.unit_status = 'Retreat' THEN false
-      ELSE true
-    END as can_hold,
     oo.order_type,
     oo.secondary_unit_id,
     su.unit_type secondary_unit_type,
@@ -36,27 +29,26 @@ export const getOrderOptionsQuery = `
   FROM order_options oo
   INNER JOIN units u ON u.unit_id = oo.unit_id
   INNER JOIN countries c ON c.country_id = u.country_id
-  INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id
-  INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = uh.unit_id AND luh.turn_id = uh.turn_id
+  INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = oo.unit_id
+  INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id AND uh.turn_id = luh.turn_id
   INNER JOIN nodes n ON n.node_id = uh.node_id
   INNER JOIN provinces p ON p.province_id = n.province_id
-  INNER JOIN turns t ON t.turn_id = uh.turn_id
   LEFT JOIN units su ON su.unit_id = oo.secondary_unit_id
   LEFT JOIN countries sc ON sc.country_id = su.country_id
-  LEFT JOIN unit_histories suh ON suh.unit_id = oo.secondary_unit_id
-  LEFT JOIN get_last_unit_history($1, $2) lsuh ON lsuh.unit_id = suh.unit_id AND lsuh.turn_id = suh.turn_id
+  LEFT JOIN get_last_unit_history($1, $2) lsuh ON lsuh.unit_id = oo.secondary_unit_id
+  LEFT JOIN unit_histories suh ON suh.unit_id = oo.secondary_unit_id AND lsuh.turn_id = suh.turn_id
   LEFT JOIN nodes sun ON sun.node_id = suh.node_id
   LEFT JOIN provinces sup ON sup.province_id = sun.province_id
   LEFT JOIN nodes dn ON dn.node_id = any(oo.destinations)
   LEFT JOIN provinces pn ON pn.province_id = dn.province_id
   LEFT JOIN nodes en ON en.province_id = pn.province_id AND en.node_type = 'event'
-  WHERE t.game_id = $1
-    AND t.turn_number <= $2
-    AND oo.turn_id = $3
-    AND CASE
-      WHEN 0 != $4 THEN u.country_id = $4
-      ELSE true
-    END
+  WHERE c.game_id = $1
+  AND oo.turn_id = $3
+  AND uh.unit_status = 'Active'
+  AND CASE
+    WHEN 0 != $4 THEN u.country_id = $4
+    ELSE true
+  END
   GROUP BY oo.unit_id,
     u.unit_type,
     u.country_id,
@@ -75,10 +67,9 @@ export const getOrderOptionsQuery = `
     su.unit_type,
     sup.province_name,
     sun.loc,
-    t.turn_type,
     p.province_type
-  ORDER BY c.rank,
+    ORDER BY c.rank,
     c.country_name,
     p.province_name,
-    sup.province_name
+    sup.province_name;
 `;

@@ -7,6 +7,7 @@ import {
   AtRiskUnit,
   AtRiskUnitResult,
   BuildLoc,
+  BuildLocProvince,
   BuildLocResult,
   DestinationResult,
   NominatableCountry,
@@ -14,9 +15,12 @@ import {
   Nomination,
   NominationResult,
   OrderOption,
+  RetreatingUnitAdjacyInfo,
+  RetreatingUnitAdjacyInfoResult,
   SavedDestination,
   SavedOption,
   SavedOptionResult,
+  SavedRetreatOptionResult,
   TransferCountry,
   TransferCountryResult,
   TransferOption,
@@ -39,6 +43,9 @@ import { getUnitAdjacentInfoQuery } from '../queries/orders/get-unit-adjacent-in
 import { getActiveCountryCenters } from '../queries/orders/options-final/get-active-centers-query';
 import { getNominationsQuery } from '../queries/orders/options-final/get-nominations-query';
 import { terminalLog } from '../../server/utils/general';
+import { getRetreatingOrderOptionsQuery } from '../queries/orders/get-retreating-order-options-query';
+import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { getRetreatingUnitAdjacentInfoQuery } from '../queries/orders/get-retreating-unit-adjacent-info-query';
 
 export class OptionsRepository {
   orderOptionsCols: ColumnSet<unknown>;
@@ -56,6 +63,16 @@ export class OptionsRepository {
 
   //// Legacy Functions ////
 
+  /**
+   * Gives nodes and their provinces adjacent to movement nodes.
+   *
+   *
+   * @param gameId
+   * @param turnNumber
+   * @param isFallTurn
+   * @param isRetreatTurn
+   * @returns
+   */
   async getUnitAdjacencyInfo(gameId: number, turnNumber: number): Promise<UnitOptions[]> {
     const unitAdjacencyInfoResult: UnitOptions[] = await this.pool
       .query(getUnitAdjacentInfoQuery, [gameId, turnNumber])
@@ -73,14 +90,15 @@ export class OptionsRepository {
               return {
                 nodeId: adjacency.node_id,
                 provinceId: adjacency.province_id,
-                provinceName: adjacency.province_name
+                provinceName: adjacency.province_name,
+                provinceType: adjacency.province_type
               };
             }),
             moveTransported: [],
             holdSupports:
               result.hold_supports &&
               result.hold_supports.map((unit) => {
-                return { unitId: unit.unit_id, unitName: unit.unit_name };
+                return { unitId: unit.unit_id, unitName: unit.unit_name, provinceId: unit.province_id };
               }),
             moveSupports: {},
             transportSupports: {},
@@ -111,8 +129,55 @@ export class OptionsRepository {
       })
       .catch((error: Error) => {
         terminalLog('unitAdjacencyInfoResultError: ' + error.message);
-        const dud: UnitOptions[] = [];
-        return dud;
+        return [];
+      });
+
+    return unitAdjacencyInfoResult;
+  }
+
+  /**
+   * Gives nodes and their provinces adjacent to movement nodes.
+   *
+   *
+   * @param gameId
+   * @param turnNumber
+   * @param isFallTurn
+   * @param isRetreatTurn
+   * @returns
+   */
+  async getRetreatingUnitAdjacencyInfo(gameId: number, turnNumber: number): Promise<RetreatingUnitAdjacyInfo[]> {
+    const unitAdjacencyInfoResult: RetreatingUnitAdjacyInfo[] = await this.pool
+      .query(getRetreatingUnitAdjacentInfoQuery, [gameId, turnNumber])
+      .then((results: QueryResult<RetreatingUnitAdjacyInfoResult>) => {
+        return results.rows.map((result: RetreatingUnitAdjacyInfoResult) => {
+          return <RetreatingUnitAdjacyInfo>{
+            unitId: result.unit_id,
+            unitName: result.unit_name,
+            unitType: result.unit_type,
+            nodeId: result.node_id,
+            nodeName: result.node_name,
+            provinceId: result.province_id,
+            provinceName: result.province_name,
+            displacerProvinceId: result.displacer_province_id,
+            adjacencies: result.adjacencies.map((adjacency) => ({
+              nodeId: adjacency.node_id,
+              provinceId: adjacency.province_id,
+              provinceName: adjacency.province_name,
+              provinceType: adjacency.province_type
+            })),
+            unitPresence:
+              result.unit_presence &&
+              result.unit_presence.map((unit) => ({
+                unitId: unit.unit_id,
+                unitName: unit.unit_name,
+                provinceId: unit.province_id
+              }))
+          };
+        });
+      })
+      .catch((error: Error) => {
+        terminalLog('unitAdjacencyInfoResultError: ' + error.message);
+        return [];
       });
 
     return unitAdjacencyInfoResult;
@@ -158,6 +223,12 @@ export class OptionsRepository {
     });
   }
 
+  async deleteUnitOptions(turnId: number): Promise<void> {
+    await this.pool.query('DELETE FROM order_options WHERE turn_id = $1', [turnId]).catch((error: Error) => {
+      terminalLog('deleteUnitOptions Error: ' + error.message);
+    });
+  }
+
   /**
    * Fetches options for a turn
    * @param turnId    - Turn's ID
@@ -181,9 +252,9 @@ export class OptionsRepository {
             unitCountryRank: result.unit_country_rank,
             unitFlagKey: result.unit_flag_key,
             provinceName: result.province_name,
+            provinceType: result.province_type,
             nodeId: result.node_id,
             unitLoc: result.unit_loc,
-            canHold: result.can_hold,
             orderType: result.order_type,
             secondaryUnitId: result.secondary_unit_id,
             secondaryUnitType: result.secondary_unit_type,
@@ -192,6 +263,51 @@ export class OptionsRepository {
             secondaryProvinceName: result.secondary_province_name,
             secondaryUnitLoc: result.secondary_unit_loc,
             secondaryOrderType: result.secondary_order_type,
+            destinations:
+              result.destinations[0] !== null
+                ? result.destinations.map((destination: DestinationResult) => {
+                    return <SavedDestination>{
+                      nodeId: destination.node_id,
+                      nodeName: this.formatDestinationNodeName(destination.node_name),
+                      nodeDisplay: destination.node_display,
+                      loc: destination.loc
+                    };
+                  })
+                : undefined
+          };
+        });
+      });
+
+    return savedOptions;
+  }
+
+  /**
+   * Fetches retreat options for a turn
+   * @param turnId    - Turn's ID
+   * @returns Promise<SavedOption[]>
+   */
+  async getRetreatingUnitOptions(
+    gameId: number,
+    turnNumber: number,
+    ordersTurnId: number,
+    countryId = 0
+  ): Promise<SavedOption[]> {
+    const savedOptions: SavedOption[] = await this.pool
+      .query(getRetreatingOrderOptionsQuery, [gameId, turnNumber, ordersTurnId, countryId])
+      .then((result: QueryResult<any>) => {
+        return result.rows.map((result: SavedRetreatOptionResult) => {
+          return <SavedOption>{
+            unitId: result.unit_id,
+            unitType: result.unit_type,
+            unitCountryId: result.unit_country_id,
+            unitCountryName: result.unit_country_name,
+            unitCountryRank: result.unit_country_rank,
+            unitFlagKey: result.unit_flag_key,
+            provinceName: result.province_name,
+            provinceType: result.province_type,
+            nodeId: result.node_id,
+            unitLoc: result.unit_loc,
+            orderType: OrderDisplay.MOVE,
             destinations:
               result.destinations[0] !== null
                 ? result.destinations.map((destination: DestinationResult) => {
@@ -291,12 +407,12 @@ export class OptionsRepository {
     return transferOptions;
   }
 
-  async getAvailableBuildLocs(turnNumber: number, gameId: number, countryId = 0): Promise<BuildLocResult[]> {
-    const buildLocs: BuildLocResult[] = await this.pool
+  async getAvailableBuildLocs(turnNumber: number, gameId: number, countryId = 0): Promise<BuildLocProvince[]> {
+    const buildLocs: BuildLocProvince[] = await this.pool
       .query(getEmptySupplyCentersQuery, [gameId, turnNumber, countryId])
       .then((result: QueryResult<any>) =>
         result.rows.map((province: BuildLocResult) => {
-          return <BuildLocResult>{
+          return <BuildLocProvince>{
             countryId: province.country_id,
             countryName: province.country_name,
             provinceName: province.province_name,
@@ -326,6 +442,7 @@ export class OptionsRepository {
         result.rows.map((unit: AtRiskUnitResult) => {
           return <AtRiskUnit>{
             unitId: unit.unit_id,
+            countryId: unit.country_id,
             unitType: unit.unit_type,
             loc: unit.loc,
             provinceName: unit.province_name

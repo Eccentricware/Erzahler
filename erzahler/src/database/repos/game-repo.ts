@@ -11,7 +11,6 @@ import { CountryStats, CountryStatsResult } from '../../models/objects/games/cou
 import { GameState, GameStateResult } from '../../models/objects/last-turn-info-object';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formatting-service';
-import { getPlayerRegistrationStatusQuery } from '../queries/assignments/get-player-registration-status';
 import { checkGameNameAvailabilityQuery } from '../queries/game/check-game-name-availability-query';
 import { checkUserGameAdminQuery } from '../queries/game/check-user-game-admin-query';
 import { getCoalitionScheduleQuery } from '../queries/game/get-coalition-schedule-query';
@@ -53,6 +52,7 @@ import { getCurrentProvinceHistoryQuery } from '../queries/isolated-tables/get-c
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
 import { startGameQuery } from '../queries/game/start-game-query';
 import { terminalLog } from '../../server/utils/general';
+import { Turn, TurnResult } from '../../models/objects/database-objects';
 
 const gamesCols: string[] = [
   'game_name',
@@ -202,13 +202,23 @@ export class GameRepository {
     return this.pool.query(insertTurnQuery, turnArgs);
   }
 
-  async insertNextTurn(turnArgs: any[]): Promise<any> {
+  async insertNextTurn(turnArgs: any[]): Promise<Turn> {
     const nextTurnQuery: ParameterizedQuery = new ParameterizedQuery({
       text: insertNextTurnQuery,
       values: turnArgs
     });
 
-    return await this.db.one(nextTurnQuery);
+    return await this.db.one(nextTurnQuery)
+      .then((nextTurnResult: TurnResult) => ({
+        turnId: nextTurnResult.turn_id,
+        gameId: nextTurnResult.game_id,
+        turnNumber: nextTurnResult.turn_number,
+        turnName: nextTurnResult.turn_name,
+        turnType: nextTurnResult.turn_type,
+        turnStatus: nextTurnResult.turn_status,
+        yearNumber: nextTurnResult.year_number,
+        deadline: nextTurnResult.deadline
+      }));
   }
 
   async insertProvinces(provinces: any, gameName: string): Promise<any[]> {
@@ -221,8 +231,9 @@ export class GameRepository {
             provinces[provinceName].name,
             provinces[provinceName].fullName,
             provinces[provinceName].type,
-            provinces[provinceName].voteType,
+            provinces[provinceName].cityType,
             provinces[provinceName].cityLoc,
+            provinces[provinceName].country,
             gameName
           ])
           .catch((error: Error) => {
@@ -242,11 +253,7 @@ export class GameRepository {
         this.pool
           .query(insertInitialProvinceHistoryQuery, [
             provinces[provinceName].status,
-            provinces[provinceName].voteColor,
-            provinces[provinceName].statusColor,
-            provinces[provinceName].strokeColor,
             provinces[provinceName].country,
-            provinces[provinceName].owner,
             gameName,
             provinces[provinceName].name
           ])
@@ -484,17 +491,6 @@ export class GameRepository {
       .catch((error: Error) => terminalLog('Get Rule Data Results Error: ' + error.message));
   }
 
-  async getPlayerRegistrationStatus(gameId: number, userId: number): Promise<any> {
-    return await this.pool
-      .query(getPlayerRegistrationStatusQuery, [gameId, userId])
-      .then((playerRegistrationResults: any) => {
-        return playerRegistrationResults.rows.map((registrationType: any) =>
-          this.formattingService.convertKeysSnakeToCamel(registrationType)
-        );
-      })
-      .catch((error: Error) => terminalLog('Get Player Registration Types Results Error: ' + error.message));
-  }
-
   async getCountryState(gameId: number, turnNumber: number, countryId: number): Promise<CountryState[]> {
     return await this.pool
       .query(getCountryStateQuery, [gameId, turnNumber, countryId])
@@ -594,7 +590,6 @@ export class GameRepository {
           provinceId: provinceHistory.province_id,
           turnId: provinceHistory.turn_id,
           controllerId: provinceHistory.controller_id,
-          capitalOwnerId: provinceHistory.capital_owner_id,
           provinceStatus: provinceHistory.province_status,
           validRetreat: provinceHistory.valid_retreat
         };

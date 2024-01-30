@@ -26,9 +26,14 @@ userRouter.get('/profile', (request, response) => {
 
   accountService
     .getUserProfile(idToken)
-    .then((userProfile: UserProfile) => {
-      terminalLog(`Get Profile: ${userProfile.username}`);
-      response.send(userProfile);
+    .then((userProfile: UserProfile | undefined) => {
+      if (userProfile) {
+        terminalLog(`Get Profile: ${userProfile.username}`);
+        response.send(userProfile);
+      } else {
+        terminalLog(`No User Profile for idToken (${idToken})`);
+        response.send({ succes: false, message: `idToken ${idToken} does not return a user profile`});
+      }
     })
     .catch((error: Error) => {
       terminalLog(`Get Profile FAILURE: ${idToken}`);

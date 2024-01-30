@@ -1,3 +1,9 @@
+/**
+ * $1: game_id
+ * $2: turn_number
+ * $3: is_fall_turn
+ * $4: is_retreat_turn
+ */
 export const getUnitAdjacentInfoQuery = `
   SELECT u.unit_id,
     u.unit_name,
@@ -21,7 +27,7 @@ export const getUnitAdjacentInfoQuery = `
   INNER JOIN countries c ON c.country_id = u.country_id
   INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
   INNER JOIN country_histories ch ON ch.country_id = lch.country_id AND ch.turn_id = lch.turn_id
-  INNER JOIN get_node_adjacencies($1, $2) a ON a.node_id = uh.node_id
+  INNER JOIN get_node_adjacencies($1) a ON a.node_id = uh.node_id
   LEFT JOIN get_hold_supports($1, $2) hs ON hs.unit_id = u.unit_id
   LEFT JOIN get_adjacent_transports($1, $2) tu ON tu.unit_id = u.unit_id
   LEFT JOIN get_transport_destinations($1, $2) td ON td.unit_id = u.unit_id

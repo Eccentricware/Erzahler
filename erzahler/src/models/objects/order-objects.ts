@@ -1,44 +1,29 @@
 import { CountryStatus } from '../enumeration/country-enum';
+import { TurnStatus } from '../enumeration/turn-status-enum';
 import { BuildType } from '../enumeration/unit-enum';
 import { BuildLoc, NominatableCountry } from './option-context-objects';
 
 export interface TurnOrders {
   gameId: number;
   userId: number;
-  countryId: number;
-  pending?: {
-    orderSetId?: number;
-    default?: boolean;
-    restricted?: boolean;
-    skipped?: boolean;
-  };
-  preliminary?: {
-    orderSetId?: number;
-    default?: number;
-  };
   role?: string;
+  countryId?: number;
   countryName?: string;
-  turnType?: string;
+  nukeRange?: number | null;
+  pending?: SingleTurnOrders;
+  preliminary?: SingleTurnOrders;
   message?: string;
-  pendingDefault?: boolean;
-  preliminaryDefault?: boolean;
-  render?: string;
-  units?: any[];
-  buildTransfers?: TransferBuildOrder[];
-  techTransfer?: TransferTechOrder;
-  builds?: BuildOrders;
-  disbands?: DisbandOrders;
-  nomination?: NominationOrder;
-  votes?: {
-    nominations: number[];
-  };
 }
 
 export interface SingleTurnOrders {
+  turnStatus: TurnStatus;
+  orderSetId?: number | null;
+  default?: boolean;
   units?: any[]; // If (spring orders/retreats or fall orders/retreats)
-  transfers?: any[];
-  builds?: any[];
-  disbands?: any[];
+  techTransfer?: any;
+  buildTransfers?: any[];
+  builds?: BuildOrders;
+  disbands?: DisbandOrders;
   nomination?: any;
   votes?: any[];
 }
@@ -112,7 +97,7 @@ export interface TransferTechOrderResult {
   success: boolean;
 }
 export interface TransferTechOrder {
-  techTransferOrderId: number;
+  // techTransferOrderId: number;
   orderSetId: number;
   countryId: number;
   countryName: string;
@@ -146,29 +131,33 @@ export interface BuildOrders {
   countryName: string;
   bankedBuilds: number;
   buildCount: number;
-  nukeRange: number;
+  nukeRange: number | null;
   increaseRange: number;
   builds: Build[];
   nukesReady?: Build[];
 }
 
 export interface BuildResult {
+  build_order_id?: number;
+  order_set_id: number;
   build_number: number;
   build_type: BuildType;
   node_id: number;
-  node_name: string;
-  province_name: string;
-  loc: number[];
+  node_name?: string;
+  province_name?: string;
+  loc?: number[];
 }
 
 export interface Build {
+  buildOrderId?: number;
+  orderSetId: number;
   buildNumber: number;
   buildType: BuildType;
   typeId: number;
   nodeId: number;
-  nodeName: string;
-  provinceName: string;
-  loc: number[];
+  nodeName?: string;
+  provinceName?: string;
+  loc?: number[];
 }
 
 export interface DisbandOrdersResult {
@@ -177,7 +166,7 @@ export interface DisbandOrdersResult {
   banked_builds: number;
   disbands: number;
   unit_disbanding_detailed: DisbandingUnitDetailResult[];
-  nuke_locs: number[];
+  // nuke_locs: number[];
   nuke_range: number;
   increase_range: number;
   units_disbanding: number[];
@@ -188,7 +177,7 @@ export interface DisbandOrders {
   bankedBuilds: number;
   disbands: number;
   unitDisbandingDetailed: DisbandingUnitDetail[];
-  nukeLocs: number[];
+  // nukeLocs: number[];
   nukeBuildDetails?: NukeBuildInDisband[];
   nukeRange: number;
   increaseRange: number;

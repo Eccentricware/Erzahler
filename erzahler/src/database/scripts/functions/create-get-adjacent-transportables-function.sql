@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/scripts/create-get-adjacent-transportables-function.sql
+--sudo -u postgres psql < database/scripts/functions/create-get-adjacent-transportables-function.sql
 
 \c erzahler_dev;
 \echo 'Attempting to create get_adjacent_transportables function'
@@ -47,6 +47,9 @@ AS $$
 			WHEN n.node_id = na.node_1_id THEN u2.unit_type IN ('Army', 'Nuke')
 			WHEN n.node_id = na.node_2_id THEN u1.unit_type IN ('Army', 'Nuke')
 		END
+		AND uh.unit_status = 'Active'
+		AND uh1.unit_status = 'Active'
+		AND uh2.unit_status = 'Active'
 	GROUP BY u.unit_id
 
  $$ LANGUAGE SQL;

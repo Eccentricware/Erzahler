@@ -26,3 +26,15 @@ export interface CountryOrderSet {
   inRetreat: boolean;
   adjustments: number;
 }
+
+export interface CountryOrderSetIdsResults {
+  country_id: number;
+  pending_order_set_id: number;
+  preliminary_order_set_id: number;
+}
+
+export interface CountryOrderSetIds {
+  countryId: number;
+  pendingOrderSetId: number | undefined;
+  preliminaryOrderSetId: number | undefined;
+}

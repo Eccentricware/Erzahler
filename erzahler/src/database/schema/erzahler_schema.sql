@@ -203,11 +203,14 @@ CREATE TABLE IF NOT EXISTS provinces(
   province_name VARCHAR(15) NOT NULL,
   province_fullname VARCHAR(25),
   province_type VARCHAR(15) NOT NULL,
-  vote_type VARCHAR(15),
+  city_type VARCHAR(15),
   city_loc INTEGER[],
+  capital_owner_id INTEGER,
   PRIMARY KEY(province_id),
   FOREIGN KEY(game_id)
-    REFERENCES games(game_id)
+    REFERENCES games(game_id),
+  FOREIGN KEY(capital_owner_id)
+    REFERENCES countries(country_id)
 );
 
 \echo 'Attempting to create terrain table'
@@ -267,7 +270,6 @@ CREATE TABLE IF NOT EXISTS province_histories(
   province_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
   controller_id INTEGER,
-  capital_owner_id INTEGER,
   province_status VARCHAR NOT NULL,
   valid_retreat BOOLEAN NOT NULL DEFAULT true,
   vote_color VARCHAR(10),
@@ -279,8 +281,6 @@ CREATE TABLE IF NOT EXISTS province_histories(
   FOREIGN KEY(turn_id)
     REFERENCES turns(turn_id),
   FOREIGN KEY(controller_id)
-    REFERENCES countries(country_id),
-  FOREIGN KEY(capital_owner_id)
     REFERENCES countries(country_id)
 );
 
@@ -368,7 +368,8 @@ CREATE TABLE IF NOT EXISTS unit_histories(
   unit_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
   node_id INTEGER,
-  unit_status VARCHAR(15) NOT NULL,
+  unit_status VARCHAR(23) NOT NULL,
+  displacer_province_id INTEGER,
   PRIMARY KEY(unit_history_id),
   FOREIGN KEY(unit_id)
     REFERENCES units(unit_id),
@@ -601,6 +602,7 @@ CREATE TABLE IF NOT EXISTS order_sets(
   order_set_id SERIAL,
   country_id INTEGER NOT NULL,
   turn_id INTEGER NOT NULL,
+  order_set_status VARCHAR(15),
   message_id INTEGER,
   submission_time TIMESTAMP NOT NULL,
   order_set_type VARCHAR(15) NOT NULL,
@@ -667,6 +669,7 @@ CREATE TABLE IF NOT EXISTS orders(
 CREATE TABLE IF NOT EXISTS orders_transfer_builds(
   build_transfer_order_id SERIAL,
   order_set_id INTEGER NOT NULL,
+  status VARCHAR(15),
   quantity INTEGER,
   recipient_id INTEGER, --Can be null because SOMEDAY manual entry will be thing
   recipient_name VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW
@@ -683,6 +686,7 @@ CREATE TABLE IF NOT EXISTS orders_transfer_builds(
 CREATE TABLE IF NOT EXISTS orders_transfer_tech(
   tech_transfer_order_id SERIAL,
   order_set_id INTEGER NOT NULL,
+  status VARCHAR(15),
   offering BOOLEAN NOT NULL DEFAULT false,
   foreign_country_id INTEGER, --Can be null because SOMEDAY manual entry will be thing
   foreign_country_name VARCHAR(255), --Can be null because precise id submission is a thing RIGHT NOW
@@ -748,7 +752,7 @@ CREATE INDEX label_line_province_idx ON label_lines(province_id); -- No label li
 CREATE INDEX province_history_core_idx ON province_histories(province_id);
 CREATE INDEX province_history_turn_idx ON province_histories(turn_id);
 CREATE INDEX province_history_controller_idx ON province_histories(controller_id);
-CREATE INDEX province_history_capital_owner_idx ON province_histories(capital_owner_id);
+CREATE INDEX province_history_capital_owner_idx ON provinces(capital_owner_id);
 CREATE INDEX node_province_idx ON nodes(province_id);
 CREATE INDEX node_adjacency_core_1_idx ON node_adjacencies(node_1_id);
 CREATE INDEX node_adjacency_core_2_idx ON node_adjacencies(node_2_id);

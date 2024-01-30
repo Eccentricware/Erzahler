@@ -5,17 +5,14 @@ import { FormattingService } from '../../server/services/formatting-service';
 import { assignUserQuery } from '../queries/assignments/assign-user-query';
 import { clearCountryAssignmentsQuery } from '../queries/assignments/clear-country-assignments-query';
 import { getUserGameAssignmentsQuery } from '../queries/assignments/get-user-game-assignments-query';
-import { getPlayerRegistrationStatusQuery } from '../queries/assignments/get-player-registration-status';
 import { lockAssignmentQuery } from '../queries/assignments/lock-assignment-query';
-import { registerUserQuery } from '../queries/assignments/register-user-query';
-import { reregisterUserQuery } from '../queries/assignments/reregister-user-query';
+import { getUserRegistrationsQuery, registerUserQuery, reregisterUserQuery, unregisterUserQuery } from '../queries/assignments/registration-queries';
 import { unlockAssignmentQuery } from '../queries/assignments/unlock-assignment-query';
-import { unregisterUserQuery } from '../queries/assignments/unregister-user-query';
 import { getAssignmentsQuery } from '../queries/game/get-assignments-query';
 import { getGameAdminsQuery } from '../queries/game/get-game-admins-query';
-import { getRegisteredPlayersQuery } from '../queries/game/get-registered-players-query';
-import { UserAssignment, UserAssignmentResult } from '../../models/objects/assignment-objects';
+import { Assignment, AssignmentResult, UserAssignment, UserAssignmentResult } from '../../models/objects/assignment-objects';
 import { getPlayerIsCountryQuery } from '../queries/assignments/get-player-is-country-query';
+import { terminalLog } from '../../server/utils/general';
 
 /**
  * Handles DB updates involving user associations with games.
@@ -87,24 +84,37 @@ export class AssignmentRepository {
       });
   }
 
-  async getRegisteredPlayers(gameId: number): Promise<any> {
-    return await this.pool
-      .query(getRegisteredPlayersQuery, [gameId])
-      .then((registeredUserResults: QueryResult<any>) => {
-        return registeredUserResults.rows.map((player: any) => this.formattingService.convertKeysSnakeToCamel(player));
-      })
-      .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
-  }
+  // async getRegisteredPlayers(gameId: number): Promise<any> {
+  //   return await this.pool
+  //     .query(getUserRegistrationsQuery, [gameId, 0])
+  //     .then((registeredUserResults: QueryResult<any>) => {
+  //       return registeredUserResults.rows.map((player: any) => this.formattingService.convertKeysSnakeToCamel(player));
+  //     })
+  //     .catch((error: Error) => console.log('Get Registered Player Data Results Error: ' + error.message));
+  // }
 
-  async getPlayerRegistrationStatus(gameId: number, userId: number): Promise<any> {
+  async getUserRegistrations(gameId: number, userId?: number): Promise<Assignment[]> {
     return await this.pool
-      .query(getPlayerRegistrationStatusQuery, [gameId, userId])
-      .then((playerRegistrationResults: QueryResult<any>) => {
-        return playerRegistrationResults.rows.map((registrationType: any) =>
-          this.formattingService.convertKeysSnakeToCamel(registrationType)
-        );
-      })
-      .catch((error: Error) => console.log('Get Player Registration Types Results Error: ' + error.message));
+      .query(getUserRegistrationsQuery, [gameId, userId ? userId : 0])
+      .then((playerRegistrationResults: QueryResult<AssignmentResult>) =>
+        playerRegistrationResults.rows.map((assignmentResult: AssignmentResult) => {
+          return {
+            userId: assignmentResult.user_id,
+            username: assignmentResult.username,
+            assignmentId: assignmentResult.assignment_id,
+            assignmentType: assignmentResult.assignment_type,
+            assignmentStatus: assignmentResult.assignment_status,
+            assignmentStart: assignmentResult.assignment_start,
+            assignmentEnd: assignmentResult.assignment_end,
+            countryId: assignmentResult.country_id,
+            gameId: assignmentResult.game_id
+          }
+        })
+      )
+      .catch((error: Error) => {
+        terminalLog('Get Registered Users Error: ' + error.message);
+        return [];
+      });
   }
 
   async clearCountryAssignments(gameId: number, countryId: number): Promise<void> {

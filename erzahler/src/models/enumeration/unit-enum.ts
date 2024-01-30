@@ -1,9 +1,11 @@
 export enum UnitStatus {
+  ABANDONED = 'Abandoned',
   ACTIVE = 'Active',
   DESTROYED_RETREAT = 'Destroyed in Retreat',
-  DISBANNED_ADJUSTMENT = 'Disbanned as Adjustment',
-  DISBANNED_RETREAT = 'Disbanned in Retreat',
+  DISBANDED_ADJUSTMENT = 'Disbanded as Adjustment',
+  DISBANDED_RETREAT = 'Disbanded in Retreat',
   DETONATED = 'Detonated',
+  PRODUCTION = 'Production',
   NUKED = 'Nuked',
   RETREAT = 'Retreat'
 }

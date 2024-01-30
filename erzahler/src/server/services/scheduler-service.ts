@@ -16,7 +16,7 @@ import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-obje
 import { GameSettings } from '../../models/objects/games/game-settings-object';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
-import { formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
+import { formatDateTime, formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
 import { StartSchedule } from '../../models/objects/games/game-schedule-objects';
 
 export class SchedulerService {
@@ -205,14 +205,14 @@ export class SchedulerService {
     );
 
     gamesStarting.forEach(async (game: StartSchedule) => {
-      if (Date.parse(game.startTime) < Date.now()) {
+      if (Date.parse(game.startTime.toISOString()) < Date.now()) {
         terminalAddendum(
           'Deadlines',
-          `${game.gameName} (${game.gameId}) start time ${game.startTime} has passed. Starting now.`
+          `${game.gameName} (${game.gameId}) start time ${formatDateTime(game.startTime)} has passed. Starting now.`
         );
         await resolutionService.startGame(game.gameId);
       } else {
-        terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${game.startTime}`);
+        terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${formatDateTime(game.startTime)}`);
         schedule.scheduleJob(`${game.gameName} - Start`, game.startTime, () => {
           resolutionService.startGame(game.gameId);
         });
@@ -224,12 +224,12 @@ export class SchedulerService {
 
     pendingTurns.
       forEach(async (turn: UpcomingTurn) => {
-        if (Date.parse(turn.deadline) < Date.now()) {
-          terminalAddendum(`Deadlines`, `${turn.deadline} has passed. Resolving.`);
+        if (Date.parse(turn.deadline.toISOString()) < Date.now()) {
+          terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) has expired. Resolving`);
           resolutionService.resolveTurn(turn);
 
         } else {
-          terminalAddendum(`Deadlines`, `${turn.deadline} is in the future. Scheduling.`);
+          terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) pending. Scheduling`);
           schedule.scheduleJob(`${turn.gameName} - ${turn.turnName}`, turn.deadline, () => {
             resolutionService.resolveTurn(turn);
           });
@@ -331,8 +331,8 @@ export class SchedulerService {
    * @param eventTime
    * @returns
    */
-  findNextOccurence(eventDay: string, eventTime: string): DateTime {
-    const now: DateTime = DateTime.utc();
+  findNextOccurence(eventDay: string, eventTime: string, referenceTime?: DateTime): DateTime {
+    const reference: DateTime = referenceTime ? referenceTime : DateTime.utc(); // Now
     let nextDeadline: DateTime = DateTime.utc();
 
     const eventHour = Number(eventTime.split(':')[0]);
@@ -341,11 +341,11 @@ export class SchedulerService {
     // How much are we going to ADD to now to get the next deadline?
 
     // If positive, the current time in the week is past the deadline
-    const dayDifference = this.dayValues[eventDay] - now.weekday;
-    const hourDifference = eventHour - now.hour;
-    const minuteDifference = eventMinute - now.minute;
+    const dayDifference = this.dayValues[eventDay] - reference.weekday;
+    const hourDifference = eventHour - reference.hour;
+    const minuteDifference = eventMinute - reference.minute;
 
-    nextDeadline = now.plus({
+    nextDeadline = reference.plus({
       day: dayDifference,
       hour: hourDifference,
       minute: minuteDifference
@@ -385,7 +385,7 @@ export class SchedulerService {
         turnNumber: currentTurn.turnNumber + 1,
         // These rest are all defaults for elegance. Spring would iterate year. Processed at end of year.
         type: TurnType.SPRING_ORDERS,
-        deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString()),
+        deadline: DateTime.utc(),
         yearNumber: currentTurn.yearNumber,
         yearStylized: gameState.stylizedStartYear + currentTurn.yearNumber,
         turnName: formatTurnName(TurnType.SPRING_ORDERS, currentYear)
@@ -407,23 +407,23 @@ export class SchedulerService {
           type: TurnType.FALL_ORDERS,
           turnName: formatTurnName(TurnType.FALL_ORDERS, currentTurn.yearStylized),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString()),
+          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString(), nextTurns.pending.deadline),
           yearNumber: currentTurn.yearNumber,
           yearStylized: currentTurn.yearStylized
         };
 
       } else {
-        nextTurns.skipped = {
-          type: TurnType.SPRING_RETREATS,
-          turnName: formatTurnName(TurnType.SPRING_RETREATS, currentTurn.yearStylized),
-          turnNumber: currentTurn.turnNumber + 1,
-          yearNumber: currentTurn.yearNumber,
-          yearStylized: currentTurn.yearStylized,
-          deadline: this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString())
-        };
+        // nextTurns.skipped = {
+        //   type: TurnType.SPRING_RETREATS,
+        //   turnName: formatTurnName(TurnType.SPRING_RETREATS, currentTurn.yearStylized),
+        //   turnNumber: currentTurn.turnNumber + 1,
+        //   yearNumber: currentTurn.yearNumber,
+        //   yearStylized: currentTurn.yearStylized,
+        //   deadline: this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString())
+        // };
 
         nextTurns.pending.type = TurnType.FALL_ORDERS;
-        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
+        // nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
       }
     }
@@ -444,7 +444,7 @@ export class SchedulerService {
           type: TurnType.ADJUSTMENTS,
           turnName: formatTurnName(TurnType.ADJUSTMENTS, currentTurn.yearStylized),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString()),
+          deadline: this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString(), nextTurns.pending.deadline),
           yearNumber: currentTurn.yearNumber,
           yearStylized: currentTurn.yearStylized
         };
@@ -454,18 +454,9 @@ export class SchedulerService {
         }
 
       } else {
-        nextTurns.skipped = {
-          type: TurnType.FALL_RETREATS,
-          turnName: formatTurnName(TurnType.FALL_RETREATS, currentTurn.yearStylized),
-          turnNumber: currentTurn.turnNumber + 1,
-          yearNumber: currentTurn.yearNumber,
-          yearStylized: currentTurn.yearStylized,
-          deadline: this.findNextOccurence(gameState.retreatsDay, gameState.retreatsTime.toString())
-        };
-
         nextTurns.pending.type = nominationsStarted && nominateDuringAdjustments ? TurnType.ADJ_AND_NOM : TurnType.ADJUSTMENTS;
+        // nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
-        nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
       }
     }
 
@@ -481,7 +472,7 @@ export class SchedulerService {
           type: TurnType.NOMINATIONS,
           turnName: formatTurnName(TurnType.NOMINATIONS, currentTurn.yearStylized),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString()),
+          deadline: this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString(), nextTurns.pending.deadline),
           yearNumber: currentTurn.yearNumber,
           yearStylized: currentTurn.yearStylized
         };
@@ -524,7 +515,7 @@ export class SchedulerService {
           type: TurnType.SPRING_ORDERS,
           turnName: formatTurnName(TurnType.SPRING_ORDERS, currentTurn.yearStylized + 1),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString()),
+          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString(), nextTurns.pending.deadline),
           yearNumber: currentTurn.yearNumber + 1,
           yearStylized: currentTurn.yearStylized + 1
         };
@@ -548,7 +539,7 @@ export class SchedulerService {
           type: TurnType.SPRING_ORDERS,
           turnName: formatTurnName(TurnType.SPRING_ORDERS, currentTurn.yearStylized + 1),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString()),
+          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString(), nextTurns.pending.deadline),
           yearNumber: currentTurn.yearNumber + 1,
           yearStylized: currentTurn.yearStylized + 1
         };

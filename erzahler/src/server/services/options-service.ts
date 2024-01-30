@@ -1,9 +1,12 @@
 import { db } from '../../database/connection';
+import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { ProvinceType } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitType } from '../../models/enumeration/unit-enum';
 import { UserAssignment } from '../../models/objects/assignment-objects';
+import { Turn } from '../../models/objects/database-objects';
 import { CountryState } from '../../models/objects/games/country-state-objects';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
@@ -30,7 +33,9 @@ import {
   Nomination,
   AdjacentTransportable,
   AdjacentTransport,
-  TransportDestination
+  TransportDestination,
+  RetreatingUnitAdjacyInfo,
+  BuildLocProvince
 } from '../../models/objects/option-context-objects';
 import { OptionsFinal, BuildOptions, VotingOptions } from '../../models/objects/options-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
@@ -39,19 +44,35 @@ import { AccountService } from './account-service';
 import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 
 export class OptionsService {
-  async saveOptionsForNextTurn(gameId: number, turnId?: number): Promise<void> {
-    const gameState: GameState = await db.gameRepo.getGameState(gameId);
+  async saveOptionsForTurn(turn: Turn, retreatingCountryIds?: number[]): Promise<void> {
+    // const gameState: GameState = await db.gameRepo.getGameState(gameId);
+    if (turn.turnId) {
+      const optionsContext: OptionsContext = await this.processUnitOrderOptions(turn);
 
-    const optionsContext: OptionsContext = await this.processUnitOrderOptions(gameState);
-
-    await this.saveUnitOrderOptions(optionsContext, turnId ? turnId : optionsContext.turnId);
+      await this.saveUnitOrderOptions(optionsContext, turn, retreatingCountryIds);
+    } else {
+      terminalLog(`Error saving Options: Turn for game (${turn.gameId}) has no turnId!`);
+    }
   }
 
-  async processUnitOrderOptions(gameState: GameState): Promise<OptionsContext> {
-    const unitInfo: UnitOptions[] = await this.getUnitAdjacencyInfo(gameState.gameId, gameState.turnNumber);
+  async processUnitOrderOptions(turn: Turn): Promise<OptionsContext> {
+    // Should always be called within saveOptionsForTurn, which checks turnId.
+    // Error message there. This is just to make linter happy. Everyone loves a happy linter.
+    if (!turn.turnId) {
+      return this.createBlankOptionsContext();
+    }
+
+    const retreatTurn = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(turn.turnType);
+
+    const unitInfo: UnitOptions[] = await this.fetchUnitAdjacencyInfo(
+      turn.gameId,
+      turn.turnNumber,
+      retreatTurn
+    );
 
     const optionsCtx: OptionsContext = {
-      gameId: gameState.gameId,
+      gameId: turn.gameId,
+      turnId: turn.turnId,
       unitInfo: unitInfo,
       unitIdToIndexLib: {},
       sharedAdjProvinces: {},
@@ -61,13 +82,15 @@ export class OptionsService {
       transports: {},
       transportables: {},
       transportDestinations: {},
-      turnId: gameState.turnId
     };
 
-    this.sortAdjacencyInfo(optionsCtx);
-    this.processTransportPaths(optionsCtx);
-    this.processMoveSupport(optionsCtx);
-    this.processNukeOptions(gameState, optionsCtx);
+    if (!retreatTurn) {
+      this.sortAdjacencyInfo(optionsCtx);
+      this.processTransportPaths(optionsCtx);
+      this.processMoveSupport(optionsCtx);
+      this.processNukeOptions(turn, optionsCtx);
+    }
+
 
     return optionsCtx;
   }
@@ -138,17 +161,21 @@ export class OptionsService {
   }
 
   processMoveSupport(optionsCtx: OptionsContext) {
+    let duplicateShareCount = 0;
+
     for (const province in optionsCtx.sharedAdjProvinces) {
       if (optionsCtx.sharedAdjProvinces[province].length > 1) {
         const unitsInReach: { unitId: number; nodeId: number; transported: boolean }[] =
           optionsCtx.sharedAdjProvinces[province];
 
+
         unitsInReach.forEach(
-          (commandedUnit: { unitId: number; nodeId: number; transported: boolean }, commandIdx: number) => {
+          (commandedUnit: { unitId: number; nodeId: number; transported: boolean }, commandedIndex: number) => {
             unitsInReach.forEach(
-              (supportedUnit: { unitId: number; nodeId: number; transported: boolean }, supportIdx: number) => {
-                if (commandIdx !== supportIdx) {
+              (supportedUnit: { unitId: number; nodeId: number; transported: boolean }, supportedIndex: number) => {
+                if (commandedUnit.unitId !== supportedUnit.unitId) {
                   const cmdUnitDetails = this.getDetailedUnit(optionsCtx, commandedUnit.unitId);
+                  const supportedUnitDetails = this.getDetailedUnit(optionsCtx, supportedUnit.unitId);
                   if (supportedUnit.transported) {
                     if (cmdUnitDetails.transportSupports[supportedUnit.unitId]) {
                       cmdUnitDetails.transportSupports[supportedUnit.unitId].push(supportedUnit.nodeId);
@@ -162,12 +189,21 @@ export class OptionsService {
                       cmdUnitDetails.moveSupports[supportedUnit.unitId] = [supportedUnit.nodeId];
                     }
                   }
+                } else if (commandedIndex !== supportedIndex) {
+                  duplicateShareCount++;
                 }
               }
             );
           }
         );
       }
+    }
+
+    if (duplicateShareCount > 0) {
+      terminalAddendum(
+        'Options Warning',
+        `Game ${optionsCtx.gameId} turn ${optionsCtx.turnId} has ${duplicateShareCount} duplicate units sharing provinces`
+      );
     }
   }
 
@@ -251,9 +287,9 @@ export class OptionsService {
       const adjProvince = optionsCtx.sharedAdjProvinces[convoyProvince.provinceId];
 
       const doesNotHaveUnit =
-        adjProvince.filter((adjProvince: any) => adjProvince.unitId === transportedUnitId).length === 0;
+        adjProvince?.filter((adjProvince: any) => adjProvince.unitId === transportedUnitId).length === 0;
 
-      if (doesNotHaveUnit) {
+      if (adjProvince && doesNotHaveUnit) {
         optionsCtx.sharedAdjProvinces[convoyProvince.provinceId].push({
           nodeId: contributionId,
           unitId: transportedUnitId,
@@ -267,14 +303,67 @@ export class OptionsService {
     return optionsCtx.unitInfo[optionsCtx.unitIdToIndexLib[unitId]];
   }
 
-  async getUnitAdjacencyInfo(gameId: number, turnNumber: number): Promise<UnitOptions[]> {
-    const unitOtions: UnitOptions[] = await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber);
+  /**
+   * Returns valid adjacency options for units given their current position and the restrictions of the next turn.
+   * @param gameId
+   * @param turnNumber
+   * @param isRetreatTurn
+   * @returns
+   */
+  async fetchUnitAdjacencyInfo(
+    gameId: number,
+    turnNumber: number,
+    isRetreatTurn: boolean
+  ): Promise<UnitOptions[]> {
+    const unitOtions: UnitOptions[] = isRetreatTurn
+      ? this.refineRetreatingUnitOptions(await db.optionsRepo.getRetreatingUnitAdjacencyInfo(gameId, turnNumber))
+      : this.refineStandardUnitOptions(await db.optionsRepo.getUnitAdjacencyInfo(gameId, turnNumber));
 
     return unitOtions;
   }
 
-  async processNukeOptions(gameState: GameState, optionsCtx: OptionsContext): Promise<void> {
-    const airAdjArray: AirAdjacency[] = await db.optionsRepo.getAirAdjacencies(gameState.gameId);
+  refineStandardUnitOptions(adjacencyInfo: UnitOptions[]): UnitOptions[] {
+    return adjacencyInfo;
+  }
+
+  refineRetreatingUnitOptions(retreatingAdjacencyInfo: RetreatingUnitAdjacyInfo[]): UnitOptions[] {
+    const unitOptions: UnitOptions[] = [];
+
+    retreatingAdjacencyInfo.forEach((unit: RetreatingUnitAdjacyInfo) => {
+      const invalidRetreats: number[] = unit.unitPresence?.map((unit: HoldSupport) => unit.provinceId) || [];
+      invalidRetreats.push(unit.displacerProvinceId);
+
+      const validRetreats: AdjacenctMovement[] = unit.adjacencies.filter((adjacency: AdjacenctMovement) =>
+        !invalidRetreats.includes(adjacency.provinceId)
+      );
+
+      unitOptions.push({
+        unitId: unit.unitId,
+        unitName: unit.unitName,
+        unitType: unit.unitType,
+        nodeId: unit.nodeId,
+        nodeName: unit.nodeName,
+        provinceId: unit.provinceId,
+        provinceName: unit.provinceName,
+        adjacencies: validRetreats,
+        moveTransported: [],
+        holdSupports: [],
+        moveSupports: {},
+        transportSupports: {},
+        nukeTargets: [],
+        allTransports: {},
+        adjacentTransports: undefined,
+        adjacentTransportables: undefined,
+        transportDestinations: undefined,
+        nukeRange: -1
+      });
+    });
+
+    return unitOptions;
+  }
+
+  async processNukeOptions(turn: Turn, optionsCtx: OptionsContext): Promise<void> {
+    const airAdjArray: AirAdjacency[] = await db.optionsRepo.getAirAdjacencies(turn.gameId);
     const nukeTargetLib: any = {};
     const unlimitedRangeTargets: number[] = [];
 
@@ -325,8 +414,13 @@ export class OptionsService {
    * @param optionsContext
    * @param turnId
    */
-  async saveUnitOrderOptions(optionsContext: OptionsContext, turnId: number): Promise<any> {
+  async saveUnitOrderOptions(optionsContext: OptionsContext, turn: Turn, retreatingCountryIds?: number[]): Promise<any> {
     const orderOptions: OrderOption[] = [];
+
+    if (!turn.turnId) {
+      terminalAddendum('Error: No Turn Id', JSON.stringify(turn));
+      return;
+    }
 
     optionsContext.unitInfo.forEach((unit: UnitOptions) => {
       if (unit.adjacencies.length > 0) {
@@ -359,11 +453,19 @@ export class OptionsService {
     });
 
     if (orderOptions.length > 0) {
-      await db.optionsRepo.saveUnitOptions(orderOptions, turnId).then(() => {
-        this.saveDefaultOrders(optionsContext.gameId);
-      });
+      if (retreatingCountryIds) {
+        db.optionsRepo.deleteUnitOptions(turn.turnId).then(() => {
+          db.optionsRepo.saveUnitOptions(orderOptions, turn.turnId!).then(() => {
+            this.saveTurnDefaults(turn, retreatingCountryIds);
+          });
+        });
+      } else {
+        await db.optionsRepo.saveUnitOptions(orderOptions, turn.turnId).then(() => {
+          this.saveTurnDefaults(turn);
+        });
+      }
     } else {
-      terminalLog(`Operation Failure | No Options: Game ${optionsContext.gameId}, Turn ${turnId}`);
+      terminalLog(`Operation Failure | No Options: Game ${optionsContext.gameId}, Turn ${turn.turnId}`);
     }
   }
 
@@ -465,187 +567,177 @@ export class OptionsService {
     };
   }
 
-  /**
-   * Given a gameID, finds the pending and preliminary turns and saves the default orders for each.
-   *
-   * @param gameId
-   */
-  async saveDefaultOrders(gameId: number): Promise<void> {
-    const gameState = await db.gameRepo.getGameState(gameId);
-
-    const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
-
-    const pendingTurn: UpcomingTurn | undefined = upcomingTurns.filter(
-      (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PENDING
-    )[0];
-
-    const preliminaryTurn: UpcomingTurn | undefined = upcomingTurns.filter(
-      (turn: UpcomingTurn) => turn.turnStatus === TurnStatus.PRELIMINARY
-    )[0];
-
-    if (pendingTurn && !pendingTurn.defaultsReady) {
-      // if (pendingTurn) {
-      await this.saveTurnDefaults(gameState, pendingTurn);
-    }
-
-    if (preliminaryTurn && !preliminaryTurn.defaultsReady) {
-      await this.saveTurnDefaults(gameState, preliminaryTurn);
-    }
-  }
-
-  async saveTurnDefaults(gameState: GameState, upcomingTurn: UpcomingTurn): Promise<void> {
+  async saveTurnDefaults(upcomingTurn: Turn, retreatingCountryIds?: number[]): Promise<void> {
     const orderSetLibrary: Record<string, number> = {};
 
-    const unitOptions: SavedOption[] = await db.optionsRepo.getUnitOptions(
-      gameState.gameId,
-      upcomingTurn.turnNumber,
-      upcomingTurn.turnId
-    );
+    if (!upcomingTurn.turnId) {
+      return;
+    }
 
-    const newOrderSets = await db.ordersRepo.insertTurnOrderSets(
-      gameState.gameId,
-      upcomingTurn.turnNumber,
-      upcomingTurn.turnId
-    );
+    const unitOptions: SavedOption[] = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)
+        ? await db.optionsRepo.getRetreatingUnitOptions(
+            upcomingTurn.gameId,
+            upcomingTurn.turnNumber,
+            upcomingTurn.turnId
+          )
+        : await db.optionsRepo.getUnitOptions(
+            upcomingTurn.gameId,
+            upcomingTurn.turnNumber,
+            upcomingTurn.turnId
+          );
 
-    newOrderSets.forEach((orderSet: OrderSet) => (orderSetLibrary[orderSet.countryId] = orderSet.orderSetId));
-    const preppedOrderLibrary: Record<string, OrderPrepping> = {};
+    const newOrderSets = retreatingCountryIds
+      ? await db.ordersRepo.insertRetreatedOrderSets(
+          upcomingTurn.turnId,
+          retreatingCountryIds
+        )
+      : await db.ordersRepo.insertTurnOrderSets(
+          upcomingTurn.gameId,
+          upcomingTurn.turnNumber,
+          upcomingTurn.turnId,
+          upcomingTurn.turnType
+        );
+
+    const finalizedUnitOptions: UnitOptionsFinalized[] = this.finalizeUnitOptions(unitOptions, upcomingTurn.turnType);
+
+    newOrderSets.forEach((orderSet: OrderSet) => orderSetLibrary[orderSet.countryId] = orderSet.orderSetId);
     const defaultOrders: Order[] = [];
 
-    if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(upcomingTurn.turnType)) {
-      unitOptions.forEach((option: SavedOption) => {
-        if (!preppedOrderLibrary[option.unitId]) {
-          preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
-        }
-      });
-    } else if (upcomingTurn.turnType === TurnType.FALL_ORDERS) {
-      unitOptions.forEach((option: SavedOption) => {
-        if (!preppedOrderLibrary[option.unitId]) {
-          if (option.canHold) {
-            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, true);
-          } else if (option.orderType === OrderDisplay.MOVE) {
-            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
-          }
-        }
-      });
-    } else if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(upcomingTurn.turnType)) {
-      // Basic retreats for testing, may be necessary to flesh out in detail later
-      unitOptions.forEach((option: SavedOption) => {
-        if (!preppedOrderLibrary[option.unitId]) {
-          if (option.orderType === OrderDisplay.MOVE) {
-            preppedOrderLibrary[option.unitId] = this.prepDefaultOrder(option, false);
-          }
-        }
-      });
-    }
-
-    for (const unitId in preppedOrderLibrary) {
-      const unitOrder = preppedOrderLibrary[unitId];
-      defaultOrders.push({
-        orderSetId: orderSetLibrary[unitOrder.countryId],
-        orderedUnitId: unitOrder.unitId,
-        orderType: unitOrder.orderType,
-        destinationId: unitOrder.destinationId,
-        description: unitOrder.description
-      });
-    }
+    finalizedUnitOptions.forEach((unit: UnitOptionsFinalized) => {
+      if (orderSetLibrary[unit.unitCountryId]) {
+        defaultOrders.push(this.prepDefaultOrder(unit, orderSetLibrary[unit.unitCountryId]));
+      }
+    });
 
     if (defaultOrders.length > 0) {
-      db.ordersRepo.saveDefaultOrders(defaultOrders).then((success: any) => {
-        db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
+      db.ordersRepo.insertDefaultOrders(defaultOrders).then(() => {
+        if (upcomingTurn.turnId) {
+          db.ordersRepo.setTurnDefaultsPrepped(upcomingTurn.turnId);
+        }
       });
-      terminalAddendum('Default Orders Saved', `${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`);
+      terminalAddendum('Default Orders Saved', `Game (${upcomingTurn.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`);
     } else {
       terminalAddendum(
-        `Process Failure`, `No Default Orders: ${upcomingTurn.gameName} (${gameState.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`
+        `Process Failure`, `No Default Orders: Game (${upcomingTurn.gameId}) | ${upcomingTurn.turnName} (${upcomingTurn.turnId})`
       );
     }
   }
 
-  async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal | string> {
+  async getTurnOptions(idToken: string, gameId: number): Promise<OptionsFinal> {
     const accountService = new AccountService();
-    const userProfile = await accountService.getUserProfile(idToken);
-    const userId = userProfile.userId;
-
     const gameState: GameState = await db.gameRepo.getGameState(gameId);
-    terminalLog(
-      `${userProfile.username} (${userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`
-    );
-    let playerCountry: CountryState | undefined = undefined;
-    const playerCountries: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userId);
-    if (playerCountries.length > 0) {
-      const countryStates = await db.gameRepo.getCountryState(
-        gameId,
-        gameState.turnNumber,
-        playerCountries[0].countryId
-      );
-      playerCountry = countryStates[0];
-    }
-
-    if (playerCountry === undefined) {
-      return 'User is not assigned an active country';
-    }
 
     let pendingTurn: UpcomingTurn | undefined = undefined;
     let preliminaryTurn: UpcomingTurn | undefined = undefined;
 
     const upcomingTurns: UpcomingTurn[] = await db.schedulerRepo.getUpcomingTurns(gameId);
-    if (upcomingTurns.length === 0) {
-      console.log(`GameId ${gameId} has no upcoming turns!`);
-    } else if (upcomingTurns.length > 0) {
+    if (upcomingTurns.length > 0) {
       pendingTurn = upcomingTurns[0];
     }
 
     if (upcomingTurns.length === 2) {
       preliminaryTurn = upcomingTurns[1];
     } else if (upcomingTurns.length > 2) {
-      console.log(`GameId ${gameId} has too many turns! (${upcomingTurns.length})`);
+      terminalLog(`GameId ${gameId} has too many turns! (${upcomingTurns.length})`);
+    }
+
+    const userProfile = await accountService.getUserProfile(idToken);
+
+    const fullOptions: OptionsFinal = {
+      playerId: userProfile?.userId || 0,
+      countryId: 0,
+      countryName: 'Spectator',
+      message: 'You are spectating. Turn options are not available.'
+    }
+
+    if (!userProfile) {
+      terminalAddendum('Turn Options', `User profile doesn't exist for idToken (${idToken})`);
+      return fullOptions;
+    }
+
+    terminalLog(
+      `${userProfile.username} (${userProfile.userId}) requested turn options for ${gameState.gameName} (${gameState.gameId})`
+    );
+    let playerCountry: CountryState | undefined = undefined;
+    const userAssignments: UserAssignment[] = await db.assignmentRepo.getUserAssignments(gameId, userProfile.userId);
+
+    const userCountries = userAssignments.filter((assignment: UserAssignment) =>
+      assignment.assignmentType === AssignmentType.PLAYER
+    );
+
+    if (userCountries.length > 0) {
+      const countryStates = await db.gameRepo.getCountryState(
+        gameId,
+        gameState.turnNumber,
+        userCountries[0].countryId
+      );
+      playerCountry = countryStates[0];
+
+    } else {
+      playerCountry = {
+        countryId: 0,
+        name: 'Spectator',
+        countryStatus: 'Spectator',
+        cityCount: 0,
+        unitCount: 0,
+        retreating: false,
+        builds: 0,
+        nukeRange: null,
+        adjustments: 0,
+        nukesInProduction: 0
+      };
     }
 
     const turnOptions: OptionsFinal = {
-      playerId: userId,
+      playerId: userProfile.userId,
       countryId: playerCountry.countryId,
       countryName: playerCountry.name
     };
 
     if (pendingTurn) {
+      const applicable = ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && playerCountry.retreating)
+        || ![TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType);
+      const message = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && !playerCountry.retreating
+        ? 'You are not in retreat, but can submit prelimary orders for the following turn.'
+          + ' Be mindful that some retreats may impact or even invalidate preliminary options!'
+        : '';
+
       turnOptions.pending = {
         id: pendingTurn.turnId,
+        status: TurnStatus.PENDING,
         name: pendingTurn.turnName,
-        deadline: pendingTurn.deadline
+        deadline: pendingTurn.deadline,
+        applicable: applicable,
+        message: message
       };
-      // Move back after dev
-      turnOptions.votes = {
-        turnStatus: TurnStatus.PENDING,
-        options: await this.getVotingOptions(pendingTurn.turnId)
-      };
-      ////
 
       // Units
-      if (
-        [
-          TurnType.SPRING_ORDERS,
-          TurnType.ORDERS_AND_VOTES,
-          TurnType.SPRING_RETREATS,
-          TurnType.FALL_ORDERS,
-          TurnType.FALL_RETREATS
-        ].includes(pendingTurn.turnType)
-      ) {
-        turnOptions.units = {
-          turnStatus: TurnStatus.PENDING,
-          options: this.finalizeUnitOptions(
-            await db.optionsRepo.getUnitOptions(
-              gameState.gameId,
-              gameState.turnNumber,
-              pendingTurn.turnId,
-              playerCountry.countryId
-            )
-          )
-        };
+      if (applicable && [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(pendingTurn.turnType)) {
+        turnOptions.pending.units = this.finalizeUnitOptions(
+          await db.optionsRepo.getUnitOptions(
+            gameState.gameId,
+            pendingTurn.turnNumber,
+            pendingTurn.turnId,
+            playerCountry.countryId
+          ),
+          pendingTurn.turnType
+        );
+      }
+
+      if (applicable && [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType)) {
+        turnOptions.pending.units = this.finalizeUnitOptions(
+          await db.optionsRepo.getRetreatingUnitOptions(
+            gameState.gameId,
+            pendingTurn.turnNumber,
+            pendingTurn.turnId,
+            playerCountry.countryId
+          ),
+          pendingTurn.turnType
+        );
       }
 
       // Transfers
-      if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
+      if (applicable && [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
         if (playerCountry.builds > 0) {
           const buildTransferOptions: TransferCountry[] = await db.optionsRepo.getBuildTransferOptions(
             gameId,
@@ -653,8 +745,7 @@ export class OptionsService {
           );
           buildTransferOptions.unshift({ countryId: 0, countryName: '--Keep Builds--' });
 
-          turnOptions.buildTransfers = {
-            turnStatus: TurnStatus.PENDING,
+          turnOptions.pending.buildTransfers = {
             options: buildTransferOptions,
             builds: playerCountry.builds
           };
@@ -667,10 +758,7 @@ export class OptionsService {
           );
           techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Offer Tech--' });
 
-          turnOptions.receiveTechOptions = {
-            turnStatus: TurnStatus.PENDING,
-            options: techTransferOptions
-          };
+          turnOptions.pending.receiveTechOptions = techTransferOptions;
         } else {
           const techTransferOptions: TransferCountry[] = await db.optionsRepo.getTechReceiveOptions(
             gameId,
@@ -678,249 +766,113 @@ export class OptionsService {
           );
           techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Request Tech--' });
 
-          turnOptions.offerTechOptions = {
-            turnStatus: TurnStatus.PENDING,
-            options: techTransferOptions
-          };
+          turnOptions.pending.offerTechOptions = techTransferOptions;
         }
       }
 
       // Adjustments
-      if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
+      if (applicable && [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
         if (playerCountry.adjustments >= 0) {
-          const buildLocsResult: BuildLocResult[] = await db.optionsRepo.getAvailableBuildLocs(
-            gameState.turnNumber,
-            gameId,
-            playerCountry.countryId
+          const buildLocs: BuildOptions = this.convertProvinceResultToNodeType(
+            await db.optionsRepo.getAvailableBuildLocs(gameState.turnNumber, gameId, playerCountry.countryId)
           );
-          const buildLocs: BuildOptions = {
-            land: [],
-            sea: [],
-            air: []
-          };
 
-          buildLocsResult.forEach((loc: BuildLocResult) => {
-            if (loc.seaNodeName && loc.seaNodeName.split('_').length > 2 && loc.seaNodeId && loc.seaNodeLoc) {
-              if (buildLocs.land.filter((landLoc: BuildLoc) => landLoc.nodeId === loc.landNodeId).length === 0) {
-                buildLocs.land.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.landNodeId,
-                  loc: loc.landNodeLoc
-                });
-
-                buildLocs.air.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.airNodeId,
-                  loc: loc.airNodeLoc
-                });
-              }
-
-              const locDisplay = loc.seaNodeName.toUpperCase().split('_');
-              buildLocs.sea.push({
-                province: loc.provinceName,
-                display: locDisplay[0] + ' ' + locDisplay[2],
-                nodeId: loc.seaNodeId,
-                loc: loc.seaNodeLoc
-              });
-            } else {
-              buildLocs.land.push({
-                province: loc.provinceName,
-                display: loc.provinceName,
-                nodeId: loc.landNodeId,
-                loc: loc.landNodeLoc
-              });
-
-              if (loc.seaNodeId && loc.seaNodeLoc)
-                buildLocs.sea.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.seaNodeId,
-                  loc: loc.seaNodeLoc
-                });
-
-              buildLocs.air.push({
-                province: loc.provinceName,
-                display: loc.provinceName,
-                nodeId: loc.airNodeId,
-                loc: loc.airNodeLoc
-              });
-            }
-          });
-
-          turnOptions.builds = {
-            turnStatus: TurnStatus.PENDING,
+          turnOptions.pending.builds = {
             locations: buildLocs,
             builds: playerCountry.adjustments
           };
         } else {
-          turnOptions.disbands = {
-            turnStatus: TurnStatus.PENDING,
-            options: await this.getDisbandOptions(gameState, playerCountry)
-          };
+          turnOptions.pending.disbands = await this.getDisbandOptions(gameState, playerCountry);
         }
       }
 
       // Nominations
-      if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-        turnOptions.nominations = {
-          turnStatus: pendingTurn.turnStatus,
-          options: await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING)
-        };
+      if (applicable && [TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
+        turnOptions.pending.nominations = await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING);
       }
 
       // Votes
-      if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
-        turnOptions.votes = {
-          turnStatus: TurnStatus.PENDING,
-          options: await this.getVotingOptions(pendingTurn.turnId)
-        };
+      if (applicable && [TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
+        turnOptions.pending.votes = await this.getVotingOptions(pendingTurn.turnId);
       }
     }
 
-    if (preliminaryTurn) {
+    if (pendingTurn && preliminaryTurn) {
+      const applicable = ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && !playerCountry.retreating);
+      const message = [TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(pendingTurn.turnType) && playerCountry.retreating
+        ? 'You are not in retreat and must play the pending turn first!'
+        : '';
+
       turnOptions.preliminary = {
         id: preliminaryTurn.turnId,
+        status: TurnStatus.PRELIMINARY,
         name: preliminaryTurn.turnName,
-        deadline: preliminaryTurn.deadline
+        deadline: preliminaryTurn.deadline,
+        applicable: applicable,
+        message: message
       };
+
       // Units
-      if (
-        [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(preliminaryTurn.turnType)
-      ) {
-        turnOptions.units = {
-          turnStatus: TurnStatus.PRELIMINARY,
-          options: this.finalizeUnitOptions(
-            await db.optionsRepo.getUnitOptions(
-              gameState.gameId,
-              gameState.turnNumber,
-              preliminaryTurn.turnId,
-              playerCountry.countryId
-            )
-          )
-        };
+      if (applicable && [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES, TurnType.FALL_ORDERS].includes(preliminaryTurn.turnType)) {
+        turnOptions.preliminary.units = this.finalizeUnitOptions(
+          await db.optionsRepo.getUnitOptions(
+            gameState.gameId,
+            preliminaryTurn.turnNumber,
+            preliminaryTurn.turnId,
+            playerCountry.countryId
+          ),
+          preliminaryTurn.turnType
+        );
       }
 
       // Transfers
-      if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
+      if (applicable && [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
         if (playerCountry.builds > 0) {
-          turnOptions.buildTransfers = {
-            turnStatus: TurnStatus.PRELIMINARY,
-            options: await db.optionsRepo.getBuildTransferOptions(gameId, gameState.turnId),
+          turnOptions.preliminary.buildTransfers = {
+            options: await db.optionsRepo.getBuildTransferOptions(gameId, preliminaryTurn.turnId),
             builds: playerCountry.builds
           };
         }
 
         if (playerCountry.nukeRange) {
-          turnOptions.offerTechOptions = {
-            turnStatus: TurnStatus.PRELIMINARY,
-            options: await db.optionsRepo.getTechOfferOptions(gameId, gameState.turnId)
-          };
+          turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechOfferOptions(gameId, preliminaryTurn.turnId);
         } else {
-          turnOptions.offerTechOptions = {
-            turnStatus: TurnStatus.PRELIMINARY,
-            options: await db.optionsRepo.getTechReceiveOptions(gameId, gameState.turnId)
-          };
+          turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechReceiveOptions(gameId, preliminaryTurn.turnId);
         }
       }
 
       // Adjustments
-      if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
+      if (applicable && [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
         if (playerCountry.adjustments >= 0) {
-          const buildLocsResult: BuildLocResult[] = await db.optionsRepo.getAvailableBuildLocs(
-            gameState.turnNumber,
-            gameId,
-            playerCountry.countryId
+          const buildLocs: BuildOptions = this.convertProvinceResultToNodeType(
+            await db.optionsRepo.getAvailableBuildLocs(preliminaryTurn.turnNumber, gameId, playerCountry.countryId)
           );
-          const buildLocs: BuildOptions = {
-            land: [],
-            sea: [],
-            air: []
-          };
 
-          buildLocsResult.forEach((loc: BuildLocResult) => {
-            if (loc.seaNodeName && loc.seaNodeName.split('_').length > 2 && loc.seaNodeId && loc.seaNodeLoc) {
-              if (buildLocs.land.filter((landLoc: BuildLoc) => landLoc.nodeId === loc.landNodeId).length === 0) {
-                buildLocs.land.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.landNodeId,
-                  loc: loc.landNodeLoc
-                });
-
-                buildLocs.air.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.airNodeId,
-                  loc: loc.airNodeLoc
-                });
-              }
-
-              const locDisplay = loc.seaNodeName.toUpperCase().split('_');
-              buildLocs.sea.push({
-                province: loc.provinceName,
-                display: locDisplay[0] + ' ' + locDisplay[2],
-                nodeId: loc.seaNodeId,
-                loc: loc.seaNodeLoc
-              });
-            } else {
-              buildLocs.land.push({
-                province: loc.provinceName,
-                display: loc.provinceName,
-                nodeId: loc.landNodeId,
-                loc: loc.landNodeLoc
-              });
-
-              if (loc.seaNodeId && loc.seaNodeLoc)
-                buildLocs.sea.push({
-                  province: loc.provinceName,
-                  display: loc.provinceName,
-                  nodeId: loc.seaNodeId,
-                  loc: loc.seaNodeLoc
-                });
-
-              buildLocs.air.push({
-                province: loc.provinceName,
-                display: loc.provinceName,
-                nodeId: loc.airNodeId,
-                loc: loc.airNodeLoc
-              });
-            }
-          });
-
-          turnOptions.builds = {
-            turnStatus: TurnStatus.PENDING,
+          turnOptions.preliminary.builds = {
             locations: buildLocs,
             builds: playerCountry.adjustments
           };
         } else {
-          turnOptions.disbands = {
-            turnStatus: TurnStatus.PENDING,
-            options: await this.getDisbandOptions(gameState, playerCountry)
-          };
+          turnOptions.preliminary.disbands = await this.getDisbandOptions(gameState, playerCountry)
         }
       }
 
       // Nominations
-      if ([TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-        turnOptions.nominations = {
-          turnStatus: preliminaryTurn.turnStatus,
-          options: await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING)
-        };
+      if (applicable && [TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
+        turnOptions.preliminary.nominations = await this.getNominationOptions(gameState.gameId, preliminaryTurn.turnId, TurnStatus.PENDING);
       }
     }
 
     return turnOptions;
   }
 
-  finalizeUnitOptions(options: SavedOption[]): UnitOptionsFinalized[] {
+  finalizeUnitOptions(options: SavedOption[], turnType: TurnType): UnitOptionsFinalized[] {
     const unitOptionsLibrary: Record<string, UnitOptionsFinalized> = {};
     const unitOptionsFormatted: UnitOptionsFinalized[] = [];
 
     options.forEach((option: SavedOption) => {
       if (!unitOptionsLibrary[option.unitId]) {
-        unitOptionsLibrary[option.unitId] = this.newUnitEssentialsKit(option);
+        unitOptionsLibrary[option.unitId] = this.newUnitEssentialsKit(option, turnType);
       }
 
       const unit = unitOptionsLibrary[option.unitId];
@@ -1059,14 +1011,29 @@ export class OptionsService {
     }
   }
 
-  newUnitEssentialsKit(option: SavedOption): UnitOptionsFinalized {
+  newUnitEssentialsKit(option: SavedOption, turnType: TurnType): UnitOptionsFinalized {
+    const initialOrderType: OrderDisplay[] = [];
+
+    if ([TurnType.SPRING_RETREATS, TurnType.FALL_RETREATS].includes(turnType)) {
+      initialOrderType.push(OrderDisplay.DISBAND);
+
+    } else if (
+      option.unitType !== UnitType.FLEET
+      || option.provinceType !== ProvinceType.POLE
+      || ![TurnType.FALL_ORDERS, TurnType.FALL_RETREATS].includes(turnType)
+    )  {
+      initialOrderType.push(OrderDisplay.HOLD);
+    }
+
     return {
       unitId: option.unitId,
       unitType: option.unitType,
       unitDisplay: `${option.unitType} ${option.provinceName}`,
+      unitCountryId: option.unitCountryId,
+      unitProvinceName: option.provinceName,
       unitLoc: option.unitLoc,
       nodeId: option.nodeId,
-      orderTypes: option.canHold ? [OrderDisplay.HOLD] : [],
+      orderTypes: initialOrderType,
       moveDestinations: [],
       moveTransportedDestinations: [],
       nukeTargets: [],
@@ -1112,6 +1079,10 @@ export class OptionsService {
       orderTypes.push(OrderDisplay.HOLD);
     }
 
+    if (unit.orderTypes.includes(OrderDisplay.DISBAND)) {
+      orderTypes.push(OrderDisplay.DISBAND);
+    }
+
     if (unit.orderTypes.includes(OrderDisplay.MOVE)) {
       orderTypes.push(OrderDisplay.MOVE);
     }
@@ -1138,10 +1109,6 @@ export class OptionsService {
 
     if (unit.orderTypes.includes(OrderDisplay.NUKE)) {
       orderTypes.push(OrderDisplay.NUKE);
-    }
-
-    if (unit.orderTypes.includes(OrderDisplay.DISBAND)) {
-      orderTypes.push(OrderDisplay.DISBAND);
     }
 
     unit.orderTypes = orderTypes;
@@ -1221,6 +1188,7 @@ export class OptionsService {
       for (let index = 0; index < countryState.nukesInProduction; index++) {
         disbandOptions.units.unshift({
           unitId: index * -1,
+          countryId: countryState.countryId,
           unitType: UnitType.NUKE,
           provinceName: 'Finished',
           loc: [0, 0]
@@ -1302,18 +1270,32 @@ export class OptionsService {
     };
   }
 
-  prepDefaultOrder(option: SavedOption, forcedHold: boolean): OrderPrepping {
-    const description = this.setOptionDescription(option);
+  prepDefaultOrder(unitOptions: UnitOptionsFinalized, orderSetId: number): Order {
+    let description = `${unitOptions.unitType.toUpperCase()[0]} ${unitOptions.unitProvinceName} `;
 
-    return <OrderPrepping>{
-      unitId: option.unitId,
-      orderType: forcedHold ? OrderDisplay.HOLD : OrderDisplay.MOVE,
+    const firstOrderType = unitOptions.orderTypes[0];
+
+    if ([OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(firstOrderType)) {
+      description += firstOrderType;
+    } else {
+      description += `=> ${unitOptions.moveDestinations[0].nodeDisplay}`;
+    }
+
+    return <Order> {
+      orderedUnitId: unitOptions.unitId,
+      orderSetId: orderSetId,
+      orderType: firstOrderType,
       description: description,
-      destinationId: forcedHold ? undefined : option.destinations[0].nodeId,
-      countryId: Number(option.unitCountryId)
+      destinationId: [OrderDisplay.HOLD, OrderDisplay.DISBAND, OrderDisplay.INVALID].includes(firstOrderType)
+        ? undefined
+        : unitOptions.moveDestinations[0].nodeId,
+      countryId: unitOptions.unitCountryId
     };
   }
 
+  /**
+   * Deprecated
+  */
   setOptionDescription(option: SavedOption): string {
     let description = `${option.unitType[0].toUpperCase()} ${option.provinceName} `;
 
@@ -1350,5 +1332,86 @@ export class OptionsService {
     }
 
     return description;
+  }
+
+  /**
+   * This is blank just to satisfy returns. Only instantiated if there's a problem.
+   *
+   * @returns OptionsContext
+   */
+  createBlankOptionsContext(): OptionsContext {
+    return {
+      gameId: 0,
+      turnId: 0,
+      unitInfo: [],
+      unitIdToIndexLib: undefined,
+      sharedAdjProvinces: undefined,
+      potentialConvoyProvinces: undefined,
+      validConvoyAssistProvinces: [],
+      transportPaths: undefined,
+      transports: undefined,
+      transportables: undefined,
+      transportDestinations: undefined
+    }
+  }
+
+  convertProvinceResultToNodeType(buildProvinces: BuildLocProvince[]): BuildOptions {
+    const buildLocs: BuildOptions = {
+      land: [],
+      sea: [],
+      air: []
+    };
+
+    buildProvinces.forEach((loc: BuildLocProvince) => {
+      if (loc.seaNodeName && loc.seaNodeName.split('_').length > 2 && loc.seaNodeId && loc.seaNodeLoc) {
+        if (buildLocs.land.filter((landLoc: BuildLoc) => landLoc.nodeId === loc.landNodeId).length === 0) {
+          buildLocs.land.push({
+            province: loc.provinceName,
+            display: loc.provinceName,
+            nodeId: loc.landNodeId,
+            loc: loc.landNodeLoc
+          });
+
+          buildLocs.air.push({
+            province: loc.provinceName,
+            display: loc.provinceName,
+            nodeId: loc.airNodeId,
+            loc: loc.airNodeLoc
+          });
+        }
+
+        const locDisplay = loc.seaNodeName.toUpperCase().split('_');
+        buildLocs.sea.push({
+          province: loc.provinceName,
+          display: locDisplay[0] + ' ' + locDisplay[2],
+          nodeId: loc.seaNodeId,
+          loc: loc.seaNodeLoc
+        });
+      } else {
+        buildLocs.land.push({
+          province: loc.provinceName,
+          display: loc.provinceName,
+          nodeId: loc.landNodeId,
+          loc: loc.landNodeLoc
+        });
+
+        if (loc.seaNodeId && loc.seaNodeLoc)
+          buildLocs.sea.push({
+            province: loc.provinceName,
+            display: loc.provinceName,
+            nodeId: loc.seaNodeId,
+            loc: loc.seaNodeLoc
+          });
+
+        buildLocs.air.push({
+          province: loc.provinceName,
+          display: loc.provinceName,
+          nodeId: loc.airNodeId,
+          loc: loc.airNodeLoc
+        });
+      }
+    });
+
+    return buildLocs;
   }
 }

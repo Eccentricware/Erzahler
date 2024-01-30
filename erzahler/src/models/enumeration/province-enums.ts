@@ -8,9 +8,10 @@ export enum ProvinceType {
   POLE = 'pole'
 }
 
-export enum VoteType {
+export enum CityType {
   CAPITAL = 'capital',
   VOTE = 'vote',
+  SUPPLY = 'supply',
   NONE = 'none'
 }
 

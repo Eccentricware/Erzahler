@@ -9,6 +9,7 @@ import { db } from '../../database/connection';
 import { NewUser } from '../../models/objects/new-user-objects';
 import { terminalLog } from '../utils/general';
 import { DetailedBoolean } from '../../models/objects/general-objects';
+import { CustomException } from '../../models/objects/exception-objects';
 
 export class AccountService {
   async validateToken(idToken: string, stillLoggedIn?: boolean): Promise<any> {
@@ -127,9 +128,9 @@ export class AccountService {
   /**
    * Returns the User profile given an unforgable idToken
    * @param idToken
-   * @returns Promise<UserProfile | any>
+   * @returns Promise<UserProfile>
    */
-  async getUserProfile(idToken: string): Promise<UserProfile | any> {
+  async getUserProfile(idToken: string): Promise<UserProfile | undefined> {
     const token: DecodedIdToken = await this.validateToken(idToken);
 
     if (token.uid) {
@@ -137,7 +138,7 @@ export class AccountService {
       await db.accountsRepo.syncAccountProviderEmailState(firebaseUser);
       await db.accountsRepo.syncEnvironmentProviderEmailState(firebaseUser);
 
-      const blitzkarteUser: UserProfile | void = await db.accountsRepo.getUserProfile(token.uid);
+      const blitzkarteUser: UserProfile | undefined = await db.accountsRepo.getUserProfile(token.uid);
 
       if (blitzkarteUser) {
         if (blitzkarteUser.usernameLocked === false && firebaseUser.emailVerified === true) {
@@ -147,17 +148,28 @@ export class AccountService {
           await db.accountsRepo.clearEnvironmentVerificationDeadline(firebaseUser.uid);
         }
 
+        return blitzkarteUser;
+
       } else {
         const accountRestored = await this.restoreAccount(token.uid);
         if (!accountRestored) {
-          return { warning: 'No Blitzkarte Account' };
+          terminalLog('Accounts', `No Blitzkarte account for idToken ${idToken}`)
+          return undefined;
+        }
+
+        const restoredAccount = await db.accountsRepo.getUserProfile(token.uid);
+        if (restoredAccount) {
+          return restoredAccount;
+        } else {
+          terminalLog('Accounts', `Somehow, getting the user profile of a successfully restored account has failed. idToken ${idToken}`);
+          return undefined;
         }
 
       }
 
-      return blitzkarteUser;
     } else {
-      return { error: 'idToken is not valid' };
+      terminalLog('Authentication', `idToken ${idToken} is not valid`);
+      return undefined;
     }
   }
 
@@ -190,7 +202,7 @@ export class AccountService {
     }
   }
 
-  async restoreAccount(uid: string): Promise<UserProfile | any> {
+  async restoreAccount(uid: string): Promise<boolean> {
     const users: AccountsUserRow[] = await db.accountsRepo.getUserRowFromAccounts(uid);
 
     if (users.length === 1) {
@@ -243,17 +255,27 @@ export class AccountService {
     }
   }
 
+  /**
+   * Top level call from the router to update a user's Blitzkarte account settings
+   * @param idToken
+   * @param data
+   *
+   * @returns
+   */
   async updateUserSettings(idToken: string, data: any): Promise<any> {
     const token = await this.validateToken(idToken);
 
     if (token.uid) {
-      const blitzkarteUser: UserProfile = await this.getUserProfile(idToken);
-      return db.accountsRepo.updatePlayerSettings(
-        data.timeZone,
-        data.meridiemTime,
-        blitzkarteUser.userId,
-        blitzkarteUser.username
-      );
+      const blitzkarteUser: UserProfile | undefined = await this.getUserProfile(idToken);
+
+      if (blitzkarteUser) {
+        return db.accountsRepo.updatePlayerSettings(
+          data.timeZone,
+          data.meridiemTime,
+          blitzkarteUser.userId,
+          blitzkarteUser.username
+        );
+      }
     }
   }
 

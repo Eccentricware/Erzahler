@@ -342,7 +342,7 @@ export class GameService {
     }
 
     terminalLog(`Finding games for ${username} (${userId})`);
-    terminalAddendum('Params', JSON.stringify(params));
+    terminalAddendum('Find Games Params', JSON.stringify(params));
     const gameResults: any = await db.gameRepo.getGames(userId, params, userTimeZone, meridiemTime);
 
     return gameResults;
@@ -373,7 +373,7 @@ export class GameService {
     terminalLog(`${username} (${userId}) Requested Game Data: ${gameId}`);
     const gameData: any = await db.gameRepo.getGameDetails(gameId, userId, userTimeZone, meridiemTime);
     const ruleData: any = await db.gameRepo.getRulesInGame(gameId);
-    const playerRegistration: any = await db.gameRepo.getPlayerRegistrationStatus(gameId, userId);
+    const playerRegistration: any = await db.assignmentRepo.getUserAssignments(gameId, userId);
 
     gameData.rules = ruleData;
     gameData.playerRegistration = playerRegistration;
@@ -480,7 +480,8 @@ export class GameService {
 
     // TO-DO Restore to registration clause after troubleshooting && gameData.gameStatus === GameStatus.REGISTRATION
     if (gameData.isAdmin) {
-      await schedulerService.readyGame(gameData);
+      return await schedulerService.readyGame(gameData)
+        .then((result) => result);
     }
   }
 

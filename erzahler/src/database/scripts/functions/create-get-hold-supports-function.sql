@@ -1,4 +1,4 @@
---sudo -u postgres psql < database/scripts/create-get-hold-supports-function.sql
+--sudo -u postgres psql < database/scripts/functions/create-get-hold-supports-function.sql
 
 \c erzahler_dev;
 \echo 'Attempting to create get_hold_supports function'
@@ -13,9 +13,17 @@ AS $$
   SELECT u.unit_id,
   	json_agg(CASE
 			WHEN n.node_id = na.node_1_id
-				THEN json_build_object('unit_id', u2.unit_id, 'unit_name', u2.unit_name)
+				THEN json_build_object(
+					'unit_id', u2.unit_id,
+					'unit_name', u2.unit_name,
+					'province_id', p2.province_id
+				)
 			WHEN n.node_id = na.node_2_id
-				THEN json_build_object('unit_id', u1.unit_id, 'unit_name', u1.unit_name)
+				THEN json_build_object(
+					'unit_id', u1.unit_id,
+					'unit_name', u1.unit_name,
+					'province_id', p1.province_id
+				)
 		END) AS hold_supports
 	FROM unit_histories uh
 	INNER JOIN get_last_unit_history($1, $2) luh
@@ -44,6 +52,9 @@ AS $$
 			WHEN n.node_id = na.node_1_id THEN u2.unit_type != 'Nuke'
 			WHEN n.node_id = na.node_2_id THEN u1.unit_type != 'Nuke'
 		END
+		AND uh.unit_status = 'Active'
+		AND uh1.unit_status = 'Active'
+		AND uh2.unit_status = 'Active'
 	GROUP BY u.unit_id;
 
 $$ LANGUAGE SQL;
