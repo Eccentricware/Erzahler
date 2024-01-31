@@ -18,10 +18,11 @@ export const getCountryUnitCityCountsQuery = `
     GROUP BY ph.controller_id
   )
   SELECT c.country_id,
-    uc.unit_count,
+    uc.unit_count + lch.nukes_in_production,
     cc.city_count,
-    cc.city_count - uc.unit_count AS adjustments
+    cc.city_count - uc.unit_count - lch.nukes_in_production AS adjustments
   FROM countries c
+  INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
   INNER JOIN unit_counts uc ON uc.country_id = c.country_id
   INNER JOIN city_counts cc ON cc.controller_id = c.country_id
   ORDER BY c.country_id;

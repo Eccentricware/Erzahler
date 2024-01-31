@@ -10,6 +10,8 @@ import {
   TransportDestinationResult
 } from '../../models/objects/option-context-objects';
 import {
+  AdjResolutionData,
+  AdjResolutionDataResult,
   CountryTransferResources,
   TransferResourcesResults,
   TransportNetworkUnit,
@@ -27,6 +29,8 @@ import {
   CountryHistoryRow,
   CountryStatCounts,
   CountryStatCountsResult,
+  InitialUnit,
+  OrderAdjustmentRow,
   OrderRow,
   ProvinceHistoryRow,
   ProvinceHistoryRowResult,
@@ -42,9 +46,13 @@ import { terminalLog } from '../../server/utils/general';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { updateTurnProgressQuery } from '../queries/resolution/update-turn-progress-query';
 import { Turn, TurnResult } from '../../models/objects/database-objects';
+import { getAdjResolutionDataQuery } from '../queries/resolution/get-adj-resolution-data-query';
+import { insertNewUnitQuery, insertUnitHistoryQUery } from '../queries/resolution/insert-unit-queries';
+import { updateAdjOrderQuery } from '../queries/resolution/adjustment-orders-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
+  unitCols: ColumnSet<unknown>;
   unitHistoryCols: ColumnSet<unknown>;
   countryHistoryCols: ColumnSet<unknown>;
   pool = new Pool(envCredentials);
@@ -53,6 +61,11 @@ export class ResolutionRepository {
     this.provinceHistoryCols = new pgp.helpers.ColumnSet(
       ['province_id', 'turn_id', 'controller_id', 'province_status', 'valid_retreat'],
       { table: 'province_histories' }
+    );
+
+    this.unitCols = new pgp.helpers.ColumnSet(
+      ['country_id', 'unit_name', 'unit_type'],
+      { table: 'units' }
     );
 
     this.unitHistoryCols = new pgp.helpers.ColumnSet(
@@ -94,6 +107,33 @@ export class ResolutionRepository {
         .catch((error: Error) => {
           terminalLog('Update Orders Error: ' + error.message);
         });
+    });
+  }
+
+  async updateAdjustmentOrders(adjOrders: OrderAdjustmentRow[]): Promise<void> {
+    adjOrders.forEach(async (adjOrder: OrderAdjustmentRow) => {
+      if (adjOrder.buildType !== null) {
+        await this.pool.query(updateAdjOrderQuery, [
+          adjOrder.success,
+          adjOrder.buildOrderId
+        ]);
+      }
+    });
+  }
+
+  async insertNewUnit(newUnits: InitialUnit[], turnId: number): Promise<void> {
+    newUnits.forEach(async (unit: InitialUnit) => {
+      this.pool.query(insertNewUnitQuery, [
+        unit.countryId,
+        unit.unitType,
+        unit.unitName
+      ]).then(async (result: any) => {
+        this.pool.query(insertUnitHistoryQUery, [
+          result.rows[0].unit_id,
+          turnId,
+          unit.nodeId
+        ]);
+      })
     });
   }
 
@@ -436,6 +476,37 @@ export class ResolutionRepository {
             unitCount: Number(country.unit_count)
           };
         })
+      );
+  }
+
+  async getAdjResolutionData(gameId: number, turnNumber: number, orderSetTurnId: number): Promise<AdjResolutionData[]> {
+    return await this.pool.query(getAdjResolutionDataQuery, [gameId, turnNumber, orderSetTurnId])
+      .then ((result: QueryResult<AdjResolutionDataResult>) =>
+        result.rows.map((adjOrder: AdjResolutionDataResult) => (<AdjResolutionData>{
+          orderSetId: adjOrder.order_set_id,
+          countryId: adjOrder.country_id,
+          countryName: adjOrder.country_name,
+          adjustments: adjOrder.adjustments,
+          bankedBuilds: adjOrder.banked_builds,
+          nukeRange: adjOrder.nuke_range,
+          nukesInProduction: adjOrder.nukes_in_production,
+          unitsDisbanding: adjOrder.units_disbanding?.map((unit: {unit_id: number, country_id: number}) => ({
+            unitId: unit.unit_id,
+            countryId: unit.country_id
+          })),
+          increaseRange: adjOrder.increase_range,
+          nomination: adjOrder.nomination,
+          increaseRangeSuccess: adjOrder.increase_range_success,
+          nominationSuccess: adjOrder.nomination_success,
+          buildOrderId: adjOrder.build_order_id,
+          nodeId: adjOrder.node_id,
+          buildType: adjOrder.build_type,
+          success: adjOrder.success,
+          provinceName: adjOrder.province_name,
+          controllerId: adjOrder.controller_id,
+          provinceStatus: adjOrder.province_status,
+          unitId: adjOrder.unit_id
+        }))
       );
   }
 }

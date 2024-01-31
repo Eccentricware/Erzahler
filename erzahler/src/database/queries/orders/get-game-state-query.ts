@@ -32,8 +32,8 @@ export const getGameStateQuery = `
     g.vote_during_spring,
     g.nomination_timing,
     g.nomination_year,
-    g.current_year,
-    t.year_number,
+    t.year_number AS current_year, -- One of these id deprecated - g.current_year
+    t.year_number,                 -- One of these id deprecated
     g.stylized_start_year,
     c.highest_ranked_req,
     c.all_votes_controlled,

@@ -26,7 +26,7 @@ export const getEmptySupplyCentersQuery = `
   WHERE p.game_id = $1
     AND ph.province_status = 'active'
     AND luh.unit_id IS NULL
-    AND CASE WHEN $3 != 0 THEN c.country_id = $3 ELSE true END
+    AND CASE WHEN $3 = 0 THEN true ELSE c.country_id = $3 END
   ORDER BY
     c.country_name,
     p.province_name
