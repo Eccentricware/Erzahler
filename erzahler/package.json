@@ -9,7 +9,7 @@
     "start": "nodemon ./server/controller.js",
     "lint": "eslint --cache --fix . && prettier --ignore-path .prettierignore --write .",
     "compile": "tsc -w",
-    "nodemon": "nodemon --delay 2 ./server/controller.js",
+    "nodemon": "nodemon --delay 1 ./server/controller.js",
     "dev": "concurrently npm:compile npm:nodemon",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --project ./"

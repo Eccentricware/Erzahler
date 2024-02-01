@@ -95,7 +95,7 @@ export class ResolutionService {
       case TurnType.FALL_ORDERS:
         this.resolveFallOrders(turn);
         break;
-      case TurnType.FALL_RETREATS:        // To-do
+      case TurnType.FALL_RETREATS:        // DOING
         this.resolveFallRetreats(turn);
         break;
       case TurnType.ADJUSTMENTS:
@@ -667,7 +667,129 @@ export class ResolutionService {
   }
 
   async resolveFallRetreats(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Fall Retreats resolution, which is not yet implemented`);
+    const gameState: GameState = await db.gameRepo.getGameState(turn.gameId);
+    const dbStates: DbStates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      orders: [],
+      unitHistories: await db.gameRepo.getUnitHistories(turn.gameId, gameState.turnNumber),
+      provinceHistories: await db.gameRepo.getProvinceHistories(turn.gameId, gameState.turnNumber),
+      countryHistories: await db.gameRepo.getCountryHistories(turn.gameId, gameState.turnNumber)
+    };
+
+    // DB Update
+    const dbUpdates: DbUpdates = {
+      game: {},
+      turn: {},
+      orderSets: [],
+      adjOrderSets: {},
+      orders: [],
+      adjustmentOrders: [],
+      newUnits: [],
+      unitHistories: [],
+      provinceHistories: [],
+      countryHistories: {}
+    };
+
+    const unitMovementResults: UnitOrderResolution[] = await this.resolveRetreatingUnitOrders(gameState, turn);
+
+    unitMovementResults.forEach((result: UnitOrderResolution) => {
+      if (result.orderId > 0) {
+        dbUpdates.orders.push({
+          orderId: result.orderId,
+          orderStatus: OrderStatus.PROCESSED,
+          orderSuccess: result.orderSuccess,
+          power: result.power,
+          description: result.description,
+          primaryResolution: result.primaryResolution,
+          secondaryResolution: result.secondaryResolution
+        });
+      }
+
+      if (result.orderType === OrderDisplay.MOVE) {
+        this.handleMovementResults(result, dbStates, dbUpdates, true, true);
+      }
+
+      if (result.orderType === OrderDisplay.DISBAND) {
+        this.handleDisband(result, dbStates, dbUpdates);
+      }
+    });
+
+    this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
+
+    const preStatCheckPromises: Promise<any | void>[] = [];
+    const postStatCheckPromises: Promise<any | void>[] = [];
+
+    if (dbUpdates.orders.length > 0) {
+      console.log('DB: Order Update');
+      preStatCheckPromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
+    }
+
+    if (dbUpdates.unitHistories.length > 0) {
+      console.log('DB: Unit History Insert');
+      preStatCheckPromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
+    }
+
+    if (dbUpdates.provinceHistories.length > 0) {
+      console.log('DB: Province History Insert');
+      preStatCheckPromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
+    }
+
+    Promise.all(preStatCheckPromises).then(async () => {
+      const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, turn.turnNumber);
+
+      countryStatCounts.forEach((countryStats: CountryStatCounts) => {
+        let countryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.countryId];
+        if (!countryHistory) {
+          const countryHistoryRow = dbStates.countryHistories.find(
+            (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+          );
+
+          if (countryHistoryRow) {
+            countryHistory = this.copyCountryHistory(countryHistoryRow);
+          }
+        }
+
+        if (!countryHistory) {
+          terminalLog(`Country History not found for ${countryStats.countryId}`);
+        } else if (
+          countryHistory.cityCount !== countryStats.cityCount
+          || countryHistory.unitCount !== countryStats.unitCount
+          || countryHistory.inRetreat
+        ) {
+          countryHistory.cityCount = countryStats.cityCount;
+          countryHistory.unitCount = countryStats.unitCount;
+          countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
+          countryHistory.inRetreat = false;
+          dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
+        }
+      });
+
+
+      if (Object.keys(dbUpdates.countryHistories).length > 0) {
+        postStatCheckPromises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
+      }
+
+      // Every turn
+      postStatCheckPromises.push(db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId));
+
+      // Find next turn will require an updated gameState first
+      console.log('DB: Turn Update'); // Pending resolution
+      postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
+      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING)
+      postStatCheckPromises.push(nowPendingTurnPromise);
+      const nowPendingTurn = await nowPendingTurnPromise;
+
+      Promise.all(postStatCheckPromises)
+        .then(async () => {
+          const retreatingCountryIds =
+            dbStates.countryHistories.filter((countryHistory: CountryHistoryRow) => countryHistory.inRetreat)
+              .map((countryHistory: CountryHistoryRow) => countryHistory.countryId);
+
+          await this.orderService.createAdjustmentDefaults(nowPendingTurn, retreatingCountryIds);
+        });
+    });
   }
 
   async resolveAdjustments(turn: UpcomingTurn): Promise<void> {

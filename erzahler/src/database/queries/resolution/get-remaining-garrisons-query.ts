@@ -5,16 +5,16 @@ export const getRemainingGarrisonsQuery = `
     u.unit_id AS ordered_unit_id,
     true as valid,
     unit_type,
-    uh.unit_status,
+    luh.unit_status,
     u.country_id,
     c.country_name country,
-    uh.node_id,
+    luh.node_id,
     n.province_id,
     p.province_name province,
     p.province_type,
     p.city_type,
-    ph.province_status,
-    ph.controller_id,
+    lph.province_status,
+    lph.controller_id,
     p.capital_owner_id,
     NULL secondary_unit_id,
     NULL secondary_unit_type,
@@ -31,12 +31,10 @@ export const getRemainingGarrisonsQuery = `
     NULL destination_capital_owner_id
   FROM get_last_unit_history($1, $2) luh
   INNER JOIN units u ON u.unit_id = luh.unit_id
-  INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id
-  INNER JOIN nodes n ON n.node_id = uh.node_id
+  INNER JOIN nodes n ON n.node_id = luh.node_id
   INNER JOIN provinces p ON p.province_id = n.province_id
-  INNER JOIN province_histories ph ON ph.province_id = p.province_id
   INNER JOIN get_last_province_history($1, $2) lph ON lph.province_id = p.province_id
   INNER JOIN countries c ON c.country_id = u.country_id
   WHERE u.unit_type = 'Garrison'
-    AND uh.unit_status = 'Active';
+    AND luh.unit_status = 'Active';
 `;

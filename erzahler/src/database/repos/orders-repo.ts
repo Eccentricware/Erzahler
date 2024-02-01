@@ -188,9 +188,11 @@ export class OrdersRepository {
           }
         });
 
-        const query = this.pgp.helpers.insert(values, this.buildOrderTransferCols);
-        return this.db.query(query)
-          .catch((error: Error) => terminalLog('saveBuildTransfers error: ' + error.message));
+        if (values.length > 0) {
+          const query = this.pgp.helpers.insert(values, this.buildOrderTransferCols);
+          return this.db.query(query)
+            .catch((error: Error) => terminalLog('saveBuildTransfers error: ' + error.message));
+        }
       });
   }
 

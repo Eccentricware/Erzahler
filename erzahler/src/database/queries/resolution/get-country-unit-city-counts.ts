@@ -18,7 +18,7 @@ export const getCountryUnitCityCountsQuery = `
     GROUP BY ph.controller_id
   )
   SELECT c.country_id,
-    uc.unit_count + lch.nukes_in_production,
+    uc.unit_count + lch.nukes_in_production AS unit_count,
     cc.city_count,
     cc.city_count - uc.unit_count - lch.nukes_in_production AS adjustments
   FROM countries c

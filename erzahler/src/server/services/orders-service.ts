@@ -507,6 +507,10 @@ export class OrdersService {
     const allBuilds: Build[] = [];
 
     countryStats.forEach((country: CountryStats) => {
+      if (!newOrderSetLibrary[country.id]) {
+        return;
+      }
+
       if (country.adjustments > 0) {
         const countryBuildOptions = buildOptions.filter((buildOption: BuildLocProvince) =>
           buildOption.countryId === country.id
@@ -561,9 +565,11 @@ export class OrdersService {
       }
     });
 
-    allBuilds.forEach(async (build: Build) => {
-      await db.ordersRepo.saveDefaultBuildOrder(build);
-    });
+    if (allBuilds.length > 0) {
+      allBuilds.forEach(async (build: Build) => {
+        await db.ordersRepo.saveDefaultBuildOrder(build);
+      });
+    }
   }
 
   async saveBuildOrders(orderSetId: number, buildOrders: BuildOrders): Promise<void> {
