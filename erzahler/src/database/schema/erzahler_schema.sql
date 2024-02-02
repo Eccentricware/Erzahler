@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS games(
   skill_min INTEGER,
   skill_max INTEGER,
   default_nuke_range INTEGER NOT NULL DEFAULT 3,
+  origin VARCHAR(4),
   PRIMARY KEY(game_id)
 );
 
