@@ -95,7 +95,7 @@ export class ResolutionService {
       case TurnType.FALL_ORDERS:
         this.resolveFallOrders(turn);
         break;
-      case TurnType.FALL_RETREATS:        // DOING
+      case TurnType.FALL_RETREATS:
         this.resolveFallRetreats(turn);
         break;
       case TurnType.ADJUSTMENTS:
