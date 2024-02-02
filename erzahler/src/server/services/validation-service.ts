@@ -13,6 +13,8 @@ export interface RequestValidationObject {
     guestAllowed: boolean;
   }
   assignmentType?: any;
+  environment?: string;
+  magicWord?: any;
 }
 
 export interface RequestValidationResponse {
@@ -25,6 +27,8 @@ export interface RequestValidationResponse {
     turnNumber?: number;
     idToken?: string;
     assignmentType?: AssignmentType;
+    environment?: string;
+    magicWord?: string;
   };
 }
 
@@ -104,6 +108,19 @@ export class ValidationService {
         validationResponse.valid = false;
         validationResponse.errors.push('Invalid assignmentType');
       }
+    }
+
+    if (request.environment) {
+      if (request.environment === 'test' || request.environment === 'live') {
+        validationResponse.sanitizedVariables.environment = request.environment;
+      } else {
+        validationResponse.valid = false;
+        validationResponse.errors.push('Invalid environment');
+      }
+    }
+
+    if (request.magicWord) {
+      validationResponse.sanitizedVariables.magicWord = String(request.magicWord);
     }
 
     if (!validationResponse.valid) {

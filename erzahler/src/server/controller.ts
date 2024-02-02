@@ -10,9 +10,9 @@ import { ordersRouter } from './routes/orders-router';
 import { mapRouter } from './routes/maps-router';
 import { optionsRouter } from './routes/options-router';
 import * as dotenv from 'dotenv';
-import { OptionsService } from './services/options-service';
 import { schedulingRouter } from './routes/scheduling-router';
 import { historyRouter } from './routes/history-router';
+import { importRouter } from './routes/import-router';
 // import { OptionsService } from './services/options-service';
 
 dotenv.config();
@@ -34,6 +34,7 @@ erzahler.use('/assignments', assignmentRouter);
 erzahler.use('/scheduling', schedulingRouter);
 erzahler.use('/games', gameRouter);
 erzahler.use('/history', historyRouter);
+erzahler.use('/import', importRouter);
 erzahler.use('/maps', mapRouter);
 erzahler.use('/options', optionsRouter);
 erzahler.use('/orders', ordersRouter);
