@@ -51,6 +51,7 @@ import { getAdjResolutionDataQuery } from '../queries/resolution/get-adj-resolut
 import { insertNewUnitQuery, insertUnitHistoryQUery } from '../queries/resolution/insert-unit-queries';
 import { updateAdjOrderQuery } from '../queries/resolution/adjustment-orders-query';
 import { updateNominationQuery } from '../queries/resolution/update-nomination-query';
+import { transferRemainingProvincesQuery } from '../queries/resolution/transfer-remaining-provinces-query';
 
 export class ResolutionRepository {
   provinceHistoryCols: ColumnSet<unknown>;
@@ -182,6 +183,14 @@ export class ResolutionRepository {
     this.db.query(query).catch((error: Error) => {
       terminalLog('Insert Province Histories Error: ' + error.message);
     });
+  }
+
+  async transferRemainingProvinces(provinceIds: number[], conqueringCountryId: number, turnId: number): Promise<void> {
+    await this.pool.query(transferRemainingProvincesQuery, [
+      conqueringCountryId,
+      provinceIds,
+      turnId
+    ]);
   }
 
   async insertCountryHistories(countryHistories: Record<string, CountryHistoryRow>, turnId: number): Promise<void> {
@@ -506,10 +515,12 @@ export class ResolutionRepository {
         result.rows.map((country: CountryStatCountsResult) => {
           return <CountryStatCounts>{
             countryId: country.country_id,
-            cityCount: country.city_count,
-            unitCount: country.unit_count,
-            voteCount: country.vote_count,
-            occupyingCountryId: country.occupying_country_id
+            cityCount: Number(country.city_count),
+            unitCount: Number(country.unit_count),
+            adjustments: Number(country.city_count) - Number(country.unit_count),
+            voteCount: Number(country.vote_count),
+            occupyingCountryId: country.occupying_country_id,
+            canClaimTerritory: country.can_claim_territory
           };
         })
       )

@@ -341,22 +341,27 @@ export interface CountryHistoryRow {
   inRetreat: boolean;
   voteCount: number;
   nukesInProduction: number;
+  newCapitals?: number;
 }
 
 export interface CountryStatCountsResult {
   country_id: number;
   unit_count: number;
   city_count: number;
+  adjustments: number;
   vote_count: number;
   occupying_country_id: number;
+  can_claim_territory: boolean;
 }
 
 export interface CountryStatCounts {
   countryId: number;
   unitCount: number;
   cityCount: number;
+  adjustments: number;
   voteCount: number;
   occupyingCountryId: number;
+  canClaimTerritory: boolean;
 }
 
 export interface InitialUnit {
