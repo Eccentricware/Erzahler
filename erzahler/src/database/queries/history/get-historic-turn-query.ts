@@ -31,7 +31,7 @@ export const getHistoricTurnQuery = `
   WHERE t.game_id = $1
     AND t.turn_number = $2
     AND t.turn_status IN ('Resolved', 'Final')
-    AND lch.country_status IN ('Active', 'Civil Disorder')
+    --AND lch.country_status IN ('Active', 'Civil Disorder')
     AND c.rank != 'n'
   GROUP BY t.game_id,
     t.turn_id,
