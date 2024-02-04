@@ -3,7 +3,6 @@ export enum CountryStatus {
   CIVIL_DISORDER = 'Civil Disorder',
   ELIMINATED = 'Eliminated',
   NPC = 'Non-Player Country',
-  RETREAT = 'Retreat',
   // End Behavior
   SURVIVED = 'Survived',
   WON = 'Won',
@@ -19,5 +18,6 @@ export enum CountryRank {
   E = 'e',
   F = 'f',
   G = 'g',
-  N = 'n'
+  N = 'n',
+  DASH = '-' // Only for placeholder
 }

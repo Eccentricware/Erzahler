@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { DayOfWeek } from '../enumeration/day_of_week-enum';
 import { TurnType } from '../enumeration/turn-type-enum';
+import { CountryRank } from '../enumeration/country-enum';
 
 export interface GameStateResult {
   game_id: number;
@@ -39,6 +40,14 @@ export interface GameStateResult {
   current_year: number;
   year_number: number;
   stylized_start_year: number;
+  base_final: number;
+  penalty_a: number;
+  penalty_b: number;
+  penalty_c: number;
+  penalty_d: number;
+  penalty_e: number;
+  penalty_f: number;
+  penalty_g: number;
   highest_ranked_req: number;
   all_votes_controlled: boolean;
   unit_in_retreat: boolean;
@@ -83,6 +92,10 @@ export interface GameState {
   yearNumber: number;
   stylizedStartYear: number;
   highestRankedReq: number;
+  votingSchedule: {
+    baseFinal: number;
+    penalties: Record<CountryRank, number>;
+  }
   allVotesControlled: boolean;
   unitsInRetreat: boolean;
   defaultNukeRange: number;

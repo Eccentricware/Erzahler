@@ -3,6 +3,7 @@ export const getCountryStateQuery = `
     c.country_name,
     lch.city_count,
     lch.unit_count,
+    lch.vote_count,
     lch.in_retreat,
     lch.banked_builds,
     lch.nuke_range,

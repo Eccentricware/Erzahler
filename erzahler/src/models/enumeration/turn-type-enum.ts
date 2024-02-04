@@ -7,6 +7,6 @@ export enum TurnType {
   FALL_RETREATS = 'Fall Retreats',
   ADJUSTMENTS = 'Winter Adjustments',
   ADJ_AND_NOM = 'Winter Adjustments/Nominations',
-  NOMINATIONS = 'Nominations',
-  VOTES = 'Votes'
+  NOMINATIONS = 'Winter Nominations',
+  VOTES = 'Spring Votes'
 }

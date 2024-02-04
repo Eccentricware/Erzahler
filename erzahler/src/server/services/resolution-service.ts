@@ -14,12 +14,13 @@ import { ProvinceStatus, ProvinceType, CityType } from '../../models/enumeration
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { BuildType, UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
-import { Turn, TurnResult } from '../../models/objects/database-objects';
+import { NominationRow, Turn, TurnResult } from '../../models/objects/database-objects';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
   AdjacentTransport,
   BuildLocProvince,
+  NominatableCountry,
   OptionDestination,
   SecondaryUnit,
   TransportDestination,
@@ -99,12 +100,10 @@ export class ResolutionService {
         this.resolveFallRetreats(turn);
         break;
       case TurnType.ADJUSTMENTS:
+      case TurnType.ADJ_AND_NOM:
         this.resolveAdjustments(turn);
         break;
-      case TurnType.ADJ_AND_NOM:          // To-do
-        this.resolveAdjAndNom(turn);
-        break;
-      case TurnType.NOMINATIONS:          // To-do
+      case TurnType.NOMINATIONS:
         this.resolveNominations(turn);
         break;
       case TurnType.VOTES:                // To-do
@@ -1063,6 +1062,10 @@ export class ResolutionService {
           const changedGameState = await db.gameRepo.getGameState(turn.gameId);
           const nextTurns = this.schedulerService.findNextTurns(turn, changedGameState, false);
 
+          if (turn.turnType === TurnType.ADJ_AND_NOM) {
+            const validNominations = await this.validateNominations(turn, gameState);
+          }
+
           // Ensures pending turn_id < preliminary turn_id for sequential get_last_history functions
           terminalLog('DB: Pending Turn Insert');
           db.gameRepo.insertNextTurn([
@@ -1075,6 +1078,19 @@ export class ResolutionService {
             nextTurns.pending.deadline
           ])
           .then(async (pendingTurn: Turn) => {
+            if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
+              await this.optionsService.saveOptionsForTurn(pendingTurn);
+            }
+
+            if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
+              const validNominations = await this.validateNominations(turn, gameState);
+              db.ordersRepo.insertNominations(validNominations, pendingTurn.turnId!);
+            }
+
+            if (pendingTurn.turnType === TurnType.VOTES) {
+              await this.orderService.initializeVotingOrderSets(pendingTurn);
+            }
+
             if (nextTurns.preliminary) {
               // If prelim exists, pending = Nominations and prelim = Spring Orders
               // Won't need to default any options for Nominations?!
@@ -1091,22 +1107,57 @@ export class ResolutionService {
               .then(async (preliminaryTurn: Turn) => {
                 await this.optionsService.saveOptionsForTurn(preliminaryTurn);
               });
-
-            } else {
-              // If prelim doesn't exist, pending = Spring Orders
-              await this.optionsService.saveOptionsForTurn(pendingTurn);
             }
           });
         });
     });
   }
 
-  async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`);
-  }
+  // async resolveAdjAndNom(turn: UpcomingTurn): Promise<void> {
+  //   terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Adjustments and Nominations resolution, which is not yet implemented`);
+  // }
 
   async resolveNominations(turn: UpcomingTurn): Promise<void> {
-    terminalAddendum('Resolution', `Game ${turn.gameId} has triggered Nominations resolution, which is not yet implemented`);
+    const gameState = await db.gameRepo.getGameState(turn.gameId);
+    const nextTurns = this.schedulerService.findNextTurns(turn, gameState, false);
+
+    const validNominations = await this.validateNominations(turn, gameState);
+
+    // Ensures pending turn_id < preliminary turn_id for sequential get_last_history functions
+    terminalLog('DB: Pending Turn Insert');
+    db.gameRepo.insertNextTurn([
+      turn.gameId,
+      nextTurns.pending.turnNumber,
+      nextTurns.pending.turnName,
+      nextTurns.pending.type,
+      nextTurns.pending.yearNumber,
+      TurnStatus.PENDING,
+      nextTurns.pending.deadline
+    ])
+    .then(async (pendingTurn: Turn) => {
+      // If prelim,  pending = Votes, prelim = Spring Orders
+      // If !prelim, pending = Spring Orders and Votes
+      await this.orderService.initializeVotingOrderSets(pendingTurn);
+      db.ordersRepo.insertNominations(validNominations, pendingTurn.turnId!)
+      .then(async () => {
+          db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED);
+        });
+
+      if (nextTurns.preliminary) {
+        db.gameRepo.insertNextTurn([
+          turn.gameId,
+          nextTurns.preliminary.turnNumber,
+          nextTurns.preliminary.turnName,
+          nextTurns.preliminary.type,
+          nextTurns.preliminary.yearNumber,
+          TurnStatus.PRELIMINARY,
+          nextTurns.preliminary.deadline
+        ])
+        .then(async (preliminaryTurn: Turn) => {
+          await this.optionsService.saveOptionsForTurn(preliminaryTurn);
+        });
+      }
+    });
   }
 
   async resolveVotes(turn: UpcomingTurn): Promise<void> {
@@ -2653,5 +2704,40 @@ export class ResolutionService {
     }
 
 
+  }
+
+  async validateNominations(turn: Turn, gameState: GameState): Promise<NominationRow[]> {
+    const nominatedCountries = await db.ordersRepo.getNominationOrder(turn.gameId, turn.turnNumber, turn.turnId!, 0);
+    const nominationLibrary: Record<string, NominationRow> = {};
+    const validNominations: NominationRow[] = [];
+
+    nominatedCountries.forEach((nominatedCountry: NominatableCountry) => {
+      const nomination = nominationLibrary[nominatedCountry.nominatorId];
+      if (!nomination) {
+        nominationLibrary[nominatedCountry.nominatorId] = {
+          nominatorId: nominatedCountry.nominatorId,
+          turnId: turn.turnId!,
+          countryIds: nominatedCountry.countryId ? [nominatedCountry.countryId] : [],
+          signature: nominatedCountry.rank,
+          votesRequired: gameState.votingSchedule.baseFinal
+            + gameState.votingSchedule.penalties[nominatedCountry.rank],
+          valid: false
+        };
+
+      } else if (nomination?.countryIds.length > 0) {
+        nomination.countryIds.push(nominatedCountry.countryId);
+        nomination.signature += nominatedCountry.rank;
+        nomination.votesRequired += gameState.votingSchedule.penalties[nominatedCountry.rank];
+        nomination.valid = nomination.countryIds.length === 3;
+      }
+
+    });
+
+    for (let nomination in nominationLibrary) {
+      if (nominationLibrary[nomination].valid) {
+        validNominations.push(nominationLibrary[nomination]);
+      }
+    }
+    return validNominations;
   }
 }
