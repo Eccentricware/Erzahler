@@ -299,28 +299,27 @@ export class ResolutionService {
           terminalLog(`Country History not found for ${countryStats.countryId}`);
         } else if (
           countryHistory.cityCount !== countryStats.cityCount ||
-          countryHistory.unitCount !== countryStats.unitCount
+          countryHistory.unitCount !== countryStats.unitCount ||
+          countryHistory.voteCount !== countryStats.voteCount
         ) {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
-          countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
-          if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
-            countryHistory.countryStatus = CountryStatus.ELIMINATED;
-            let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
-            if (!occupyingCountryHistory) {
-              const occupyingCountryHistoryRow = dbStates.countryHistories.find(
-                (country: CountryHistoryRow) => country.countryId === countryStats.countryId
-              );
+          countryHistory.adjustments = countryStats.adjustments;
+          countryHistory.voteCount =
+            countryHistory.newCapitals
+            ? countryStats.voteCount + countryHistory.newCapitals
+            : countryStats.voteCount;
 
-              if (occupyingCountryHistoryRow) {
-                occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
-              }
-            }
-
-            occupyingCountryHistory!.voteCount++;
-            dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
+          if (
+            countryStats.cityCount === 0
+            && countryStats.unitCount === 0
+            && countryStats.voteCount === 1
+            && countryStats.occupyingCountryId !== countryHistory.countryId
+          ) {
+            this.eliminateCountry(countryHistory, countryStats, dbStates, dbUpdates, turn);
+          } else {
+            dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
           }
-          dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });
 
@@ -466,29 +465,23 @@ export class ResolutionService {
         } else if (
           countryHistory.cityCount !== countryStats.cityCount
           || countryHistory.unitCount !== countryStats.unitCount
+          || countryHistory.voteCount !== countryStats.voteCount
           || countryHistory.inRetreat
         ) {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
-          countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
+          countryHistory.adjustments = countryStats.adjustments;
+          countryHistory.voteCount =
+            countryHistory.newCapitals
+            ? countryStats.voteCount + countryHistory.newCapitals
+            : countryStats.voteCount;
           countryHistory.inRetreat = false;
+
           if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
-            countryHistory.countryStatus = CountryStatus.ELIMINATED;
-            let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
-            if (!occupyingCountryHistory) {
-              const occupyingCountryHistoryRow = dbStates.countryHistories.find(
-                (country: CountryHistoryRow) => country.countryId === countryStats.countryId
-              );
-
-              if (occupyingCountryHistoryRow) {
-                occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
-              }
-            }
-
-            occupyingCountryHistory!.voteCount++;
-            dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
+            this.eliminateCountry(countryHistory, countryStats, dbStates, dbUpdates, turn);
+          } else {
+            dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
           }
-          dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });
 
@@ -643,28 +636,26 @@ export class ResolutionService {
           terminalLog(`Country History not found for ${countryStats.countryId}`);
         } else if (
           countryHistory.cityCount !== countryStats.cityCount ||
-          countryHistory.unitCount !== countryStats.unitCount
+          countryHistory.unitCount !== countryStats.unitCount ||
+          countryHistory.voteCount !== countryStats.voteCount
         ) {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
-          countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
-          if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
-            countryHistory.countryStatus = CountryStatus.ELIMINATED;
-            let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
-            if (!occupyingCountryHistory) {
-              const occupyingCountryHistoryRow = dbStates.countryHistories.find(
-                (country: CountryHistoryRow) => country.countryId === countryStats.countryId
-              );
+          countryHistory.adjustments = countryStats.adjustments;
+          countryHistory.voteCount =
+            countryHistory.newCapitals
+            ? countryStats.voteCount + countryHistory.newCapitals
+            : countryStats.voteCount;
 
-              if (occupyingCountryHistoryRow) {
-                occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
-              }
-            }
-
-            occupyingCountryHistory!.voteCount++;
-            dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
+          if (
+            (countryStats.cityCount === 0 && (!countryHistory.inRetreat || !countryStats.canClaimTerritory))
+            && countryStats.voteCount === 1
+            && countryStats.occupyingCountryId !== countryHistory.countryId
+          ) {
+            this.eliminateCountry(countryHistory, countryStats, dbStates, dbUpdates, turn);
+          } else {
+            dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
           }
-          dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });
 
@@ -813,29 +804,24 @@ export class ResolutionService {
         } else if (
           countryHistory.cityCount !== countryStats.cityCount
           || countryHistory.unitCount !== countryStats.unitCount
+          || countryHistory.voteCount !== countryStats.voteCount
           || countryHistory.inRetreat
         ) {
           countryHistory.cityCount = countryStats.cityCount;
           countryHistory.unitCount = countryStats.unitCount;
-          countryHistory.adjustments = countryStats.cityCount - countryStats.unitCount;
+          countryHistory.adjustments = countryStats.adjustments;
+          countryHistory.voteCount =
+            countryHistory.newCapitals
+            ? countryStats.voteCount + countryHistory.newCapitals
+            : countryStats.voteCount;
+
           countryHistory.inRetreat = false;
-          if (countryStats.cityCount === 0 && countryStats.unitCount === 0 && countryStats.voteCount === 1) {
-            countryHistory.countryStatus = CountryStatus.ELIMINATED;
-            let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
-            if (!occupyingCountryHistory) {
-              const occupyingCountryHistoryRow = dbStates.countryHistories.find(
-                (country: CountryHistoryRow) => country.countryId === countryStats.countryId
-              );
 
-              if (occupyingCountryHistoryRow) {
-                occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
-              }
-            }
-
-            occupyingCountryHistory!.voteCount++;
-            dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
+          if (countryStats.cityCount === 0 && countryStats.voteCount === 1) {
+            this.eliminateCountry(countryHistory, countryStats, dbStates, dbUpdates, turn);
+          } else {
+            dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
           }
-          dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
         }
       });
 
@@ -2864,5 +2850,66 @@ export class ResolutionService {
       }
     }
     return validNominations;
+  }
+
+  async eliminateCountry(countryHistory: CountryHistoryRow, countryStats: CountryStatCounts, dbStates: DbStates, dbUpdates: DbUpdates, turn: UpcomingTurn, ) {
+    countryHistory.countryStatus = CountryStatus.ELIMINATED;
+    let occupyingCountryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.occupyingCountryId];
+    if (!occupyingCountryHistory) {
+      const occupyingCountryHistoryRow = dbStates.countryHistories.find(
+        (country: CountryHistoryRow) => country.countryId === countryStats.occupyingCountryId
+      );
+
+      if (occupyingCountryHistoryRow) {
+        occupyingCountryHistory = this.copyCountryHistory(occupyingCountryHistoryRow);
+      }
+    }
+
+    occupyingCountryHistory.voteCount++;
+    occupyingCountryHistory!.newCapitals =
+      occupyingCountryHistory!.newCapitals
+      ? occupyingCountryHistory!.newCapitals + 1
+      : 1;
+    dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
+    dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
+    this.transferRemainingProvinces(
+      countryStats.countryId,
+      countryStats.occupyingCountryId,
+      dbStates,
+      dbUpdates,
+      turn.turnId
+    );
+  }
+
+  async transferRemainingProvinces(
+    eliminatedCountryId: number,
+    conqueringCountryId: number,
+    dbStates: DbStates,
+    dbUpdates: DbUpdates,
+    turnId: number
+  ) {
+    const preparedHistoriesToUpdate = dbUpdates.provinceHistories?.filter((province: ProvinceHistoryRow) =>
+      province.controllerId === eliminatedCountryId
+    );
+
+    const updateProvinceIds = preparedHistoriesToUpdate?.map((province: ProvinceHistoryRow) => province.provinceId);
+
+    const newHistoriesToAdd = dbStates.provinceHistories?.filter((province: ProvinceHistoryRow) =>
+      province.controllerId === eliminatedCountryId && !updateProvinceIds?.includes(province.provinceId)
+    ).map((province: ProvinceHistoryRow) => {
+      return this.copyProvinceHistory(province);
+    });
+
+    newHistoriesToAdd?.forEach((province: ProvinceHistoryRow) => {
+      province.controllerId = conqueringCountryId;
+    });
+
+    if (updateProvinceIds?.length > 0) {
+      await db.resolutionRepo.transferRemainingProvinces(updateProvinceIds, conqueringCountryId, turnId);
+    }
+
+    if (newHistoriesToAdd?.length > 0) {
+      await db.resolutionRepo.insertProvinceHistories(newHistoriesToAdd, turnId);
+    }
   }
 }

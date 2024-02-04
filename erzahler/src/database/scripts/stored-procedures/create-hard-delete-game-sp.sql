@@ -8,7 +8,7 @@ AS $$
   WHERE unit_history_id IN (
     SELECT uh.unit_history_id
     FROM unit_histories uh
-    INNER JOIN turns t ON t.turn_id = t.turn_id
+    INNER JOIN turns t ON t.turn_id = uh.turn_id
     WHERE t.game_id = $1
   );
 
