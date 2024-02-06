@@ -378,6 +378,10 @@ export interface NominationResult {
   signature: string;
   countries: NominatableCountryResult[];
   votes_required: number;
+  yay_voter_ids: number[];
+  votes_received: number;
+  win_diff: number;
+  winner: boolean;
 }
 
 export interface Nomination {
@@ -385,6 +389,10 @@ export interface Nomination {
   signature: string;
   countries: NominatableCountry[];
   votesRequired: number;
+  yayVoterIds: number[];
+  votesReceived: number;
+  winDiff: number;
+  winner: boolean;
 }
 
 export interface OrderSetResult {
@@ -453,4 +461,16 @@ export interface DisbandOptions {
 export interface NominationOptions {
   victoryBase: number;
   countries: NominatableCountry[];
+}
+
+export interface CountryVotesResult {
+  country_id: number;
+  votes: number[];
+  vote_count: number;
+}
+
+export interface CountryVotes {
+  countryId: number;
+  votes: number[];
+  voteCount: number;
 }

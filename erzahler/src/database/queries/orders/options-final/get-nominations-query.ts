@@ -8,7 +8,11 @@ export const getNominationsQuery = `
       )
     ) countries,
     n.signature,
-    n.votes_required
+    n.votes_required,
+    n.yay_voter_ids,
+    n.votes_received,
+    n.winner,
+    n.win_diff
   FROM nominations n
   INNER JOIN countries c ON c.country_id = any(n.country_ids)
   WHERE n.turn_id = $1
