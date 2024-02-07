@@ -38,3 +38,15 @@ export interface CountryOrderSetIds {
   pendingOrderSetId: number | undefined;
   preliminaryOrderSetId: number | undefined;
 }
+
+export interface CountryAuthorizationResult {
+  assigned: boolean;
+  pending_order_set_id: number | undefined;
+  preliminary_order_set_id: number | undefined;
+}
+
+export interface CountryAuthorization {
+  assigned: boolean;
+  pendingOrderSetId: number | undefined;
+  preliminaryOrderSetId: number | undefined;
+}

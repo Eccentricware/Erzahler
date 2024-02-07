@@ -549,14 +549,18 @@ export class OrdersRepository {
       .catch((error: Error) => terminalLog('saveBuildOrders error: ' + error.message));
   }
 
-  async saveDisbandOrders(orderSetId: number, disbands: DisbandOrders): Promise<void> {
-    await this.pool
+  async saveDisbandOrders(orderSetId: number, disbands: DisbandOrders): Promise<boolean> {
+    return await this.pool
       .query(saveDisbandOrdersQuery, [
         disbands.unitsDisbanding,
         disbands.increaseRange,
         orderSetId
       ])
-      .catch((error: Error) => terminalLog('saveDisbandOrders error: ' + error.message));
+      .then(() => true)
+      .catch((error: Error) => {
+        terminalLog('saveDisbandOrders error: ' + error.message);
+        return false;
+      });
   }
 
   async getNukesReadyLocs(nextTurnId: number, countryId: number): Promise<NukeBuildInDisband[]> {
