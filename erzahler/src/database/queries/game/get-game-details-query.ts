@@ -57,10 +57,20 @@ export const getGameDetailsQuery = `
       THEN true
       ELSE false
     END display_as_admin,
+    cs.base_final,
+    cs.total_possible,
+    cs.penalty_a,
+    cs.penalty_b,
+    cs.penalty_c,
+    cs.penalty_d,
+    cs.penalty_e,
+    cs.penalty_f,
+    cs.penalty_g,
     g.ready_time
   FROM games g
   LEFT JOIN assignments a ON a.game_id = g.game_id
   LEFT JOIN users u ON u.user_id = a.user_id
   LEFT JOIN user_settings us ON us.user_id = u.user_id
+  LEFT JOIN coalition_schedules cs ON cs.game_id = g.game_id
   WHERE g.game_id = $1;
 `;

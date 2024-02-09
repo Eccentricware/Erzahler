@@ -114,7 +114,7 @@ export class GameService {
           await this.addCreatorAssignment(pool, this.user.userId),
           await this.addRulesInGame(pool),
           await this.addTurn0(pool, schedule),
-          await this.addCoalitionSchedule(pool)
+          await this.addCoalitionSchedule(pool, this.gameData.coalitionSchedule)
         ]).then(() => {
           return newGame.game_id;
         });
@@ -129,8 +129,8 @@ export class GameService {
     await db.gameRepo.insertAssignment(userId, undefined, 'Creator', this.gameData.gameName);
   }
 
-  async addCoalitionSchedule(pool: Pool): Promise<void> {
-    await db.gameRepo.insertCoalitionScheduleQuery(this.gameData.gameName);
+  async addCoalitionSchedule(pool: Pool, coalitionSchedule: any): Promise<void> {
+    await db.gameRepo.insertCoalitionScheduleQuery(this.gameData.gameName, coalitionSchedule);
   }
 
   async addTurn0(pool: Pool, schedule: StartScheduleObject): Promise<void> {
@@ -434,6 +434,18 @@ export class GameService {
           gameData.skillRange[1],
           gameData.gameId
         ];
+
+        const coalitionSchedule = [
+          gameData.coalitionSchedule.baseRequired,
+          gameData.coalitionSchedule.penalties.a,
+          gameData.coalitionSchedule.penalties.b,
+          gameData.coalitionSchedule.penalties.c,
+          gameData.coalitionSchedule.penalties.d,
+          gameData.coalitionSchedule.penalties.e,
+          gameData.coalitionSchedule.penalties.f,
+          gameData.coalitionSchedule.penalties.g,
+          gameData.gameId
+        ];
         const errors: string[] = [];
 
         // console.log('Internal Game Data:', gameData);
@@ -442,12 +454,29 @@ export class GameService {
           .then((result: any) => {
             return {
               success: true,
-              message: 'Game Updated'
+              message: 'Game Settings Updated'
             };
           })
           .catch((error: Error) => {
             errors.push('Update Game Settings Error: ' + error.message);
-            console.log('Update Game Settings Error: ' + error.message);
+            terminalLog('Update Game Settings Error: ' + error.message);
+            return {
+              success: false,
+              errors: errors
+            };
+          });
+
+        await db.gameRepo
+          .updateCoalitionSchedule(coalitionSchedule)
+          .then((result: any) => {
+            return {
+              success: true,
+              message: 'Game Coalitions Updated'
+            };
+          })
+          .catch((error: Error) => {
+            errors.push('Update Game Settings Error: ' + error.message);
+            terminalLog('Update Game Settings Error: ' + error.message);
             return {
               success: false,
               errors: errors

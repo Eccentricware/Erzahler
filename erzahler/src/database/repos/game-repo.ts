@@ -35,7 +35,7 @@ import { insertTerrainQuery } from '../queries/game/insert-terrain-query';
 import { insertNextTurnQuery, insertTurnQuery } from '../queries/game/insert-turn-query';
 import { insertInitialUnitHistoryQuery } from '../queries/game/insert-initial-unit-history-query';
 import { insertUnitQuery } from '../queries/game/insert-unit-query';
-import { updateGameSettingsQuery } from '../queries/game/update-game-settings-query';
+import { updateCoalitionScheduleQuery, updateGameSettingsQuery } from '../queries/game/update-game-settings-query';
 import { updateTurnQuery } from '../queries/game/update-turn-query';
 import { getGameStateQuery } from '../queries/orders/get-game-state-query';
 import {
@@ -173,21 +173,19 @@ export class GameRepository {
     });
   }
 
-  async insertCoalitionScheduleQuery(gameName: string): Promise<void> {
+  async insertCoalitionScheduleQuery(gameName: string, coalitionSchedule: any): Promise<void> {
     await this.pool
       .query(insertCoalitionScheduleQuery, [
-        50,
-        1,
+        coalitionSchedule.baseRequired,
+        coalitionSchedule.penalties.a,
+        coalitionSchedule.penalties.b,
+        coalitionSchedule.penalties.c,
+        coalitionSchedule.penalties.d,
+        coalitionSchedule.penalties.e,
+        coalitionSchedule.penalties.f,
+        coalitionSchedule.penalties.g,
+        coalitionSchedule.totalVotes,
         undefined,
-        9,
-        6,
-        3,
-        1,
-        0,
-        undefined,
-        undefined,
-        undefined,
-        'ABB',
         undefined,
         gameName
       ])
@@ -453,6 +451,12 @@ export class GameRepository {
     });
   }
 
+  async updateCoalitionSchedule(coalitionSchedule: any[]): Promise<void> {
+    await this.pool.query(updateCoalitionScheduleQuery, coalitionSchedule).catch((error: Error) => {
+      terminalLog('Update Coalition Schedule Error: ' + error.message);
+    });
+  }
+
   async updateTurn(gameStart: any, turnStatus: TurnStatus, turnNumber: number, gameId: number): Promise<void> {
     await this.pool.query(updateTurnQuery, [gameStart, turnStatus, turnNumber, gameId]).catch((error: Error) => {
       terminalLog('Update Turn Error: ' + error.message);
@@ -564,6 +568,7 @@ export class GameRepository {
       result.rows.map((schedule: CoalitionScheduleResult) => {
         return <CoalitionSchedule>{
           baseFinal: schedule.base_final,
+          totalPossible: schedule.total_possible,
           penalties: {
             a: schedule.penalty_a,
             b: schedule.penalty_b,

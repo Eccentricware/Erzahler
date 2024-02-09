@@ -1,8 +1,6 @@
 export const insertCoalitionScheduleQuery = `
   INSERT INTO coalition_schedules (
     game_id,
-    base_percent,
-    base_adjust,
     base_final,
     penalty_a,
     penalty_b,
@@ -26,9 +24,7 @@ export const insertCoalitionScheduleQuery = `
     $8,
     $9,
     $10,
-    $11,
-    $12,
-    $13
+    $11
   FROM games g
-  WHERE g.game_name = $14
+  WHERE g.game_name = $12
 `;

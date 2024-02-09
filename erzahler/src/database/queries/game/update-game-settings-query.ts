@@ -35,3 +35,16 @@ export const updateGameSettingsQuery = `
     skill_max = $33
   WHERE game_id = $34
 `;
+
+export const updateCoalitionScheduleQuery = `
+  UPDATE coalition_schedules
+  SET base_final = $1,
+    penalty_a = $2,
+    penalty_b = $3,
+    penalty_c = $4,
+    penalty_d = $5,
+    penalty_e = $6,
+    penalty_f = $7,
+    penalty_g = $8
+  WHERE game_id = $9;
+`;
