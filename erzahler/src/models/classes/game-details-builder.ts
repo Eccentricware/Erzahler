@@ -1,5 +1,6 @@
 import { SchedulerService } from '../../server/services/scheduler-service';
 import { GameDetailsQueryObject } from '../objects/game-details-query-object';
+import { CoalitionSchedule } from '../objects/games/coalition-schedule-objects';
 
 export class GameDetailsBuilder {
   scheduler: SchedulerService = new SchedulerService();
@@ -50,6 +51,7 @@ export class GameDetailsBuilder {
   skillMin: number;
   skillMax: number;
   isAdmin: boolean;
+  coalitionSchedule: CoalitionSchedule;
   readyTime: string;
 
   constructor(rawGame: GameDetailsQueryObject, localTimeZoneName: string, meridiemTime: boolean) {
@@ -112,6 +114,19 @@ export class GameDetailsBuilder {
     this.skillMin = rawGame.skill_min;
     this.skillMax = rawGame.skill_max;
     this.isAdmin = rawGame.display_as_admin;
+    this.coalitionSchedule = {
+      baseFinal: rawGame.base_final,
+      totalPossible: rawGame.total_possible,
+      penalties: {
+        a: rawGame.penalty_a,
+        b: rawGame.penalty_b,
+        c: rawGame.penalty_c,
+        d: rawGame.penalty_d,
+        e: rawGame.penalty_e,
+        f: rawGame.penalty_f,
+        g: rawGame.penalty_g
+      }
+    }
     this.readyTime = rawGame.ready_time;
   }
 }

@@ -1,6 +1,7 @@
 export const getCoalitionScheduleQuery = `
   SELECT
     base_final,
+    total_possible,
     penalty_a,
     penalty_b,
     penalty_c,

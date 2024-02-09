@@ -1,3 +1,6 @@
+import { GameStatus } from "../../enumeration/game-status-enum";
+import { CoalitionSchedule } from "./coalition-schedule-objects";
+
 export interface NewGameData {
   gameName: string;
   assignmentMethod: 'manual';
@@ -44,5 +47,6 @@ export interface NewGameData {
   voteDeadlineExtension: boolean | undefined;
   blindCreator: boolean;
   partialRosterStart: boolean;
+  coalitionSchedule: CoalitionSchedule;
   dbRows: any;
 }

@@ -46,5 +46,14 @@ export interface GameDetailsQueryObject {
   skill_min: number;
   skill_max: number;
   display_as_admin: boolean;
+  base_final: number;
+  total_possible: number;
+  penalty_a: number;
+  penalty_b: number;
+  penalty_c: number;
+  penalty_d: number;
+  penalty_e: number;
+  penalty_f: number;
+  penalty_g: number;
   ready_time: string;
 }
