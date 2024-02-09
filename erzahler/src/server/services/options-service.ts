@@ -668,6 +668,7 @@ export class OptionsService {
 
     const userCountries = userAssignments.filter((assignment: UserAssignment) =>
       assignment.assignmentType === AssignmentType.PLAYER
+      && assignment.countryId !== null
     );
 
     if (userCountries.length > 0) {
