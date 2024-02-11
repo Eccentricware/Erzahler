@@ -5,18 +5,19 @@ import { City, Terrain } from '../../models/objects/map-objects';
 import { terminalLog } from '../utils/general';
 
 export class MapService {
-  async getCurrentMap(gameId: number): Promise<any> {
+  async getMap(gameId: number, turnNumber?: number): Promise<any> {
     const gameState = await db.gameRepo.getGameState(gameId);
-    terminalLog(`Current map requested for ${gameState.gameName} (${gameId})`);
+    terminalLog(`map requested for ${gameState.gameName} (${gameId})`);
+    const turnNumberToUse = turnNumber ? turnNumber : gameState.turnNumber;
 
-    const terrain = await db.mapRepo.getTerrain(gameId, gameState.turnNumber);
+    const terrain = await db.mapRepo.getTerrain(gameId, turnNumberToUse);
 
     const seaTerrain = terrain.filter((terrain: Terrain) => terrain.renderCategory === RenderCategory.SEA);
     const landTerrain = terrain.filter((terrain: Terrain) => terrain.renderCategory === RenderCategory.LAND);
     const canalTerrain = terrain.filter((terrain: Terrain) => terrain.renderCategory === RenderCategory.CANAL);
     const lineTerrain = terrain.filter((terrain: Terrain) => terrain.renderCategory === RenderCategory.LINE);
 
-    const cities = await db.mapRepo.getCities(gameId, gameState.turnNumber);
+    const cities = await db.mapRepo.getCities(gameId, turnNumberToUse);
 
     const supplyCenters = cities.filter((city: City) =>
       city.type === CityType.SUPPLY && ['active', 'dormant'].includes(city.status)
@@ -29,7 +30,7 @@ export class MapService {
     const labels = await db.mapRepo.getLabels(gameId);
     const labelLines = await db.mapRepo.getLabelLines(gameId);
 
-    const units = await db.mapRepo.getUnits(gameId, gameState.turnNumber);
+    const units = await db.mapRepo.getUnits(gameId, turnNumberToUse);
 
     return {
       terrain: {

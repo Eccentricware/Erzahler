@@ -26,7 +26,7 @@ export interface UpcomingTurn {
   yearNumber: number;
   yearStylized: number;
   deadline: Date;
-  defaultsReady: boolean;
+  defaultsReady?: boolean;
   hasCaptures: boolean;
   unitMovement: boolean;
   transfers: boolean;

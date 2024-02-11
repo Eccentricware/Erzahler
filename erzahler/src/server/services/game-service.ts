@@ -13,6 +13,7 @@ import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
 import { terminalAddendum, terminalLog } from '../utils/general';
+import { GameStats } from '../../models/objects/database-objects';
 
 export class GameService {
   gameData: any = {};
@@ -482,12 +483,5 @@ export class GameService {
       return await schedulerService.readyGame(gameData)
         .then((result) => result);
     }
-  }
-
-  async getGameStats(gameId: number): Promise<any> {
-    terminalLog(`Game Stats Requested: ${gameId}`);
-    const gameState = await db.gameRepo.getGameState(gameId);
-    const countryStats = await db.gameRepo.getGameStats(gameId, gameState.turnNumber);
-    return { countries: countryStats };
   }
 }
