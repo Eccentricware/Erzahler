@@ -1,12 +1,26 @@
 import express from 'express';
 import { GameService } from '../services/game-service';
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
+import { ValidationService } from '../services/validation-service';
+import { terminalLog } from '../utils/general';
 
 export const gameRouter = express.Router();
 const gameService = new GameService();
+const validationService = new ValidationService();
 
 gameRouter.get('/check-name/:gameName', (request, response) => {
   const { gameName } = request.params;
+
+  if (gameName === '') {
+    terminalLog(`Invalid request to games/check-name/:gameName: Game name cannot be empty.`)
+    response.send({
+      success: false,
+      message: 'Game name cannot be empty.'
+    });
+
+    return;
+  }
+
   gameService
     .checkGameNameAvailability(gameName)
     .then((gameNameAvailable: boolean) => {
@@ -16,8 +30,20 @@ gameRouter.get('/check-name/:gameName', (request, response) => {
 });
 
 gameRouter.get('/search', (request, response) => {
-  const idToken: any = request.headers.idtoken;
+  const validationResponse = validationService.validateRequest({
+    route: `games/search`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: true
+    }
+  });
 
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const idToken = validationResponse.sanitizedVariables.idToken;
   const { playing, creator, administrator } = request.query;
 
   const parameters: GameFinderParameters = {
@@ -27,7 +53,7 @@ gameRouter.get('/search', (request, response) => {
   };
 
   gameService
-    .findGames(idToken, parameters)
+    .findGames(idToken!, parameters)
     .then((result: any) => {
       response.send(result);
     })
@@ -37,11 +63,24 @@ gameRouter.get('/search', (request, response) => {
 });
 
 gameRouter.get('/details/:gameId', (request, response) => {
-  const idToken: any = request.headers.idtoken;
-  const gameId = Number(request.params.gameId);
+  const validationResponse = validationService.validateRequest({
+    route: `games/details/:gameId`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: true
+    },
+    gameId: request.params.gameId
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const { idToken, gameId } = validationResponse.sanitizedVariables;
 
   gameService
-    .getGameData(idToken, gameId)
+    .getGameData(idToken!, gameId!)
     .then((result: any) => {
       response.send(result);
     })
@@ -52,8 +91,23 @@ gameRouter.get('/details/:gameId', (request, response) => {
 });
 
 gameRouter.post('/create', (request, response) => {
+  const validationResponse = validationService.validateRequest({
+    route: `games/create`,
+    idToken: {
+      value: request.body.idToken,
+      guestAllowed: false
+    }
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const { idToken } = validationResponse.sanitizedVariables;
+
   gameService
-    .newGame(request.body.gameData, <string>request.body.idToken)
+    .newGame(request.body.gameData, idToken!)
     .then((result: any) => {
       response.send(result);
     })
@@ -63,11 +117,24 @@ gameRouter.post('/create', (request, response) => {
 });
 
 gameRouter.put('/update', (request, response) => {
-  const idToken = <string>request.headers.idtoken;
+  const validationResponse = validationService.validateRequest({
+    route: `games/update`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    }
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const idToken = validationResponse.sanitizedVariables.idToken;
   const gameData = request.body.gameData;
 
   gameService
-    .updateGameSettings(idToken, gameData)
+    .updateGameSettings(idToken!, gameData)
     .then((result: any) => {
       response.send(result);
     })
@@ -77,11 +144,24 @@ gameRouter.put('/update', (request, response) => {
 });
 
 gameRouter.post('/declare-ready', (request, response) => {
-  const idToken = <string>request.headers.idtoken;
-  const gameId = request.body.gameId;
+  const validationResponse = validationService.validateRequest({
+    route: `games/declare-ready`,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    },
+    gameId: request.body.gameId
+  });
+
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
+    return;
+  }
+
+  const { idToken, gameId } = validationResponse.sanitizedVariables;
 
   gameService
-    .declareReady(idToken, gameId)
+    .declareReady(idToken!, gameId!)
     .then(() => {
       response.send({ success: true });
     })

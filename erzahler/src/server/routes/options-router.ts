@@ -1,20 +1,30 @@
 import express from 'express';
 import { OptionsFinal } from '../../models/objects/options-objects';
 import { OptionsService } from '../services/options-service';
+import { ValidationService } from '../services/validation-service';
 
 export const optionsRouter = express.Router();
 const optionsService = new OptionsService();
+const validationService = new ValidationService();
 
 optionsRouter.get(`/:gameId`, (request, response) => {
-  const idToken = <string>request.headers.idtoken;
-  const gameId = Number(request.params.gameId);
+  const validationResponse = validationService.validateRequest({
+    route: `options/:gameId`,
+    gameId: request.params.gameId,
+    idToken: {
+      value: request.headers.idtoken,
+      guestAllowed: false
+    }
+  });
 
-  if (idToken === '') {
-    response.send({ success: false, error: 'Guests cannot have order options.' });
+  if (!validationResponse.valid) {
+    response.send({ error: validationResponse.errors });
     return;
   }
 
-  optionsService.getTurnOptions(idToken, gameId).then((options: OptionsFinal | string) => {
+  const { gameId, idToken } = validationResponse.sanitizedVariables;
+
+  optionsService.getTurnOptions(idToken!, gameId!).then((options: OptionsFinal | string) => {
     response.send(options);
   });
 });
