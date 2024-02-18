@@ -9,10 +9,7 @@ const validationService = new ValidationService();
 historyRouter.get('/stats/:gameId', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `history/stats/:gameId`,
-    gameId: {
-      value: request.params.gameId,
-      guestAllowed: true
-    }
+    gameId: request.params.gameId
   });
 
   if (!validationResponse.valid) {

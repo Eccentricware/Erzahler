@@ -1,7 +1,15 @@
+import { OrderDisplay } from "../enumeration/order-display-enum";
 import { UnitType } from "../enumeration/unit-enum";
 import { Order, OrderResult } from "./option-context-objects";
 import { UpcomingTurn, UpcomingTurnResult } from "./scheduler/upcoming-turns-object";
 
+export interface HistoricTurnResult extends UpcomingTurnResult {
+  surviving_countries: any[];
+}
+
+export interface HistoricTurn extends UpcomingTurn {
+  survivingCountries: any[];
+}
 export interface TurnHistory {
   orderList: CountryOrders[];
   maps: {
@@ -20,10 +28,12 @@ export interface CountryOrders {
   countryName: string;
   countryFlag: string;
   orders: {
-    trades: any[];
-    unit: HistoricOrder[];
-    builds: any[];
-    disbands: any[];
+    trades: {
+      tech: string | undefined;
+      builds: HistoricBuildTransferOrder[];
+    };
+    units: HistoricOrderDisplay[];
+    adjustments: AdjustmentDetails[];
   };
 }
 
@@ -36,6 +46,7 @@ export interface HistoricOrderResult extends OrderResult {
   secondary_province_name: string;
   primary_resolution: string;
   secondary_resolution: string;
+  secondary_unit_order_type: OrderDisplay;
 }
 
 export interface HistoricOrder extends Order {
@@ -47,12 +58,24 @@ export interface HistoricOrder extends Order {
   secondaryProvinceName: string;
   primaryResolution: string;
   secondaryResolution: string;
+  secondaryUnitOrderType: OrderDisplay;
 }
 
-export interface HistoricTurnResult extends UpcomingTurnResult {
-  surviving_countries: any[];
+export interface HistoricOrderDisplay {
+  originProvince: string;
+  description: string;
+  primaryResolution: string;
+  secondaryResolution: string;
+  success: boolean;
+  secondarySuccess: boolean;
 }
 
-export interface HistoricTurn extends UpcomingTurn {
-  survivingCountries: any[];
+export interface HistoricBuildTransferOrder {
+  recipientName: string;
+  quantity: number;
+}
+
+interface AdjustmentDetails {
+  location: string;
+  description: string;
 }

@@ -5,7 +5,7 @@ export const getHistoricUnitOrdersQuery = `
     o.order_set_id,
     o.ordered_unit_id,
     CASE
-      WHEN uh.unit_status = 'Active' THEN un.loc
+      WHEN luh.unit_status = 'Active' THEN un.loc
       ELSE ron.loc
     END ordered_unit_loc,
     o.order_type,
@@ -26,9 +26,8 @@ export const getHistoricUnitOrdersQuery = `
   FROM orders o
   INNER JOIN units u ON u.unit_id = o.ordered_unit_id
   INNER JOIN order_sets os ON os.order_set_id = o.order_set_id
-  INNER JOIN unit_histories uh ON uh.unit_id = o.ordered_unit_id
-  INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = uh.unit_id AND luh.turn_id = uh.turn_id
-  INNER JOIN nodes un ON un.node_id = uh.node_id
+  INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = o.ordered_unit_id
+  INNER JOIN nodes un ON un.node_id = luh.node_id
   INNER JOIN provinces up ON up.province_id = un.province_id
   INNER JOIN nodes ron ON ron.province_id = up.province_id AND ron.node_type = 'event'
   LEFT JOIN units su ON su.unit_id = o.secondary_unit_id
