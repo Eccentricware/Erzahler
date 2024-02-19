@@ -26,22 +26,25 @@ export class AssignmentService {
     const gameData: any = await db.gameRepo.getGameDetails(
       gameId,
       userId,
-      'America/Los_Angeles',
+      this.user.timeZone ? this.user.timeZone : 'America/Los_Angeles',
       this.user.meridiemTime
     );
     const assignments: any = await db.assignmentRepo.getAssignments(gameId, userId);
     const registeredUsers: Assignment[] = await db.assignmentRepo.getUserRegistrations(gameId);
+
     const userStatus: Assignment[] = registeredUsers.filter((assignment: Assignment) =>
       assignment.userId === userId
     );
-    const userIsAdmin: boolean = await this.isPlayerAdmin(gameId, userId);
+    const userIsAdmin: Assignment[] = userStatus.filter((assignment: Assignment) =>
+      this.adminRoles.includes(assignment.assignmentType)
+    );
 
     const assignmentData: AssignmentDataObject = {
       gameId: gameId,
       assignments: assignments,
       registrants: registeredUsers,
       userStatus: userStatus,
-      userIsAdmin: userIsAdmin,
+      userIsAdmin: userIsAdmin.length > 0,
       allAssigned: assignments.filter((assignment: any) => assignment.playerId === null).length === 0,
       partialRosterStart: gameData.partialRosterStart,
       finalReadinessCheck: gameData.finalReadinessCheck
@@ -50,6 +53,13 @@ export class AssignmentService {
     return assignmentData;
   }
 
+  /**
+   * This thing is so dep
+   *
+   * @param gameId
+   * @param playerId
+   * @returns
+   */
   async isPlayerAdmin(gameId: number, playerId: number): Promise<boolean> {
     const pool = new Pool(envCredentials);
 

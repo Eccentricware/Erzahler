@@ -24,7 +24,7 @@ export class HistoryService {
   async getTurnHistory(gameId: number, turnNumber: number): Promise<TurnHistory> {
     const mapService = new MapService();
     const ordersService = new OrdersService();
-    terminalLog(`Turn History Requested: ${gameId} - ${turnNumber}`);
+    terminalLog(`Turn History Requested: (${gameId}-${turnNumber})`);
 
     const resultRender = await mapService.getMap(gameId, turnNumber);
     const startingRender = turnNumber > 0
