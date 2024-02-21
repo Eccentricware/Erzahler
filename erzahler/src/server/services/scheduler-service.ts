@@ -267,10 +267,34 @@ export class SchedulerService {
     const resolutionService: ResolutionService = new ResolutionService();
 
     const gameId = gameData.gameId;
-    const startDetails: StartDetails = await this.getStartDetails(gameId);
+    const startDetails: StartDetails | undefined =
+      await this.getStartDetails(gameId)
+        .catch((error: Error) => {
+          terminalLog(`Get Start Details Error | (${gameId}):` + error.message);
+          return undefined;
+        });
 
-    await db.schedulerRepo.readyGame([startDetails.gameStart, gameId]);
-    await db.schedulerRepo.setAssignmentsActive(gameId);
+    if (!startDetails) {
+      return;
+    }
+
+    await db.schedulerRepo.readyGame([startDetails.gameStart, gameId])
+      .catch((error: Error) => {
+        terminalLog(`Ready Game Query Error | (${gameId}):` + error.message);
+        return {
+          success: false,
+          message: 'Ready game query error.'
+        }
+      });
+
+    await db.schedulerRepo.setAssignmentsActive(gameId)
+      .catch((error: Error) => {
+        terminalLog(`Set Assignments Query Error | (${gameId}):` + error.message);
+        return {
+          success: false,
+          message: 'Set Assignments query error.'
+        }
+      });
 
     if (startDetails.gameStatus === GameStatus.PLAYING) {
       resolutionService.startGame(gameId);
