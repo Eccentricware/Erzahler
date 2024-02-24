@@ -1,4 +1,5 @@
 import { db } from "../../database/connection";
+// import { ImportedGameTableRows } from "../../models/objects/games/new-game-data-object";
 import { terminalLog } from "../utils/general";
 
 interface ForeignKeyLibrary {
@@ -54,7 +55,7 @@ export class ImportService {
       db.importRepo.importOrderTransferTechRows(gameId, environment),
       db.importRepo.importNominationRows(gameId, environment),
       db.importRepo.importVoteRows(gameId, environment)
-    ]).then(async (results: any) => {
+    ]).then(async (results) => {
       const gameRow = results[0][0];
       const coalitionScheduleRow = results[1][0];
       const rulesInGameRows =  results[2];
@@ -104,7 +105,7 @@ export class ImportService {
           ]).then(async ([
             newTurnIds,
             newCountryIds
-          ]: any) => {
+          ]) => {
             // Update Foreign Key Library
             for (let turnIndex = 0; turnIndex < turnRows.length; turnIndex++) {
               fkLib.turns[turnRows[turnIndex].turn_id] = newTurnIds[turnIndex];
