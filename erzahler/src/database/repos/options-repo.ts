@@ -42,7 +42,7 @@ import { getTechReceiveOptionsQuery } from '../queries/orders/get-transfer-tech-
 import { getUnitAdjacentInfoQuery } from '../queries/orders/get-unit-adjacent-info-query';
 import { getActiveCountryCenters } from '../queries/orders/options-final/get-active-centers-query';
 import { getNominationsQuery } from '../queries/orders/options-final/get-nominations-query';
-import { terminalLog } from '../../server/utils/general';
+import { terminalAddendum, terminalLog } from '../../server/utils/general';
 import { getRetreatingOrderOptionsQuery } from '../queries/orders/get-retreating-order-options-query';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
 import { getRetreatingUnitAdjacentInfoQuery } from '../queries/orders/get-retreating-unit-adjacent-info-query';
@@ -216,6 +216,11 @@ export class OptionsRepository {
         turn_id: turnId
       };
     });
+
+    if (optionsValues.length === 0) {
+      terminalAddendum('Warning', `Array for bulk insert saveUnitOptions is empty. Turn ${turnId}`);
+      return;
+    }
 
     const query = this.pgp.helpers.insert(optionsValues, this.orderOptionsCols);
     await this.pool.query(query).catch((error: Error) => {
