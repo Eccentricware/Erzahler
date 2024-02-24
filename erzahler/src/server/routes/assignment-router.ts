@@ -11,7 +11,7 @@ assignmentRouter.get(`/:gameId`, (request, response) => {
     route: `assignments/:gameId`,
     gameId: request.params.gameId,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: true
     }
   });
@@ -37,7 +37,7 @@ assignmentRouter.post('/register', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `assignments/register`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     },
     gameId: request.body.gameId,
@@ -66,7 +66,7 @@ assignmentRouter.post('/unregister', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `assignments/unregister`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     },
     gameId: request.body.gameId,
@@ -94,7 +94,7 @@ assignmentRouter.post('/assign-player', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `assignments/assign-player`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     },
     gameId: request.body.gameId,
@@ -123,7 +123,7 @@ assignmentRouter.put('/lock-assignment', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `assignments/lock-assignment`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     },
     gameId: request.body.gameId,
@@ -146,7 +146,7 @@ assignmentRouter.put('/unlock-assignment', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `assignments/unlock-assignment`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     },
     gameId: request.body.gameId,

@@ -18,7 +18,6 @@ import { NewGameData } from '../../models/objects/games/new-game-data-object';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
 import { formatDateTime, formatTurnName, terminalAddendum, terminalLog } from '../utils/general';
 import { StartSchedule } from '../../models/objects/games/game-schedule-objects';
-import { Turn } from '../../models/objects/database-objects';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 
 export class SchedulerService {
@@ -327,7 +326,6 @@ export class SchedulerService {
 
     let gameStatus = GameStatus.READY;
     let gameStart: DateTime = DateTime.utc(); // Now
-    const now: DateTime = DateTime.utc();
     let firstTurn: DateTime = this.findNextOccurence(scheduleSettings.ordersDay, scheduleSettings.ordersTime);
 
     switch (scheduleSettings.turn1Timing) {

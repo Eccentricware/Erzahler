@@ -13,7 +13,7 @@ import { ProvinceStatus, ProvinceType, CityType } from '../../models/enumeration
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { BuildType, UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
-import { NominationRow, Turn, TurnResult } from '../../models/objects/database-objects';
+import { NewTurn, NominationRow, Turn } from '../../models/objects/database-objects';
 import { StartDetails } from '../../models/objects/initial-times-object';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
@@ -72,8 +72,8 @@ export class ResolutionService {
 
     await db.schedulerRepo
       .insertTurn(firstTurn)
-      .then(async (nextTurn: Turn) => {
-        this.schedulerService.scheduleTurn(nextTurn.turnId!, nextTurn.deadline);
+      .then(async (nextTurn: NewTurn) => {
+        this.schedulerService.scheduleTurn(nextTurn.turnId, nextTurn.deadline);
         await this.optionsService.saveOptionsForTurn(nextTurn);
         await db.gameRepo.setGamePlaying(gameId);
         // Alert service call
@@ -262,8 +262,8 @@ export class ResolutionService {
       }
     });
 
-    const preStatCheckPromises: Promise<any | void>[] = [];
-    const postStatCheckPromises: Promise<any | void>[] = [];
+    const preStatCheckPromises: Promise<void>[] = [];
+    const postStatCheckPromises: Promise<Turn | void>[] = [];
 
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
@@ -351,8 +351,8 @@ export class ResolutionService {
             TurnStatus.PENDING,
             nextTurns.pending.deadline
           ])
-          .then(async (pendingTurn: Turn) => {
-            this.schedulerService.scheduleTurn(pendingTurn.turnId!, pendingTurn.deadline);
+          .then(async (pendingTurn: NewTurn) => {
+            this.schedulerService.scheduleTurn(pendingTurn.turnId, pendingTurn.deadline);
             await this.optionsService.saveOptionsForTurn(pendingTurn);
 
             if (nextTurns.preliminary) {
@@ -427,8 +427,8 @@ export class ResolutionService {
 
     this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
 
-    const preStatCheckPromises: Promise<any | void>[] = [];
-    const postStatCheckPromises: Promise<any | void>[] = [];
+    const preStatCheckPromises: Promise<void>[] = [];
+    const postStatCheckPromises: Promise<Turn | void>[] = [];
 
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
@@ -496,8 +496,12 @@ export class ResolutionService {
       // Find next turn will require an updated gameState first
       console.log('DB: Turn Update'); // Pending resolution
       postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
-      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING);
-      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId!, gameState.preliminaryDeadline!);
+      if (!(gameState.preliminaryTurnId && gameState.preliminaryDeadline)) {
+        terminalAddendum('Resolution', `Can't find preliminary turnId or deadline for game ${gameState.gameId}`);
+        return;
+      }
+      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId, TurnStatus.PENDING);
+      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId, gameState.preliminaryDeadline);
       postStatCheckPromises.push(nowPendingTurnPromise);
       const nowPendingTurn = await nowPendingTurnPromise;
 
@@ -599,8 +603,8 @@ export class ResolutionService {
       this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
     }
 
-    const preStatCheckPromises: Promise<any | void>[] = [];
-    const postStatCheckPromises: Promise<any | void>[] = [];
+    const preStatCheckPromises: Promise<void>[] = [];
+    const postStatCheckPromises: Promise<Turn | void>[] = [];
 
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
@@ -688,7 +692,11 @@ export class ResolutionService {
             nextTurns.pending.deadline
           ])
           .then(async (pendingTurn: Turn) => {
-            this.schedulerService.scheduleTurn(pendingTurn.turnId!, pendingTurn.deadline);
+            if (!pendingTurn.turnId) {
+              terminalAddendum('Resolution', `Can't find turnId for ${pendingTurn.turnName}`);
+              return;
+            }
+            this.schedulerService.scheduleTurn(pendingTurn.turnId, pendingTurn.deadline);
 
             if (nextTurns.preliminary) {
               await this.optionsService.saveOptionsForTurn(pendingTurn);
@@ -766,8 +774,8 @@ export class ResolutionService {
 
     this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
 
-    const preStatCheckPromises: Promise<any | void>[] = [];
-    const postStatCheckPromises: Promise<any | void>[] = [];
+    const preStatCheckPromises: Promise<void>[] = [];
+    const postStatCheckPromises: Promise<Turn | void>[] = [];
 
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
@@ -836,8 +844,12 @@ export class ResolutionService {
       // Find next turn will require an updated gameState first
       console.log('DB: Turn Update'); // Pending resolution
       postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
-      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING);
-      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId!, gameState.preliminaryDeadline!);
+      if (!(gameState.preliminaryTurnId && gameState.preliminaryDeadline)) {
+        terminalAddendum('Resolution', `Can't find preliminary turnId or deadline for game ${gameState.gameId}`);
+        return;
+      }
+      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId, TurnStatus.PENDING);
+      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId, gameState.preliminaryDeadline);
 
       postStatCheckPromises.push(nowPendingTurnPromise);
       const nowPendingTurn = await nowPendingTurnPromise;
@@ -1089,7 +1101,7 @@ export class ResolutionService {
       })
     });
 
-    const promises: Promise<any | void>[] = [];
+    const promises: Promise<void>[] = [];
 
     if (dbUpdates.adjustmentOrders.length > 0) {
       console.log('DB: Updating Adjustment Orders');
@@ -1125,10 +1137,6 @@ export class ResolutionService {
           const changedGameState = await db.gameRepo.getGameState(turn.gameId);
           const nextTurns = this.schedulerService.findNextTurns(turn, changedGameState, false);
 
-          if (turn.turnType === TurnType.ADJ_AND_NOM) {
-            const validNominations = await this.validateNominations(turn, gameState);
-          }
-
           // Ensures pending turn_id < preliminary turn_id for sequential get_last_history functions
           terminalLog('DB: Pending Turn Insert');
           db.gameRepo.insertNextTurn([
@@ -1140,8 +1148,8 @@ export class ResolutionService {
             TurnStatus.PENDING,
             nextTurns.pending.deadline
           ])
-          .then(async (pendingTurn: Turn) => {
-            this.schedulerService.scheduleTurn(pendingTurn.turnId!, pendingTurn.deadline);
+          .then(async (pendingTurn: NewTurn) => {
+            this.schedulerService.scheduleTurn(pendingTurn.turnId, pendingTurn.deadline);
 
             if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
               await this.optionsService.saveOptionsForTurn(pendingTurn);
@@ -1149,7 +1157,7 @@ export class ResolutionService {
 
             if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
               const validNominations = await this.validateNominations(turn, gameState);
-              db.ordersRepo.insertNominations(validNominations, pendingTurn.turnId!);
+              db.ordersRepo.insertNominations(validNominations, pendingTurn.turnId);
             }
 
             if (pendingTurn.turnType === TurnType.VOTES) {
@@ -1195,13 +1203,13 @@ export class ResolutionService {
       TurnStatus.PENDING,
       nextTurns.pending.deadline
     ])
-    .then(async (pendingTurn: Turn) => {
-      this.schedulerService.scheduleTurn(pendingTurn.turnId!, pendingTurn.deadline);
+    .then(async (pendingTurn: NewTurn) => {
+      this.schedulerService.scheduleTurn(pendingTurn.turnId, pendingTurn.deadline);
 
       // If prelim,  pending = Votes, prelim = Spring Orders
       // If !prelim, pending = Spring Orders and Votes
       await this.orderService.initializeVotingOrderSets(pendingTurn);
-      db.ordersRepo.insertNominations(validNominations, pendingTurn.turnId!)
+      db.ordersRepo.insertNominations(validNominations, pendingTurn.turnId)
       .then(async () => {
           db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED);
         });
@@ -1259,14 +1267,14 @@ export class ResolutionService {
       const gameState = await db.gameRepo.getGameState(turn.gameId);
       db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.FINAL);
       if (turn.turnType === TurnType.VOTES) {
-        db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.CANCELLED);
+        db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId, TurnStatus.CANCELLED);
       }
 
     } else if (turn.turnType === TurnType.VOTES) { // Continue
       const gameState = await db.gameRepo.getGameState(turn.gameId);
       db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED);
-      db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId!, TurnStatus.PENDING);
-      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId!, gameState.preliminaryDeadline!);
+      db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId, TurnStatus.PENDING);
+      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId, gameState.preliminaryDeadline);
 
     } else {
       this.resolveSpringOrders(turn);
@@ -1387,7 +1395,7 @@ export class ResolutionService {
     unresolvedMovement.push(...moveTransported);
 
     unresolvedMovement.forEach((order: UnitOrderResolution) => {
-      this.resolveMovement(order, unitOrders, dependencies, supremacies);
+      this.resolveMovement(order, unitOrders, dependencies, supremacies, transportAttempts);
     });
 
     orderGroups.hold.forEach((holdOrder: UnitOrderResolution) => {
@@ -1984,7 +1992,8 @@ export class ResolutionService {
     order: UnitOrderResolution,
     unitOrders: UnitOrderResolution[],
     dependencies: OrderDependencies,
-    supremacies: Record<string, OrderSupremacy>
+    supremacies: Record<string, OrderSupremacy>,
+    transportAttempts: Record<string, TransportAttempt>
   ) {
     const nuclearStrike = unitOrders.find(
       (strike: UnitOrderResolution) =>
@@ -1995,6 +2004,15 @@ export class ResolutionService {
       order.orderSuccess = false;
       order.primaryResolution = `Invalid Order: Can't Enter Nuclear Fallout`;
       return;
+    }
+
+    if (order.orderType === OrderDisplay.MOVE_CONVOYED) {
+      if (!transportAttempts[`${order.unit.id}-${order.destination.nodeId}`]
+      || transportAttempts[`${order.unit.id}-${order.destination.nodeId}`].paths.length === 0) {
+        order.valid = false;
+        order.primaryResolution = `Invalid Order: Insufficient Transports`;
+        return;
+      }
     }
 
     const challengers = unitOrders.filter((challenger: UnitOrderResolution) => {
@@ -2129,7 +2147,7 @@ export class ResolutionService {
   }
 
   checkSupremacies(supremacies: Record<string, OrderSupremacy>) {
-    for (let supremacy in supremacies) {
+    for (const supremacy in supremacies) {
       const supremacyOrder = supremacies[supremacy];
       if (!supremacyOrder.secondaryOrderId.orderSuccess) {
         supremacyOrder.supremeOrder.primaryResolution = supremacyOrder.description;
@@ -2817,8 +2835,8 @@ export class ResolutionService {
 
   }
 
-  async validateNominations(turn: Turn, gameState: GameState): Promise<NominationRow[]> {
-    const nominatedCountries = await db.ordersRepo.getNominationOrder(turn.gameId, turn.turnNumber, turn.turnId!, 0);
+  async validateNominations(turn: UpcomingTurn, gameState: GameState): Promise<NominationRow[]> {
+    const nominatedCountries = await db.ordersRepo.getNominationOrder(turn.gameId, turn.turnNumber, turn.turnId, 0);
     const nominationLibrary: Record<string, NominationRow> = {};
     const validNominations: NominationRow[] = [];
 
@@ -2827,7 +2845,7 @@ export class ResolutionService {
       if (!nomination) {
         nominationLibrary[nominatedCountry.nominatorId] = {
           nominatorId: nominatedCountry.nominatorId,
-          turnId: turn.turnId!,
+          turnId: turn.turnId,
           countryIds: nominatedCountry.countryId ? [nominatedCountry.countryId] : [],
           signature: nominatedCountry.rank,
           votesRequired: gameState.votingSchedule.baseFinal
@@ -2844,7 +2862,7 @@ export class ResolutionService {
 
     });
 
-    for (let nomination in nominationLibrary) {
+    for (const nomination in nominationLibrary) {
       if (nominationLibrary[nomination].valid) {
         validNominations.push(nominationLibrary[nomination]);
       }
@@ -2866,12 +2884,12 @@ export class ResolutionService {
     }
 
     occupyingCountryHistory.voteCount++;
-    occupyingCountryHistory!.newCapitals =
-      occupyingCountryHistory!.newCapitals
-      ? occupyingCountryHistory!.newCapitals + 1
+    occupyingCountryHistory.newCapitals =
+      occupyingCountryHistory.newCapitals
+      ? occupyingCountryHistory.newCapitals + 1
       : 1;
     dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
-    dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory!;
+    dbUpdates.countryHistories[countryStats.occupyingCountryId] = occupyingCountryHistory;
     this.transferRemainingProvinces(
       countryStats.countryId,
       countryStats.occupyingCountryId,

@@ -12,7 +12,7 @@ ordersRouter.get(`/:gameId/orders`, (request, response) => {
     route: `orders/:gameId/orders`,
     gameId: request.params.gameId,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     }
   });
@@ -34,7 +34,7 @@ ordersRouter.post(`/submit`, (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `orders/submit`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     },
   });

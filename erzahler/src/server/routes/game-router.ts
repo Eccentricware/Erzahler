@@ -33,7 +33,7 @@ gameRouter.get('/search', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `games/search`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: true
     }
   });
@@ -66,7 +66,7 @@ gameRouter.get('/details/:gameId', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `games/details/:gameId`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: true
     },
     gameId: request.params.gameId
@@ -120,7 +120,7 @@ gameRouter.put('/update', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `games/update`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     }
   });
@@ -147,7 +147,7 @@ gameRouter.post('/declare-ready', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `games/declare-ready`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     },
     gameId: request.body.gameId
