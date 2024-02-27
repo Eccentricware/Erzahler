@@ -56,7 +56,8 @@ export const getGameDetailsQuery = `
       ) = 1
       THEN true
       ELSE false
-    END display_as_admin
+    END display_as_admin,
+    g.ready_time
   FROM games g
   LEFT JOIN assignments a ON a.game_id = g.game_id
   LEFT JOIN users u ON u.user_id = a.user_id

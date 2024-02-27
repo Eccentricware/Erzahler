@@ -94,6 +94,13 @@ export interface UserProfileResult {
   email: string;
   email_verified: boolean;
   verification_deadline: Date | string | undefined;
+  preferred_method: string;
+  contact_email: string;
+  contact_discord: string;
+  contact_slack: string;
+  contact_in_game: boolean;
+  other_contact_method: string;
+  other_contact_handle: string;
 }
 
 export interface UserProfile {
@@ -121,4 +128,15 @@ export interface UserProfile {
   verificationDeadline: Date | string | undefined;
   timeZone: string;
   meridiemTime: boolean;
+  contactPreferences: ContactPreferences;
+}
+
+export interface ContactPreferences {
+  preferredMethod: string;
+  email: string;
+  discord: string;
+  slack: string;
+  inGame: boolean;
+  otherMethod: string;
+  otherHandle: string;
 }
