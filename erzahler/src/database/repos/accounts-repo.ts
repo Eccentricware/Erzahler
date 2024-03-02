@@ -185,7 +185,7 @@ export class AccountsRepository {
             timeZone: userProfileResult.time_zone,
             meridiemTime: userProfileResult.meridiem_time,
             contactPreferences: {
-              preferredMethod: userProfileResult.preferred_method,
+              preferredMethod: userProfileResult.preferred_contact_method,
               email: userProfileResult.contact_email,
               discord: userProfileResult.contact_discord,
               slack: userProfileResult.contact_slack,

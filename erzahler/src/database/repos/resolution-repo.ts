@@ -506,11 +506,17 @@ export class ResolutionRepository {
         result.rows.map((country: CountryStatCountsResult) => {
           return <CountryStatCounts>{
             countryId: country.country_id,
-            cityCount: Number(country.city_count),
-            unitCount: Number(country.unit_count)
+            cityCount: country.city_count,
+            unitCount: country.unit_count,
+            voteCount: country.vote_count,
+            occupyingCountryId: country.occupying_country_id
           };
         })
-      );
+      )
+      .catch((error: Error) => {
+        terminalLog('Get Country Stat Counts Error: ' + error.message);
+        return [];
+      });
   }
 
   async getAdjResolutionData(gameId: number, turnNumber: number, orderSetTurnId: number): Promise<AdjResolutionData[]> {

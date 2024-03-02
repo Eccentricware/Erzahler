@@ -347,12 +347,16 @@ export interface CountryStatCountsResult {
   country_id: number;
   unit_count: number;
   city_count: number;
+  vote_count: number;
+  occupying_country_id: number;
 }
 
 export interface CountryStatCounts {
   countryId: number;
   unitCount: number;
   cityCount: number;
+  voteCount: number;
+  occupyingCountryId: number;
 }
 
 export interface InitialUnit {
