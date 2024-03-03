@@ -3,31 +3,28 @@ export const getAdjNumsQuery = `
     SELECT
       c.country_id,
       COUNT(c.country_id) active_provinces
-    FROM province_histories ph
-    INNER JOIN get_last_province_history($1, $2) lph ON lph.province_id = ph.province_id
-    INNER JOIN countries c ON c.country_id = ph.controller_id
-    WHERE ph.province_status = 'active'
+    FROM get_last_province_history($1, $2) lph
+    INNER JOIN countries c ON c.country_id = lph.controller_id
+    WHERE lph.province_status = 'active'
     GROUP BY c.country_id
   ),
   bombarded_provinces AS (
     SELECT
       c.country_id,
       COUNT(c.country_id) bombarded_provinces
-    FROM province_histories ph
-    INNER JOIN get_last_province_history($1, $2) lph ON lph.province_id = ph.province_id
-    INNER JOIN countries c ON c.country_id = ph.controller_id
-    WHERE ph.province_status = 'bombarded'
+    FROM get_last_province_history($1, $2) lph
+    INNER JOIN countries c ON c.country_id = lph.controller_id
+    WHERE lph.province_status = 'bombarded'
     GROUP BY c.country_id
   ),
   unit_counts AS (
     SELECT
       u.country_id,
       COUNT(u.country_id) unit_counts
-    FROM unit_histories uh
-    INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = uh.unit_id
-    INNER JOIN units u ON u.unit_id = uh.unit_id
+    FROM get_last_unit_history($1, $2) luh
+    INNER JOIN units u ON u.unit_id = luh.unit_id
     INNER JOIN countries c ON c.country_id = u.country_id
-    WHERE uh.unit_status = 'Active'
+    WHERE luh.unit_status = 'Active'
     GROUP BY u.country_id
   )
   SELECT c.country_id,

@@ -4,11 +4,10 @@ export const resolveVotingQuery = `
       c.country_name voting_country,
       v.nomination_id,
       v.declaration,
-      ch.vote_count
+      lch.vote_count
     FROM votes v
-    INNER JOIN country_histories ch ON ch.country_id = v.voting_country_id
-    INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = ch.country_id
-    INNER JOIN countries c ON c.country_id = ch.country_id
+    INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = v.voting_country_id
+    INNER JOIN countries c ON c.country_id = lch.country_id
   )
   SELECT n.nomination_id,
     n.signature,

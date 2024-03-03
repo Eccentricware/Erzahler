@@ -81,7 +81,8 @@ export const importNodeAdjacencyRowsQuery = `
   FROM node_adjacencies na
   INNER JOIN nodes n ON n.node_id = na.node_1_id OR n.node_id = na.node_2_id
   INNER JOIN provinces p ON p.province_id = n.province_id
-  WHERE p.game_id = $1;
+  WHERE p.game_id = $1
+  ORDER BY node_adjacency_id;
 `;
 
 export const importUnitRowsQuery = `

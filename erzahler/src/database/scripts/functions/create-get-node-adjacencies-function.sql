@@ -10,32 +10,21 @@ RETURNS TABLE(node_id INTEGER, adjacencies JSON)
 AS $$
 
   SELECT n.node_id,
-    json_agg(CASE
-      WHEN n.node_id = na.node_1_id
-        THEN json_build_object(
-          'node_id', na.node_2_id,
-          'province_id', p2.province_id,
-          'province_name', p2.province_name,
-          'province_type', p2.province_type
+    json_agg(
+		json_build_object(
+          'node_id', an.node_id,
+          'province_id', ap.province_id,
+          'province_name', ap.province_name,
+          'province_type', ap.province_type
         )
-      WHEN n.node_id = na.node_2_id
-        THEN json_build_object(
-          'node_id', na.node_1_id,
-          'province_id', p1.province_id,
-          'province_name', p1.province_name,
-          'province_type', p1.province_type
-        )
-    END) AS adjacencies
+	) AS adjacencies
   FROM nodes n
   INNER JOIN provinces p ON p.province_id = n.province_id
-  INNER JOIN games g ON g.game_id = p.game_id
   INNER JOIN node_adjacencies na ON na.node_1_id = n.node_id OR na.node_2_id = n.node_id
-  INNER JOIN nodes n1 ON n1.node_id = na.node_1_id
-  INNER JOIN nodes n2 ON n2.node_id = na.node_2_id
-  INNER JOIN provinces p1 ON p1.province_id = n1.province_id
-  INNER JOIN provinces p2 ON p2.province_id = n2.province_id
-  WHERE g.game_id = $1
-    AND (na.node_1_id = n.node_id OR na.node_2_id = n.node_id)
+  INNER JOIN nodes an ON (n.node_id = na.node_1_id AND an.node_id = na.node_2_id)
+  	OR (n.node_id = na.node_2_id AND an.node_id = na.node_1_id)
+  INNER JOIN provinces ap ON ap.province_id = an.province_id
+  WHERE p.game_id = $1
   GROUP BY n.node_id;
 
 $$ LANGUAGE SQL;
