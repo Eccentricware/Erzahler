@@ -212,11 +212,23 @@ export class ImportService {
                     fkLib.nodes[nodeRows[nodeIndex].node_id] = newNodeIds[nodeIndex];
                   }
 
-                  // Replace Foreign Keys
-                  nodeAdjacencyRows.forEach((nodeAdjacencyRow: any) => {
-                    nodeAdjacencyRow.node_1_id = fkLib.nodes[nodeAdjacencyRow.node_1_id];
-                    nodeAdjacencyRow.node_2_id = fkLib.nodes[nodeAdjacencyRow.node_2_id];
+                  // Replace Foreign Keys and filter
+                  let previousAdjacencyId = 0;
+                  let spliceIds: number[] = [];
+
+                  nodeAdjacencyRows.forEach((nodeAdjacencyRow: any, index: number) => {
+                    if (nodeAdjacencyRow.node_adjacency_id === previousAdjacencyId) {
+                      spliceIds.push(index);
+                    } else {
+                      nodeAdjacencyRow.node_1_id = fkLib.nodes[nodeAdjacencyRow.node_1_id];
+                      nodeAdjacencyRow.node_2_id = fkLib.nodes[nodeAdjacencyRow.node_2_id];
+                      previousAdjacencyId = nodeAdjacencyRow.node_adjacency_id;
+                    }
                   });
+
+                  for (let spliceIndex = spliceIds.length - 1; spliceIndex >= 0; spliceIndex--) {
+                    nodeAdjacencyRows.splice(spliceIds[spliceIndex], 1);
+                  }
 
                   unitHistoryRows.forEach((unitHistoryRow: any) => {
                     unitHistoryRow.unit_id = fkLib.units[unitHistoryRow.unit_id];
