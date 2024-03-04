@@ -401,29 +401,31 @@ export class OrdersRepository {
             buildCount: result.adjustments,
             nukeRange: result.nuke_range,
             increaseRange: result.increase_range,
-            builds: result.builds.map((build: BuildResult) => {
-              let locDisplay: string | string[] | undefined;
-              if (!build.node_display) {
-                locDisplay= build.node_name?.toUpperCase().split('_');
-                if (locDisplay) {
-                  locDisplay = locDisplay[2]
-                    ? `${locDisplay[0]} ${locDisplay[2]}`
-                    : locDisplay[0];
-                }
-              }
+            builds: result.builds
+              ? result.builds.map((build: BuildResult) => {
+                  let locDisplay: string | string[] | undefined;
+                  if (!build.node_display) {
+                    locDisplay= build.node_name?.toUpperCase().split('_');
+                    if (locDisplay) {
+                      locDisplay = locDisplay[2]
+                        ? `${locDisplay[0]} ${locDisplay[2]}`
+                        : locDisplay[0];
+                    }
+                  }
 
-              return <Build>{
-                orderSetId: build.order_set_id,
-                buildNumber: build.build_number,
-                buildType: build.build_type,
-                typeId: this.resolveTypeId(build.build_type),
-                nodeId: build.node_id,
-                nodeName: build.node_name,
-                nodeDisplay: build.node_display ? build.node_display : locDisplay,
-                provinceName: build.province_name,
-                loc: build.loc
-              };
-            })
+                  return <Build>{
+                    orderSetId: build.order_set_id,
+                    buildNumber: build.build_number,
+                    buildType: build.build_type,
+                    typeId: this.resolveTypeId(build.build_type),
+                    nodeId: build.node_id,
+                    nodeName: build.node_name,
+                    nodeDisplay: build.node_display ? build.node_display : locDisplay,
+                    provinceName: build.province_name,
+                    loc: build.loc
+                  };
+                })
+              : []
           };
         })
       );
