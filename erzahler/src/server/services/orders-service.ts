@@ -526,25 +526,28 @@ export class OrdersService {
         return;
       }
 
-      if (country.adjustments > 0) {
+      if (country.adjustments >= 0) {
         const countryBuildOptions = buildOptions.filter((buildOption: BuildLocProvince) =>
           buildOption.countryId === country.id
         );
 
-        const countryDefaultBuilds: Build[] = []
-        let currentOptionIndex = 0;
-        while (countryDefaultBuilds.length < country.adjustments) {
-          countryDefaultBuilds.push({
-            orderSetId: newOrderSetLibrary[country.id],
-            buildNumber: countryDefaultBuilds.length + 1,
-            buildType: BuildType.ARMY,
-            nodeId: countryBuildOptions[currentOptionIndex].landNodeId,
-            typeId: 1
-          });
-          currentOptionIndex++;
-        }
+        // This will only happen with a faulty countryHistory
+        if (countryBuildOptions.length > 0) {
+          const countryDefaultBuilds: Build[] = []
+          let currentOptionIndex = 0;
+          while (countryDefaultBuilds.length < country.adjustments) {
+            countryDefaultBuilds.push({
+              orderSetId: newOrderSetLibrary[country.id],
+              buildNumber: countryDefaultBuilds.length + 1,
+              buildType: BuildType.ARMY,
+              nodeId: countryBuildOptions[currentOptionIndex].landNodeId,
+              typeId: 1
+            });
+            currentOptionIndex++;
+          }
 
-        allBuilds.push(...countryDefaultBuilds);
+          allBuilds.push(...countryDefaultBuilds);
+        }
       }
 
       if (country.adjustments < 0) {
