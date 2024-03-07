@@ -159,11 +159,13 @@ export interface TransportDestinationResult {
 }
 
 export interface TransportPathLink {
+  transportedId: number;
   transports: number[];
   destinations: number[];
   contributions: any;
   transportOptions: number[];
   nextTransportLink: any;
+  previousTransports: number[];
 }
 
 export interface AirAdjacency {
