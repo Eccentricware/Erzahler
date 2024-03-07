@@ -609,9 +609,9 @@ CREATE TABLE IF NOT EXISTS order_options(
   order_option_id SERIAL,
   turn_id INTEGER NOT NULL,
   unit_id INTEGER NOT NULL,
-  order_type VARCHAR(15) NOT NULL,
+  order_type VARCHAR(16) NOT NULL,
   secondary_unit_id INTEGER,
-  secondary_order_type VARCHAR(15),
+  secondary_order_type VARCHAR(16),
   destinations INTEGER[],
   PRIMARY KEY(order_option_id),
   FOREIGN KEY(unit_id)
