@@ -555,31 +555,33 @@ export class OrdersService {
           atRiskUnit.countryId === country.id
         );
 
-        const countryDisbands: DisbandingUnitDetail[] = [];
-        let disbandedIndex = 0;
+        if (countryAtRiskUnits) {
+          const countryDisbands: DisbandingUnitDetail[] = [];
+          let disbandedIndex = 0;
 
-        while (countryDisbands.length < Math.abs(country.adjustments)) {
-          countryDisbands.push({
-            unitId: countryAtRiskUnits[disbandedIndex].unitId,
-            unitType: countryAtRiskUnits[disbandedIndex].unitType,
-            provinceName: countryAtRiskUnits[disbandedIndex].provinceName,
-            loc: countryAtRiskUnits[disbandedIndex].loc
+          while (countryDisbands.length < Math.abs(country.adjustments)) {
+            countryDisbands.push({
+              unitId: countryAtRiskUnits[disbandedIndex].unitId,
+              unitType: countryAtRiskUnits[disbandedIndex].unitType,
+              provinceName: countryAtRiskUnits[disbandedIndex].provinceName,
+              loc: countryAtRiskUnits[disbandedIndex].loc
+            });
+
+            disbandedIndex++;
+          }
+
+          // newOrderSets[newOrderSetLibrary[country.id]].disbands = countryDisbands;
+          db.ordersRepo.saveDisbandOrders(newOrderSetLibrary[country.id], {
+            countryId: country.id,
+            countryName: country.name,
+            bankedBuilds: 0,
+            disbands: Math.abs(country.adjustments),
+            unitDisbandingDetailed: countryDisbands,
+            nukeRange: country.nuke,
+            increaseRange: 0,
+            unitsDisbanding: countryDisbands.map((disband: DisbandingUnitDetail) => disband.unitId)
           });
-
-          disbandedIndex++;
         }
-
-        // newOrderSets[newOrderSetLibrary[country.id]].disbands = countryDisbands;
-        db.ordersRepo.saveDisbandOrders(newOrderSetLibrary[country.id], {
-          countryId: country.id,
-          countryName: country.name,
-          bankedBuilds: 0,
-          disbands: Math.abs(country.adjustments),
-          unitDisbandingDetailed: countryDisbands,
-          nukeRange: country.nuke,
-          increaseRange: 0,
-          unitsDisbanding: countryDisbands.map((disband: DisbandingUnitDetail) => disband.unitId)
-        });
       }
     });
 
