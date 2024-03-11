@@ -1,5 +1,6 @@
 export interface CoalitionScheduleResult {
   base_final: number;
+  total_possible: number;
   penalty_a: number;
   penalty_b: number;
   penalty_c: number;
@@ -11,5 +12,6 @@ export interface CoalitionScheduleResult {
 
 export interface CoalitionSchedule {
   baseFinal: number;
+  totalPossible: number;
   penalties: Record<string, number>;
 }
