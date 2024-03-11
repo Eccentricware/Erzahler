@@ -54,7 +54,7 @@ ordersRouter.post(`/submit`, (request, response) => {
 
   ordersService
     .saveOrders(idToken!, orders)
-    .then(() => response.send({ success: true }))
+    .then((result) => response.send(result))
     .catch((error: Error) =>
       response.send({
         success: false,

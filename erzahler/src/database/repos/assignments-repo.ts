@@ -1,5 +1,5 @@
 import { Pool, QueryResult } from 'pg';
-import { IDatabase, IMain } from 'pg-promise';
+import { IDatabase, IMain, as } from 'pg-promise';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formatting-service';
 import { assignUserQuery } from '../queries/assignments/assign-user-query';
@@ -13,6 +13,7 @@ import { getGameAdminsQuery } from '../queries/game/get-game-admins-query';
 import { Assignment, AssignmentDetails, AssignmentDetailsResult, AssignmentResult, UserAssignment, UserAssignmentResult } from '../../models/objects/assignment-objects';
 import { getPlayerIsCountryQuery } from '../queries/assignments/get-player-is-country-query';
 import { terminalLog } from '../../server/utils/general';
+import { CountryAuthorization, CountryAuthorizationResult } from '../../models/objects/orders/expected-order-types-object';
 
 /**
  * Handles DB updates involving user associations with games.
@@ -198,11 +199,17 @@ export class AssignmentRepository {
     return assignments;
   }
 
-  async confirmUserIsCountry(gameId: number, userId: number, countryId: number): Promise<boolean> {
-    const assigned = await this.pool
+  async getCountryAuthorization(gameId: number, userId: number, countryId: number): Promise<CountryAuthorization> {
+    const assignments = await this.pool
       .query(getPlayerIsCountryQuery, [gameId, userId, countryId])
-      .then((result: QueryResult) => result.rows[0].assigned);
+      .then((result: QueryResult<CountryAuthorizationResult>) =>
+        result.rows.map((row: CountryAuthorizationResult) => ({
+          assigned: row.assigned,
+          pendingOrderSetId: row.pending_order_set_id,
+          preliminaryOrderSetId: row.preliminary_order_set_id
+        })
+      ));
 
-    return assigned;
+    return assignments[0] ? assignments[0] : { assigned: false, pendingOrderSetId: undefined, preliminaryOrderSetId: undefined };
   }
 }
