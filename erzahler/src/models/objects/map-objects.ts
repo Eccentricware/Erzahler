@@ -1,7 +1,7 @@
 import { CountryStatus } from "../enumeration/country-enum";
 import { CityType } from "../enumeration/province-enums";
 
-export interface Map {
+export interface MapDetails {
   terrain: {
     sea: Terrain[];
     land: Terrain[];
@@ -15,7 +15,7 @@ export interface Map {
   labels: Label[];
   labelLines: LabelLine[];
   units: Unit[];
-};
+}
 
 export interface TerrainResult {
   province_name: string;

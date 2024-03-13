@@ -24,6 +24,16 @@ export interface Turn {
   yearNumber: number;
   deadline: Date | DateTime | string;
 }
+export interface NewTurn {
+  turnId: number;
+  gameId: number;
+  turnNumber: number;
+  turnName: string;
+  turnType: TurnType;
+  turnStatus: TurnStatus;
+  yearNumber: number;
+  deadline: Date | DateTime | string;
+}
 
 export interface NominationRowResult {
   nomination_id?: number;

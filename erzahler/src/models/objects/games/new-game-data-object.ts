@@ -1,3 +1,4 @@
+import { GameRow } from "../../../database/schema/table-fields";
 import { GameStatus } from "../../enumeration/game-status-enum";
 import { CoalitionSchedule } from "./coalition-schedule-objects";
 
@@ -50,3 +51,32 @@ export interface NewGameData {
   coalitionSchedule: CoalitionSchedule;
   dbRows: any;
 }
+
+// export interface ImportedGameTableRows extends Array<GameRow[]> {
+// }
+
+// export interface ImportedGameTableRows {
+//   [index: 0]: GameRow[];
+//   CoalitionScheduleRow;
+//   RulesInGameRow[];
+//   TurnRow[];
+//   CountryRow[];
+//   CountryHistoryRow[];
+//   ProvinceRow[];
+//   ProvinceHistoryRow[];
+//   TerrainRow[];
+//   LabelRow[];
+//   LabelLineRow[];
+//   NodeRow[];
+//   NodeAdjacencyRow[];
+//   UnitRow[];
+//   UnitHistoryRow[];
+//   OrderOptionRow[];
+//   OrderSetRow[];
+//   OrderRow[];
+//   OrderAdjustmentRow[];
+//   OrderTransferBuildRow[];
+//   OrderTransferTechRow[];
+//   NominationRow[];
+//   VoteRow[];
+// }

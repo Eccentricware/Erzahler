@@ -18,13 +18,19 @@ export interface OptionsContext {
   turnId: number;
   unitInfo: UnitOptions[];
   unitIdToIndexLib: any;
-  sharedAdjProvinces: any;
+  sharedAdjProvinces: Record<number | string, AdjacentProvince[]> | undefined;
   potentialConvoyProvinces: any;
   validConvoyAssistProvinces: [];
   transportPaths: any;
   transports: any;
   transportables: any;
   transportDestinations: any;
+}
+
+export interface AdjacentProvince {
+  nodeId: number;
+  unitId: number;
+  transported: boolean;
 }
 
 export interface UnitOptions {

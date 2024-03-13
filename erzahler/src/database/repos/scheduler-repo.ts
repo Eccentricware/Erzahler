@@ -2,7 +2,7 @@ import { Pool, QueryResult } from 'pg';
 import { ColumnSet, IDatabase, IMain } from 'pg-promise';
 import { SchedulerSettingsBuilder } from '../../models/classes/schedule-settings-builder';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
-import { TurnResult, Turn } from '../../models/objects/database-objects';
+import { TurnResult, Turn, NewTurn } from '../../models/objects/database-objects';
 import { ScheduleSettingsQueryResult } from '../../models/objects/schedule-settings-query-object';
 import { UpcomingTurn, UpcomingTurnResult } from '../../models/objects/scheduler/upcoming-turns-object';
 import { envCredentials } from '../../secrets/dbCredentials';
@@ -35,7 +35,7 @@ export class SchedulerRepository {
     );
   }
 
-  async insertTurn(input: Turn): Promise<Turn> {
+  async insertTurn(input: Turn): Promise<NewTurn> {
     const turnValues: TurnResult = {
       game_id: input.gameId,
       turn_number: input.turnNumber,
@@ -49,7 +49,7 @@ export class SchedulerRepository {
     const query = this.pgp.helpers.insert(turnValues, this.turnCols)
     + 'RETURNING game_id, turn_id, turn_number, turn_name, turn_type, turn_status, year_number, deadline';
 
-    const newTurn: Turn[] = await this.db.any(query).then((data: any) =>
+    const newTurn: NewTurn[] = await this.db.any(query).then((data: any) =>
       data.map((result: TurnResult): Turn => {
         return {
           turnId: result.turn_id,

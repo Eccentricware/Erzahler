@@ -44,7 +44,7 @@ userRouter.get('/profile', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `users/profile`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: true // Might be elegant to enforce this but the service should already be handling guests
     }
   });
@@ -115,7 +115,7 @@ userRouter.put('/update-settings', (request, response) => {
   const validationResponse = validationService.validateRequest({
     route: `users/update-settings`,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     }
   });

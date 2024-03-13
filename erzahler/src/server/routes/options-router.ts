@@ -12,7 +12,7 @@ optionsRouter.get(`/:gameId`, (request, response) => {
     route: `options/:gameId`,
     gameId: request.params.gameId,
     idToken: {
-      value: request.headers.idtoken,
+      value: <string>request.headers.idtoken,
       guestAllowed: false
     }
   });

@@ -1,5 +1,5 @@
 import { GameState } from '../../models/objects/last-turn-info-object';
-import { AtRiskUnit, BuildLocProvince, NominatableCountry, Order } from '../../models/objects/option-context-objects';
+import { AtRiskUnit, BuildLocProvince, NominatableCountry, Order, OrderSet } from '../../models/objects/option-context-objects';
 import { BuildType } from '../../models/enumeration/unit-enum';
 import { db } from '../../database/connection';
 import { AccountService } from './account-service';
@@ -21,7 +21,7 @@ import {
 } from '../../models/objects/order-objects';
 import { CountryOrderSet, CountryOrderSetIds, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
 import { terminalAddendum, terminalLog } from '../utils/general';
-import { Turn } from '../../models/objects/database-objects';
+import { NewTurn, Turn } from '../../models/objects/database-objects';
 import { OptionsService } from './options-service';
 import { CountryStats } from '../../models/objects/games/country-stats-objects';
 
@@ -180,8 +180,11 @@ export class OrdersService {
               pendingTurn.turnId,
               playerCountry.countryId
             );
-            const nullBuilds = pendingBuildOrders[0].builds[0].buildNumber === null;
-            if (nullBuilds) {
+
+            // To-do change the db query to not return the null property object
+            if (pendingBuildOrders[0] &&
+              (!pendingBuildOrders[0].builds[0] || pendingBuildOrders[0].builds[0].buildNumber === null)
+            ) {
               pendingBuildOrders[0].builds = [];
             }
 
@@ -197,6 +200,7 @@ export class OrdersService {
                   builds: [],
                   nukesReady: []
                 };
+
           } else {
             const disbandOrders = await this.prepareDisbandOrders(
               gameId,
@@ -307,7 +311,7 @@ export class OrdersService {
         }
       }
     } else if (adminVision) {
-
+      console.log('Popcorn Time!');
     }
 
     return orders;
@@ -591,7 +595,7 @@ export class OrdersService {
         );
 
     const newOrderSetLibrary: Record<number, number> = {};
-    newOrderSets.forEach((orderSet: any) => {
+    newOrderSets.forEach((orderSet: OrderSet) => {
       newOrderSetLibrary[orderSet.countryId] = orderSet.orderSetId;
     });
 
@@ -771,10 +775,10 @@ export class OrdersService {
     }
   }
 
-  async initializeVotingOrderSets(turn: Turn): Promise<void> {
+  async initializeVotingOrderSets(turn: NewTurn): Promise<void> {
     // 1:1 Match between nominatble countries and voting countries
     const survivingCountries: NominatableCountry[] = await db.optionsRepo.getNominatableCountries(turn.gameId, turn.turnNumber);
     const survivingCountryIds: number[] = survivingCountries.map((country: NominatableCountry) => country.countryId);
-    db.ordersRepo.insertVotingOrderSets(turn.turnId!, survivingCountryIds);
+    db.ordersRepo.insertVotingOrderSets(turn.turnId, survivingCountryIds);
   }
 }

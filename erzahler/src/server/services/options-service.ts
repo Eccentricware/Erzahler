@@ -7,7 +7,7 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { UnitType } from '../../models/enumeration/unit-enum';
 import { UserAssignment } from '../../models/objects/assignment-objects';
-import { NominationRow, Turn } from '../../models/objects/database-objects';
+import {  Turn } from '../../models/objects/database-objects';
 import { CountryState } from '../../models/objects/games/country-state-objects';
 import { GameState } from '../../models/objects/last-turn-info-object';
 import {
@@ -19,9 +19,7 @@ import {
   HoldSupport,
   UnitOptions,
   BuildLoc,
-  BuildLocResult,
   Order,
-  OrderPrepping,
   OrderSet,
   SavedOption,
   TransferCountry,
@@ -36,7 +34,8 @@ import {
   AdjacentTransport,
   TransportDestination,
   RetreatingUnitAdjacyInfo,
-  BuildLocProvince
+  BuildLocProvince,
+  AdjacentProvince
 } from '../../models/objects/option-context-objects';
 import { OptionsFinal, BuildOptions, VotingOptions } from '../../models/objects/options-objects';
 import { UpcomingTurn } from '../../models/objects/scheduler/upcoming-turns-object';
@@ -45,7 +44,7 @@ import { AccountService } from './account-service';
 import { copyObjectOfArrays, mergeArrays } from './data-structure-service';
 
 export class OptionsService {
-  async saveOptionsForTurn(turn: Turn, retreatingCountryIds?: number[]): Promise<void> {
+  async saveOptionsForTurn(turn: UpcomingTurn, retreatingCountryIds?: number[]): Promise<void> {
     // const gameState: GameState = await db.gameRepo.getGameState(gameId);
     if (turn.turnId) {
       const optionsContext: OptionsContext = await this.processUnitOrderOptions(turn);
@@ -104,6 +103,8 @@ export class OptionsService {
 
       // Standard move support
       unit.adjacencies.forEach((adjacency: AdjacenctMovement) => {
+        if (!optionsCtx.sharedAdjProvinces) { return }
+
         if (optionsCtx.sharedAdjProvinces[adjacency.provinceId]) {
           optionsCtx.sharedAdjProvinces[adjacency.provinceId].push({
             unitId: unit.unitId,
@@ -176,7 +177,7 @@ export class OptionsService {
               (supportedUnit: { unitId: number; nodeId: number; transported: boolean }, supportedIndex: number) => {
                 if (commandedUnit.unitId !== supportedUnit.unitId) {
                   const cmdUnitDetails = this.getDetailedUnit(optionsCtx, commandedUnit.unitId);
-                  const supportedUnitDetails = this.getDetailedUnit(optionsCtx, supportedUnit.unitId);
+                  // const supportedUnitDetails = this.getDetailedUnit(optionsCtx, supportedUnit.unitId); // Revisiting shared province duplication
                   if (supportedUnit.transported) {
                     if (cmdUnitDetails.transportSupports[supportedUnit.unitId]) {
                       cmdUnitDetails.transportSupports[supportedUnit.unitId].push(supportedUnit.nodeId);
@@ -285,12 +286,12 @@ export class OptionsService {
   addConvoysToSharedAdjProvinces(optionsCtx: OptionsContext, contributions: number[], transportedUnitId: number) {
     contributions.forEach((contributionId: number) => {
       const convoyProvince = optionsCtx.potentialConvoyProvinces[contributionId];
-      const adjProvince = optionsCtx.sharedAdjProvinces[convoyProvince.provinceId];
+      const adjProvince = optionsCtx.sharedAdjProvinces ? optionsCtx.sharedAdjProvinces[convoyProvince.provinceId] : undefined;
 
       const doesNotHaveUnit =
-        adjProvince?.filter((adjProvince: any) => adjProvince.unitId === transportedUnitId).length === 0;
+        adjProvince?.filter((adjProvince: AdjacentProvince) => adjProvince.unitId === transportedUnitId).length === 0;
 
-      if (adjProvince && doesNotHaveUnit) {
+      if (adjProvince && doesNotHaveUnit && optionsCtx.sharedAdjProvinces) {
         optionsCtx.sharedAdjProvinces[convoyProvince.provinceId].push({
           nodeId: contributionId,
           unitId: transportedUnitId,
@@ -365,7 +366,7 @@ export class OptionsService {
 
   async processNukeOptions(turn: Turn, optionsCtx: OptionsContext): Promise<void> {
     const airAdjArray: AirAdjacency[] = await db.optionsRepo.getAirAdjacencies(turn.gameId);
-    const nukeTargetLib: any = {};
+    const nukeTargetLib: Record<string, number> = {};
     const unlimitedRangeTargets: number[] = [];
 
     airAdjArray.forEach((nukeTarget: AirAdjacency, index: number) => {
@@ -384,7 +385,7 @@ export class OptionsService {
       });
   }
 
-  processLimitedNukeTargets(airAdjArray: AirAdjacency[], nukeTargetLib: any, unit: UnitOptions): number[] {
+  processLimitedNukeTargets(airAdjArray: AirAdjacency[], nukeTargetLib: Record<string, number>, unit: UnitOptions): number[] {
     const nukeTargets: string[] = airAdjArray[nukeTargetLib[unit.provinceName]].adjacencies.map(
       (target: AdjacenctMovement) => {
         return target.provinceName;
@@ -415,7 +416,7 @@ export class OptionsService {
    * @param optionsContext
    * @param turnId
    */
-  async saveUnitOrderOptions(optionsContext: OptionsContext, turn: Turn, retreatingCountryIds?: number[]): Promise<any> {
+  async saveUnitOrderOptions(optionsContext: OptionsContext, turn: UpcomingTurn, retreatingCountryIds?: number[]): Promise<void> {
     const orderOptions: OrderOption[] = [];
 
     if (!turn.turnId) {
@@ -456,7 +457,7 @@ export class OptionsService {
     if (orderOptions.length > 0) {
       if (retreatingCountryIds) {
         db.optionsRepo.deleteUnitOptions(turn.turnId).then(() => {
-          db.optionsRepo.saveUnitOptions(orderOptions, turn.turnId!).then(() => {
+          db.optionsRepo.saveUnitOptions(orderOptions, turn.turnId).then(() => {
             this.saveTurnDefaults(turn, retreatingCountryIds);
           });
         });
@@ -795,7 +796,7 @@ export class OptionsService {
 
       // Nominations
       if (applicable && [TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(pendingTurn.turnType)) {
-        turnOptions.pending.nominations = await this.getNominationOptions(gameState.gameId, gameState.turnId, TurnStatus.PENDING);
+        turnOptions.pending.nominations = await this.getNominationOptions(gameState.gameId, gameState.turnId);
       }
 
       // Votes
@@ -868,7 +869,7 @@ export class OptionsService {
 
       // Nominations
       if (applicable && [TurnType.NOMINATIONS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
-        turnOptions.preliminary.nominations = await this.getNominationOptions(gameState.gameId, preliminaryTurn.turnId, TurnStatus.PENDING);
+        turnOptions.preliminary.nominations = await this.getNominationOptions(gameState.gameId, preliminaryTurn.turnId);
       }
     }
 
@@ -1222,7 +1223,7 @@ export class OptionsService {
     return disbandOptions;
   }
 
-  async getNominationOptions(gameId: number, turnNumber: number, turnStatus: TurnStatus): Promise<NominationOptions> {
+  async getNominationOptions(gameId: number, turnNumber: number): Promise<NominationOptions> {
     const nominatableCountries = await db.optionsRepo.getNominatableCountries(gameId, turnNumber);
     const coaliationSchedule = await db.gameRepo.getCoalitionSchedule(gameId);
 

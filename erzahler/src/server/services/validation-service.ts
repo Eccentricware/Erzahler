@@ -1,20 +1,19 @@
-import { as } from "pg-promise";
 import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
 import { terminalLog } from "../utils/general";
 
 export interface RequestValidationObject {
   route: string;
-  countryId?: any;
-  gameId?: any;
-  playerId?: any;
-  turnNumber?: any;
+  countryId?: string | string[] | undefined;
+  gameId?: string | string[] | undefined;
+  playerId?: string | string[] | undefined;
+  turnNumber?: string | string[] | undefined;
   idToken?: {
-    value: any;
+    value: string;
     guestAllowed: boolean;
   }
-  assignmentType?: any;
-  environment?: string;
-  magicWord?: any;
+  assignmentType?: string | string[] | undefined;
+  environment?: string | string[] | undefined;
+  magicWord?: string | string[] | undefined;
 }
 
 export interface RequestValidationResponse {
@@ -33,9 +32,6 @@ export interface RequestValidationResponse {
 }
 
 export class ValidationService {
-  constructor() {
-  }
-
   validateRequest(request: RequestValidationObject): RequestValidationResponse {
     const validationResponse: RequestValidationResponse = {
       valid: true,
@@ -101,9 +97,9 @@ export class ValidationService {
           AssignmentType.PLAYER,
           AssignmentType.RESERVE,
           AssignmentType.SPECTATOR
-        ].includes(request.assignmentType)
+        ].includes(<AssignmentType>request.assignmentType)
       ) {
-        validationResponse.sanitizedVariables.assignmentType = request.assignmentType;
+        validationResponse.sanitizedVariables.assignmentType = <AssignmentType>request.assignmentType;
       } else {
         validationResponse.valid = false;
         validationResponse.errors.push('Invalid assignmentType');

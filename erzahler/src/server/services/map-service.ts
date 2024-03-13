@@ -1,11 +1,11 @@
 import { db } from '../../database/connection';
 import { CityType } from '../../models/enumeration/province-enums';
 import { RenderCategory } from '../../models/enumeration/render-category-enum';
-import { City, Terrain } from '../../models/objects/map-objects';
+import { City, MapDetails, Terrain } from '../../models/objects/map-objects';
 import { terminalLog } from '../utils/general';
 
 export class MapService {
-  async getMap(gameId: number, turnNumber?: number): Promise<any> {
+  async getMap(gameId: number, turnNumber?: number): Promise<MapDetails> {
     const gameState = await db.gameRepo.getGameState(gameId);
     const turnNumberToUse = turnNumber ? turnNumber : gameState.turnNumber;
     terminalLog(`Map requested: ${gameState.gameName} (${gameId}-${turnNumberToUse})`);

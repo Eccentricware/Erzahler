@@ -169,7 +169,7 @@ export class HistoryService {
 
     const orderList: CountryOrders[] = [];
 
-    for (let country in countryLibrary) {
+    for (const country in countryLibrary) {
       countryLibrary[country].orders.units.sort((a: HistoricOrderDisplay, b: HistoricOrderDisplay) => {
         return a.originProvince < b.originProvince ? -1 : 1;
       });
