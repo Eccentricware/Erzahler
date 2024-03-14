@@ -644,7 +644,7 @@ export class OrdersService {
           atRiskUnit.countryId === country.id
         );
 
-        if (countryAtRiskUnits) {
+        if (countryAtRiskUnits.length > 0) {
           const countryDisbands: DisbandingUnitDetail[] = [];
           let disbandedIndex = 0;
 
