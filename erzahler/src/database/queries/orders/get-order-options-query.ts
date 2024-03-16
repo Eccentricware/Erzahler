@@ -30,21 +30,19 @@ export const getOrderOptionsQuery = `
   INNER JOIN units u ON u.unit_id = oo.unit_id
   INNER JOIN countries c ON c.country_id = u.country_id
   INNER JOIN get_last_unit_history($1, $2) luh ON luh.unit_id = oo.unit_id
-  INNER JOIN unit_histories uh ON uh.unit_id = u.unit_id AND uh.turn_id = luh.turn_id
-  INNER JOIN nodes n ON n.node_id = uh.node_id
+  INNER JOIN nodes n ON n.node_id = luh.node_id
   INNER JOIN provinces p ON p.province_id = n.province_id
   LEFT JOIN units su ON su.unit_id = oo.secondary_unit_id
   LEFT JOIN countries sc ON sc.country_id = su.country_id
   LEFT JOIN get_last_unit_history($1, $2) lsuh ON lsuh.unit_id = oo.secondary_unit_id
-  LEFT JOIN unit_histories suh ON suh.unit_id = oo.secondary_unit_id AND lsuh.turn_id = suh.turn_id
-  LEFT JOIN nodes sun ON sun.node_id = suh.node_id
+  LEFT JOIN nodes sun ON sun.node_id = lsuh.node_id
   LEFT JOIN provinces sup ON sup.province_id = sun.province_id
   LEFT JOIN nodes dn ON dn.node_id = any(oo.destinations)
   LEFT JOIN provinces pn ON pn.province_id = dn.province_id
   LEFT JOIN nodes en ON en.province_id = pn.province_id AND en.node_type = 'event'
   WHERE c.game_id = $1
   AND oo.turn_id = $3
-  AND uh.unit_status = 'Active'
+  AND luh.unit_status = 'Active'
   AND CASE
     WHEN 0 != $4 THEN u.country_id = $4
     ELSE true
@@ -57,7 +55,7 @@ export const getOrderOptionsQuery = `
     c.flag_key,
     p.province_name,
     n.node_id,
-    uh.unit_status,
+    luh.unit_status,
     n.loc,
     oo.order_type,
     oo.secondary_unit_id,
@@ -68,7 +66,7 @@ export const getOrderOptionsQuery = `
     sup.province_name,
     sun.loc,
     p.province_type
-    ORDER BY c.rank,
+  ORDER BY c.rank,
     c.country_name,
     p.province_name,
     sup.province_name;

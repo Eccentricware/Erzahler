@@ -91,7 +91,6 @@ export class OptionsService {
       this.processNukeOptions(turn, optionsCtx);
     }
 
-
     return optionsCtx;
   }
 
@@ -143,7 +142,8 @@ export class OptionsService {
         });
       }
 
-      if (unit.transportDestinations) {
+      // No need to track potential destinations if there is nothing nearby to transport
+      if (unit.transportDestinations && (unit.adjacentTransportables || unit.adjacentTransports)) {
         optionsCtx.transportDestinations[unit.unitId] = unit.transportDestinations.map(
           (destination: TransportDestination) => {
             return destination.nodeId;
@@ -153,7 +153,7 @@ export class OptionsService {
         unit.transportDestinations.forEach((destination: TransportDestination) => {
           if (!optionsCtx.potentialConvoyProvinces[destination.nodeId]) {
             optionsCtx.potentialConvoyProvinces[destination.nodeId] = {
-              provinceId: unit.provinceId,
+              provinceId: destination.provinceId,
               nodeId: destination.nodeId
             };
           }
@@ -215,16 +215,33 @@ export class OptionsService {
     for (const transportedUnitId in optionsCtx.transportPaths) {
       this.extendPath(optionsCtx, optionsCtx.transportPaths[transportedUnitId], Number(transportedUnitId));
     }
+
+    optionsCtx.unitInfo.forEach((unit: UnitOptions) => {
+      if (unit.moveTransported.length > 0) {
+        unit.moveTransported.forEach((nodeId: number) => {
+          const provinceId = optionsCtx.potentialConvoyProvinces[nodeId].provinceId;
+          if (optionsCtx.sharedAdjProvinces && optionsCtx.sharedAdjProvinces[provinceId]) {
+            optionsCtx.sharedAdjProvinces[provinceId].push({
+              nodeId: nodeId,
+              unitId: unit.unitId,
+              transported: true
+            });
+          }
+        });
+      }
+    });
   }
 
   startPaths(optionsCtx: OptionsContext) {
     for (const transportableId in optionsCtx.transportables) {
       const firstPathLink: TransportPathLink = {
+        transportedId: Number(transportableId),
         transports: [],
         destinations: [],
         contributions: {},
         transportOptions: optionsCtx.transports[transportableId],
-        nextTransportLink: {}
+        nextTransportLink: {},
+        previousTransports: []
       };
 
       optionsCtx.transportPaths[transportableId] = firstPathLink;
@@ -234,31 +251,46 @@ export class OptionsService {
   extendPath(optionsCtx: OptionsContext, currentPathLink: TransportPathLink, transportedUnitId: number) {
     currentPathLink.transportOptions.forEach((transportId: number) => {
       const nextTransports: number[] = currentPathLink.destinations.slice();
-      nextTransports.push(transportId);
+      if (!currentPathLink.previousTransports.includes(transportId)) {
+        nextTransports.push(transportId);
+      }
 
       const nextDestinations: number[] = currentPathLink.destinations.slice();
-      nextDestinations.push(...optionsCtx.transportDestinations[transportId]);
+      optionsCtx.transportDestinations[transportId].forEach((destinationId: number) => {
+        if (!nextDestinations.includes(destinationId)) {
+          nextDestinations.push(destinationId);
+        }
+      });
 
       let nextTransportOptions: number[] = [];
       if (optionsCtx.transports[transportId]) {
         nextTransportOptions = optionsCtx.transports[transportId].filter(
-          (optionId: number) => !nextTransports.includes(optionId)
+          (optionId: number) => !currentPathLink.previousTransports.includes(optionId)
         );
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const nextContributions: any = copyObjectOfArrays(currentPathLink.contributions);
       for (const transport in nextContributions) {
-        nextContributions[transport].push(...optionsCtx.transportDestinations[transportId]);
+        optionsCtx.transportDestinations[transportId].forEach((destinationId: number) => {
+          if (!nextContributions[transport].includes(destinationId)) {
+            nextContributions[transport].push(destinationId);
+          }
+        });
       }
       nextContributions[transportId] = optionsCtx.transportDestinations[transportId].slice();
 
+      const previousTransports = currentPathLink.previousTransports.slice();
+      previousTransports.push(transportId);
+
       const nextTransportLink: TransportPathLink = {
+        transportedId: transportId,
         destinations: nextDestinations,
         nextTransportLink: {},
         transportOptions: nextTransportOptions,
         transports: nextTransports,
-        contributions: nextContributions
+        contributions: nextContributions,
+        previousTransports: previousTransports
       };
 
       if (nextTransportOptions.length > 0) {
@@ -277,7 +309,7 @@ export class OptionsService {
             transportingUnit.allTransports[transportedUnitId] = [...nextContributions[transportId]];
           }
 
-          this.addConvoysToSharedAdjProvinces(optionsCtx, nextContributions[transportId], transportedUnitId);
+          // this.addConvoysToSharedAdjProvinces(optionsCtx, nextContributions[transportId], transportedUnitId);
         }
       }
     });
@@ -292,11 +324,21 @@ export class OptionsService {
         adjProvince?.filter((adjProvince: AdjacentProvince) => adjProvince.unitId === transportedUnitId).length === 0;
 
       if (adjProvince && doesNotHaveUnit && optionsCtx.sharedAdjProvinces) {
-        optionsCtx.sharedAdjProvinces[convoyProvince.provinceId].push({
-          nodeId: contributionId,
-          unitId: transportedUnitId,
-          transported: true
-        });
+        if ( optionsCtx.sharedAdjProvinces[convoyProvince.provinceId]) {
+          optionsCtx.sharedAdjProvinces[convoyProvince.provinceId].push({
+            nodeId: contributionId,
+            unitId: transportedUnitId,
+            transported: true
+          });
+
+        } else {
+          // Should be impossible with the ordering but just in case/resilience
+          optionsCtx.sharedAdjProvinces[convoyProvince.provinceId] = [{
+            nodeId: contributionId,
+            unitId: transportedUnitId,
+            transported: true
+          }]
+        }
       }
     });
   }

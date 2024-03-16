@@ -2,8 +2,8 @@ export const getDisbandOrdersQueryx = `
   SELECT
     c.country_id,
     c.country_name,
-    ch.banked_builds,
-    ch.adjustments disbands,
+    lch.banked_builds,
+    lch.adjustments disbands,
     json_agg(
       CASE WHEN n.node_id = any(os.nuke_locs)
         THEN
@@ -23,25 +23,23 @@ export const getDisbandOrdersQueryx = `
     END
     ) AS nuke_loc_details,
     os.nuke_locs,
-    ch.nuke_range,
+    lch.nuke_range,
     os.increase_range,
     os.units_disbanding
   FROM order_sets os
   LEFT JOIN nodes n ON n.node_id = any(os.nuke_locs)
   LEFT JOIN provinces p ON p.province_id = n.province_id
   LEFT JOIN countries c ON c.country_id = os.country_id
-  LEFT JOIN country_histories ch ON ch.country_id = c.country_id
-  LEFT JOIN get_last_country_history($1, $2) lch
-    ON lch.country_id = ch.country_id AND lch.turn_id = ch.turn_id
+  LEFT JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
   WHERE os.turn_id = $3
     AND order_set_type = 'Orders'
     AND CASE WHEN 0 = $4 THEN true ELSE os.country_id = $4 END
   GROUP BY
     c.country_id,
     c.country_name,
-    ch.banked_builds,
-    ch.adjustments,
-    ch.nuke_range,
+    lch.banked_builds,
+    lch.adjustments,
+    lch.nuke_range,
     os.nuke_locs,
     os.increase_range,
     os.units_disbanding;
