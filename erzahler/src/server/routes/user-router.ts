@@ -18,7 +18,7 @@ userRouter.get('/report-guest/:guestId', (request, response) => {
 userRouter.get('/check-username/:username', (request, response) => {
   const { username } = request.params;
 
-  if (username !== typeof 'string' || 'username === ') {
+  if (username === '' || username !== typeof 'string') {
     terminalLog(`Invalid request to users/check-username/:username: Username cannot be empty.`);
     response.send({
       success: false,
@@ -64,12 +64,12 @@ userRouter.get('/profile', (request, response) => {
         response.send(userProfile);
       } else {
         terminalLog(`No User Profile for idToken (${idToken})`);
-        response.send({ succes: false, message: `idToken ${idToken} does not return a user profile`});
+        response.send({ succes: false, message: `idToken ${idToken} does not return a user profile` });
       }
     })
     .catch((error: Error) => {
       terminalLog(`Get Profile FAILURE: ${idToken}`);
-      response.send({error: error.message});
+      response.send({ error: error.message });
     });
 });
 

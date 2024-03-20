@@ -1,6 +1,6 @@
-import express from "express";
-import { HistoryService } from "../services/history-service";
-import { ValidationService } from "../services/validation-service";
+import express from 'express';
+import { HistoryService } from '../services/history-service';
+import { ValidationService } from '../services/validation-service';
 
 export const historyRouter = express.Router();
 const historyService = new HistoryService();
@@ -43,7 +43,9 @@ historyRouter.get('/results/:gameId/:turnNumber', (request, response) => {
 
   const { gameId, turnNumber } = validationResponse.sanitizedVariables;
 
-  historyService.getTurnHistory(gameId!, turnNumber!).then((result: any) => {
+  historyService
+    .getTurnHistory(gameId!, turnNumber!)
+    .then((result: any) => {
       response.send(result);
     })
     .catch((error: Error) => {

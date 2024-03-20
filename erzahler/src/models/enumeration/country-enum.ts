@@ -5,7 +5,7 @@ export enum CountryStatus {
   NPC = 'Non-Player Country',
   // End Behavior
   SURVIVED = 'Survived',
-  WON = 'Won',
+  WON = 'Won'
   // Misc Behavior
   // DISCARDED = 'Discarded' // Suspending/Abandoning use as a db reversion
 }

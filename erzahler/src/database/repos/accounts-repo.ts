@@ -26,7 +26,10 @@ import { getAccountsProviderRowQuery } from '../queries/dashboard/get-accounts-p
 import { insertProviderFromAccountsQuery } from '../queries/accounts/insert-provider-from-accounts-query';
 import { NewUser, NewUserResult } from '../../models/objects/new-user-objects';
 import { createEnvironmentProviderQuery } from '../queries/accounts/create-environment-provider-query';
-import { insertUserContactPreferencesQuery, insertUserSettingsQuery } from '../queries/accounts/insert-user-settings-query';
+import {
+  insertUserContactPreferencesQuery,
+  insertUserSettingsQuery
+} from '../queries/accounts/insert-user-settings-query';
 import { insertUserDetailsQuery } from '../queries/accounts/insert-user-details-query';
 import { updateUserSettingsQuery } from '../queries/dashboard/update-user-query';
 import { CustomException } from '../../models/objects/exception-objects';
@@ -201,17 +204,17 @@ export class AccountsRepository {
         return [undefined];
       });
 
-      if (userProfiles.length > 1) {
-        terminalLog('Accounts', `Multiple User Profiles for uid (${uid})`);
-        return undefined;
-      }
+    if (userProfiles.length > 1) {
+      terminalLog('Accounts', `Multiple User Profiles for uid (${uid})`);
+      return undefined;
+    }
 
-      if (userProfiles.length === 0) {
-        terminalLog('Accounts', `No User Profile for uid (${uid})`);
-        return undefined;
-      }
+    if (userProfiles.length === 0) {
+      terminalLog('Accounts', `No User Profile for uid (${uid})`);
+      return undefined;
+    }
 
-      return userProfiles[0];
+    return userProfiles[0];
   }
 
   async getUserRowFromAccounts(uid: string): Promise<AccountsUserRow[]> {
