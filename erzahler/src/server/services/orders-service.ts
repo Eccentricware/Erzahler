@@ -1,5 +1,11 @@
 import { GameState } from '../../models/objects/last-turn-info-object';
-import { AtRiskUnit, BuildLocProvince, NominatableCountry, Order, OrderSet } from '../../models/objects/option-context-objects';
+import {
+  AtRiskUnit,
+  BuildLocProvince,
+  NominatableCountry,
+  Order,
+  OrderSet
+} from '../../models/objects/option-context-objects';
 import { BuildType } from '../../models/enumeration/unit-enum';
 import { db } from '../../database/connection';
 import { AccountService } from './account-service';
@@ -19,7 +25,11 @@ import {
   TransferTechOrder,
   TurnOrders
 } from '../../models/objects/order-objects';
-import { CountryOrderSet, CountryOrderSetIds, OrderTurnIds } from '../../models/objects/orders/expected-order-types-object';
+import {
+  CountryOrderSet,
+  CountryOrderSetIds,
+  OrderTurnIds
+} from '../../models/objects/orders/expected-order-types-object';
 import { terminalAddendum, terminalLog } from '../utils/general';
 import { NewTurn, Turn } from '../../models/objects/database-objects';
 import { OptionsService } from './options-service';
@@ -119,7 +129,6 @@ export class OrdersService {
 
           if (orders.pending.units.length > 0 && orders.pending.units[0].orderStatus !== 'Default') {
             orders.pending.default = false;
-
           } else {
             orders.pending.default = true;
           }
@@ -182,7 +191,8 @@ export class OrdersService {
             );
 
             // To-do change the db query to not return the null property object
-            if (pendingBuildOrders[0] &&
+            if (
+              pendingBuildOrders[0] &&
               (!pendingBuildOrders[0].builds[0] || pendingBuildOrders[0].builds[0].buildNumber === null)
             ) {
               pendingBuildOrders[0].builds = [];
@@ -200,7 +210,6 @@ export class OrdersService {
                   builds: [],
                   nukesReady: []
                 };
-
           } else {
             const disbandOrders = await this.prepareDisbandOrders(
               gameId,
@@ -208,7 +217,7 @@ export class OrdersService {
               pendingTurn.turnId,
               playerCountry.countryId
             );
-            orders.pending.disbands = disbandOrders[0]
+            orders.pending.disbands = disbandOrders[0];
           }
         }
 
@@ -396,7 +405,7 @@ export class OrdersService {
     return turnIds;
   }
 
-  async saveOrders(idToken: string, orders: TurnOrders): Promise<{success: boolean, message?: string}> {
+  async saveOrders(idToken: string, orders: TurnOrders): Promise<{ success: boolean; message?: string }> {
     // Identify user
     const accountService = new AccountService();
     let success = true;
@@ -419,7 +428,11 @@ export class OrdersService {
         message: `You are not assigned to a country in this game.`
       };
     }
-    const countryAuthorization = await db.assignmentRepo.getCountryAuthorization(orders.gameId, userId, orders.countryId);
+    const countryAuthorization = await db.assignmentRepo.getCountryAuthorization(
+      orders.gameId,
+      userId,
+      orders.countryId
+    );
 
     if (countryAuthorization.assigned) {
       terminalLog(`Saving Orders: Game ${orders.gameId} | Country ${orders.countryId} | User ${userId}`);
@@ -460,7 +473,10 @@ export class OrdersService {
         if (orders.pending.techTransfer.orderSetId === countryAuthorization.pendingOrderSetId) {
           await db.ordersRepo.saveTechTransfer(orders.pending.techTransfer);
         } else {
-          terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${orders.pending.techTransfer.orderSetId})`);
+          terminalAddendum(
+            'ALERT',
+            `Attempt to save orders for invalid orderSetId (${orders.pending.techTransfer.orderSetId})`
+          );
           success = false;
           message = sabotageMessage;
         }
@@ -471,7 +487,10 @@ export class OrdersService {
         if (orders.preliminary.techTransfer.orderSetId === countryAuthorization.preliminaryOrderSetId) {
           await db.ordersRepo.saveTechTransfer(orders.preliminary.techTransfer);
         } else {
-          terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${orders.preliminary.techTransfer.orderSetId})`);
+          terminalAddendum(
+            'ALERT',
+            `Attempt to save orders for invalid orderSetId (${orders.preliminary.techTransfer.orderSetId})`
+          );
           success = false;
           message = sabotageMessage;
         }
@@ -487,7 +506,11 @@ export class OrdersService {
         }
       }
 
-      if (orders.preliminary?.buildTransfers && orders.preliminary.buildTransfers.length > 0 && orders.preliminary.orderSetId) {
+      if (
+        orders.preliminary?.buildTransfers &&
+        orders.preliminary.buildTransfers.length > 0 &&
+        orders.preliminary.orderSetId
+      ) {
         if (orders.preliminary.orderSetId === countryAuthorization.preliminaryOrderSetId) {
           await db.ordersRepo.saveBuildTransfers(orders.preliminary.orderSetId, orders.preliminary.buildTransfers);
         } else {
@@ -500,7 +523,11 @@ export class OrdersService {
       // Adjustments
       // Adjustments | Adjustments and Nominations
       if (orders.pending?.builds && orders.pending.builds.builds.length > 0 && orders.pending.orderSetId) {
-        const buildResults = await this.saveBuildOrders(orders.pending.orderSetId, orders.pending.builds, countryAuthorization.pendingOrderSetId);
+        const buildResults = await this.saveBuildOrders(
+          orders.pending.orderSetId,
+          orders.pending.builds,
+          countryAuthorization.pendingOrderSetId
+        );
         if (!buildResults.success || buildResults.sabotage) {
           success = false;
           message = buildResults.sabotage ? sabotageMessage : 'Error saving build orders';
@@ -508,7 +535,11 @@ export class OrdersService {
       }
 
       if (orders.preliminary?.builds && orders.preliminary.builds.builds.length > 0 && orders.preliminary.orderSetId) {
-        const buildResults = await this.saveBuildOrders(orders.preliminary.orderSetId, orders.preliminary.builds, countryAuthorization.preliminaryOrderSetId);
+        const buildResults = await this.saveBuildOrders(
+          orders.preliminary.orderSetId,
+          orders.preliminary.builds,
+          countryAuthorization.preliminaryOrderSetId
+        );
         if (!buildResults.success || buildResults.sabotage) {
           success = false;
           message = buildResults.sabotage ? sabotageMessage : 'Error saving build orders';
@@ -519,7 +550,10 @@ export class OrdersService {
         if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
           await db.ordersRepo.saveDisbandOrders(orders.pending.orderSetId, orders.pending.disbands);
         } else {
-          terminalAddendum('ALERT', `Attempt to save disband orders for unauthorized orderSetId (${orders.pending.orderSetId})`);
+          terminalAddendum(
+            'ALERT',
+            `Attempt to save disband orders for unauthorized orderSetId (${orders.pending.orderSetId})`
+          );
           success = false;
           message = sabotageMessage;
         }
@@ -529,7 +563,10 @@ export class OrdersService {
         if (orders.preliminary.orderSetId === countryAuthorization.preliminaryOrderSetId) {
           await db.ordersRepo.saveDisbandOrders(orders.preliminary.orderSetId, orders.preliminary.disbands);
         } else {
-          terminalAddendum('ALERT', `Attempt to save disband orders for unauthorized orderSetId (${orders.preliminary.orderSetId})`);
+          terminalAddendum(
+            'ALERT',
+            `Attempt to save disband orders for unauthorized orderSetId (${orders.preliminary.orderSetId})`
+          );
           success = false;
           message = sabotageMessage;
         }
@@ -541,7 +578,10 @@ export class OrdersService {
         if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
           await db.ordersRepo.saveNominationOrder(orders.pending.orderSetId, orders.pending.nomination.countryIds);
         } else {
-          terminalAddendum('ALERT', `Attempt to save nomination orders for unauthorized orderSetId (${orders.pending.orderSetId})`);
+          terminalAddendum(
+            'ALERT',
+            `Attempt to save nomination orders for unauthorized orderSetId (${orders.pending.orderSetId})`
+          );
           success = false;
           message = sabotageMessage;
         }
@@ -562,13 +602,16 @@ export class OrdersService {
       return {
         success: success,
         message: message
-      }
+      };
 
       // if (!orderSetUpdated && orderSetIds.core) {
       //   db.ordersRepo.updateOrderSetSubmissionTime(orderSetIds.core);
       // }
     } else {
-      terminalAddendum('ALERT', `Unassigned user (${userId}) attempted to save orders for Game ${orders.gameId} | Country ${orders.countryId}`);
+      terminalAddendum(
+        'ALERT',
+        `Unassigned user (${userId}) attempted to save orders for Game ${orders.gameId} | Country ${orders.countryId}`
+      );
       return {
         success: false,
         message: `You are not assigned to this country!`
@@ -583,10 +626,7 @@ export class OrdersService {
     }
 
     const newOrderSets = retreatingCountryIds
-      ? await db.ordersRepo.insertRetreatedOrderSets(
-          upcomingTurn.turnId,
-          retreatingCountryIds
-        )
+      ? await db.ordersRepo.insertRetreatedOrderSets(upcomingTurn.turnId, retreatingCountryIds)
       : await db.ordersRepo.insertTurnOrderSets(
           upcomingTurn.gameId,
           upcomingTurn.turnNumber,
@@ -599,14 +639,19 @@ export class OrdersService {
       newOrderSetLibrary[orderSet.countryId] = orderSet.orderSetId;
     });
 
-    const countryStats: CountryStats[] =
-      await db.gameRepo.getGameStats(upcomingTurn.gameId, upcomingTurn.turnNumber);
+    const countryStats: CountryStats[] = await db.gameRepo.getGameStats(upcomingTurn.gameId, upcomingTurn.turnNumber);
 
-    const buildOptions: BuildLocProvince[] =
-      await db.optionsRepo.getAvailableBuildLocs(upcomingTurn.turnNumber, upcomingTurn.gameId, 0);
+    const buildOptions: BuildLocProvince[] = await db.optionsRepo.getAvailableBuildLocs(
+      upcomingTurn.turnNumber,
+      upcomingTurn.gameId,
+      0
+    );
 
-    const disbandOptions: AtRiskUnit[] =
-      await db.optionsRepo.getAtRiskUnits(upcomingTurn.gameId, upcomingTurn.turnNumber, 0);
+    const disbandOptions: AtRiskUnit[] = await db.optionsRepo.getAtRiskUnits(
+      upcomingTurn.gameId,
+      upcomingTurn.turnNumber,
+      0
+    );
 
     const allBuilds: Build[] = [];
 
@@ -616,13 +661,13 @@ export class OrdersService {
       }
 
       if (country.adjustments >= 0) {
-        const countryBuildOptions = buildOptions.filter((buildOption: BuildLocProvince) =>
-          buildOption.countryId === country.id
+        const countryBuildOptions = buildOptions.filter(
+          (buildOption: BuildLocProvince) => buildOption.countryId === country.id
         );
 
         // This will only happen with a faulty countryHistory
         if (countryBuildOptions.length > 0) {
-          const countryDefaultBuilds: Build[] = []
+          const countryDefaultBuilds: Build[] = [];
           let currentOptionIndex = 0;
           while (countryDefaultBuilds.length < country.adjustments) {
             countryDefaultBuilds.push({
@@ -640,8 +685,8 @@ export class OrdersService {
       }
 
       if (country.adjustments < 0) {
-        const countryAtRiskUnits = disbandOptions.filter((atRiskUnit: AtRiskUnit) =>
-          atRiskUnit.countryId === country.id
+        const countryAtRiskUnits = disbandOptions.filter(
+          (atRiskUnit: AtRiskUnit) => atRiskUnit.countryId === country.id
         );
 
         if (countryAtRiskUnits.length > 0) {
@@ -681,15 +726,18 @@ export class OrdersService {
     }
   }
 
-  async saveBuildOrders(orderSetId: number, buildOrders: BuildOrders, authorizationOsId: number | undefined): Promise<{success: boolean, sabotage: boolean}> {
+  async saveBuildOrders(
+    orderSetId: number,
+    buildOrders: BuildOrders,
+    authorizationOsId: number | undefined
+  ): Promise<{ success: boolean; sabotage: boolean }> {
     let success = true;
     let sabotage = false;
     if (orderSetId === authorizationOsId) {
-      await db.ordersRepo.updateBuildOrderSet(orderSetId, buildOrders.increaseRange)
-        .catch((error: Error) => {
-          terminalAddendum('ERROR', `Error updating build order set (${orderSetId}): ${error.message}`);
-          success = false;
-        });
+      await db.ordersRepo.updateBuildOrderSet(orderSetId, buildOrders.increaseRange).catch((error: Error) => {
+        terminalAddendum('ERROR', `Error updating build order set (${orderSetId}): ${error.message}`);
+        success = false;
+      });
     } else {
       terminalAddendum('ALERT', `Attempt to save build orders for unauthorized orderSetId (${orderSetId})`);
       sabotage = true;
@@ -697,8 +745,7 @@ export class OrdersService {
 
     if (buildOrders.builds.length > 0) {
       buildOrders.builds.forEach(async (build: Build, index: number) => {
-        await db.ordersRepo.saveBuildOrder(orderSetId, build, index + 1)
-        .catch((error: Error) => {
+        await db.ordersRepo.saveBuildOrder(orderSetId, build, index + 1).catch((error: Error) => {
           terminalAddendum('ERROR', `Error saving build order (${build.buildNumber}): ${error.message}`);
           success = false;
         });
@@ -717,12 +764,7 @@ export class OrdersService {
     orderTurnId: number,
     countryId: number
   ): Promise<DisbandOrders[]> {
-    return await db.ordersRepo.getDisbandOrders(
-      gameId,
-      turnNumber,
-      orderTurnId,
-      countryId
-    );
+    return await db.ordersRepo.getDisbandOrders(gameId, turnNumber, orderTurnId, countryId);
 
     // if (disbandOrders.nukeLocs.length > 0) {
     //   disbandOrders.nukeBuildDetails = await db.ordersRepo.getNukesReadyLocs(orderTurnId, countryId);
@@ -756,8 +798,18 @@ export class OrdersService {
     // return disbandOrders;
   }
 
-  async getNominationOrder(gameId: number, turnNumber: number, turnId: number, countryId: number): Promise<NominationOrder> {
-    const countryDetails: NominatableCountry[] = await db.ordersRepo.getNominationOrder(gameId, turnNumber, turnId, countryId);
+  async getNominationOrder(
+    gameId: number,
+    turnNumber: number,
+    turnId: number,
+    countryId: number
+  ): Promise<NominationOrder> {
+    const countryDetails: NominatableCountry[] = await db.ordersRepo.getNominationOrder(
+      gameId,
+      turnNumber,
+      turnId,
+      countryId
+    );
     const countryIds: number[] = countryDetails.map((country: NominatableCountry) => country.countryId);
 
     if (countryIds.length > 0 && countryIds[0] !== null) {
@@ -777,7 +829,10 @@ export class OrdersService {
 
   async initializeVotingOrderSets(turn: NewTurn): Promise<void> {
     // 1:1 Match between nominatble countries and voting countries
-    const survivingCountries: NominatableCountry[] = await db.optionsRepo.getNominatableCountries(turn.gameId, turn.turnNumber);
+    const survivingCountries: NominatableCountry[] = await db.optionsRepo.getNominatableCountries(
+      turn.gameId,
+      turn.turnNumber
+    );
     const survivingCountryIds: number[] = survivingCountries.map((country: NominatableCountry) => country.countryId);
     db.ordersRepo.insertVotingOrderSets(turn.turnId, survivingCountryIds);
   }

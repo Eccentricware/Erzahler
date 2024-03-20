@@ -32,9 +32,7 @@ export class AssignmentService {
     const assignments: any = await db.assignmentRepo.getAssignments(gameId, userId);
     const registeredUsers: Assignment[] = await db.assignmentRepo.getUserRegistrations(gameId);
 
-    const userStatus: Assignment[] = registeredUsers.filter((assignment: Assignment) =>
-      assignment.userId === userId
-    );
+    const userStatus: Assignment[] = registeredUsers.filter((assignment: Assignment) => assignment.userId === userId);
     const userIsAdmin: Assignment[] = userStatus.filter((assignment: Assignment) =>
       this.adminRoles.includes(assignment.assignmentType)
     );
@@ -87,7 +85,10 @@ export class AssignmentService {
       if (!existingAssignment) {
         return await db.assignmentRepo.saveRegisterUser(gameId, user.userId, assignmentType);
       } else {
-        terminalAddendum('Registration', `${user.username} is already signed up as a ${assignmentType} for game (${gameId})`);
+        terminalAddendum(
+          'Registration',
+          `${user.username} is already signed up as a ${assignmentType} for game (${gameId})`
+        );
         return {
           success: false,
           message: `${user.username} is already signed up as a ${assignmentType} for game (${gameId})`
@@ -109,13 +110,10 @@ export class AssignmentService {
     if (assignmentsOfType.length > 1) {
       terminalAddendum(
         'Assignments',
-        `Player has been registered as a ${
-          assignmentType
-        } ${
-          assignmentsOfType.length
-        } time${
+        `Player has been registered as a ${assignmentType} ${assignmentsOfType.length} time${
           assignmentsOfType.length === 1 ? '' : 's'
-        }`);
+        }`
+      );
     }
 
     if (assignmentsOfType.length > 0) {

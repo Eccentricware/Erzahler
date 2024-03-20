@@ -12,7 +12,7 @@ gameRouter.get('/check-name/:gameName', (request, response) => {
   const { gameName } = request.params;
 
   if (gameName === '') {
-    terminalLog(`Invalid request to games/check-name/:gameName: Game name cannot be empty.`)
+    terminalLog(`Invalid request to games/check-name/:gameName: Game name cannot be empty.`);
     response.send({
       success: false,
       message: 'Game name cannot be empty.'

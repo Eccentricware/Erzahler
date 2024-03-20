@@ -512,13 +512,7 @@ export class OptionsRepository {
 
     nominations.forEach((nomination: Nomination) => {
       nomination.countries.sort((a: NominatableCountry, b: NominatableCountry) => {
-        return a.rank === b.rank
-          ? a.countryName < b.countryName
-            ? -1
-            : 1
-          : a.rank < b.rank
-            ? -1
-            : 1;
+        return a.rank === b.rank ? (a.countryName < b.countryName ? -1 : 1) : a.rank < b.rank ? -1 : 1;
       });
     });
 

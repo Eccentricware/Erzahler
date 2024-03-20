@@ -24,10 +24,9 @@ ordersRouter.get(`/:gameId/orders`, (request, response) => {
 
   const { gameId, idToken } = validationResponse.sanitizedVariables;
 
-  ordersService.getTurnOrders(idToken!, gameId!)
-    .then((orders: TurnOrders | undefined) => {
-      response.send(orders);
-    });
+  ordersService.getTurnOrders(idToken!, gameId!).then((orders: TurnOrders | undefined) => {
+    response.send(orders);
+  });
 });
 
 ordersRouter.post(`/submit`, (request, response) => {
@@ -36,7 +35,7 @@ ordersRouter.post(`/submit`, (request, response) => {
     idToken: {
       value: <string>request.headers.idtoken,
       guestAllowed: false
-    },
+    }
   });
 
   if (!validationResponse.valid) {

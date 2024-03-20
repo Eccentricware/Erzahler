@@ -1,5 +1,5 @@
-import { AssignmentType } from "../../models/enumeration/assignment-type-enum";
-import { terminalLog } from "../utils/general";
+import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
+import { terminalLog } from '../utils/general';
 
 export interface RequestValidationObject {
   route: string;
@@ -10,7 +10,7 @@ export interface RequestValidationObject {
   idToken?: {
     value: string;
     guestAllowed: boolean;
-  }
+  };
   assignmentType?: string | string[] | undefined;
   environment?: string | string[] | undefined;
   magicWord?: string | string[] | undefined;
@@ -80,7 +80,7 @@ export class ValidationService {
         validationResponse.sanitizedVariables.idToken = String(request.idToken.value);
       } else if (!request.idToken.guestAllowed && request.idToken.value === '') {
         validationResponse.valid = false;
-        validationResponse.errors.push('This operation does not accommodate guest users (idToken === \'\')');
+        validationResponse.errors.push("This operation does not accommodate guest users (idToken === '')");
       } else if (!request.idToken.value) {
         validationResponse.valid = false;
         validationResponse.errors.push('Invalid idToken');

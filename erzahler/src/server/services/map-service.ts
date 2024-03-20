@@ -19,13 +19,11 @@ export class MapService {
 
     const cities = await db.mapRepo.getCities(gameId, turnNumberToUse);
 
-    const supplyCenters = cities.filter((city: City) =>
-      city.type === CityType.SUPPLY && ['active', 'dormant'].includes(city.status)
+    const supplyCenters = cities.filter(
+      (city: City) => city.type === CityType.SUPPLY && ['active', 'dormant'].includes(city.status)
     );
 
-    const votingCenters = cities.filter((city: City) =>
-      [CityType.VOTE, CityType.CAPITAL].includes(city.type)
-    );
+    const votingCenters = cities.filter((city: City) => [CityType.VOTE, CityType.CAPITAL].includes(city.type));
 
     const labels = await db.mapRepo.getLabels(gameId);
     const labelLines = await db.mapRepo.getLabelLines(gameId);

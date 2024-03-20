@@ -1,5 +1,4 @@
 import { TurnStatus } from '../enumeration/turn-status-enum';
-import { TurnType } from '../enumeration/turn-type-enum';
 import {
   BuildLoc,
   DisbandOptions,
@@ -43,7 +42,7 @@ interface SpecificTurnOptions {
 }
 
 interface FinaleDetails {
-
+  conclusionType: string;
 }
 
 export interface TransferBuildsOption {

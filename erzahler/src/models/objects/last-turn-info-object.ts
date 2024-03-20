@@ -100,7 +100,7 @@ export interface GameState {
   votingSchedule: {
     baseFinal: number;
     penalties: Record<CountryRank, number>;
-  }
+  };
   allVotesControlled: boolean;
   unitsInRetreat: boolean;
   defaultNukeRange: number;

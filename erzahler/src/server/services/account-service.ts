@@ -150,11 +150,10 @@ export class AccountService {
         }
 
         return blitzkarteUser;
-
       } else {
         const accountRestored = await this.restoreAccount(token.uid);
         if (!accountRestored) {
-          terminalLog('Accounts', `No Blitzkarte account for idToken ${idToken}`)
+          terminalLog('Accounts', `No Blitzkarte account for idToken ${idToken}`);
           return undefined;
         }
 
@@ -162,12 +161,13 @@ export class AccountService {
         if (restoredAccount) {
           return restoredAccount;
         } else {
-          terminalLog('Accounts', `Somehow, getting the user profile of a successfully restored account has failed. idToken ${idToken}`);
+          terminalLog(
+            'Accounts',
+            `Somehow, getting the user profile of a successfully restored account has failed. idToken ${idToken}`
+          );
           return undefined;
         }
-
       }
-
     } else {
       terminalLog('Authentication', `idToken ${idToken} is not valid`);
       return undefined;
@@ -183,7 +183,6 @@ export class AccountService {
         result: users[0].userId,
         message: `Firebase UID ${uid} has precisely one account`
       };
-
     } else if (users.length > 1) {
       terminalLog(`WARNING: Firebase UID ${uid} has ${users.length} instances in the Accounts DB!!`);
 
@@ -193,7 +192,6 @@ export class AccountService {
         message: `Firebase UID ${uid} has ${users.length} accounts!`,
         alert: true
       };
-
     } else {
       return {
         value: false,

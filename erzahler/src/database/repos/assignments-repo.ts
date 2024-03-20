@@ -6,14 +6,29 @@ import { assignUserQuery } from '../queries/assignments/assign-user-query';
 import { clearCountryAssignmentsQuery } from '../queries/assignments/clear-country-assignments-query';
 import { getUserGameAssignmentsQuery } from '../queries/assignments/get-user-game-assignments-query';
 import { lockAssignmentQuery } from '../queries/assignments/lock-assignment-query';
-import { getUserRegistrationsQuery, registerUserQuery, reregisterUserQuery, unregisterUserQuery } from '../queries/assignments/registration-queries';
+import {
+  getUserRegistrationsQuery,
+  registerUserQuery,
+  reregisterUserQuery,
+  unregisterUserQuery
+} from '../queries/assignments/registration-queries';
 import { unlockAssignmentQuery } from '../queries/assignments/unlock-assignment-query';
 import { getAssignmentsQuery } from '../queries/game/get-assignments-query';
 import { getGameAdminsQuery } from '../queries/game/get-game-admins-query';
-import { Assignment, AssignmentDetails, AssignmentDetailsResult, AssignmentResult, UserAssignment, UserAssignmentResult } from '../../models/objects/assignment-objects';
+import {
+  Assignment,
+  AssignmentDetails,
+  AssignmentDetailsResult,
+  AssignmentResult,
+  UserAssignment,
+  UserAssignmentResult
+} from '../../models/objects/assignment-objects';
 import { getPlayerIsCountryQuery } from '../queries/assignments/get-player-is-country-query';
 import { terminalLog } from '../../server/utils/general';
-import { CountryAuthorization, CountryAuthorizationResult } from '../../models/objects/orders/expected-order-types-object';
+import {
+  CountryAuthorization,
+  CountryAuthorizationResult
+} from '../../models/objects/orders/expected-order-types-object';
 
 /**
  * Handles DB updates involving user associations with games.
@@ -37,21 +52,22 @@ export class AssignmentRepository {
     return await this.pool
       .query(getAssignmentsQuery, [gameId, userId])
       .then((assignmentDataResults: QueryResult<AssignmentDetailsResult>) => {
-        return assignmentDataResults.rows.map((assignment: AssignmentDetailsResult) => (
-          <AssignmentDetails> {
-            assignmentId: assignment.assignment_id,
-            countryId: assignment.country_id,
-            countryName: assignment.country_name,
-            rank: assignment.rank,
-            playerId: assignment.player_id,
-            username: assignment.username,
-            assignmentStatus: assignment.assignment_status,
-            contactPreferences: assignment.contact_preferences ? assignment.contact_preferences[0] : null
-          }
-        ));
+        return assignmentDataResults.rows.map(
+          (assignment: AssignmentDetailsResult) =>
+            <AssignmentDetails>{
+              assignmentId: assignment.assignment_id,
+              countryId: assignment.country_id,
+              countryName: assignment.country_name,
+              rank: assignment.rank,
+              playerId: assignment.player_id,
+              username: assignment.username,
+              assignmentStatus: assignment.assignment_status,
+              contactPreferences: assignment.contact_preferences ? assignment.contact_preferences[0] : null
+            }
+        );
       })
       .catch((error: Error) => {
-        terminalLog('Get Assignment Data Results Error: ' + error.message)
+        terminalLog('Get Assignment Data Results Error: ' + error.message);
         return [];
       });
   }
@@ -121,7 +137,7 @@ export class AssignmentRepository {
             assignmentEnd: assignmentResult.assignment_end,
             countryId: assignmentResult.country_id,
             gameId: assignmentResult.game_id
-          }
+          };
         })
       )
       .catch((error: Error) => {
@@ -207,9 +223,11 @@ export class AssignmentRepository {
           assigned: row.assigned,
           pendingOrderSetId: row.pending_order_set_id,
           preliminaryOrderSetId: row.preliminary_order_set_id
-        })
-      ));
+        }))
+      );
 
-    return assignments[0] ? assignments[0] : { assigned: false, pendingOrderSetId: undefined, preliminaryOrderSetId: undefined };
+    return assignments[0]
+      ? assignments[0]
+      : { assigned: false, pendingOrderSetId: undefined, preliminaryOrderSetId: undefined };
   }
 }

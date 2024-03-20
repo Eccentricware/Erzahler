@@ -51,7 +51,6 @@ assignmentRouter.post('/register', (request, response) => {
 
   const { idToken, gameId, assignmentType } = validationResponse.sanitizedVariables;
 
-
   assignmentService
     .registerUser(idToken!, gameId!, assignmentType!)
     .then((result: any) => {

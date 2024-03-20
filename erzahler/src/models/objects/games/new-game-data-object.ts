@@ -1,6 +1,6 @@
-import { GameRow } from "../../../database/schema/table-fields";
-import { GameStatus } from "../../enumeration/game-status-enum";
-import { CoalitionSchedule } from "./coalition-schedule-objects";
+import { GameRow } from '../../../database/schema/table-fields';
+import { GameStatus } from '../../enumeration/game-status-enum';
+import { CoalitionSchedule } from './coalition-schedule-objects';
 
 export interface NewGameData {
   gameName: string;
@@ -49,6 +49,8 @@ export interface NewGameData {
   blindCreator: boolean;
   partialRosterStart: boolean;
   coalitionSchedule: CoalitionSchedule;
+  privateGame: boolean;
+  hiddenGame: boolean;
   dbRows: any;
 }
 

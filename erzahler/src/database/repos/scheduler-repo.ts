@@ -46,8 +46,9 @@ export class SchedulerRepository {
       deadline: input.deadline
     };
 
-    const query = this.pgp.helpers.insert(turnValues, this.turnCols)
-    + 'RETURNING game_id, turn_id, turn_number, turn_name, turn_type, turn_status, year_number, deadline';
+    const query =
+      this.pgp.helpers.insert(turnValues, this.turnCols) +
+      'RETURNING game_id, turn_id, turn_number, turn_name, turn_type, turn_status, year_number, deadline';
 
     const newTurn: NewTurn[] = await this.db.any(query).then((data: any) =>
       data.map((result: TurnResult): Turn => {

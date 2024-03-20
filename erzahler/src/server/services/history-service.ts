@@ -1,12 +1,18 @@
-import { db } from "../../database/connection";
-import { OrderDisplay } from "../../models/enumeration/order-display-enum";
-import { TurnType } from "../../models/enumeration/turn-type-enum";
-import { GameStats } from "../../models/objects/database-objects";
-import { CountryOrders, HistoricOrder, HistoricOrderDisplay, HistoricTurn, TurnHistory } from "../../models/objects/history-objects";
-import { TransferTechOrder, TransferBuildOrder, BuildOrders } from "../../models/objects/order-objects";
-import { terminalLog } from "../utils/general";
-import { MapService } from "./map-service";
-import { OrdersService } from "./orders-service";
+import { db } from '../../database/connection';
+import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { TurnType } from '../../models/enumeration/turn-type-enum';
+import { GameStats } from '../../models/objects/database-objects';
+import {
+  CountryOrders,
+  HistoricOrder,
+  HistoricOrderDisplay,
+  HistoricTurn,
+  TurnHistory
+} from '../../models/objects/history-objects';
+import { TransferTechOrder, TransferBuildOrder, BuildOrders, Build } from '../../models/objects/order-objects';
+import { terminalLog } from '../utils/general';
+import { MapService } from './map-service';
+import { OrdersService } from './orders-service';
 
 export class HistoryService {
   async getGameStats(gameId: number): Promise<GameStats> {
@@ -27,9 +33,7 @@ export class HistoryService {
     terminalLog(`Turn History Requested: (${gameId}-${turnNumber})`);
 
     const resultRender = await mapService.getMap(gameId, turnNumber);
-    const startingRender = turnNumber > 0
-      ? await mapService.getMap(gameId, turnNumber - 1)
-      : resultRender;
+    const startingRender = turnNumber > 0 ? await mapService.getMap(gameId, turnNumber - 1) : resultRender;
 
     const countryLibrary: Record<number, CountryOrders> = {};
     const historicTurn: HistoricTurn | undefined = await db.historyRepo.getHistoricTurn(gameId, turnNumber);
@@ -51,7 +55,7 @@ export class HistoryService {
       };
     }
 
-    historicTurn.survivingCountries.forEach((country: any) => {
+    historicTurn.survivingCountries.forEach((country) => {
       countryLibrary[country.countryId] = country;
       country.orders = {
         trades: {
@@ -63,13 +67,15 @@ export class HistoryService {
       };
     });
 
-    if ([
-      TurnType.SPRING_ORDERS,
-      TurnType.SPRING_RETREATS,
-      TurnType.ORDERS_AND_VOTES,
-      TurnType.FALL_ORDERS,
-      TurnType.FALL_RETREATS
-    ].includes(historicTurn.turnType)) {
+    if (
+      [
+        TurnType.SPRING_ORDERS,
+        TurnType.SPRING_RETREATS,
+        TurnType.ORDERS_AND_VOTES,
+        TurnType.FALL_ORDERS,
+        TurnType.FALL_RETREATS
+      ].includes(historicTurn.turnType)
+    ) {
       const historicUnitOrders = await db.historyRepo.getHistoricUnitOrders(
         gameId,
         historicTurn.turnNumber > 0 ? historicTurn.turnNumber - 1 : 0,
@@ -133,11 +139,11 @@ export class HistoryService {
       );
 
       buildOrders.forEach((buildOrder: BuildOrders) => {
-        buildOrder.builds.forEach((build: any) => {
+        buildOrder.builds.forEach((build: Build) => {
           if (build.buildType) {
             const country = countryLibrary[buildOrder.countryId];
             country.orders.adjustments.push({
-              location: build.nodeDisplay,
+              location: build.nodeDisplay ? build.nodeDisplay : '',
               description: `Build ${build.buildType[0].toUpperCase()} ${build.nodeDisplay}`
             });
           }
@@ -151,9 +157,9 @@ export class HistoryService {
         0
       );
 
-      disbandOrders.forEach((disbandOrder: any) => {
+      disbandOrders.forEach((disbandOrder) => {
         const country = countryLibrary[disbandOrder.countryId];
-        disbandOrder.unitDisbandingDetailed.forEach((disbandedUnit: any) => {
+        disbandOrder.unitDisbandingDetailed.forEach((disbandedUnit) => {
           country.orders.adjustments.push({
             location: disbandedUnit.provinceName,
             description: `Disband ${disbandedUnit.unitType[0].toUpperCase()} ${disbandedUnit.provinceName}`
@@ -163,8 +169,9 @@ export class HistoryService {
     }
 
     // Votes
+    let votes;
     if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(historicTurn.turnType)) {
-      const votes = await db.ordersRepo.getVotes(historicTurn.turnId, 0);
+      votes = await db.ordersRepo.getVotes(historicTurn.turnId, 0);
     }
 
     const orderList: CountryOrders[] = [];
@@ -180,12 +187,13 @@ export class HistoryService {
       return a.countryName < b.countryName ? -1 : 1;
     });
 
-    return <TurnHistory> {
+    return <TurnHistory>{
       orderList: orderList,
       maps: {
         orders: {
           nuclear: [],
-          standard: []
+          standard: [],
+          votes: votes
         },
         renderData: {
           start: startingRender,
@@ -210,8 +218,13 @@ export class HistoryService {
       description += `S ${order.secondaryUnitType[0].toUpperCase()} ${order.secondaryProvinceName}`;
     }
 
-    if ([OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(order.orderType) && order.destinationProvinceName) {
-      description += `${order.orderType[0].toUpperCase()} ${order.secondaryUnitType[0].toUpperCase()} ${order.secondaryProvinceName} => ${order.destinationProvinceName}`;
+    if (
+      [OrderDisplay.SUPPORT, OrderDisplay.CONVOY, OrderDisplay.AIRLIFT].includes(order.orderType) &&
+      order.destinationProvinceName
+    ) {
+      description += `${order.orderType[0].toUpperCase()} ${order.secondaryUnitType[0].toUpperCase()} ${
+        order.secondaryProvinceName
+      } => ${order.destinationProvinceName}`;
     }
 
     if (order.orderType === OrderDisplay.NUKE) {
