@@ -1,35 +1,32 @@
-import { Pool } from 'pg';
-import { AssignmentStatus } from '../../models/enumeration/assignment-status-enum';
-import { Assignment, AssignmentDataObject } from '../../models/objects/assignment-objects';
-import { envCredentials } from '../../secrets/dbCredentials';
+import { Assignment, AssignmentDataObject, AssignmentDetails } from '../../models/objects/assignment-objects';
 import { AccountService } from './account-service';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
 import { db } from '../../database/connection';
 import { terminalAddendum, terminalLog } from '../utils/general';
 
 export class AssignmentService {
-  user: any = undefined;
   adminRoles = [AssignmentType.ADMINISTRATOR, AssignmentType.CREATOR];
 
-  async getGameAssignments(idToken: string, gameId: number): Promise<any> {
+  async getGameAssignments(idToken: string, gameId: number): Promise<AssignmentDataObject> {
     const accountService: AccountService = new AccountService();
     let userId = 0;
+    let user;
 
     if (idToken) {
-      this.user = await accountService.getUserProfile(idToken);
+      user = await accountService.getUserProfile(idToken);
       // console.log('this.user', this.user);
-      if (!this.user.error) {
-        userId = this.user.userId;
+      if (user) {
+        userId = user.userId;
       }
     }
 
     const gameData: any = await db.gameRepo.getGameDetails(
       gameId,
       userId,
-      this.user.timeZone ? this.user.timeZone : 'America/Los_Angeles',
-      this.user.meridiemTime
+      user ? user.timeZone : 'America/Los_Angeles',
+      user ? user.meridiemTime : true
     );
-    const assignments: any = await db.assignmentRepo.getAssignments(gameId, userId);
+    const assignments: AssignmentDetails[] = await db.assignmentRepo.getAssignments(gameId, userId);
     const registeredUsers: Assignment[] = await db.assignmentRepo.getUserRegistrations(gameId);
 
     const userStatus: Assignment[] = registeredUsers.filter((assignment: Assignment) => assignment.userId === userId);
@@ -43,7 +40,7 @@ export class AssignmentService {
       registrants: registeredUsers,
       userStatus: userStatus,
       userIsAdmin: userIsAdmin.length > 0,
-      allAssigned: assignments.filter((assignment: any) => assignment.playerId === null).length === 0,
+      allAssigned: assignments.filter((assignment: AssignmentDetails) => assignment.playerId === null).length === 0,
       partialRosterStart: gameData.partialRosterStart,
       finalReadinessCheck: gameData.finalReadinessCheck
     };
@@ -59,8 +56,6 @@ export class AssignmentService {
    * @returns
    */
   async isPlayerAdmin(gameId: number, playerId: number): Promise<boolean> {
-    const pool = new Pool(envCredentials);
-
     const gameAdmins = await db.assignmentRepo.getGameAdmins(gameId);
 
     const playerAdmin = gameAdmins.filter((admin: any) => admin.user_id === playerId);
@@ -76,10 +71,7 @@ export class AssignmentService {
       const userAssignments = await db.assignmentRepo.getUserRegistrations(gameId, user.userId);
 
       // Users wouldn't be banned as an admin at a per-game level. This would have to be set/get elsewhere.
-      //
       const existingAssignment = this.getUserAssignment(userAssignments, AssignmentType.PLAYER);
-
-      const blockedStatuses = [AssignmentStatus.BANNED];
 
       // Users can't be banned if the assignment doesn't exist
       if (!existingAssignment) {
@@ -124,23 +116,21 @@ export class AssignmentService {
   }
 
   async unregisterUser(idToken: string, gameId: number, assignmentType: string) {
-    terminalLog(`Unregistering ${this.user.username} (${this.user.userId}) as ${assignmentType} for game ${gameId}`);
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(envCredentials);
 
-    this.user = await accountService.getUserProfile(idToken);
-    if (!this.user.error) {
-      return await db.assignmentRepo.saveUnregisterUser(gameId, this.user.userId, assignmentType);
+    const user = await accountService.getUserProfile(idToken);
+    if (user) {
+      terminalLog(`Unregistering ${user.username} (${user.userId}) as ${assignmentType} for game ${gameId}`);
+      return await db.assignmentRepo.saveUnregisterUser(gameId, user.userId, assignmentType);
     }
   }
 
   async assignPlayer(idToken: string, gameId: number, playerId: number, countryId: number) {
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(envCredentials);
 
-    this.user = await accountService.getUserProfile(idToken);
-    if (!this.user.error) {
-      const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
+    const user = await accountService.getUserProfile(idToken);
+    if (user) {
+      const requestFromAdmin = await this.isPlayerAdmin(gameId, user.userId);
 
       if (requestFromAdmin) {
         await db.assignmentRepo.clearCountryAssignments(gameId, countryId);
@@ -159,11 +149,10 @@ export class AssignmentService {
 
   async lockAssignment(idToken: string, gameId: number, playerId: number) {
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(envCredentials);
 
-    this.user = await accountService.getUserProfile(idToken);
-    if (!this.user.error) {
-      const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
+    const user = await accountService.getUserProfile(idToken);
+    if (user) {
+      const requestFromAdmin = await this.isPlayerAdmin(gameId, user.userId);
 
       if (requestFromAdmin) {
         await db.assignmentRepo.saveLockAssignment(gameId, playerId);
@@ -178,11 +167,10 @@ export class AssignmentService {
 
   async unlockAssignment(idToken: string, gameId: number, playerId: number) {
     const accountService: AccountService = new AccountService();
-    const pool = new Pool(envCredentials);
 
-    this.user = await accountService.getUserProfile(idToken);
-    if (!this.user.error) {
-      const requestFromAdmin = await this.isPlayerAdmin(gameId, this.user.userId);
+    const user = await accountService.getUserProfile(idToken);
+    if (user) {
+      const requestFromAdmin = await this.isPlayerAdmin(gameId, user.userId);
 
       if (requestFromAdmin) {
         await db.assignmentRepo.saveUnlockAssignment(gameId, playerId);

@@ -10,8 +10,8 @@ export class FormattingService {
     return snakeSplit.join('');
   }
 
-  convertKeysSnakeToCamel(snakeCaseObject: any): any {
-    const camelCaseObject: any = {};
+  convertKeysSnakeToCamel(snakeCaseObject: Record<string, unknown>): Record<string, unknown> {
+    const camelCaseObject: Record<string, unknown> = {};
 
     for (const snakeCaseKey in snakeCaseObject) {
       camelCaseObject[this.convertSnakeToCamelCase(snakeCaseKey)] = snakeCaseObject[snakeCaseKey];

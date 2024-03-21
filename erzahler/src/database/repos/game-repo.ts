@@ -165,7 +165,7 @@ export class GameRepository {
     return this.pool.query(insertNewGameQuery, settingsArray);
   }
 
-  async insertRulesInGame(rules: any, gameName: string): Promise<any[]> {
+  async insertRulesInGame(rules: any, gameName: string): Promise<Promise<undefined>[]> {
     return rules.map(async (rule: any) => {
       return await this.pool.query(insertRuleInGameQuery, [gameName, rule.key, rule.enabled]).catch((error: Error) => {
         terminalLog('Rule In Games Error:', error.message);

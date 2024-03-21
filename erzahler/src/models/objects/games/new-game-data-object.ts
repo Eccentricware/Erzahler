@@ -54,31 +54,9 @@ export interface NewGameData {
   dbRows: any;
 }
 
-// export interface ImportedGameTableRows extends Array<GameRow[]> {
-// }
-
-// export interface ImportedGameTableRows {
-//   [index: 0]: GameRow[];
-//   CoalitionScheduleRow;
-//   RulesInGameRow[];
-//   TurnRow[];
-//   CountryRow[];
-//   CountryHistoryRow[];
-//   ProvinceRow[];
-//   ProvinceHistoryRow[];
-//   TerrainRow[];
-//   LabelRow[];
-//   LabelLineRow[];
-//   NodeRow[];
-//   NodeAdjacencyRow[];
-//   UnitRow[];
-//   UnitHistoryRow[];
-//   OrderOptionRow[];
-//   OrderSetRow[];
-//   OrderRow[];
-//   OrderAdjustmentRow[];
-//   OrderTransferBuildRow[];
-//   OrderTransferTechRow[];
-//   NominationRow[];
-//   VoteRow[];
-// }
+export interface NewGameResponse {
+  success: boolean;
+  gameId?: number;
+  errors?: string[];
+  error?: string;
+}

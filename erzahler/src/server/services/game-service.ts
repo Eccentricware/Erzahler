@@ -7,13 +7,14 @@ import { StartScheduleObject } from '../../models/objects/start-schedule-object'
 import { StartScheduleEvents } from '../../models/objects/start-schedule-events-object';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
-import { NewGameData } from '../../models/objects/games/new-game-data-object';
+import { NewGameData, NewGameResponse } from '../../models/objects/games/new-game-data-object';
 import { GameFinderParameters } from '../../models/objects/games/game-finder-query-objects';
 import { terminalAddendum, terminalLog } from '../utils/general';
 import { UserProfile } from '../../models/objects/user-profile-object';
+import { CoalitionSchedule } from '../../models/objects/games/coalition-schedule-objects';
 
 export class GameService {
-  async newGame(gameData: NewGameData, idToken: string): Promise<any> {
+  async newGame(gameData: NewGameData, idToken: string): Promise<NewGameResponse> {
     const accountService: AccountService = new AccountService();
     const errors: string[] = [];
 
@@ -49,7 +50,7 @@ export class GameService {
     }
   }
 
-  async addNewGame(gameData: NewGameData, user: UserProfile, errors: string[]): Promise<any> {
+  async addNewGame(gameData: NewGameData, user: UserProfile, errors: string[]): Promise<number> {
     const schedulerService: SchedulerService = new SchedulerService();
     const events: StartScheduleEvents = schedulerService.extractEvents(gameData, user.timeZone);
     const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
@@ -93,7 +94,7 @@ export class GameService {
 
     return await db.gameRepo
       .insertGame(settingsArray)
-      .then(async (results: QueryResult<any>) => {
+      .then(async (results: QueryResult<{ game_id: number }>) => {
         const newGame = results.rows[0];
         console.log('Game Row Added Successfully');
 
@@ -109,6 +110,7 @@ export class GameService {
       .catch((error: Error) => {
         console.log('New game Error:', error.message);
         errors.push('New Game Error: ' + error.message);
+        return 0;
       });
   }
 
@@ -116,7 +118,7 @@ export class GameService {
     await db.gameRepo.insertAssignment(userId, undefined, 'Creator', gameData.gameName);
   }
 
-  async addCoalitionSchedule(gameData: NewGameData, coalitionSchedule: any): Promise<void> {
+  async addCoalitionSchedule(gameData: NewGameData, coalitionSchedule: CoalitionSchedule): Promise<void> {
     await db.gameRepo.insertCoalitionScheduleQuery(gameData.gameName, coalitionSchedule);
   }
 
@@ -130,7 +132,7 @@ export class GameService {
         TurnStatus.RESOLVED,
         gameData.gameName
       ])
-      .then(async (result: any) => {
+      .then(async () => {
         console.log('Turn 0 Added Successfully');
         await this.addCountries(gameData, errors);
       })
@@ -151,7 +153,7 @@ export class GameService {
         TurnStatus.PAUSED,
         gameData.gameName
       ])
-      .then(async (result: QueryResult<any>) => {
+      .then(async (result: QueryResult<{ turn_id: number }>) => {
         console.log('Turn 1 Added Successfully');
         return result.rows[0].turn_id;
       })
@@ -162,22 +164,20 @@ export class GameService {
       });
   }
 
-  async addRulesInGame(gameData: NewGameData, errors: string[]): Promise<any> {
-    const rulePromises: Promise<QueryResult<any>>[] = await db.gameRepo.insertRulesInGame(
-      gameData.rules,
-      gameData.gameName
-    );
+  async addRulesInGame(gameData: NewGameData, errors: string[]): Promise<boolean> {
+    const rulePromises: Promise<undefined>[] = await db.gameRepo.insertRulesInGame(gameData.rules, gameData.gameName);
 
     return Promise.all(rulePromises)
-      .then((rules: any) => true)
+      .then(() => true)
       .catch((error: Error) => {
         console.log('Rule Promises Error: ' + error.message);
         errors.push('Rule Promises Error: ' + error.message);
+        return false;
       });
   }
 
   async addCountries(gameData: NewGameData, errors: string[]): Promise<void> {
-    const newCountryPromises: Promise<any>[] = await db.gameRepo.insertCountries(
+    const newCountryPromises: Promise<undefined>[] = await db.gameRepo.insertCountries(
       gameData.dbRows.countries,
       gameData.gameName
     );
@@ -196,7 +196,7 @@ export class GameService {
   }
 
   async addProvinces(gameData: NewGameData, errors: string[]): Promise<void> {
-    const provincePromises: Promise<any>[] = await db.gameRepo.insertProvinces(
+    const provincePromises: Promise<undefined>[] = await db.gameRepo.insertProvinces(
       gameData.dbRows.provinces,
       gameData.gameName
     );
@@ -211,90 +211,113 @@ export class GameService {
     });
   }
 
-  async addProvinceHistories(gameData: NewGameData, errors: string[]): Promise<any> {
-    const provinceHistoryPromises: Promise<any>[] = await db.gameRepo.insertProvinceHistories(
+  async addProvinceHistories(gameData: NewGameData, errors: string[]): Promise<void> {
+    const provinceHistoryPromises: Promise<void>[] = await db.gameRepo.insertProvinceHistories(
       gameData.dbRows.provinces,
       gameData.gameName
     );
 
-    return await Promise.all(provinceHistoryPromises).catch((error: Error) => {
-      console.log('Province History Promises Error: ' + error.message);
-      errors.push('Province History Promises Error: ' + error.message);
-    });
+    return Promise.all(provinceHistoryPromises)
+      .then(() => {
+        return;
+      })
+      .catch((error: Error) => {
+        console.log('Province History Promises Error: ' + error.message);
+        errors.push('Province History Promises Error: ' + error.message);
+      });
   }
 
-  async addTerrain(gameData: NewGameData, errors: string[]): Promise<any> {
-    const terrainPromises: Promise<any>[] = await db.gameRepo.insertTerrain(gameData.dbRows.terrain, gameData.gameName);
+  async addTerrain(gameData: NewGameData, errors: string[]): Promise<void> {
+    const terrainPromises: Promise<void>[] = await db.gameRepo.insertTerrain(
+      gameData.dbRows.terrain,
+      gameData.gameName
+    );
 
-    return await Promise.all(terrainPromises).catch((error: Error) => {
-      console.log('Terrain Promises Error: ' + error.message);
-      errors.push('Terrain Promises Error: ' + error.message);
-    });
+    return await Promise.all(terrainPromises)
+      .then(() => {
+        return;
+      })
+      .catch((error: Error) => {
+        console.log('Terrain Promises Error: ' + error.message);
+        errors.push('Terrain Promises Error: ' + error.message);
+      });
   }
 
-  async addLabels(gameData: NewGameData): Promise<any> {
+  async addLabels(gameData: NewGameData): Promise<void> {
     db.gameRepo.insertLabels(gameData.dbRows.labels, gameData.gameName);
   }
 
-  async addLabelLines(gameData: NewGameData): Promise<any> {
+  async addLabelLines(gameData: NewGameData): Promise<void> {
     db.gameRepo.insertLabelLines(gameData.dbRows.labelLines, gameData.gameName);
   }
 
-  async addNodes(gameData: NewGameData, errors: string[]): Promise<any> {
-    const nodePromises: Promise<any>[] = await db.gameRepo.insertNodes(gameData.dbRows.nodes, gameData.gameName);
+  async addNodes(gameData: NewGameData, errors: string[]): Promise<void> {
+    const nodePromises: Promise<void>[] = await db.gameRepo.insertNodes(gameData.dbRows.nodes, gameData.gameName);
 
-    return await Promise.all(nodePromises).then(async (nodes: any) => {
+    return await Promise.all(nodePromises).then(async () => {
       await this.addNodeAdjacencies(gameData, errors);
       await this.addUnits(gameData, errors);
     });
   }
 
-  async addNodeAdjacencies(gameData: NewGameData, errors: string[]): Promise<any> {
-    const nodeAdjacencyPromises: Promise<any>[] = await db.gameRepo.insertNodeAdjacencies(
+  async addNodeAdjacencies(gameData: NewGameData, errors: string[]): Promise<void> {
+    const nodeAdjacencyPromises: Promise<void>[] = await db.gameRepo.insertNodeAdjacencies(
       gameData.dbRows.links,
       gameData.gameName
     );
 
-    return await Promise.all(nodeAdjacencyPromises).catch((error: Error) => {
-      console.log('Node Adjacies Error ' + error.message);
-      errors.push('Node Adjacies Error ' + error.message);
-    });
+    return await Promise.all(nodeAdjacencyPromises)
+      .then(() => {
+        return;
+      })
+      .catch((error: Error) => {
+        console.log('Node Adjacies Error ' + error.message);
+        errors.push('Node Adjacies Error ' + error.message);
+      });
   }
 
-  async addCountryInitialHistories(gameData: NewGameData, errors: string[]): Promise<any> {
-    const countryHistoryPromises: Promise<any>[] = await db.gameRepo.insertInitialCountryHistories(
+  async addCountryInitialHistories(gameData: NewGameData, errors: string[]): Promise<void> {
+    const countryHistoryPromises: Promise<void>[] = await db.gameRepo.insertInitialCountryHistories(
       gameData.dbRows.countries,
       gameData.gameName
     );
 
-    return await Promise.all(countryHistoryPromises).catch((error: Error) => {
-      console.log('Country History Promise Error: ' + error.message);
-      errors.push('Country History Promise Error: ' + error.message);
-    });
+    return await Promise.all(countryHistoryPromises)
+      .then(() => {
+        return;
+      })
+      .catch((error: Error) => {
+        console.log('Country History Promise Error: ' + error.message);
+        errors.push('Country History Promise Error: ' + error.message);
+      });
   }
 
-  async addUnits(gameData: NewGameData, errors: string[]): Promise<any> {
-    const unitPromises: Promise<any>[] = await db.gameRepo.insertUnits(gameData.dbRows.units, gameData.gameName);
+  async addUnits(gameData: NewGameData, errors: string[]): Promise<void> {
+    const unitPromises: Promise<void>[] = await db.gameRepo.insertUnits(gameData.dbRows.units, gameData.gameName);
 
-    return await Promise.all(unitPromises).then(async (units: any) => {
+    return await Promise.all(unitPromises).then(async () => {
       await this.addInitialUnitHistories(gameData, errors);
     });
   }
 
-  async addInitialUnitHistories(gameData: NewGameData, errors: string[]): Promise<any> {
-    const initialHistoryPromises: Promise<any>[] = await db.gameRepo.insertInitialUnitHistories(
+  async addInitialUnitHistories(gameData: NewGameData, errors: string[]): Promise<void> {
+    const initialHistoryPromises: Promise<void>[] = await db.gameRepo.insertInitialUnitHistories(
       gameData.dbRows.units,
       gameData.gameName
     );
 
-    return await Promise.all(initialHistoryPromises).catch((error: Error) => {
-      console.log('Initial History Promise Error: ' + error.message);
-      errors.push('Initial History Promise Error: ' + error.message);
-    });
+    return await Promise.all(initialHistoryPromises)
+      .then(() => {
+        return;
+      })
+      .catch((error: Error) => {
+        console.log('Initial History Promise Error: ' + error.message);
+        errors.push('Initial History Promise Error: ' + error.message);
+      });
   }
 
   async checkGameNameAvailability(gameName: string): Promise<boolean> {
-    const gameNameResults: QueryResult<any> = await db.gameRepo.checkGameNameAvailable(gameName);
+    const gameNameResults: QueryResult<{ game_name: string }> = await db.gameRepo.checkGameNameAvailable(gameName);
 
     return gameNameResults.rowCount === 0;
   }
@@ -349,9 +372,9 @@ export class GameService {
     }
 
     terminalLog(`${username} (${userId}) Requested Game Data: ${gameId}`);
-    const gameData: any = await db.gameRepo.getGameDetails(gameId, userId, userTimeZone, meridiemTime);
-    const ruleData: any = await db.gameRepo.getRulesInGame(gameId);
-    const playerRegistration: any = await db.assignmentRepo.getUserAssignments(gameId, userId);
+    const gameData = await db.gameRepo.getGameDetails(gameId, userId, userTimeZone, meridiemTime);
+    const ruleData = await db.gameRepo.getRulesInGame(gameId);
+    const playerRegistration = await db.assignmentRepo.getUserAssignments(gameId, userId);
 
     gameData.rules = ruleData;
     gameData.playerRegistration = playerRegistration;
@@ -432,7 +455,7 @@ export class GameService {
         // console.log('Internal Game Data:', gameData);
         await db.gameRepo
           .updateGameSettings(gameSettings)
-          .then((result: any) => {
+          .then(() => {
             return {
               success: true,
               message: 'Game Settings Updated'
@@ -449,7 +472,7 @@ export class GameService {
 
         await db.gameRepo
           .updateCoalitionSchedule(coalitionSchedule)
-          .then((result: any) => {
+          .then(() => {
             return {
               success: true,
               message: 'Game Coalitions Updated'
