@@ -1,6 +1,6 @@
-import { db } from "../../database/connection";
+import { db } from '../../database/connection';
 // import { ImportedGameTableRows } from "../../models/objects/games/new-game-data-object";
-import { terminalLog } from "../utils/general";
+import { terminalLog } from '../utils/general';
 
 interface ForeignKeyLibrary {
   game: Record<number, number>;
@@ -29,7 +29,7 @@ export class ImportService {
       units: {},
       orderSets: {},
       nominations: {}
-    }
+    };
 
     Promise.all([
       db.importRepo.importGameRow(gameId, environment),
@@ -55,158 +55,149 @@ export class ImportService {
       db.importRepo.importOrderTransferTechRows(gameId, environment),
       db.importRepo.importNominationRows(gameId, environment),
       db.importRepo.importVoteRows(gameId, environment)
-    ]).then(async (results) => {
-      const gameRow = results[0][0];
-      const coalitionScheduleRow = results[1][0];
-      const rulesInGameRows =  results[2];
-      const turnRows = results[3];
-      const countryRows = results[4];
-      const countryHistoryRows = results[5];
-      const provinceRows = results[6];
-      const provinceHistoryRows = results[7];
-      const terrainRows = results[8];
-      const labelRows = results[9];
-      const labelLineRows = results[10];
-      const nodeRows = results[11];
-      const nodeAdjacencyRows = results[12];
-      const unitRows = results[13];
-      const unitHistoryRows = results[14];
-      const orderOptionRows = results[15];
-      const orderSetRows = results[16];
-      const orderRows = results[17];
-      const orderAdjustmentRows = results[18];
-      const orderTransferBuildRows = results[19];
-      const orderTransferTechRows = results[20];
-      const nominationRows = results[21];
-      const voteRows = results[22];
+    ])
+      .then(async (results) => {
+        const gameRow = results[0][0];
+        const coalitionScheduleRow = results[1][0];
+        const rulesInGameRows = results[2];
+        const turnRows = results[3];
+        const countryRows = results[4];
+        const countryHistoryRows = results[5];
+        const provinceRows = results[6];
+        const provinceHistoryRows = results[7];
+        const terrainRows = results[8];
+        const labelRows = results[9];
+        const labelLineRows = results[10];
+        const nodeRows = results[11];
+        const nodeAdjacencyRows = results[12];
+        const unitRows = results[13];
+        const unitHistoryRows = results[14];
+        const orderOptionRows = results[15];
+        const orderSetRows = results[16];
+        const orderRows = results[17];
+        const orderAdjustmentRows = results[18];
+        const orderTransferBuildRows = results[19];
+        const orderTransferTechRows = results[20];
+        const nominationRows = results[21];
+        const voteRows = results[22];
 
-      gameRow.game_name = `${
-        gameRow.game_name
-      } (imported from ${
-        gameRow.origin ? gameRow.origin : environment
-      })`;
+        gameRow.game_name = `${gameRow.game_name} (imported from ${gameRow.origin ? gameRow.origin : environment})`;
 
-      await db.importRepo.insertGameRow(gameRow)
-        .then(async (newGameId: number) => {
+        await db.importRepo.insertGameRow(gameRow).then(async (newGameId: number) => {
           fkLib.game[gameId] = newGameId;
 
           // Foreign Key Updating
           coalitionScheduleRow.game_id = newGameId;
-          rulesInGameRows.forEach((rulesInGameRow: any) => { rulesInGameRow.game_id = newGameId; });
-          turnRows.forEach((turnRow: any) => { turnRow.game_id = newGameId; });
-          countryRows.forEach((countryRow: any) => { countryRow.game_id = newGameId; });
+          rulesInGameRows.forEach((rulesInGameRow) => {
+            rulesInGameRow.game_id = newGameId;
+          });
+          turnRows.forEach((turnRow) => {
+            turnRow.game_id = newGameId;
+          });
+          countryRows.forEach((countryRow) => {
+            countryRow.game_id = newGameId;
+          });
 
           await db.importRepo.insertCoalitionRow(coalitionScheduleRow);
           await db.importRepo.insertRulesInGameRows(rulesInGameRows);
 
-          Promise.all([
-            db.importRepo.insertTurnRows(turnRows),
-            db.importRepo.insertCountryRows(countryRows)
-          ]).then(async ([
-            newTurnIds,
-            newCountryIds
-          ]) => {
-            // Update Foreign Key Library
-            for (let turnIndex = 0; turnIndex < turnRows.length; turnIndex++) {
-              fkLib.turns[turnRows[turnIndex].turn_id] = newTurnIds[turnIndex];
-            }
-
-            for (let countryIndex = 0; countryIndex < countryRows.length; countryIndex++) {
-              fkLib.countries[countryRows[countryIndex].country_id] = newCountryIds[countryIndex];
-            }
-
-            // Replace Foreign Keys
-            countryHistoryRows.forEach((countryHistoryRow: any) => {
-              countryHistoryRow.country_id = fkLib.countries[countryHistoryRow.country_id];
-              countryHistoryRow.turn_id = fkLib.turns[countryHistoryRow.turn_id];
-            });
-
-            provinceRows.forEach((provinceRow: any) => {
-              provinceRow.game_id = newGameId;
-              provinceRow.capital_owner_id = fkLib.countries[provinceRow.capital_owner_id];
-            });
-
-            unitRows.forEach((unitRow: any) => {
-              unitRow.country_id = fkLib.countries[unitRow.country_id];
-            });
-
-            orderSetRows.forEach((orderSetRow: any) =>{
-              orderSetRow.country_id = fkLib.countries[orderSetRow.country_id];
-              orderSetRow.turn_id = fkLib.turns[orderSetRow.turn_id];
-            });
-
-            nominationRows.forEach((nominationRow: any) => {
-              nominationRow.country_id = fkLib.countries[nominationRow.country_id];
-              nominationRow.turn_id = fkLib.turns[nominationRow.turn_id];
-            });
-
-            // Insert Rows
-            await db.importRepo.insertCountryHistoryRows(countryHistoryRows);
-            Promise.all([
-              db.importRepo.insertProvinceRows(provinceRows),
-              db.importRepo.insertUnitRows(unitRows),
-              db.importRepo.insertOrderSetRows(orderSetRows),
-              db.importRepo.insertNominationRows(nominationRows)
-            ]).then(async ([
-              newProvinceIds,
-              newUnitIds,
-              newOrderSetIds,
-              newNominationIds
-            ]) => {
+          Promise.all([db.importRepo.insertTurnRows(turnRows), db.importRepo.insertCountryRows(countryRows)]).then(
+            async ([newTurnIds, newCountryIds]) => {
               // Update Foreign Key Library
-              for (let provinceIndex = 0; provinceIndex < provinceRows.length; provinceIndex++) {
-                fkLib.provinces[provinceRows[provinceIndex].province_id] = newProvinceIds[provinceIndex];
+              for (let turnIndex = 0; turnIndex < turnRows.length; turnIndex++) {
+                fkLib.turns[turnRows[turnIndex].turn_id] = newTurnIds[turnIndex];
               }
 
-              for (let unitIndex = 0; unitIndex < unitRows.length; unitIndex++) {
-                fkLib.units[unitRows[unitIndex].unit_id] = newUnitIds[unitIndex];
-              }
-
-              for (let orderSetIndex = 0; orderSetIndex < orderSetRows.length; orderSetIndex++) {
-                fkLib.orderSets[orderSetRows[orderSetIndex].order_set_id] = newOrderSetIds[orderSetIndex];
-              }
-
-              for (let nominationIndex = 0; nominationIndex < nominationRows.length; nominationIndex++) {
-                fkLib.nominations[nominationRows[nominationIndex].nomination_id] = newNominationIds[nominationIndex];
+              for (let countryIndex = 0; countryIndex < countryRows.length; countryIndex++) {
+                fkLib.countries[countryRows[countryIndex].country_id] = newCountryIds[countryIndex];
               }
 
               // Replace Foreign Keys
-              provinceHistoryRows.forEach((provinceHistoryRow: any) => {
-                provinceHistoryRow.province_id = fkLib.provinces[provinceHistoryRow.province_id];
-                provinceHistoryRow.turn_id = fkLib.turns[provinceHistoryRow.turn_id];
-                provinceHistoryRow.controller_id = fkLib.countries[provinceHistoryRow.controller_id];
+              countryHistoryRows.forEach((countryHistoryRow) => {
+                countryHistoryRow.country_id = fkLib.countries[countryHistoryRow.country_id];
+                countryHistoryRow.turn_id = fkLib.turns[countryHistoryRow.turn_id];
               });
 
-              terrainRows.forEach((terrainRow: any) => {
-                terrainRow.province_id = fkLib.provinces[terrainRow.province_id];
+              provinceRows.forEach((provinceRow) => {
+                provinceRow.game_id = newGameId;
+                provinceRow.capital_owner_id = fkLib.countries[provinceRow.capital_owner_id];
               });
 
-              labelRows.forEach((labelRow: any) => {
-                labelRow.province_id = fkLib.provinces[labelRow.province_id];
+              unitRows.forEach((unitRow) => {
+                unitRow.country_id = fkLib.countries[unitRow.country_id];
               });
 
-              labelLineRows.forEach((labelLineRow: any) => {
-                labelLineRow.province_id = fkLib.provinces[labelLineRow.province_id];
+              orderSetRows.forEach((orderSetRow) => {
+                orderSetRow.country_id = fkLib.countries[orderSetRow.country_id];
+                orderSetRow.turn_id = fkLib.turns[orderSetRow.turn_id];
               });
 
-              nodeRows.forEach((nodeRow: any) => {
-                nodeRow.province_id = fkLib.provinces[nodeRow.province_id];
-              });
-
-              voteRows.forEach((voteRow: any) => {
-                voteRow.nomination_id = fkLib.nominations[voteRow.nomination_id];
-                voteRow.voting_country_id = fkLib.countries[voteRow.voting_country_id];
+              nominationRows.forEach((nominationRow) => {
+                nominationRow.country_id = fkLib.countries[nominationRow.country_id];
+                nominationRow.turn_id = fkLib.turns[nominationRow.turn_id];
               });
 
               // Insert Rows
-              await db.importRepo.insertProvinceHistoryRows(provinceHistoryRows);
-              await db.importRepo.insertTerrainRows(terrainRows);
-              await db.importRepo.insertLabelRows(labelRows);
-              await db.importRepo.insertLabelLineRows(labelLineRows);
-              await db.importRepo.insertVoteRows(voteRows);
+              await db.importRepo.insertCountryHistoryRows(countryHistoryRows);
+              Promise.all([
+                db.importRepo.insertProvinceRows(provinceRows),
+                db.importRepo.insertUnitRows(unitRows),
+                db.importRepo.insertOrderSetRows(orderSetRows),
+                db.importRepo.insertNominationRows(nominationRows)
+              ]).then(async ([newProvinceIds, newUnitIds, newOrderSetIds, newNominationIds]) => {
+                // Update Foreign Key Library
+                for (let provinceIndex = 0; provinceIndex < provinceRows.length; provinceIndex++) {
+                  fkLib.provinces[provinceRows[provinceIndex].province_id] = newProvinceIds[provinceIndex];
+                }
 
-              await db.importRepo.insertNodeRows(nodeRows)
-                .then(async (newNodeIds) => {
+                for (let unitIndex = 0; unitIndex < unitRows.length; unitIndex++) {
+                  fkLib.units[unitRows[unitIndex].unit_id] = newUnitIds[unitIndex];
+                }
+
+                for (let orderSetIndex = 0; orderSetIndex < orderSetRows.length; orderSetIndex++) {
+                  fkLib.orderSets[orderSetRows[orderSetIndex].order_set_id] = newOrderSetIds[orderSetIndex];
+                }
+
+                for (let nominationIndex = 0; nominationIndex < nominationRows.length; nominationIndex++) {
+                  fkLib.nominations[nominationRows[nominationIndex].nomination_id] = newNominationIds[nominationIndex];
+                }
+
+                // Replace Foreign Keys
+                provinceHistoryRows.forEach((provinceHistoryRow) => {
+                  provinceHistoryRow.province_id = fkLib.provinces[provinceHistoryRow.province_id];
+                  provinceHistoryRow.turn_id = fkLib.turns[provinceHistoryRow.turn_id];
+                  provinceHistoryRow.controller_id = fkLib.countries[provinceHistoryRow.controller_id];
+                });
+
+                terrainRows.forEach((terrainRow) => {
+                  terrainRow.province_id = fkLib.provinces[terrainRow.province_id];
+                });
+
+                labelRows.forEach((labelRow) => {
+                  labelRow.province_id = fkLib.provinces[labelRow.province_id];
+                });
+
+                labelLineRows.forEach((labelLineRow) => {
+                  labelLineRow.province_id = fkLib.provinces[labelLineRow.province_id];
+                });
+
+                nodeRows.forEach((nodeRow) => {
+                  nodeRow.province_id = fkLib.provinces[nodeRow.province_id];
+                });
+
+                voteRows.forEach((voteRow) => {
+                  voteRow.nomination_id = fkLib.nominations[voteRow.nomination_id];
+                  voteRow.voting_country_id = fkLib.countries[voteRow.voting_country_id];
+                });
+
+                // Insert Rows
+                await db.importRepo.insertProvinceHistoryRows(provinceHistoryRows);
+                await db.importRepo.insertTerrainRows(terrainRows);
+                await db.importRepo.insertLabelRows(labelRows);
+                await db.importRepo.insertLabelLineRows(labelLineRows);
+                await db.importRepo.insertVoteRows(voteRows);
+
+                await db.importRepo.insertNodeRows(nodeRows).then(async (newNodeIds) => {
                   // Update Foreign Key Library
                   for (let nodeIndex = 0; nodeIndex < nodeRows.length; nodeIndex++) {
                     fkLib.nodes[nodeRows[nodeIndex].node_id] = newNodeIds[nodeIndex];
@@ -214,9 +205,9 @@ export class ImportService {
 
                   // Replace Foreign Keys and filter
                   let previousAdjacencyId = 0;
-                  let spliceIds: number[] = [];
+                  const spliceIds: number[] = [];
 
-                  nodeAdjacencyRows.forEach((nodeAdjacencyRow: any, index: number) => {
+                  nodeAdjacencyRows.forEach((nodeAdjacencyRow, index: number) => {
                     if (nodeAdjacencyRow.node_adjacency_id === previousAdjacencyId) {
                       spliceIds.push(index);
                     } else {
@@ -230,41 +221,46 @@ export class ImportService {
                     nodeAdjacencyRows.splice(spliceIds[spliceIndex], 1);
                   }
 
-                  unitHistoryRows.forEach((unitHistoryRow: any) => {
+                  unitHistoryRows.forEach((unitHistoryRow) => {
                     unitHistoryRow.unit_id = fkLib.units[unitHistoryRow.unit_id];
                     unitHistoryRow.turn_id = fkLib.turns[unitHistoryRow.turn_id];
                     unitHistoryRow.node_id = fkLib.nodes[unitHistoryRow.node_id];
                   });
 
-                  orderOptionRows.forEach((orderOptionRow: any) => {
+                  orderOptionRows.forEach((orderOptionRow) => {
                     orderOptionRow.unit_id = fkLib.units[orderOptionRow.unit_id];
                     orderOptionRow.secondary_unit_id = fkLib.units[orderOptionRow.secondary_unit_id];
                     orderOptionRow.turn_id = fkLib.turns[orderOptionRow.turn_id];
                     if (orderOptionRow.destinations?.length > 0) {
-                      for (let destinationIndex = 0; destinationIndex < orderOptionRow.destinations.length; destinationIndex++) {
-                        orderOptionRow.destinations[destinationIndex] = fkLib.nodes[orderOptionRow.destinations[destinationIndex]];
+                      for (
+                        let destinationIndex = 0;
+                        destinationIndex < orderOptionRow.destinations.length;
+                        destinationIndex++
+                      ) {
+                        orderOptionRow.destinations[destinationIndex] =
+                          fkLib.nodes[orderOptionRow.destinations[destinationIndex]];
                       }
                     }
                   });
 
-                  orderRows.forEach((orderRow: any) => {
+                  orderRows.forEach((orderRow) => {
                     orderRow.order_set_id = fkLib.orderSets[orderRow.order_set_id];
                     orderRow.ordered_unit_id = fkLib.units[orderRow.ordered_unit_id];
                     orderRow.secondary_unit_id = fkLib.units[orderRow.secondary_unit_id];
                     orderRow.destination_id = fkLib.nodes[orderRow.destination_id];
                   });
 
-                  orderAdjustmentRows.forEach((orderAdjustmentRow: any) => {
+                  orderAdjustmentRows.forEach((orderAdjustmentRow) => {
                     orderAdjustmentRow.order_set_id = fkLib.orderSets[orderAdjustmentRow.order_set_id];
                     orderAdjustmentRow.node_id = fkLib.nodes[orderAdjustmentRow.node_id];
                   });
 
-                  orderTransferBuildRows.forEach((orderTransferBuildRow: any) => {
+                  orderTransferBuildRows.forEach((orderTransferBuildRow) => {
                     orderTransferBuildRow.order_set_id = fkLib.orderSets[orderTransferBuildRow.order_set_id];
                     orderTransferBuildRow.recipient_id = fkLib.countries[orderTransferBuildRow.recipient_id];
                   });
 
-                  orderTransferTechRows.forEach((orderTransferTechRow: any) => {
+                  orderTransferTechRows.forEach((orderTransferTechRow) => {
                     orderTransferTechRow.order_set_id = fkLib.orderSets[orderTransferTechRow.order_set_id];
                     orderTransferTechRow.foreign_country_id = fkLib.countries[orderTransferTechRow.foreign_country_id];
                   });
@@ -282,11 +278,13 @@ export class ImportService {
                     terminalLog(`Game ${gameId} has been imported`);
                   });
                 });
-            });
-          });
+              });
+            }
+          );
         });
-    }).catch((error: Error) => {
-      terminalLog(`Game ${gameId} failed to import: ${error.message}`);
-    });
+      })
+      .catch((error: Error) => {
+        terminalLog(`Game ${gameId} failed to import: ${error.message}`);
+      });
   }
 }

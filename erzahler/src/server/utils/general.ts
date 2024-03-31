@@ -7,12 +7,14 @@ import { TurnType } from '../../models/enumeration/turn-type-enum';
  * @returns yyyy-mm-dd hh:mm:ss formatted time string
  */
 export const formatDateTime = (unformattedTime?: Date): string => {
-  let dateTime = unformattedTime ? DateTime.fromISO(unformattedTime.toISOString()) :DateTime.now();
+  let dateTime = unformattedTime ? DateTime.fromISO(unformattedTime.toISOString()) : DateTime.now();
   if (process.env.TIME_ZONE_OFFSET === undefined) {
     return `${dateTime} (TIME_ZONE_OFFSET is not initialized)`;
   }
   dateTime = dateTime.plus({ hour: Number(process.env.TIME_ZONE_OFFSET) });
-  const date = `${dateTime.year}-${dateTime.month.toString().padStart(2, '0')}-${dateTime.day.toString().padStart(2, '0')}`;
+  const date = `${dateTime.year}-${dateTime.month.toString().padStart(2, '0')}-${dateTime.day
+    .toString()
+    .padStart(2, '0')}`;
   let hour: number = dateTime.hour;
   let meridiem = 'A';
 
@@ -55,4 +57,4 @@ export const titleCase = (text: string): string => {
     return word.charAt(0).toUpperCase() + word.slice(1);
   });
   return titleCaseText.join(' ');
-}
+};

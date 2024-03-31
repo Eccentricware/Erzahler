@@ -27,7 +27,11 @@ import {
   BuildResult,
   TransferBuildOrderResult
 } from '../../models/objects/order-objects';
-import { CountryOrderSet, CountryOrderSetIds, CountryOrderSetsResult } from '../../models/objects/orders/expected-order-types-object';
+import {
+  CountryOrderSet,
+  CountryOrderSetIds,
+  CountryOrderSetsResult
+} from '../../models/objects/orders/expected-order-types-object';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { getTurnUnitOrdersQuery } from '../queries/orders/get-turn-unit-orders';
 import { insertTurnOrderSetsQuery } from '../queries/orders/insert-turn-order-sets';
@@ -42,11 +46,19 @@ import { getVotesForResolutionQuery, getVotesOrdersQuery } from '../queries/orde
 import { saveBuildOrdersQuery } from '../queries/orders/orders-final/save-build-orders-query';
 import { saveDisbandOrdersQuery } from '../queries/orders/orders-final/save-disband-orders-query';
 import { saveNominationQuery } from '../queries/orders/orders-final/save-nomination-query';
-import { clearBuildTransferOrdersQuery, insertTechTransferOrdersQuery, updateTechTransferOrdersQuery } from '../queries/orders/orders-final/save-transfer-orders-query';
+import {
+  clearBuildTransferOrdersQuery,
+  insertTechTransferOrdersQuery,
+  updateTechTransferOrdersQuery
+} from '../queries/orders/orders-final/save-transfer-orders-query';
 import { saveUnitOrderQuery } from '../queries/orders/orders-final/save-unit-order-query';
 import { saveVotesQuery } from '../queries/orders/orders-final/save-votes-query';
 import { setTurnDefaultsPreparedQuery } from '../queries/orders/set-turn-defaults-prepared-query';
-import { insertBuildOrderQuery, updateBuildOrderQuery, updateBuildOrderSetQuery } from '../queries/orders/orders-final/save-build-order-query';
+import {
+  insertBuildOrderQuery,
+  updateBuildOrderQuery,
+  updateBuildOrderSetQuery
+} from '../queries/orders/orders-final/save-build-order-query';
 import { terminalAddendum, terminalLog } from '../../server/utils/general';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { getCountryOrderSetIdsQuery } from '../queries/orders/orders-prep/get-country-order-set-ids';
@@ -65,14 +77,7 @@ export class OrdersRepository {
    */
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.orderSetCols = new pgp.helpers.ColumnSet(
-      [
-        'country_id',
-        'turn_id',
-        'message_id',
-        'submission_time',
-        'order_set_type',
-        'order_set_name'
-      ],
+      ['country_id', 'turn_id', 'message_id', 'submission_time', 'order_set_type', 'order_set_name'],
       { table: 'order_sets' }
     );
 
@@ -90,28 +95,15 @@ export class OrdersRepository {
     );
 
     this.buildOrderTransferCols = new pgp.helpers.ColumnSet(
-      [
-        'order_set_id',
-        'recipient_id',
-        'recipient_name',
-        'quantity',
-        'ui_row'
-      ],
+      ['order_set_id', 'recipient_id', 'recipient_name', 'quantity', 'ui_row'],
       { table: 'orders_transfer_builds' }
     );
 
     this.nominationCols = new pgp.helpers.ColumnSet(
-      [
-        'turn_id',
-        'nominator_id',
-        'country_ids',
-        'signature',
-        'votes_required'
-      ],
+      ['turn_id', 'nominator_id', 'country_ids', 'signature', 'votes_required'],
       { table: 'nominations' }
     );
   }
-
 
   async insertRetreatedOrderSets(nowPendingTurnId: number, retreatingCountryIds: number[]): Promise<OrderSet[]> {
     const orderSetValues = retreatingCountryIds.map((countryId: number) => {
@@ -130,19 +122,17 @@ export class OrdersRepository {
       return [];
     }
 
+    const query = this.pgp.helpers.insert(orderSetValues, this.orderSetCols) + 'RETURNING order_set_id, country_id';
 
-    const query = this.pgp.helpers.insert(orderSetValues, this.orderSetCols)
-      + 'RETURNING order_set_id, country_id';
-
-    return this.db.query(query)
-      .then((result) =>
-        result.map((orderSetResult: OrderSetResult) =>
-          (<OrderSet>{
+    return this.db.query(query).then((result) =>
+      result.map(
+        (orderSetResult: OrderSetResult) =>
+          <OrderSet>{
             orderSetId: orderSetResult.order_set_id,
             countryId: orderSetResult.country_id
-          })
-        )
-      );
+          }
+      )
+    );
   }
 
   async insertDefaultOrders(defaultOrders: Order[]): Promise<void> {
@@ -170,11 +160,7 @@ export class OrdersRepository {
   async saveTechTransfer(techTransfer: TransferTechOrder): Promise<void> {
     const updateOrderPQ = new ParameterizedQuery({
       text: updateTechTransferOrdersQuery,
-      values: [
-        techTransfer.foreignCountryId,
-        techTransfer.foreignCountryName,
-        techTransfer.orderSetId
-      ]
+      values: [techTransfer.foreignCountryId, techTransfer.foreignCountryName, techTransfer.orderSetId]
     });
 
     const updatedOrder = await this.db.oneOrNone(updateOrderPQ);
@@ -182,11 +168,7 @@ export class OrdersRepository {
     if (!updatedOrder) {
       const insertOrderPQ = new ParameterizedQuery({
         text: insertTechTransferOrdersQuery,
-        values: [
-          techTransfer.orderSetId,
-          techTransfer.foreignCountryId,
-          techTransfer.foreignCountryName
-        ]
+        values: [techTransfer.orderSetId, techTransfer.foreignCountryId, techTransfer.foreignCountryName]
       });
 
       await this.db.none(insertOrderPQ);
@@ -199,28 +181,26 @@ export class OrdersRepository {
       values: [orderSetId]
     });
 
-    this.db.none(clearExtraPQ)
-      .then(async () => {
-        const values: any[] = [];
+    this.db.none(clearExtraPQ).then(async () => {
+      const values: any[] = [];
 
-        buildsTransferred.forEach((buildTransfer: TransferBuildOrder, index: number) => {
-          if (buildTransfer.recipientId !== 0) {
-            values.push({
-              order_set_id: orderSetId,
-              recipient_id: buildTransfer.recipientId,
-              recipient_name: buildTransfer.recipientName,
-              quantity: buildTransfer.quantity,
-              ui_row: index + 1
-            });
-          }
-        });
-
-        if (values.length > 0) {
-          const query = this.pgp.helpers.insert(values, this.buildOrderTransferCols);
-          return this.db.query(query)
-            .catch((error: Error) => terminalLog('saveBuildTransfers error: ' + error.message));
+      buildsTransferred.forEach((buildTransfer: TransferBuildOrder, index: number) => {
+        if (buildTransfer.recipientId !== 0) {
+          values.push({
+            order_set_id: orderSetId,
+            recipient_id: buildTransfer.recipientId,
+            recipient_name: buildTransfer.recipientName,
+            quantity: buildTransfer.quantity,
+            ui_row: index + 1
+          });
         }
       });
+
+      if (values.length > 0) {
+        const query = this.pgp.helpers.insert(values, this.buildOrderTransferCols);
+        return this.db.query(query).catch((error: Error) => terminalLog('saveBuildTransfers error: ' + error.message));
+      }
+    });
   }
 
   //////////////////// Helper Functions ////////////////////
@@ -277,7 +257,12 @@ export class OrdersRepository {
 
   //////////////////// Legacy Functions ////////////////////
 
-  async insertTurnOrderSets(gameId: number, turnNumber: number, nextTurnId: number, nextTurnType: TurnType): Promise<OrderSet[]> {
+  async insertTurnOrderSets(
+    gameId: number,
+    turnNumber: number,
+    nextTurnId: number,
+    nextTurnType: TurnType
+  ): Promise<OrderSet[]> {
     const orderSets: OrderSet[] = await this.pool
       .query(insertTurnOrderSetsQuery, [nextTurnId, gameId, turnNumber, nextTurnType])
       .then((result: QueryResult<any>) =>
@@ -312,20 +297,21 @@ export class OrdersRepository {
     const orders: Order[] = await this.pool
       .query(getTurnUnitOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult<OrderResult>) =>
-        result.rows.map((orderResult: OrderResult) => (
-          <Order> {
-            orderId: orderResult.order_id,
-            orderSetId: orderResult.order_set_id,
-            orderedUnitId: orderResult.ordered_unit_id,
-            loc: orderResult.ordered_unit_loc,
-            orderType: orderResult.order_type,
-            secondaryUnitId: orderResult.secondary_unit_id,
-            secondaryUnitLoc: orderResult.secondary_unit_loc,
-            destinationId: orderResult.destination_id,
-            eventLoc: orderResult.event_loc,
-            orderStatus: orderResult.order_status
-          }
-        ))
+        result.rows.map(
+          (orderResult: OrderResult) =>
+            <Order>{
+              orderId: orderResult.order_id,
+              orderSetId: orderResult.order_set_id,
+              orderedUnitId: orderResult.ordered_unit_id,
+              loc: orderResult.ordered_unit_loc,
+              orderType: orderResult.order_type,
+              secondaryUnitId: orderResult.secondary_unit_id,
+              secondaryUnitLoc: orderResult.secondary_unit_loc,
+              destinationId: orderResult.destination_id,
+              eventLoc: orderResult.event_loc,
+              orderStatus: orderResult.order_status
+            }
+        )
       );
 
     return orders;
@@ -334,18 +320,20 @@ export class OrdersRepository {
   async getBuildTransferOrders(countryId: number, turnId: number): Promise<TransferBuildOrder[]> {
     const transferBuildOrders: TransferBuildOrder[] = await this.pool
       .query(getBuildTransferOrdersQuery, [turnId, countryId])
-      .then((result: QueryResult<TransferBuildOrderResult>) => result.rows.map((order: TransferBuildOrderResult) => {
-        return <TransferBuildOrder> {
-          buildTransferOrderId: order.build_transfer_order_id,
-          orderSetId: order.order_set_id,
-          countryId: order.country_id,
-          countryName: order.country_name,
-          recipientId: order.recipient_id,
-          recipientName: order.recipient_name,
-          quantity: order.quantity,
-          uiRow: order.ui_row
-        };
-      }));
+      .then((result: QueryResult<TransferBuildOrderResult>) =>
+        result.rows.map((order: TransferBuildOrderResult) => {
+          return <TransferBuildOrder>{
+            buildTransferOrderId: order.build_transfer_order_id,
+            orderSetId: order.order_set_id,
+            countryId: order.country_id,
+            countryName: order.country_name,
+            recipientId: order.recipient_id,
+            recipientName: order.recipient_name,
+            quantity: order.quantity,
+            uiRow: order.ui_row
+          };
+        })
+      );
 
     return transferBuildOrders;
   }
@@ -366,7 +354,7 @@ export class OrdersRepository {
       .query(getTechTransferOrderQuery, [gameId, turnNumber, orderTurnId, countryId])
       .then((result: QueryResult) =>
         result.rows.map((order: TransferTechOrderResult) => {
-          return <TransferTechOrder> {
+          return <TransferTechOrder>{
             techTransferOrderId: order.tech_transfer_order_id,
             orderSetId: order.order_set_id,
             countryId: order.country_id,
@@ -405,11 +393,9 @@ export class OrdersRepository {
               ? result.builds.map((build: BuildResult) => {
                   let locDisplay: string | string[] | undefined;
                   if (!build.node_display) {
-                    locDisplay= build.node_name?.toUpperCase().split('_');
+                    locDisplay = build.node_name?.toUpperCase().split('_');
                     if (locDisplay) {
-                      locDisplay = locDisplay[2]
-                        ? `${locDisplay[0]} ${locDisplay[2]}`
-                        : locDisplay[0];
+                      locDisplay = locDisplay[2] ? `${locDisplay[0]} ${locDisplay[2]}` : locDisplay[0];
                     }
                   }
 
@@ -482,18 +468,16 @@ export class OrdersRepository {
   }
 
   async getCountryOrderSetIds(countryId: number): Promise<CountryOrderSetIds> {
-    return await this.pool
-      .query(getCountryOrderSetIdsQuery, [countryId])
-      .then((result: QueryResult) => {
-        return <CountryOrderSetIds>{
-          countryId: result.rows[0] ? result.rows[0].country_id : 0,
-          pendingOrderSetId: result.rows[0] ?result.rows[0].pending_order_set_id : 0,
-          preliminaryOrderSetId: result.rows[0] ? result.rows[0].preliminary_order_set_id : 0
-        };
-      });
+    return await this.pool.query(getCountryOrderSetIdsQuery, [countryId]).then((result: QueryResult) => {
+      return <CountryOrderSetIds>{
+        countryId: result.rows[0] ? result.rows[0].country_id : 0,
+        pendingOrderSetId: result.rows[0] ? result.rows[0].pending_order_set_id : 0,
+        preliminaryOrderSetId: result.rows[0] ? result.rows[0].preliminary_order_set_id : 0
+      };
+    });
   }
 
-  async saveUnitOrder( unitOrder: Order): Promise<void> {
+  async saveUnitOrder(unitOrder: Order): Promise<void> {
     await this.pool
       .query(saveUnitOrderQuery, [
         unitOrder.orderType,
@@ -551,11 +535,7 @@ export class OrdersRepository {
 
   async saveDisbandOrders(orderSetId: number, disbands: DisbandOrders): Promise<boolean> {
     return await this.pool
-      .query(saveDisbandOrdersQuery, [
-        disbands.unitsDisbanding,
-        disbands.increaseRange,
-        orderSetId
-      ])
+      .query(saveDisbandOrdersQuery, [disbands.unitsDisbanding, disbands.increaseRange, orderSetId])
       .then(() => true)
       .catch((error: Error) => {
         terminalLog('saveDisbandOrders error: ' + error.message);
@@ -577,18 +557,25 @@ export class OrdersRepository {
     );
   }
 
-  async getNominationOrder(gameId: number, turnNumber: number, turnId: number, countryId: number): Promise<NominatableCountry[]> {
-    return await this.pool.query(getNominationOrderQuery, [gameId, turnNumber, turnId, countryId]).then((result: QueryResult) =>
-      result.rows.map((country: NominatableCountryResult) => {
-        return <NominatableCountry>{
-          nominatorId: country.nominator_id,
-          countryId: country.country_id,
-          countryName: country.country_name,
-          rank: country.rank,
-          countryStatus: country.country_status
-        };
-      })
-    );
+  async getNominationOrder(
+    gameId: number,
+    turnNumber: number,
+    turnId: number,
+    countryId: number
+  ): Promise<NominatableCountry[]> {
+    return await this.pool
+      .query(getNominationOrderQuery, [gameId, turnNumber, turnId, countryId])
+      .then((result: QueryResult) =>
+        result.rows.map((country: NominatableCountryResult) => {
+          return <NominatableCountry>{
+            nominatorId: country.nominator_id,
+            countryId: country.country_id,
+            countryName: country.country_name,
+            rank: country.rank,
+            countryStatus: country.country_status
+          };
+        })
+      );
   }
 
   async saveNominationOrder(orderSetId: number, nomination: number[]): Promise<void> {
@@ -613,7 +600,8 @@ export class OrdersRepository {
       return;
     }
     const insertNomsQuery = this.pgp.helpers.insert(nominationValues, this.nominationCols);
-    return this.db.query(insertNomsQuery)
+    return this.db
+      .query(insertNomsQuery)
       .catch((error: Error) => terminalLog('insertNominations error: ' + error.message));
   }
 
@@ -667,7 +655,6 @@ export class OrdersRepository {
     }
 
     const query = this.pgp.helpers.insert(orderSetValues, this.orderSetCols);
-    return this.db.query(query)
-      .catch((error: Error) => terminalLog('insertVotingOrderSets error: ' + error.message));
+    return this.db.query(query).catch((error: Error) => terminalLog('insertVotingOrderSets error: ' + error.message));
   }
 }

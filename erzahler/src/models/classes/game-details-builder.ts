@@ -126,7 +126,7 @@ export class GameDetailsBuilder {
         f: rawGame.penalty_f,
         g: rawGame.penalty_g
       }
-    }
+    };
     this.readyTime = rawGame.ready_time;
   }
 }

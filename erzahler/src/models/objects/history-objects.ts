@@ -1,7 +1,7 @@
-import { OrderDisplay } from "../enumeration/order-display-enum";
-import { UnitType } from "../enumeration/unit-enum";
-import { Order, OrderResult } from "./option-context-objects";
-import { UpcomingTurn, UpcomingTurnResult } from "./scheduler/upcoming-turns-object";
+import { OrderDisplay } from '../enumeration/order-display-enum';
+import { UnitType } from '../enumeration/unit-enum';
+import { Order, OrderResult } from './option-context-objects';
+import { UpcomingTurn, UpcomingTurnResult } from './scheduler/upcoming-turns-object';
 
 export interface HistoricTurnResult extends UpcomingTurnResult {
   surviving_countries: any[];
@@ -14,14 +14,14 @@ export interface TurnHistory {
   orderList: CountryOrders[];
   maps: {
     orders: {
-      nuclear: any,
-      standard: any,
+      nuclear: any;
+      standard: any;
     };
     renderData: {
-      start: any,
-      result: any
-    }
-  }
+      start: any;
+      result: any;
+    };
+  };
 }
 
 export interface CountryOrders {

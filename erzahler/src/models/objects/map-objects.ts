@@ -1,5 +1,5 @@
-import { CountryStatus } from "../enumeration/country-enum";
-import { CityType } from "../enumeration/province-enums";
+import { CountryStatus } from '../enumeration/country-enum';
+import { CityType } from '../enumeration/province-enums';
 
 export interface MapDetails {
   terrain: {

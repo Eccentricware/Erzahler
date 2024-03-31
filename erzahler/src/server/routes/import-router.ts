@@ -1,6 +1,6 @@
-import express from "express";
-import { ImportService } from "../services/import-service";
-import { ValidationService } from "../services/validation-service";
+import express from 'express';
+import { ImportService } from '../services/import-service';
+import { ValidationService } from '../services/validation-service';
 
 export const importRouter = express.Router();
 const importService = new ImportService();
@@ -21,9 +21,12 @@ importRouter.post('/game', (request, response) => {
 
   const { gameId, environment, magicWord } = validationResponse.sanitizedVariables;
 
-  importService.importGame(gameId!, environment!, magicWord!).then(() => {
-    response.send({ success: true });
-  }).catch((error: Error) => {
-    response.send({ error: 'ImportGameError: ' + error.message });
-  });
+  importService
+    .importGame(gameId!, environment!, magicWord!)
+    .then(() => {
+      response.send({ success: true });
+    })
+    .catch((error: Error) => {
+      response.send({ error: 'ImportGameError: ' + error.message });
+    });
 });

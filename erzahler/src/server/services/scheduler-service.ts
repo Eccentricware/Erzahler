@@ -195,8 +195,6 @@ export class SchedulerService {
   //   return game;
   // }
 
-
-
   async syncDeadlines(): Promise<void> {
     terminalLog('Syncing Deadlines');
     const resolutionService: ResolutionService = new ResolutionService();
@@ -216,11 +214,9 @@ export class SchedulerService {
         await resolutionService.startGame(game.gameId);
       } else {
         terminalLog(`Scheduling start for game ${game.gameName} (${game.gameId}) at ${formatDateTime(game.startTime)}`);
-        schedule.scheduleJob(
-          `G-${game.gameId}`,
-          game.startTime,
-          () => { resolutionService.startGame(game.gameId); }
-        );
+        schedule.scheduleJob(`G-${game.gameId}`, game.startTime, () => {
+          resolutionService.startGame(game.gameId);
+        });
       }
     });
 
@@ -229,11 +225,16 @@ export class SchedulerService {
 
     upcomingTurns.forEach(async (turn: UpcomingTurn) => {
       if (turn.turnStatus === TurnStatus.PENDING && Date.parse(turn.deadline.toISOString()) < Date.now()) {
-        terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) has expired. Resolving`);
+        terminalAddendum(
+          `Deadlines`,
+          `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) has expired. Resolving`
+        );
         resolutionService.resolveTurn(turn.turnId);
-
       } else if (turn.turnStatus === TurnStatus.PENDING) {
-        terminalAddendum(`Deadlines`, `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) pending`);
+        terminalAddendum(
+          `Deadlines`,
+          `${turn.gameName} (${turn.gameId}) ${turn.turnName} (${formatDateTime(turn.deadline)}) pending`
+        );
         this.scheduleTurn(turn.turnId, turn.deadline);
         // schedule.scheduleJob(
         //   `T-${turn.turnId}`,
@@ -250,11 +251,9 @@ export class SchedulerService {
       terminalLog(`Scheduling turn ${turnId} for ${formatDateTime(deadline)}`);
     }
 
-    schedule.scheduleJob(
-      `T-${turnId}`,
-     deadline,
-      () => { resolutionService.resolveTurn(turnId); }
-    );
+    schedule.scheduleJob(`T-${turnId}`, deadline, () => {
+      resolutionService.resolveTurn(turnId);
+    });
   }
 
   /**
@@ -266,43 +265,37 @@ export class SchedulerService {
     const resolutionService: ResolutionService = new ResolutionService();
 
     const gameId = gameData.gameId;
-    const startDetails: StartDetails | undefined =
-      await this.getStartDetails(gameId)
-        .catch((error: Error) => {
-          terminalLog(`Get Start Details Error | (${gameId}):` + error.message);
-          return undefined;
-        });
+    const startDetails: StartDetails | undefined = await this.getStartDetails(gameId).catch((error: Error) => {
+      terminalLog(`Get Start Details Error | (${gameId}):` + error.message);
+      return undefined;
+    });
 
     if (!startDetails) {
       return;
     }
 
-    await db.schedulerRepo.readyGame([startDetails.gameStart, gameId])
-      .catch((error: Error) => {
-        terminalLog(`Ready Game Query Error | (${gameId}):` + error.message);
-        return {
-          success: false,
-          message: 'Ready game query error.'
-        }
-      });
+    await db.schedulerRepo.readyGame([startDetails.gameStart, gameId]).catch((error: Error) => {
+      terminalLog(`Ready Game Query Error | (${gameId}):` + error.message);
+      return {
+        success: false,
+        message: 'Ready game query error.'
+      };
+    });
 
-    await db.schedulerRepo.setAssignmentsActive(gameId)
-      .catch((error: Error) => {
-        terminalLog(`Set Assignments Query Error | (${gameId}):` + error.message);
-        return {
-          success: false,
-          message: 'Set Assignments query error.'
-        }
-      });
+    await db.schedulerRepo.setAssignmentsActive(gameId).catch((error: Error) => {
+      terminalLog(`Set Assignments Query Error | (${gameId}):` + error.message);
+      return {
+        success: false,
+        message: 'Set Assignments query error.'
+      };
+    });
 
     if (startDetails.gameStatus === GameStatus.PLAYING) {
       resolutionService.startGame(gameId);
     } else {
-      schedule.scheduleJob(
-        `G-${gameData.gameId}`,
-        startDetails.gameStart,
-        () => { resolutionService.startGame(gameId); }
-      );
+      schedule.scheduleJob(`G-${gameData.gameId}`, startDetails.gameStart, () => {
+        resolutionService.startGame(gameId);
+      });
     }
   }
 
@@ -451,11 +444,14 @@ export class SchedulerService {
           type: TurnType.FALL_ORDERS,
           turnName: formatTurnName(TurnType.FALL_ORDERS, currentTurn.yearStylized),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString(), nextTurns.pending.deadline),
+          deadline: this.findNextOccurence(
+            gameState.ordersDay,
+            gameState.ordersTime.toString(),
+            nextTurns.pending.deadline
+          ),
           yearNumber: currentTurn.yearNumber,
           yearStylized: currentTurn.yearStylized
         };
-
       } else {
         nextTurns.pending.type = TurnType.FALL_ORDERS;
         // nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
@@ -479,7 +475,11 @@ export class SchedulerService {
           type: TurnType.ADJUSTMENTS,
           turnName: formatTurnName(TurnType.ADJUSTMENTS, currentTurn.yearStylized),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString(), nextTurns.pending.deadline),
+          deadline: this.findNextOccurence(
+            gameState.adjustmentsDay,
+            gameState.adjustmentsTime.toString(),
+            nextTurns.pending.deadline
+          ),
           yearNumber: currentTurn.yearNumber,
           yearStylized: currentTurn.yearStylized
         };
@@ -487,11 +487,14 @@ export class SchedulerService {
         if (nominationsStarted && nominateDuringAdjustments) {
           nextTurns.preliminary.type = TurnType.ADJ_AND_NOM;
         }
-
       } else {
-        nextTurns.pending.type = nominationsStarted && nominateDuringAdjustments ? TurnType.ADJ_AND_NOM : TurnType.ADJUSTMENTS;
+        nextTurns.pending.type =
+          nominationsStarted && nominateDuringAdjustments ? TurnType.ADJ_AND_NOM : TurnType.ADJUSTMENTS;
         // nextTurns.pending.turnNumber = currentTurn.turnNumber + 2;
-        nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
+        nextTurns.pending.deadline = this.findNextOccurence(
+          gameState.adjustmentsDay,
+          gameState.adjustmentsTime.toString()
+        );
       }
     }
 
@@ -500,14 +503,21 @@ export class SchedulerService {
       const includeNominations = nominationsStarted && nominateDuringAdjustments;
 
       nextTurns.pending.type = includeNominations ? TurnType.ADJ_AND_NOM : TurnType.ADJUSTMENTS;
-      nextTurns.pending.deadline = this.findNextOccurence(gameState.adjustmentsDay, gameState.adjustmentsTime.toString());
+      nextTurns.pending.deadline = this.findNextOccurence(
+        gameState.adjustmentsDay,
+        gameState.adjustmentsTime.toString()
+      );
 
       if (nominationsStarted && !nominateDuringAdjustments) {
         nextTurns.preliminary = {
           type: TurnType.NOMINATIONS,
           turnName: formatTurnName(TurnType.NOMINATIONS, currentTurn.yearStylized),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.nominationsDay, gameState.nominationsTime.toString(), nextTurns.pending.deadline),
+          deadline: this.findNextOccurence(
+            gameState.nominationsDay,
+            gameState.nominationsTime.toString(),
+            nextTurns.pending.deadline
+          ),
           yearNumber: currentTurn.yearNumber,
           yearStylized: currentTurn.yearStylized
         };
@@ -542,7 +552,6 @@ export class SchedulerService {
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
         nextTurns.pending.yearNumber = currentTurn.yearNumber + 1;
         nextTurns.pending.yearStylized = currentTurn.yearStylized + 1;
-
       } else {
         nextTurns.pending.type = TurnType.VOTES;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.votesDay, gameState.votesTime.toString());
@@ -551,7 +560,11 @@ export class SchedulerService {
           type: TurnType.SPRING_ORDERS,
           turnName: formatTurnName(TurnType.SPRING_ORDERS, currentTurn.yearStylized + 1),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString(), nextTurns.pending.deadline),
+          deadline: this.findNextOccurence(
+            gameState.ordersDay,
+            gameState.ordersTime.toString(),
+            nextTurns.pending.deadline
+          ),
           yearNumber: currentTurn.yearNumber + 1,
           yearStylized: currentTurn.yearStylized + 1
         };
@@ -566,7 +579,6 @@ export class SchedulerService {
         nextTurns.pending.deadline = this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString());
         nextTurns.pending.yearNumber = currentTurn.yearNumber + 1;
         nextTurns.pending.yearStylized = currentTurn.yearStylized + 1;
-
       } else {
         nextTurns.pending.type = TurnType.VOTES;
         nextTurns.pending.deadline = this.findNextOccurence(gameState.votesDay, gameState.votesTime.toString());
@@ -575,7 +587,11 @@ export class SchedulerService {
           type: TurnType.SPRING_ORDERS,
           turnName: formatTurnName(TurnType.SPRING_ORDERS, currentTurn.yearStylized + 1),
           turnNumber: currentTurn.turnNumber + 2,
-          deadline: this.findNextOccurence(gameState.ordersDay, gameState.ordersTime.toString(), nextTurns.pending.deadline),
+          deadline: this.findNextOccurence(
+            gameState.ordersDay,
+            gameState.ordersTime.toString(),
+            nextTurns.pending.deadline
+          ),
           yearNumber: currentTurn.yearNumber + 1,
           yearStylized: currentTurn.yearStylized + 1
         };
@@ -640,7 +656,9 @@ export class SchedulerService {
         rule: `*/${minuteInterval} * * * *`
       },
 
-      () => { terminalLog('Check In'); }
+      () => {
+        terminalLog('Check In');
+      }
     );
   }
 

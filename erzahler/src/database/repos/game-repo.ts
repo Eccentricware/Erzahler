@@ -220,17 +220,19 @@ export class GameRepository {
       values: turnArgs
     });
 
-    return await this.db.one(nextTurnQuery)
-      .then((nextTurnResult: TurnResult) => (<NewTurn>{
-        turnId: nextTurnResult.turn_id,
-        gameId: nextTurnResult.game_id,
-        turnNumber: nextTurnResult.turn_number,
-        turnName: nextTurnResult.turn_name,
-        turnType: nextTurnResult.turn_type,
-        turnStatus: nextTurnResult.turn_status,
-        yearNumber: nextTurnResult.year_number,
-        deadline: nextTurnResult.deadline
-      }));
+    return await this.db.one(nextTurnQuery).then(
+      (nextTurnResult: TurnResult) =>
+        <NewTurn>{
+          turnId: nextTurnResult.turn_id,
+          gameId: nextTurnResult.game_id,
+          turnNumber: nextTurnResult.turn_number,
+          turnName: nextTurnResult.turn_name,
+          turnType: nextTurnResult.turn_type,
+          turnStatus: nextTurnResult.turn_status,
+          yearNumber: nextTurnResult.year_number,
+          deadline: nextTurnResult.deadline
+        }
+    );
   }
 
   async insertProvinces(provinces: any, gameName: string): Promise<any[]> {
@@ -546,21 +548,20 @@ export class GameRepository {
   }
 
   async getTurnHistory(gameId: number): Promise<Turn[]> {
-    return await this.pool.query(getTurnHistoryQuery, [gameId])
-      .then((result: QueryResult) =>
-        result.rows.map((turn: TurnResult) => {
-          return <Turn>{
-            turnId: turn.turn_id,
-            gameId: turn.game_id,
-            turnNumber: turn.turn_number,
-            turnName: turn.turn_name,
-            turnType: turn.turn_type,
-            turnStatus: turn.turn_status,
-            yearNumber: turn.year_number,
-            deadline: turn.deadline
-          };
-        })
-      );
+    return await this.pool.query(getTurnHistoryQuery, [gameId]).then((result: QueryResult) =>
+      result.rows.map((turn: TurnResult) => {
+        return <Turn>{
+          turnId: turn.turn_id,
+          gameId: turn.game_id,
+          turnNumber: turn.turn_number,
+          turnName: turn.turn_name,
+          turnType: turn.turn_type,
+          turnStatus: turn.turn_status,
+          yearNumber: turn.year_number,
+          deadline: turn.deadline
+        };
+      })
+    );
   }
 
   async getCoalitionSchedule(gameId: number): Promise<CoalitionSchedule> {
@@ -636,6 +637,4 @@ export class GameRepository {
   async setGamePlaying(gameId: number): Promise<void> {
     await this.pool.query(startGameQuery, [gameId]);
   }
-
-
 }
