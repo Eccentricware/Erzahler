@@ -21,8 +21,23 @@ importRouter.post('/game', (request, response) => {
 
   const { gameId, environment, magicWord } = validationResponse.sanitizedVariables;
 
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  if (!environment) {
+    response.send({ error: 'Environment is required.' });
+    return;
+  }
+
+  if (!magicWord) {
+    response.send({ error: 'You are missing something you are not supposed to have.' });
+    return;
+  }
+
   importService
-    .importGame(gameId!, environment!, magicWord!)
+    .importGame(gameId, environment, magicWord)
     .then(() => {
       response.send({ success: true });
     })

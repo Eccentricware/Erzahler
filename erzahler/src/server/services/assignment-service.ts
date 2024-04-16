@@ -1,4 +1,9 @@
-import { Assignment, AssignmentDataObject, AssignmentDetails } from '../../models/objects/assignment-objects';
+import {
+  Assignment,
+  AssignmentDataObject,
+  AssignmentDetails,
+  AssignmentResult
+} from '../../models/objects/assignment-objects';
 import { AccountService } from './account-service';
 import { AssignmentType } from '../../models/enumeration/assignment-type-enum';
 import { db } from '../../database/connection';
@@ -20,7 +25,7 @@ export class AssignmentService {
       }
     }
 
-    const gameData: any = await db.gameRepo.getGameDetails(
+    const gameData = await db.gameRepo.getGameDetails(
       gameId,
       userId,
       user ? user.timeZone : 'America/Los_Angeles',
@@ -58,7 +63,7 @@ export class AssignmentService {
   async isPlayerAdmin(gameId: number, playerId: number): Promise<boolean> {
     const gameAdmins = await db.assignmentRepo.getGameAdmins(gameId);
 
-    const playerAdmin = gameAdmins.filter((admin: any) => admin.user_id === playerId);
+    const playerAdmin = gameAdmins.filter((admin: AssignmentResult) => admin.user_id === playerId);
     return playerAdmin.length > 0;
   }
 

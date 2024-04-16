@@ -23,9 +23,19 @@ assignmentRouter.get(`/:gameId`, (request, response) => {
 
   const { gameId, idToken } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
   assignmentService
-    .getGameAssignments(idToken!, gameId!)
-    .then((result: any) => {
+    .getGameAssignments(idToken, gameId)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -51,9 +61,24 @@ assignmentRouter.post('/register', (request, response) => {
 
   const { idToken, gameId, assignmentType } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  if (!assignmentType) {
+    response.send({ error: 'Assignment Type is required.' });
+    return;
+  }
+
   assignmentService
-    .registerUser(idToken!, gameId!, assignmentType!)
-    .then((result: any) => {
+    .registerUser(idToken, gameId, assignmentType)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -79,9 +104,24 @@ assignmentRouter.post('/unregister', (request, response) => {
 
   const { idToken, gameId, assignmentType } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  if (!assignmentType) {
+    response.send({ error: 'Assignment Type is required.' });
+    return;
+  }
+
   assignmentService
-    .unregisterUser(idToken!, gameId!, assignmentType!)
-    .then((result: any) => {
+    .unregisterUser(idToken, gameId, assignmentType)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -108,9 +148,29 @@ assignmentRouter.post('/assign-player', (request, response) => {
 
   const { idToken, gameId, playerId, countryId } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  if (!playerId) {
+    response.send({ error: 'Player ID is required.' });
+    return;
+  }
+
+  if (!countryId) {
+    response.send({ error: 'Country ID is required.' });
+    return;
+  }
+
   assignmentService
-    .assignPlayer(idToken!, gameId!, playerId!, countryId!)
-    .then((result: any) => {
+    .assignPlayer(idToken, gameId, playerId, countryId)
+    .then(() => {
       response.send({ success: true });
     })
     .catch((error: Error) => {
@@ -131,9 +191,24 @@ assignmentRouter.put('/lock-assignment', (request, response) => {
 
   const { idToken, gameId, playerId } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  if (!playerId) {
+    response.send({ error: 'Player ID is required.' });
+    return;
+  }
+
   assignmentService
-    .lockAssignment(idToken!, gameId!, playerId!)
-    .then((result: any) => {
+    .lockAssignment(idToken, gameId, playerId)
+    .then(() => {
       response.send({ success: true });
     })
     .catch((error: Error) => {
@@ -154,9 +229,24 @@ assignmentRouter.put('/unlock-assignment', (request, response) => {
 
   const { idToken, gameId, playerId } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  if (!playerId) {
+    response.send({ error: 'Player ID is required.' });
+    return;
+  }
+
   assignmentService
-    .unlockAssignment(idToken!, gameId!, playerId!)
-    .then((result: any) => {
+    .unlockAssignment(idToken, gameId, playerId)
+    .then(() => {
       response.send({ success: true });
     })
     .catch((error: Error) => {

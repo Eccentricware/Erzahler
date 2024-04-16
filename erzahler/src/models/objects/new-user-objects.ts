@@ -11,3 +11,5 @@ export interface NewUser {
   usernameLocked: boolean;
   signupTime: string;
 }
+
+export type ProviderArgs = string | number | boolean | undefined | null | Date;

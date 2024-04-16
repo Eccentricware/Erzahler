@@ -6,13 +6,13 @@ import {
   UserProfile
 } from '../../models/objects/user-profile-object';
 import { db } from '../../database/connection';
-import { NewUser } from '../../models/objects/new-user-objects';
+import { NewUser, ProviderArgs } from '../../models/objects/new-user-objects';
 import { terminalLog } from '../utils/general';
-import { DetailedBoolean } from '../../models/objects/general-objects';
+import { DetailedBoolean, Primitive } from '../../models/objects/general-objects';
 import { CustomException } from '../../models/objects/exception-objects';
 
 export class AccountService {
-  async validateToken(idToken: string, stillLoggedIn?: boolean): Promise<any> {
+  async validateToken(idToken: string, stillLoggedIn?: boolean): Promise<{ uid: string; valid: boolean }> {
     const checkRevoked = stillLoggedIn === undefined ? true : stillLoggedIn;
     return getAuth()
       .verifyIdToken(idToken, checkRevoked)
@@ -25,7 +25,7 @@ export class AccountService {
       .catch((error: Error) => {
         console.log(error.message);
         return {
-          uid: 0,
+          uid: '',
           valid: false
         };
       });
@@ -97,7 +97,7 @@ export class AccountService {
     };
   }
 
-  createProviderArgs(userId: number, firebaseUser: UserRecord): any[] {
+  createProviderArgs(userId: number, firebaseUser: UserRecord): ProviderArgs[] {
     const emailSignup = firebaseUser.providerData[0].providerId === 'password';
     const verificationDeadline: Date = new Date(Date.now() + 3600000);
 
@@ -132,7 +132,7 @@ export class AccountService {
    * @returns Promise<UserProfile>
    */
   async getUserProfile(idToken: string): Promise<UserProfile | undefined> {
-    const token: DecodedIdToken = await this.validateToken(idToken);
+    const token = await this.validateToken(idToken);
 
     if (token.uid) {
       const firebaseUser: UserRecord = await this.getFirebaseUser(token.uid);
@@ -228,9 +228,13 @@ export class AccountService {
     }
   }
 
-  async addAdditionalProvider(oldIdToken: string, newIdToken: string): Promise<any> {
-    const decodedOldToken: DecodedIdToken = await this.validateToken(oldIdToken, false);
-    const decodedNewToken: DecodedIdToken = await this.validateToken(newIdToken, true);
+  async addAdditionalProvider(
+    oldIdToken: string,
+    newIdToken: string
+  ): Promise<{ username: string; providerType: string } | CustomException> {
+    const decodedOldToken = await this.validateToken(oldIdToken, false);
+    const decodedNewToken = await this.validateToken(newIdToken, true);
+    let errorMessage = '';
 
     if (decodedOldToken.uid) {
       const user: UserProfile | void = await db.accountsRepo.getUserProfile(decodedOldToken.uid);
@@ -249,10 +253,19 @@ export class AccountService {
             providerType: firebaseUser.providerData[0].providerId
           };
         } else {
-          console.log('Add Additional Provider Error: Provider in Database');
+          console.log('Add Additional Provider Error: Provider already in Database');
+          errorMessage = 'Provider already in Database';
         }
+      } else {
+        errorMessage = 'User not found';
       }
+    } else {
+      errorMessage = 'idToken is not valid';
     }
+    return <CustomException>{
+      success: false,
+      message: errorMessage
+    };
   }
 
   /**

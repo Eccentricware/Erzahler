@@ -1,5 +1,3 @@
-import { DayOfWeek } from '../../enumeration/day_of_week-enum';
-
 export interface GameSettings {
   scheduler: {
     turnOrder: ['orders', 'retreats', 'adjustments', 'nominations', 'votes'];

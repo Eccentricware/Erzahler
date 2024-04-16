@@ -24,7 +24,17 @@ ordersRouter.get(`/:gameId/orders`, (request, response) => {
 
   const { gameId, idToken } = validationResponse.sanitizedVariables;
 
-  ordersService.getTurnOrders(idToken!, gameId!).then((orders: TurnOrders | undefined) => {
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  ordersService.getTurnOrders(idToken, gameId).then((orders: TurnOrders | undefined) => {
     response.send(orders);
   });
 });
@@ -51,8 +61,13 @@ ordersRouter.post(`/submit`, (request, response) => {
     return;
   }
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
   ordersService
-    .saveOrders(idToken!, orders)
+    .saveOrders(idToken, orders)
     .then((result) => response.send(result))
     .catch((error: Error) =>
       response.send({
