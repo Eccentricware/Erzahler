@@ -24,7 +24,7 @@ import { createAccountUserQuery } from '../queries/accounts/create-account-user-
 import { getAccountsUserRowQuery } from '../queries/dashboard/get-accounts-user-row-query';
 import { getAccountsProviderRowQuery } from '../queries/dashboard/get-accounts-provider-row-query';
 import { insertProviderFromAccountsQuery } from '../queries/accounts/insert-provider-from-accounts-query';
-import { NewUser, NewUserResult } from '../../models/objects/new-user-objects';
+import { NewUser, NewUserResult, ProviderArgs } from '../../models/objects/new-user-objects';
 import { createEnvironmentProviderQuery } from '../queries/accounts/create-environment-provider-query';
 import {
   insertUserContactPreferencesQuery,
@@ -32,21 +32,20 @@ import {
 } from '../queries/accounts/insert-user-settings-query';
 import { insertUserDetailsQuery } from '../queries/accounts/insert-user-details-query';
 import { updateUserSettingsQuery } from '../queries/dashboard/update-user-query';
-import { CustomException } from '../../models/objects/exception-objects';
 import { terminalLog } from '../../server/utils/general';
 
 export class AccountsRepository {
   pool = new Pool(envCredentials);
   accountPool = new Pool(accountCredentials);
 
-  constructor(private db: IDatabase<any>, private pgp: IMain) {}
+  constructor(private db: IDatabase<unknown>, private pgp: IMain) {}
 
   // Legacy queries
 
   async checkUsernameAvailable(username: string): Promise<boolean> {
     return await this.accountPool
       .query(getUserIdQuery, [username])
-      .then((usernameCountResponse: any) => {
+      .then((usernameCountResponse) => {
         return usernameCountResponse.rows.length === 0;
       })
       .catch((error: Error) => {
@@ -86,7 +85,7 @@ export class AccountsRepository {
   async createEnvironmentUser(newUser: NewUser): Promise<boolean> {
     return await this.pool
       .query(createEnvironmentUserQuery, [newUser.userId, newUser.username, newUser.usernameLocked, newUser.signupTime])
-      .then((result: any) => {
+      .then((result: QueryResult) => {
         console.log(`Add user success:`, Boolean(result.rowCount));
         return true;
       })
@@ -99,7 +98,7 @@ export class AccountsRepository {
   async createUserDetails(newUser: NewUser, userStatus: string): Promise<void> {
     await this.pool
       .query(insertUserDetailsQuery, [newUser.userId, userStatus])
-      .then((result: any) => {
+      .then((result: QueryResult) => {
         console.log(`Add user details success:`, Boolean(result.rowCount));
       })
       .catch((error: Error) => {
@@ -110,7 +109,7 @@ export class AccountsRepository {
   async createUserSettings(newUser: NewUser): Promise<void> {
     await this.pool
       .query(insertUserSettingsQuery, [newUser.userId])
-      .then((result: any) => {
+      .then((result: QueryResult) => {
         console.log(`Add user details success:`, Boolean(result.rowCount));
       })
       .catch((error: Error) => {
@@ -125,7 +124,7 @@ export class AccountsRepository {
   async createUserContactPreferences(newUser: NewUser): Promise<void> {
     await this.pool
       .query(insertUserContactPreferencesQuery, [newUser.userId])
-      .then((result: any) => {
+      .then((result: QueryResult) => {
         console.log(`Add user contact preferences success:`, Boolean(result.rowCount));
       })
       .catch((error: Error) => {
@@ -133,7 +132,7 @@ export class AccountsRepository {
       });
   }
 
-  async createAccountProvider(providerArgs: any): Promise<number> {
+  async createAccountProvider(providerArgs: ProviderArgs[]): Promise<number> {
     return await this.accountPool
       .query(createAccountProviderQuery, providerArgs)
       .then((result: QueryResult) => {
@@ -146,10 +145,10 @@ export class AccountsRepository {
       });
   }
 
-  async createEnvironmentProvider(providerArgs: any) {
+  async createEnvironmentProvider(providerArgs: ProviderArgs[]) {
     await this.pool
       .query(createEnvironmentProviderQuery, providerArgs)
-      .then((result: any) => {
+      .then((result) => {
         console.log(`Provider added`, Boolean(result.rowCount));
       })
       .catch((error: Error) => {
@@ -274,10 +273,10 @@ export class AccountsRepository {
       });
   }
 
-  async getUserId(username: string): Promise<any> {
+  async getUserId(username: string): Promise<number> {
     return await this.pool
       .query(getUserIdQuery, [username])
-      .then((userResult: any) => {
+      .then((userResult) => {
         console.log('userResult.user_id:', userResult.rows[0].user_id);
         return userResult.rows[0].user_id;
       })
@@ -287,7 +286,7 @@ export class AccountsRepository {
   async checkProviderInDB(uid: string) {
     return await this.pool
       .query(getExistingProviderQuery, [uid])
-      .then((results: any) => Boolean(results.rowCount))
+      .then((results) => Boolean(results.rowCount))
       .catch((error: Error) => {
         console.log(error.message);
       });
@@ -314,7 +313,7 @@ export class AccountsRepository {
   async lockAccountUsername(uid: string) {
     return await this.accountPool
       .query(lockUsernameQuery, [uid])
-      .then((result: any) => {
+      .then(() => {
         console.log('Username Locked');
       })
       .catch((error: Error) => {
@@ -325,7 +324,7 @@ export class AccountsRepository {
   async lockEnvironmentUsername(uid: string) {
     return await this.pool
       .query(lockUsernameQuery, [uid])
-      .then((result: any) => {
+      .then(() => {
         console.log('Username Locked');
       })
       .catch((error: Error) => {
@@ -336,7 +335,7 @@ export class AccountsRepository {
   async clearAccountVerificationDeadline(uid: string) {
     await this.accountPool
       .query(clearVerficiationDeadlineQuery, [uid])
-      .then((result: any) => {
+      .then(() => {
         console.log('Timer disabled');
       })
       .catch((error: Error) => {
@@ -347,7 +346,7 @@ export class AccountsRepository {
   async clearEnvironmentVerificationDeadline(uid: string) {
     await this.pool
       .query(clearVerficiationDeadlineQuery, [uid])
-      .then((result: any) => {
+      .then(() => {
         console.log('Timer disabled');
       })
       .catch((error: Error) => {

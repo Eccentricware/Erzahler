@@ -24,7 +24,17 @@ optionsRouter.get(`/:gameId`, (request, response) => {
 
   const { gameId, idToken } = validationResponse.sanitizedVariables;
 
-  optionsService.getTurnOptions(idToken!, gameId!).then((options: OptionsFinal | string) => {
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  optionsService.getTurnOptions(idToken, gameId).then((options: OptionsFinal | string) => {
     response.send(options);
   });
 });

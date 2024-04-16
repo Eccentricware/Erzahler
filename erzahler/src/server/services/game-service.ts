@@ -1,4 +1,3 @@
-import { DecodedIdToken } from 'firebase-admin/auth';
 import { QueryResult } from 'pg';
 import { db } from '../../database/connection';
 import { AccountService } from './account-service';
@@ -12,6 +11,7 @@ import { GameFinderParameters } from '../../models/objects/games/game-finder-que
 import { terminalAddendum, terminalLog } from '../utils/general';
 import { UserProfile } from '../../models/objects/user-profile-object';
 import { CoalitionSchedule } from '../../models/objects/games/coalition-schedule-objects';
+import { SettingType } from '../../models/objects/general-objects';
 
 export class GameService {
   async newGame(gameData: NewGameData, idToken: string): Promise<NewGameResponse> {
@@ -56,7 +56,7 @@ export class GameService {
     const schedule: StartScheduleObject = schedulerService.prepareStartSchedule(events);
     console.log('Schedule', schedule);
 
-    const settingsArray = [
+    const settingsArray: SettingType[] = [
       gameData.gameName,
       gameData.assignmentMethod,
       gameData.stylizedStartYear,
@@ -387,7 +387,7 @@ export class GameService {
     const accountService: AccountService = new AccountService();
     const schedulerService: SchedulerService = new SchedulerService();
 
-    const token: DecodedIdToken = await accountService.validateToken(idToken);
+    const token = await accountService.validateToken(idToken);
     if (token.uid) {
       const isAdmin = await db.gameRepo.isGameAdmin(token.uid, gameData.gameId);
 

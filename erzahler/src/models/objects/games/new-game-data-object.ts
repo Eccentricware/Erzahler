@@ -1,10 +1,8 @@
-import { GameRow } from '../../../database/schema/table-fields';
-import { GameStatus } from '../../enumeration/game-status-enum';
 import { CoalitionSchedule } from './coalition-schedule-objects';
 
 export interface NewGameData {
   gameName: string;
-  assignmentMethod: 'manual';
+  assignmentMethod: string;
   stylizedStartYear: number;
   deadlineType: string;
   observeDst: boolean;

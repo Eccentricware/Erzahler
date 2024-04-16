@@ -10,8 +10,13 @@ export interface CoalitionScheduleResult {
   penalty_g: number;
 }
 
+/**
+ * This should be consolidated
+ */
 export interface CoalitionSchedule {
   baseFinal: number;
+  baseRequired?: number;
   totalPossible: number;
+  totalVotes?: number;
   penalties: Record<string, number>;
 }

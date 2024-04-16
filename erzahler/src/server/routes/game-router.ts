@@ -46,6 +46,11 @@ gameRouter.get('/search', (request, response) => {
   const idToken = validationResponse.sanitizedVariables.idToken;
   const { playing, creator, administrator } = request.query;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
   const parameters: GameFinderParameters = {
     playing: playing === 'true',
     creator: creator === 'true',
@@ -53,8 +58,8 @@ gameRouter.get('/search', (request, response) => {
   };
 
   gameService
-    .findGames(idToken!, parameters)
-    .then((result: any) => {
+    .findGames(idToken, parameters)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -79,9 +84,19 @@ gameRouter.get('/details/:gameId', (request, response) => {
 
   const { idToken, gameId } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
   gameService
-    .getGameData(idToken!, gameId!)
-    .then((result: any) => {
+    .getGameData(idToken, gameId)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -106,9 +121,14 @@ gameRouter.post('/create', (request, response) => {
 
   const { idToken } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
   gameService
-    .newGame(request.body.gameData, idToken!)
-    .then((result: any) => {
+    .newGame(request.body.gameData, idToken)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -133,9 +153,14 @@ gameRouter.put('/update', (request, response) => {
   const idToken = validationResponse.sanitizedVariables.idToken;
   const gameData = request.body.gameData;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
   gameService
-    .updateGameSettings(idToken!, gameData)
-    .then((result: any) => {
+    .updateGameSettings(idToken, gameData)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -160,8 +185,18 @@ gameRouter.post('/declare-ready', (request, response) => {
 
   const { idToken, gameId } = validationResponse.sanitizedVariables;
 
+  if (!idToken) {
+    response.send({ error: 'ID Token is required.' });
+    return;
+  }
+
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
   gameService
-    .declareReady(idToken!, gameId!)
+    .declareReady(idToken, gameId)
     .then(() => {
       response.send({ success: true });
     })
