@@ -1270,15 +1270,17 @@ export class ResolutionService {
 
       const gameState = await db.gameRepo.getGameState(turn.gameId);
       db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.FINAL);
-      if (turn.turnType === TurnType.VOTES) {
+      if (turn.turnType === TurnType.VOTES && gameState.preliminaryTurnId) {
         db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId, TurnStatus.CANCELLED);
       }
     } else if (turn.turnType === TurnType.VOTES) {
       // Continue
       const gameState = await db.gameRepo.getGameState(turn.gameId);
       db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED);
-      db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId, TurnStatus.PENDING);
-      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId, gameState.preliminaryDeadline);
+      if (gameState.preliminaryTurnId && gameState.preliminaryDeadline) {
+        db.resolutionRepo.updateTurnProgress(gameState.preliminaryTurnId, TurnStatus.PENDING);
+        this.schedulerService.scheduleTurn(gameState.preliminaryTurnId, gameState.preliminaryDeadline);
+      }
     } else {
       this.resolveSpringOrders(turn);
     }

@@ -9,12 +9,11 @@ import {
 } from '../../models/objects/history-objects';
 import { getHistoricUnitOrdersQuery } from '../queries/history/get-historic-unit-orders-query';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
-import { UpcomingTurn, UpcomingTurnResult } from '../../models/objects/scheduler/upcoming-turns-object';
 import { getHistoricTurnQuery } from '../queries/history/get-historic-turn-query';
 
 export class HistoryRepository {
   pool = new Pool(envCredentials);
-  constructor(private db: IDatabase<any>, private pgp: IMain) {}
+  constructor(private db: IDatabase<unknown>, private pgp: IMain) {}
 
   async getHistoricTurn(gameId: number, turnNumber: number): Promise<HistoricTurn | undefined> {
     const detailedTurns: HistoricTurn[] = await this.pool

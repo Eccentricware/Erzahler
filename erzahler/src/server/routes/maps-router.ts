@@ -1,6 +1,5 @@
 import express from 'express';
 import { MapService } from '../services/map-service';
-import { terminalLog } from '../utils/general';
 import { ValidationService } from '../services/validation-service';
 
 export const mapRouter = express.Router();
@@ -20,9 +19,14 @@ mapRouter.get('/:gameId/current', (request, response) => {
 
   const gameId = validationResponse.sanitizedVariables.gameId;
 
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
   mapService
-    .getMap(gameId!)
-    .then((result: any) => {
+    .getMap(gameId)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {

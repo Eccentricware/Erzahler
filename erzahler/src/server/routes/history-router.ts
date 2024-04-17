@@ -19,9 +19,14 @@ historyRouter.get('/stats/:gameId', (request, response) => {
 
   const gameId = validationResponse.sanitizedVariables.gameId;
 
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
   historyService
-    .getGameStats(gameId!)
-    .then((result: any) => {
+    .getGameStats(gameId)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -43,9 +48,19 @@ historyRouter.get('/results/:gameId/:turnNumber', (request, response) => {
 
   const { gameId, turnNumber } = validationResponse.sanitizedVariables;
 
+  if (!gameId) {
+    response.send({ error: 'Game ID is required.' });
+    return;
+  }
+
+  if (!turnNumber) {
+    response.send({ error: 'Turn number is required.' });
+    return;
+  }
+
   historyService
-    .getTurnHistory(gameId!, turnNumber!)
-    .then((result: any) => {
+    .getTurnHistory(gameId, turnNumber)
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {

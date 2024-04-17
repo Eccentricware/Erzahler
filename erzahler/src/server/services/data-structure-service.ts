@@ -1,4 +1,4 @@
-type Primitive = string | number | boolean;
+import { Primitive } from '../../models/objects/general-objects';
 
 export function mergeArrays(array1: Primitive[], array2: Primitive[]): Primitive[] {
   array2.forEach((element: Primitive) => {

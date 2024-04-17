@@ -1,5 +1,5 @@
 import { Pool, QueryResult } from 'pg';
-import { IDatabase, IMain, as } from 'pg-promise';
+import { IDatabase, IMain } from 'pg-promise';
 import { envCredentials } from '../../secrets/dbCredentials';
 import { FormattingService } from '../../server/services/formatting-service';
 import { assignUserQuery } from '../queries/assignments/assign-user-query';
@@ -29,6 +29,7 @@ import {
   CountryAuthorization,
   CountryAuthorizationResult
 } from '../../models/objects/orders/expected-order-types-object';
+import { SuccessResponse } from '../../models/objects/general-objects';
 
 /**
  * Handles DB updates involving user associations with games.
@@ -36,12 +37,12 @@ import {
 export class AssignmentRepository {
   pool = new Pool(envCredentials);
   formattingService = new FormattingService();
-  constructor(private db: IDatabase<any>, private pgp: IMain) {}
+  constructor(private db: IDatabase<unknown>, private pgp: IMain) {}
 
-  async getGameAdmins(gameId: number): Promise<any> {
+  async getGameAdmins(gameId: number): Promise<AssignmentResult[]> {
     return await this.pool
       .query(getGameAdminsQuery, [gameId])
-      .then((results: QueryResult) => results.rows)
+      .then((results: QueryResult<AssignmentResult>) => results.rows)
       .catch((error: Error) => {
         console.log('Get Game Admins Query Error: ' + error.message);
         return [];
@@ -72,43 +73,47 @@ export class AssignmentRepository {
       });
   }
 
-  async saveRegisterUser(gameId: number, userId: number, assignmentType: string): Promise<any> {
+  async saveRegisterUser(gameId: number, userId: number, assignmentType: string): Promise<SuccessResponse> {
     return await this.pool
       .query(registerUserQuery, [gameId, userId, assignmentType])
       .then(() => {
         return { success: true };
       })
       .catch((error: Error) => {
-        console.log('Insert assignment error: ' + error.message);
+        terminalLog('Insert assignment error: ' + error.message);
         return {
           success: false,
-          message: error.message
+          message: 'There was an error registering the user.'
         };
       });
   }
 
-  async saveUnregisterUser(gameId: number, userId: number, assignmentType: string): Promise<any> {
+  async saveUnregisterUser(gameId: number, userId: number, assignmentType: string): Promise<SuccessResponse> {
     return await this.pool
       .query(unregisterUserQuery, [gameId, userId, assignmentType])
       .then(() => {
         return { success: true };
       })
       .catch((error: Error) => {
-        console.log('Unregister User Error: ' + error.message);
+        terminalLog('Unregister User Error: ' + error.message);
+        return {
+          success: false,
+          message: 'There was an error unregistering the user.'
+        };
       });
   }
 
-  async saveReregisterUser(gameId: number, userId: number, assignmentType: string): Promise<any> {
+  async saveReregisterUser(gameId: number, userId: number, assignmentType: string): Promise<SuccessResponse> {
     return await this.pool
       .query(reregisterUserQuery, [gameId, userId, assignmentType])
       .then(() => {
         return { success: true };
       })
       .catch((error: Error) => {
-        console.log('Update assignment error: ' + error.message);
+        terminalLog('Update assignment error: ' + error.message);
         return {
           success: false,
-          message: error.message
+          message: 'There was an error registering the user.'
         };
       });
   }
@@ -193,7 +198,7 @@ export class AssignmentRepository {
   async getUserAssignments(gameId: number, userId: number): Promise<UserAssignment[]> {
     const assignments = await this.pool
       .query(getUserGameAssignmentsQuery, [gameId, userId])
-      .then((queryResult: QueryResult<any>) =>
+      .then((queryResult: QueryResult<UserAssignmentResult>) =>
         queryResult.rows.map((result: UserAssignmentResult) => {
           return <UserAssignment>{
             username: result.username,

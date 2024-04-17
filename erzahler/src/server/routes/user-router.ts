@@ -30,7 +30,7 @@ userRouter.get('/check-username/:username', (request, response) => {
 
   db.accountsRepo
     .checkUsernameAvailable(username)
-    .then((usernameAvailable: any) => {
+    .then((usernameAvailable) => {
       terminalLog(`Username availability check: ${username}`);
       response.send(usernameAvailable);
     })
@@ -56,8 +56,14 @@ userRouter.get('/profile', (request, response) => {
 
   const idToken = validationResponse.sanitizedVariables.idToken;
 
+  if (!idToken) {
+    terminalLog(`No idToken in request`);
+    response.send({ error: 'No idToken in request' });
+    return;
+  }
+
   accountService
-    .getUserProfile(idToken!)
+    .getUserProfile(idToken)
     .then((userProfile: UserProfile | undefined) => {
       if (userProfile) {
         terminalLog(`Get Profile: ${userProfile.username}`);
@@ -78,7 +84,7 @@ userRouter.post('/register', (request, response) => {
 
   accountService
     .attemptAddUserToDatabase(idToken, username)
-    .then((result: any) => {
+    .then((result) => {
       terminalLog(`User Registered: ${username}`);
       response.send(result);
     })
@@ -93,8 +99,7 @@ userRouter.post('/add-provider', (request, response) => {
 
   accountService
     .addAdditionalProvider(oldIdToken, newIdToken)
-    .then((result: any) => {
-      terminalLog(`${result.username} added a provider: ${result.providerType}`);
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {
@@ -127,9 +132,15 @@ userRouter.put('/update-settings', (request, response) => {
 
   const idToken = validationResponse.sanitizedVariables.idToken;
 
+  if (!idToken) {
+    terminalLog(`No idToken in request`);
+    response.send({ error: 'No idToken in request' });
+    return;
+  }
+
   accountService
-    .updateUserSettings(idToken!, data)
-    .then((result: any) => {
+    .updateUserSettings(idToken, data)
+    .then((result) => {
       terminalLog(`Profile Updated: ${result.username}`);
       response.send({ success: true });
     })

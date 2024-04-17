@@ -1,7 +1,6 @@
 import { DateTime } from 'luxon';
 import { AssignmentStatus } from '../enumeration/assignment-status-enum';
 import { AssignmentType } from '../enumeration/assignment-type-enum';
-import { as } from 'pg-promise';
 import { ContactPreferences } from './user-profile-object';
 
 export interface AssignmentDataObject {

@@ -1,5 +1,3 @@
-import { DateTime } from 'luxon';
-
 export interface GameScheduleResult {
   game_id: number;
   game_name: string;

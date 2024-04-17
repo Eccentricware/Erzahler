@@ -7,7 +7,7 @@ const schedulingService = new SchedulerService();
 schedulingRouter.get('/all-events', (request, response) => {
   schedulingService
     .getAllEvents()
-    .then((result: any) => {
+    .then((result) => {
       response.send(result);
     })
     .catch((error: Error) => {

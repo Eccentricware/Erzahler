@@ -1,4 +1,4 @@
-import { Pool, Query, QueryResult } from 'pg';
+import { Pool, QueryResult } from 'pg';
 import { IDatabase, IMain, ParameterizedQuery } from 'pg-promise';
 import { GameDetailsBuilder } from '../../models/classes/game-details-builder';
 import { GameSummaryBuilder } from '../../models/classes/game-summary-builder';
@@ -53,115 +53,119 @@ import { GameFinderParameters } from '../../models/objects/games/game-finder-que
 import { startGameQuery } from '../queries/game/start-game-query';
 import { terminalLog } from '../../server/utils/general';
 import { NewTurn, Turn, TurnResult } from '../../models/objects/database-objects';
+import { SettingType } from '../../models/objects/general-objects';
 
-const gamesCols: string[] = [
-  'game_name',
-  'game_status',
-  'assignment_method',
-  'stylized_start_year',
-  'current_year',
-  'turn_1_timing',
-  'deadline_type',
-  'start_time',
-  'observe_dst',
-  'orders_day',
-  'orders_time',
-  'retreats_day',
-  'retreats_time',
-  'adjustments_day',
-  'adjustments_time',
-  'nominations_day',
-  'nominations_time',
-  'votes_day',
-  'votes_time',
-  'nmr_tolerance_total',
-  'concurrent_games_limit',
-  'private_game',
-  'hidden_game',
-  'blind_administrators',
-  'final_readiness_check',
-  'vote_delay_enabled',
-  'partial_roster_start',
-  'nomination_timing',
-  'nomination_year',
-  'automatic_assignments',
-  'rating_limits_enabled',
-  'fun_min',
-  'fun_max',
-  'skill_min',
-  'skill_max'
-];
+// Used when fully removing the pool
+// const gamesCols: string[] = [
+//   'game_name',
+//   'game_status',
+//   'assignment_method',
+//   'stylized_start_year',
+//   'current_year',
+//   'turn_1_timing',
+//   'deadline_type',
+//   'start_time',
+//   'observe_dst',
+//   'orders_day',
+//   'orders_time',
+//   'retreats_day',
+//   'retreats_time',
+//   'adjustments_day',
+//   'adjustments_time',
+//   'nominations_day',
+//   'nominations_time',
+//   'votes_day',
+//   'votes_time',
+//   'nmr_tolerance_total',
+//   'concurrent_games_limit',
+//   'private_game',
+//   'hidden_game',
+//   'blind_administrators',
+//   'final_readiness_check',
+//   'vote_delay_enabled',
+//   'partial_roster_start',
+//   'nomination_timing',
+//   'nomination_year',
+//   'automatic_assignments',
+//   'rating_limits_enabled',
+//   'fun_min',
+//   'fun_max',
+//   'skill_min',
+//   'skill_max'
+// ];
 export class GameRepository {
   formattingService = new FormattingService();
   pool = new Pool(envCredentials);
-  constructor(private db: IDatabase<any>, private pgp: IMain) {}
+  constructor(private db: IDatabase<unknown>, private pgp: IMain) {}
 
-  async getGameState(gameId: number): Promise<any> {
-    const gameState: GameState = await this.pool.query(getGameStateQuery, [gameId]).then((result: QueryResult<any>) => {
-      return result.rows.map((gameStateResult: GameStateResult) => {
-        return <GameState>{
-          gameId: gameStateResult.game_id,
-          gameName: gameStateResult.game_name,
-          turnId: gameStateResult.turn_id,
-          deadline: gameStateResult.deadline,
-          turnNumber: gameStateResult.turn_number,
-          turnName: gameStateResult.turn_name,
-          turnType: gameStateResult.turn_type,
-          turnStatus: gameStateResult.turn_status,
-          resolvedTime: gameStateResult.resolved_time,
-          pendingTurnId: gameStateResult.pending_turn_id,
-          pendingTurnType: gameStateResult.pending_turn_type,
-          pendingDeadline: gameStateResult.pending_deadline,
-          preliminaryTurnId: gameStateResult.preliminary_turn_id,
-          preliminaryTurnType: gameStateResult.preliminary_turn_type,
-          preliminaryDeadline: gameStateResult.preliminary_deadline,
-          ordersDay: gameStateResult.orders_day,
-          ordersTime: gameStateResult.orders_time,
-          ordersSpan: gameStateResult.orders_span,
-          retreatsDay: gameStateResult.retreats_day,
-          retreatsTime: gameStateResult.retreats_time,
-          retreatsSpan: gameStateResult.retreats_span,
-          adjustmentsDay: gameStateResult.adjustments_day,
-          adjustmentsTime: gameStateResult.adjustments_time,
-          adjustmentsSpan: gameStateResult.adjustments_span,
-          nominationsDay: gameStateResult.nominations_day,
-          nominationsTime: gameStateResult.nominations_time,
-          nominationsSpan: gameStateResult.nominations_span,
-          votesDay: gameStateResult.votes_day,
-          votesTime: gameStateResult.votes_time,
-          votesSpan: gameStateResult.votes_span,
-          deadlineMissed: gameStateResult.deadline_missed,
-          nominateDuringAdjustments: gameStateResult.nominate_during_adjustments,
-          voteDuringSpring: gameStateResult.vote_during_spring,
-          nominationTiming: gameStateResult.nomination_timing,
-          nominationYear: gameStateResult.nomination_year,
-          currentYear: gameStateResult.current_year,
-          yearNumber: gameStateResult.year_number,
-          stylizedStartYear: gameStateResult.stylized_start_year,
-          highestRankedReq: gameStateResult.highest_ranked_req,
-          votingSchedule: {
-            baseFinal: gameStateResult.base_final,
-            penalties: {
-              a: gameStateResult.penalty_a,
-              b: gameStateResult.penalty_b,
-              c: gameStateResult.penalty_c,
-              d: gameStateResult.penalty_d,
-              e: gameStateResult.penalty_e,
-              f: gameStateResult.penalty_f,
-              g: gameStateResult.penalty_g
-            }
-          },
-          allVotesControlled: gameStateResult.all_votes_controlled,
-          unitsInRetreat: gameStateResult.unit_in_retreat,
-          defaultNukeRange: gameStateResult.default_nuke_range
-        };
-      })[0];
-    });
+  async getGameState(gameId: number): Promise<GameState> {
+    const gameState: GameState = await this.pool
+      .query(getGameStateQuery, [gameId])
+      .then((result: QueryResult<GameStateResult>) => {
+        return result.rows.map((gameStateResult: GameStateResult) => {
+          return <GameState>{
+            gameId: gameStateResult.game_id,
+            gameName: gameStateResult.game_name,
+            turnId: gameStateResult.turn_id,
+            deadline: gameStateResult.deadline,
+            turnNumber: gameStateResult.turn_number,
+            turnName: gameStateResult.turn_name,
+            turnType: gameStateResult.turn_type,
+            turnStatus: gameStateResult.turn_status,
+            resolvedTime: gameStateResult.resolved_time,
+            pendingTurnId: gameStateResult.pending_turn_id,
+            pendingTurnType: gameStateResult.pending_turn_type,
+            pendingDeadline: gameStateResult.pending_deadline,
+            preliminaryTurnId: gameStateResult.preliminary_turn_id,
+            preliminaryTurnType: gameStateResult.preliminary_turn_type,
+            preliminaryDeadline: gameStateResult.preliminary_deadline,
+            ordersDay: gameStateResult.orders_day,
+            ordersTime: gameStateResult.orders_time,
+            ordersSpan: gameStateResult.orders_span,
+            retreatsDay: gameStateResult.retreats_day,
+            retreatsTime: gameStateResult.retreats_time,
+            retreatsSpan: gameStateResult.retreats_span,
+            adjustmentsDay: gameStateResult.adjustments_day,
+            adjustmentsTime: gameStateResult.adjustments_time,
+            adjustmentsSpan: gameStateResult.adjustments_span,
+            nominationsDay: gameStateResult.nominations_day,
+            nominationsTime: gameStateResult.nominations_time,
+            nominationsSpan: gameStateResult.nominations_span,
+            votesDay: gameStateResult.votes_day,
+            votesTime: gameStateResult.votes_time,
+            votesSpan: gameStateResult.votes_span,
+            deadlineMissed: gameStateResult.deadline_missed,
+            nominateDuringAdjustments: gameStateResult.nominate_during_adjustments,
+            voteDuringSpring: gameStateResult.vote_during_spring,
+            nominationTiming: gameStateResult.nomination_timing,
+            nominationYear: gameStateResult.nomination_year,
+            currentYear: gameStateResult.current_year,
+            yearNumber: gameStateResult.year_number,
+            stylizedStartYear: gameStateResult.stylized_start_year,
+            highestRankedReq: gameStateResult.highest_ranked_req,
+            votingSchedule: {
+              baseFinal: gameStateResult.base_final,
+              penalties: {
+                a: gameStateResult.penalty_a,
+                b: gameStateResult.penalty_b,
+                c: gameStateResult.penalty_c,
+                d: gameStateResult.penalty_d,
+                e: gameStateResult.penalty_e,
+                f: gameStateResult.penalty_f,
+                g: gameStateResult.penalty_g
+              }
+            },
+            allVotesControlled: gameStateResult.all_votes_controlled,
+            unitsInRetreat: gameStateResult.unit_in_retreat,
+            defaultNukeRange: gameStateResult.default_nuke_range
+          };
+        })[0];
+      });
 
     return gameState;
   }
 
-  async insertGame(settingsArray: any[]): Promise<any> {
+  async insertGame(settingsArray: SettingType[]): Promise<QueryResult<{ game_id: number }>> {
     return this.pool.query(insertNewGameQuery, settingsArray);
   }
 
@@ -173,7 +177,7 @@ export class GameRepository {
     });
   }
 
-  async insertCoalitionScheduleQuery(gameName: string, coalitionSchedule: any): Promise<void> {
+  async insertCoalitionScheduleQuery(gameName: string, coalitionSchedule: CoalitionSchedule): Promise<void> {
     await this.pool
       .query(insertCoalitionScheduleQuery, [
         coalitionSchedule.baseRequired,
