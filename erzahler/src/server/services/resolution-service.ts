@@ -1152,6 +1152,10 @@ export class ResolutionService {
           .then(async (pendingTurn: NewTurn) => {
             this.schedulerService.scheduleTurn(pendingTurn.turnId, pendingTurn.deadline);
 
+            if (pendingTurn.turnType === TurnType.NOMINATIONS) {
+              await this.orderService.initializeNominationOrderSets(pendingTurn);
+            }
+
             if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(pendingTurn.turnType)) {
               await this.optionsService.saveOptionsForTurn(pendingTurn);
             }
