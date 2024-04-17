@@ -77,7 +77,14 @@ export class OrdersRepository {
    */
   constructor(private db: IDatabase<any>, private pgp: IMain) {
     this.orderSetCols = new pgp.helpers.ColumnSet(
-      ['country_id', 'turn_id', 'message_id', 'submission_time', 'order_set_type', 'order_set_name'],
+      [
+        'country_id',
+        'turn_id',
+        'message_id',
+        'submission_time',
+        'order_set_type',
+        'order_set_name'
+      ],
       { table: 'order_sets' }
     );
 
@@ -635,6 +642,27 @@ export class OrdersRepository {
     await this.pool
       .query('UPDATE order_sets SET submission_time = NOW() WHERE order_set_id = $1', [orderSetId])
       .catch((error: Error) => terminalLog('updateOrderSubmissionTime error: ' + error.message));
+  }
+
+  async insertNominationOrderSets(turnId: number, survivingCountryIds: number[]): Promise<void> {
+    const orderSetValues = survivingCountryIds.map((countryId: number) => {
+      return {
+        country_id: countryId,
+        turn_id: turnId,
+        message_id: null,
+        submission_time: new Date(),
+        order_set_type: 'Orders',
+        order_set_name: null
+      };
+    });
+
+    if (orderSetValues.length === 0) {
+      terminalAddendum('Warning', `Array for bulk insert nomination orderSetValues is empty. Turn ${turnId}`);
+      return;
+    }
+
+    const query = this.pgp.helpers.insert(orderSetValues, this.orderSetCols);
+    return this.db.query(query).catch((error: Error) => terminalLog('insertVotingOrderSets error: ' + error.message));
   }
 
   async insertVotingOrderSets(turnId: number, survivingCountryIds: number[]): Promise<void> {

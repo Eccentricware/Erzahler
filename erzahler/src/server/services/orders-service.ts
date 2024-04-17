@@ -827,6 +827,16 @@ export class OrdersService {
     }
   }
 
+  async initializeNominationOrderSets(turn: NewTurn): Promise<void> {
+    // 1:1 Match between nominatble countries and alive countries
+    const survivingCountries: NominatableCountry[] = await db.optionsRepo.getNominatableCountries(
+      turn.gameId,
+      turn.turnNumber
+    );
+    const survivingCountryIds: number[] = survivingCountries.map((country: NominatableCountry) => country.countryId);
+    db.ordersRepo.insertNominationOrderSets(turn.turnId, survivingCountryIds);
+  }
+
   async initializeVotingOrderSets(turn: NewTurn): Promise<void> {
     // 1:1 Match between nominatble countries and voting countries
     const survivingCountries: NominatableCountry[] = await db.optionsRepo.getNominatableCountries(
