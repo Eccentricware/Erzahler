@@ -434,189 +434,178 @@ export class OrdersService {
       orders.countryId
     );
 
-    if (countryAuthorization.assigned) {
-      terminalLog(`Saving Orders: Game ${orders.gameId} | Country ${orders.countryId} | User ${userId}`);
-      terminalAddendum(`Orders`, `${JSON.stringify(orders)}`);
-      // const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
-      // let orderSetUpdated = false;
+    terminalLog(`Saving Orders: Game ${orders.gameId} | Country ${orders.countryId} | User ${userId}`);
+    terminalAddendum(`Orders`, `${JSON.stringify(orders)}`);
+    // const orderSetIds: OrderTurnIds = await this.getOrderSets(orders.gameId, orders.countryId);
+    // let orderSetUpdated = false;
 
-      // Units
-      // Spring Orders | Spring Orders and Votes | Spring Retreats | Fall Orders | Fall Retreats
-      if (orders.pending && orders.pending.units) {
-        orders.pending.units.forEach(async (unitOrder: Order) => {
-          if (unitOrder.orderSetId === countryAuthorization.pendingOrderSetId) {
-            await db.ordersRepo.saveUnitOrder(unitOrder);
-          } else {
-            terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${unitOrder.orderSetId})`);
-            success = false;
-            message = sabotageMessage;
-          }
-        });
-      }
-
-      // Spring Orders | Spring Orders and Votes | Fall Orders
-      if (orders.preliminary && orders.preliminary.units) {
-        orders.preliminary.units.forEach(async (unitOrder: Order) => {
-          if (unitOrder.orderSetId === countryAuthorization.preliminaryOrderSetId) {
-            await db.ordersRepo.saveUnitOrder(unitOrder);
-          } else {
-            terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${unitOrder.orderSetId})`);
-            success = false;
-            message = sabotageMessage;
-          }
-        });
-      }
-
-      // Transfers
-      // Spring Orders | Spring Orders and Votes
-      if (orders.pending && orders.pending.techTransfer) {
-        if (orders.pending.techTransfer.orderSetId === countryAuthorization.pendingOrderSetId) {
-          await db.ordersRepo.saveTechTransfer(orders.pending.techTransfer);
+    // Units
+    // Spring Orders | Spring Orders and Votes | Spring Retreats | Fall Orders | Fall Retreats
+    if (orders.pending && orders.pending.units) {
+      orders.pending.units.forEach(async (unitOrder: Order) => {
+        if (unitOrder.orderSetId === countryAuthorization.pendingOrderSetId) {
+          await db.ordersRepo.saveUnitOrder(unitOrder);
         } else {
-          terminalAddendum(
-            'ALERT',
-            `Attempt to save orders for invalid orderSetId (${orders.pending.techTransfer.orderSetId})`
-          );
+          terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${unitOrder.orderSetId})`);
           success = false;
           message = sabotageMessage;
         }
-      }
-
-      // Spring Orders | Spring Orders and Votes
-      if (orders.preliminary && orders.preliminary.techTransfer) {
-        if (orders.preliminary.techTransfer.orderSetId === countryAuthorization.preliminaryOrderSetId) {
-          await db.ordersRepo.saveTechTransfer(orders.preliminary.techTransfer);
-        } else {
-          terminalAddendum(
-            'ALERT',
-            `Attempt to save orders for invalid orderSetId (${orders.preliminary.techTransfer.orderSetId})`
-          );
-          success = false;
-          message = sabotageMessage;
-        }
-      }
-
-      if (orders.pending?.buildTransfers && orders.pending?.buildTransfers.length > 0 && orders.pending.orderSetId) {
-        if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
-          await db.ordersRepo.saveBuildTransfers(orders.pending.orderSetId, orders.pending.buildTransfers);
-        } else {
-          terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${orders.pending.orderSetId})`);
-          success = false;
-          message = sabotageMessage;
-        }
-      }
-
-      if (
-        orders.preliminary?.buildTransfers &&
-        orders.preliminary.buildTransfers.length > 0 &&
-        orders.preliminary.orderSetId
-      ) {
-        if (orders.preliminary.orderSetId === countryAuthorization.preliminaryOrderSetId) {
-          await db.ordersRepo.saveBuildTransfers(orders.preliminary.orderSetId, orders.preliminary.buildTransfers);
-        } else {
-          terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${orders.preliminary.orderSetId})`);
-          success = false;
-          message = sabotageMessage;
-        }
-      }
-
-      // Adjustments
-      // Adjustments | Adjustments and Nominations
-      if (orders.pending?.builds && orders.pending.builds.builds.length > 0 && orders.pending.orderSetId) {
-        const buildResults = await this.saveBuildOrders(
-          orders.pending.orderSetId,
-          orders.pending.builds,
-          countryAuthorization.pendingOrderSetId
-        );
-        if (!buildResults.success || buildResults.sabotage) {
-          success = false;
-          message = buildResults.sabotage ? sabotageMessage : 'Error saving build orders';
-        }
-      }
-
-      if (orders.preliminary?.builds && orders.preliminary.builds.builds.length > 0 && orders.preliminary.orderSetId) {
-        const buildResults = await this.saveBuildOrders(
-          orders.preliminary.orderSetId,
-          orders.preliminary.builds,
-          countryAuthorization.preliminaryOrderSetId
-        );
-        if (!buildResults.success || buildResults.sabotage) {
-          success = false;
-          message = buildResults.sabotage ? sabotageMessage : 'Error saving build orders';
-        }
-      }
-
-      if (orders.pending && orders.pending.disbands && orders.pending.orderSetId) {
-        if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
-          await db.ordersRepo.saveDisbandOrders(orders.pending.orderSetId, orders.pending.disbands);
-        } else {
-          terminalAddendum(
-            'ALERT',
-            `Attempt to save disband orders for unauthorized orderSetId (${orders.pending.orderSetId})`
-          );
-          success = false;
-          message = sabotageMessage;
-        }
-      }
-
-      if (orders.preliminary && orders.preliminary.disbands && orders.preliminary.orderSetId) {
-        if (orders.preliminary.orderSetId === countryAuthorization.preliminaryOrderSetId) {
-          await db.ordersRepo.saveDisbandOrders(orders.preliminary.orderSetId, orders.preliminary.disbands);
-        } else {
-          terminalAddendum(
-            'ALERT',
-            `Attempt to save disband orders for unauthorized orderSetId (${orders.preliminary.orderSetId})`
-          );
-          success = false;
-          message = sabotageMessage;
-        }
-      }
-
-      // Nominations
-      // Nominations | Adjustments and Nominations
-      if (orders.pending && orders.pending.nomination && orders.pending.orderSetId) {
-        if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
-          await db.ordersRepo.saveNominationOrder(orders.pending.orderSetId, orders.pending.nomination.countryIds);
-        } else {
-          terminalAddendum(
-            'ALERT',
-            `Attempt to save nomination orders for unauthorized orderSetId (${orders.pending.orderSetId})`
-          );
-          success = false;
-          message = sabotageMessage;
-        }
-      }
-
-      // Votes
-      // Votes | Orders and Votes
-      if (orders.pending && orders.pending.votes && orders.pending.orderSetId) {
-        if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
-          await db.ordersRepo.saveVotes(orders.pending.votes, orders.pending.orderSetId);
-        } else {
-          terminalAddendum('ALERT', `Attempt to save votes for unauthorized orderSetId (${orders.pending.orderSetId})`);
-          success = false;
-          message = sabotageMessage;
-        }
-      }
-
-      return {
-        success: success,
-        message: message
-      };
-
-      // if (!orderSetUpdated && orderSetIds.core) {
-      //   db.ordersRepo.updateOrderSetSubmissionTime(orderSetIds.core);
-      // }
-    } else {
-      terminalAddendum(
-        'ALERT',
-        `Unassigned user (${userId}) attempted to save orders for Game ${orders.gameId} | Country ${orders.countryId}`
-      );
-      return {
-        success: false,
-        message: `You are not assigned to this country!`
-      };
+      });
     }
+
+    // Spring Orders | Spring Orders and Votes | Fall Orders
+    if (orders.preliminary && orders.preliminary.units) {
+      orders.preliminary.units.forEach(async (unitOrder: Order) => {
+        if (unitOrder.orderSetId === countryAuthorization.preliminaryOrderSetId) {
+          await db.ordersRepo.saveUnitOrder(unitOrder);
+        } else {
+          terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${unitOrder.orderSetId})`);
+          success = false;
+          message = sabotageMessage;
+        }
+      });
+    }
+
+    // Transfers
+    // Spring Orders | Spring Orders and Votes
+    if (orders.pending && orders.pending.techTransfer) {
+      if (orders.pending.techTransfer.orderSetId === countryAuthorization.pendingOrderSetId) {
+        await db.ordersRepo.saveTechTransfer(orders.pending.techTransfer);
+      } else {
+        terminalAddendum(
+          'ALERT',
+          `Attempt to save orders for invalid orderSetId (${orders.pending.techTransfer.orderSetId})`
+        );
+        success = false;
+        message = sabotageMessage;
+      }
+    }
+
+    // Spring Orders | Spring Orders and Votes
+    if (orders.preliminary && orders.preliminary.techTransfer) {
+      if (orders.preliminary.techTransfer.orderSetId === countryAuthorization.preliminaryOrderSetId) {
+        await db.ordersRepo.saveTechTransfer(orders.preliminary.techTransfer);
+      } else {
+        terminalAddendum(
+          'ALERT',
+          `Attempt to save orders for invalid orderSetId (${orders.preliminary.techTransfer.orderSetId})`
+        );
+        success = false;
+        message = sabotageMessage;
+      }
+    }
+
+    if (orders.pending?.buildTransfers && orders.pending?.buildTransfers.length > 0 && orders.pending.orderSetId) {
+      if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
+        await db.ordersRepo.saveBuildTransfers(orders.pending.orderSetId, orders.pending.buildTransfers);
+      } else {
+        terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${orders.pending.orderSetId})`);
+        success = false;
+        message = sabotageMessage;
+      }
+    }
+
+    if (
+      orders.preliminary?.buildTransfers &&
+      orders.preliminary.buildTransfers.length > 0 &&
+      orders.preliminary.orderSetId
+    ) {
+      if (orders.preliminary.orderSetId === countryAuthorization.preliminaryOrderSetId) {
+        await db.ordersRepo.saveBuildTransfers(orders.preliminary.orderSetId, orders.preliminary.buildTransfers);
+      } else {
+        terminalAddendum('ALERT', `Attempt to save orders for invalid orderSetId (${orders.preliminary.orderSetId})`);
+        success = false;
+        message = sabotageMessage;
+      }
+    }
+
+    // Adjustments
+    // Adjustments | Adjustments and Nominations
+    if (orders.pending?.builds && orders.pending.builds.builds.length > 0 && orders.pending.orderSetId) {
+      const buildResults = await this.saveBuildOrders(
+        orders.pending.orderSetId,
+        orders.pending.builds,
+        countryAuthorization.pendingOrderSetId
+      );
+      if (!buildResults.success || buildResults.sabotage) {
+        success = false;
+        message = buildResults.sabotage ? sabotageMessage : 'Error saving build orders';
+      }
+    }
+
+    if (orders.preliminary?.builds && orders.preliminary.builds.builds.length > 0 && orders.preliminary.orderSetId) {
+      const buildResults = await this.saveBuildOrders(
+        orders.preliminary.orderSetId,
+        orders.preliminary.builds,
+        countryAuthorization.preliminaryOrderSetId
+      );
+      if (!buildResults.success || buildResults.sabotage) {
+        success = false;
+        message = buildResults.sabotage ? sabotageMessage : 'Error saving build orders';
+      }
+    }
+
+    if (orders.pending && orders.pending.disbands && orders.pending.orderSetId) {
+      if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
+        await db.ordersRepo.saveDisbandOrders(orders.pending.orderSetId, orders.pending.disbands);
+      } else {
+        terminalAddendum(
+          'ALERT',
+          `Attempt to save disband orders for unauthorized orderSetId (${orders.pending.orderSetId})`
+        );
+        success = false;
+        message = sabotageMessage;
+      }
+    }
+
+    if (orders.preliminary && orders.preliminary.disbands && orders.preliminary.orderSetId) {
+      if (orders.preliminary.orderSetId === countryAuthorization.preliminaryOrderSetId) {
+        await db.ordersRepo.saveDisbandOrders(orders.preliminary.orderSetId, orders.preliminary.disbands);
+      } else {
+        terminalAddendum(
+          'ALERT',
+          `Attempt to save disband orders for unauthorized orderSetId (${orders.preliminary.orderSetId})`
+        );
+        success = false;
+        message = sabotageMessage;
+      }
+    }
+
+    // Nominations
+    // Nominations | Adjustments and Nominations
+    if (orders.pending && orders.pending.nomination && orders.pending.orderSetId) {
+      if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
+        await db.ordersRepo.saveNominationOrder(orders.pending.orderSetId, orders.pending.nomination.countryIds);
+      } else {
+        terminalAddendum(
+          'ALERT',
+          `Attempt to save nomination orders for unauthorized orderSetId (${orders.pending.orderSetId})`
+        );
+        success = false;
+        message = sabotageMessage;
+      }
+    }
+
+    // Votes
+    // Votes | Orders and Votes
+    if (orders.pending && orders.pending.votes && orders.pending.orderSetId) {
+      if (orders.pending.orderSetId === countryAuthorization.pendingOrderSetId) {
+        await db.ordersRepo.saveVotes(orders.pending.votes, orders.pending.orderSetId);
+      } else {
+        terminalAddendum('ALERT', `Attempt to save votes for unauthorized orderSetId (${orders.pending.orderSetId})`);
+        success = false;
+        message = sabotageMessage;
+      }
+    }
+
+    return {
+      success: success,
+      message: message
+    };
+
+    // if (!orderSetUpdated && orderSetIds.core) {
+    //   db.ordersRepo.updateOrderSetSubmissionTime(orderSetIds.core);
+    // }
   }
 
   async createAdjustmentDefaults(upcomingTurn: Turn, retreatingCountryIds?: number[]): Promise<void> {
