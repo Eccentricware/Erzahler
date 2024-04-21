@@ -888,22 +888,35 @@ export class OptionsService {
       // Transfers
       if (applicable && [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(preliminaryTurn.turnType)) {
         if (playerCountry.builds > 0) {
+          const buildTransferOptions: TransferCountry[] = await db.optionsRepo.getBuildTransferOptions(
+            gameId,
+            gameState.turnId
+          );
+          buildTransferOptions.unshift({ countryId: 0, countryName: '--Keep Builds--' });
+
           turnOptions.preliminary.buildTransfers = {
-            options: await db.optionsRepo.getBuildTransferOptions(gameId, preliminaryTurn.turnId),
+            options: buildTransferOptions,
             builds: playerCountry.builds
           };
         }
 
         if (Number.isInteger(playerCountry.nukeRange)) {
-          turnOptions.preliminary.offerTechOptions = await db.optionsRepo.getTechOfferOptions(
+          const techTransferOptions: TransferCountry[] = await db.optionsRepo.getTechOfferOptions(
             gameId,
-            preliminaryTurn.turnId
+            gameState.turnId
           );
+          techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Offer Tech--' });
+
+          turnOptions.preliminary.offerTechOptions = techTransferOptions;
+
         } else {
-          turnOptions.preliminary.receiveTechOptions = await db.optionsRepo.getTechReceiveOptions(
+          const techTransferOptions: TransferCountry[] = await db.optionsRepo.getTechReceiveOptions(
             gameId,
-            preliminaryTurn.turnId
+            gameState.turnId
           );
+          techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Request Tech--' });
+
+          turnOptions.preliminary.receiveTechOptions = techTransferOptions;
         }
       }
 
