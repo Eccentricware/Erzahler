@@ -14,7 +14,7 @@ interface ForeignKeyLibrary {
 }
 
 export class ImportService {
-  async importGame(gameId: number, environment: string, magicWord: string): Promise<void> {
+  async importGame(gameId: number, environment: string, magicWord: string, gameName?: string): Promise<void> {
     if (magicWord !== process.env.MAGIC_WORD) {
       terminalLog(`Someone attempting to import game without magic word!`);
       return;
@@ -81,7 +81,7 @@ export class ImportService {
         const nominationRows = results[21];
         const voteRows = results[22];
 
-        gameRow.game_name = `${gameRow.game_name} (imported from ${gameRow.origin ? gameRow.origin : environment})`;
+        gameRow.game_name = gameName ? gameName : `${gameRow.game_name} (imported from ${gameRow.origin ? gameRow.origin : environment})`;
 
         await db.importRepo.insertGameRow(gameRow).then(async (newGameId: number) => {
           fkLib.game[gameId] = newGameId;

@@ -20,14 +20,15 @@ export interface RequestValidationResponse {
   valid: boolean;
   errors: string[];
   sanitizedVariables: {
+    assignmentType?: AssignmentType;
     countryId?: number;
+    environment?: string;
     gameId?: number;
+    gameName?: string;
+    idToken?: string;
+    magicWord?: string;
     playerId?: number;
     turnNumber?: number;
-    idToken?: string;
-    assignmentType?: AssignmentType;
-    environment?: string;
-    magicWord?: string;
   };
 }
 
