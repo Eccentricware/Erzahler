@@ -168,10 +168,16 @@ export class HistoryService {
       });
     }
 
+    // Nominations
+    let nominations;
+    if ([TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS].includes(historicTurn.turnType)) {
+      nominations = await db.historyRepo.getNominationResults(historicTurn.turnId);
+    }
+
     // Votes
     let votes;
     if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(historicTurn.turnType)) {
-      votes = await db.ordersRepo.getVotes(historicTurn.turnId, 0);
+      votes = await db.historyRepo.getVoteResults(historicTurn.turnId);
     }
 
     const orderList: CountryOrders[] = [];
@@ -188,11 +194,15 @@ export class HistoryService {
     });
 
     return <TurnHistory>{
+      turnType: historicTurn.turnType,
       orderList: orderList,
+      nominations: nominations,
+      votes: votes,
       maps: {
         orders: {
           nuclear: [],
           standard: [],
+          nominations: nominations,
           votes: votes
         },
         renderData: {

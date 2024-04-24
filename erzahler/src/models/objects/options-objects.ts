@@ -32,6 +32,7 @@ interface SpecificTurnOptions {
   };
   offerTechOptions?: TransferTechCountry[];
   receiveTechOptions?: TransferTechCountry[];
+  techTransferDescription?: string;
   builds?: {
     builds: number;
     locations: BuildOptions;

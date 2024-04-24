@@ -811,6 +811,7 @@ export class OptionsService {
           techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Offer Tech--' });
 
           turnOptions.pending.receiveTechOptions = techTransferOptions;
+          turnOptions.pending.techTransferDescription = 'Offer Nuke Tech To:'
         } else {
           const techTransferOptions: TransferCountry[] = await db.optionsRepo.getTechReceiveOptions(
             gameId,
@@ -819,6 +820,7 @@ export class OptionsService {
           techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Request Tech--' });
 
           turnOptions.pending.offerTechOptions = techTransferOptions;
+          turnOptions.pending.techTransferDescription = 'Request Nuke Tech From:'
         }
       }
 
@@ -908,7 +910,7 @@ export class OptionsService {
           techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Offer Tech--' });
 
           turnOptions.preliminary.offerTechOptions = techTransferOptions;
-
+          turnOptions.preliminary.techTransferDescription = 'Offer Nuke Tech To:'
         } else {
           const techTransferOptions: TransferCountry[] = await db.optionsRepo.getTechReceiveOptions(
             gameId,
@@ -917,6 +919,7 @@ export class OptionsService {
           techTransferOptions.unshift({ countryId: 0, countryName: '--Do Not Request Tech--' });
 
           turnOptions.preliminary.receiveTechOptions = techTransferOptions;
+          turnOptions.preliminary.techTransferDescription = 'Request Nuke Tech From:'
         }
       }
 
