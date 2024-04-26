@@ -12,8 +12,9 @@ export const getHistoricNominationsQuery = `
   FROM nominations n
   INNER JOIN countries c ON c.country_id = any(n.country_ids)
   INNER JOIN turns t ON n.turn_id = t.turn_id
-    WHERE t.game_id = $1
+  WHERE t.game_id = $1
     AND t.turn_number = $2
   GROUP BY n.nomination_id
   ORDER BY n.votes_required DESC;
 `;
+

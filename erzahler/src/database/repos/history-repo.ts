@@ -2,6 +2,9 @@ import { Pool, QueryResult } from 'pg';
 import { IDatabase, IMain } from 'pg-promise';
 import { envCredentials } from '../../secrets/dbCredentials';
 import {
+  HistoricNominatedCountryResult,
+  HistoricNomination,
+  HistoricNominationResult,
   HistoricOrder,
   HistoricOrderResult,
   HistoricTurn,
@@ -11,8 +14,9 @@ import { getHistoricUnitOrdersQuery } from '../queries/history/get-historic-unit
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { getHistoricTurnQuery } from '../queries/history/get-historic-turn-query';
 import { NominationRow } from '../../models/objects/database-objects';
-import { CountryVotesResult } from '../../models/objects/option-context-objects';
+import { CountryVotesResult, NominatableCountryResult } from '../../models/objects/option-context-objects';
 import { getHistoricNominationsQuery } from '../queries/history/get-nomination-history-query';
+import { getHistoricVotesQuery } from '../queries/history/get-historic-votes-query';
 
 export class HistoryRepository {
   pool = new Pool(envCredentials);
@@ -93,15 +97,26 @@ export class HistoryRepository {
     return orders;
   }
 
-  async getNominationResults(gameId: number, turnNumber: number): Promise<NominationRow[]> {
+  async getNominationResults(gameId: number, turnNumber: number): Promise<HistoricNomination[]> {
     return await this.pool
       .query(getHistoricNominationsQuery, [gameId, turnNumber])
-      .then((result: QueryResult) => result.rows);
+      .then((result: QueryResult<HistoricNominationResult>) =>
+        result.rows.map((nomination: HistoricNominationResult) => ({
+          nominationId: nomination.nomination_id,
+          countries: nomination.countries.map((country: HistoricNominatedCountryResult) => ({
+            countryId: country.country_id,
+            countryName: country.country_name,
+            rank: country.rank
+          })),
+          signature: nomination.signature,
+          votesRequired: nomination.votes_required
+        }))
+      );
   }
 
-  async getVoteResults(turnId: number): Promise<CountryVotesResult[]> {
+  async getVoteResults(gameId: number, turnNumber: number): Promise<CountryVotesResult[]> {
     return await this.pool
-      .query('SELECT votes FROM order_sets WHERE turn_id = $1', [turnId])
+      .query(getHistoricVotesQuery, [gameId, turnNumber])
       .then((result: QueryResult) => result.rows);
   }
 }
