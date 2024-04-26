@@ -79,3 +79,61 @@ interface AdjustmentDetails {
   location: string;
   description: string;
 }
+
+export interface HistoricNominationResult {
+  nomination_id: number;
+  countries: HistoricNominatedCountryResult[];
+  signature: string;
+  votes_required: number;
+}
+
+export interface HistoricNomination {
+  nominationId: number;
+  countries: HistoricNominatedCountry[];
+  signature: string;
+  votesRequired: number;
+}
+
+export interface HistoricNominatedCountryResult {
+  country_id: number;
+  country_name: string;
+  rank: string;
+}
+
+export interface HistoricNominatedCountry {
+  countryId: number;
+  countryName: string;
+  rank: string;
+}
+
+export interface HistoricVoteResult {
+  countries: HistoricNominatedCountryResult[];
+  nomination_id: number;
+  signature: string;
+  votes_required: number;
+  votes_received: number;
+  winner: boolean;
+  yay_votes: HistoricYayVoteResult[];
+}
+
+export interface HistoricVote {
+  countries: HistoricNominatedCountry[];
+  nominationId: number;
+  signature: string;
+  votesRequired: number;
+  votesReceived: number;
+  winner: boolean;
+  yayVotes: HistoricYayVote[];
+}
+
+export interface HistoricYayVoteResult {
+  country_id: number;
+  country_name: string;
+  votes_controlled: number;
+}
+
+export interface HistoricYayVote {
+  countryId: number;
+  countryName: string;
+  votesControlled: number;
+}
