@@ -5,10 +5,13 @@ import {
   HistoricNominatedCountryResult,
   HistoricNomination,
   HistoricNominationResult,
+  HistoricNominationVote,
+  HistoricNominationVoteResult,
   HistoricOrder,
   HistoricOrderResult,
   HistoricTurn,
-  HistoricTurnResult
+  HistoricTurnResult,
+  HistoricYayVoteResult
 } from '../../models/objects/history-objects';
 import { getHistoricUnitOrdersQuery } from '../queries/history/get-historic-unit-orders-query';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
@@ -114,9 +117,27 @@ export class HistoryRepository {
       );
   }
 
-  async getVoteResults(gameId: number, turnNumber: number): Promise<CountryVotesResult[]> {
+  async getVoteResults(gameId: number, turnNumber: number): Promise<HistoricNominationVote[]> {
     return await this.pool
       .query(getHistoricVotesQuery, [gameId, turnNumber])
-      .then((result: QueryResult) => result.rows);
+      .then((result: QueryResult<HistoricNominationVoteResult>) =>
+        result.rows.map((vote: HistoricNominationVoteResult) => ({
+          nominationId: vote.nomination_id,
+          countries: vote.countries.map((country: HistoricNominatedCountryResult) => ({
+            countryId: country.country_id,
+            countryName: country.country_name,
+            rank: country.rank
+          })),
+          signature: vote.signature,
+          votesRequired: vote.votes_required,
+          votesReceived: vote.votes_received,
+          yayVotes: vote.yay_votes.map((yayVote: HistoricYayVoteResult) => ({
+            countryId: yayVote.country_id,
+            countryName: yayVote.country_name,
+            votesControlled: yayVote.votes_controlled
+          })),
+          winner: vote.winner
+        }))
+      );
   }
 }
