@@ -106,7 +106,7 @@ export interface HistoricNominatedCountry {
   rank: string;
 }
 
-export interface HistoricVoteResult {
+export interface HistoricNominationVoteResult {
   countries: HistoricNominatedCountryResult[];
   nomination_id: number;
   signature: string;
@@ -116,7 +116,7 @@ export interface HistoricVoteResult {
   yay_votes: HistoricYayVoteResult[];
 }
 
-export interface HistoricVote {
+export interface HistoricNominationVote {
   countries: HistoricNominatedCountry[];
   nominationId: number;
   signature: string;
