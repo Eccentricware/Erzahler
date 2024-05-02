@@ -32,7 +32,7 @@ export const getHistoricVotesQuery = `
   FROM nominations n
   INNER JOIN turns t ON t.turn_id = n.turn_id
   INNER JOIN countries c ON c.country_id = any(n.country_ids)
-  INNER JOIN votes v ON v.nomination_id = n.nomination_id
+  LEFT JOIN votes v ON v.nomination_id = n.nomination_id
   WHERE t.game_id = $1
     AND t.turn_number = $2
   GROUP BY n.nomination_id,

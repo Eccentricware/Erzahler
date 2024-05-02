@@ -131,11 +131,13 @@ export class HistoryRepository {
           signature: vote.signature,
           votesRequired: vote.votes_required,
           votesReceived: vote.votes_received,
-          yayVotes: vote.yay_votes.map((yayVote: HistoricYayVoteResult) => ({
-            countryId: yayVote.country_id,
-            countryName: yayVote.country_name,
-            votesControlled: yayVote.votes_controlled
-          })),
+          yayVotes: vote.yay_votes
+            ? vote.yay_votes.map((yayVote: HistoricYayVoteResult) => ({
+                countryId: yayVote.country_id,
+                countryName: yayVote.country_name,
+                votesControlled: yayVote.votes_controlled
+              }))
+            : [],
           winner: vote.winner
         }))
       );

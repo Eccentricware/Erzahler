@@ -4,9 +4,12 @@ import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { GameStats } from '../../models/objects/database-objects';
 import {
   CountryOrders,
+  HistoricNominatedCountry,
+  HistoricNominationVote,
   HistoricOrder,
   HistoricOrderDisplay,
   HistoricTurn,
+  HistoricYayVote,
   TurnHistory
 } from '../../models/objects/history-objects';
 import { TransferTechOrder, TransferBuildOrder, BuildOrders, Build } from '../../models/objects/order-objects';
@@ -98,6 +101,7 @@ export class HistoryService {
         country.orders.units.push(historicOrderDisplay);
       });
     }
+    const turnHasAdjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(historicTurn.turnType);
 
     // Transfers
     if ([TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(historicTurn.turnType)) {
@@ -130,7 +134,6 @@ export class HistoryService {
     }
 
     // Adjustments
-    const turnHasAdjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(historicTurn.turnType);
     if (turnHasAdjustments) {
       const buildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
         historicTurn.gameId,
@@ -173,12 +176,33 @@ export class HistoryService {
     let nominations;
     if ([TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS].includes(historicTurn.turnType)) {
       nominations = await db.historyRepo.getNominationResults(historicTurn.gameId, historicTurn.turnNumber + 1);
+      nominations.forEach((nomination) => {
+        nomination.countries.sort((a: HistoricNominatedCountry, b: HistoricNominatedCountry) =>
+          a.rank === b.rank
+            ? (a.countryName < b.countryName ? -1 : 1)
+            : a.rank < b.rank
+              ? -1
+              : 1
+        );
+      });
     }
 
     // Votes
     let votes;
     if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(historicTurn.turnType)) {
       votes = await db.historyRepo.getVoteResults(gameId, historicTurn.turnNumber);
+
+      votes.forEach((vote: HistoricNominationVote) => {
+        vote.countries.sort((a: HistoricNominatedCountry, b: HistoricNominatedCountry) =>
+          a.rank === b.rank
+            ? (a.countryName < b.countryName ? -1 : 1)
+            : a.rank < b.rank
+              ? -1
+              : 1
+        );
+
+        vote.yayVotes.sort((a: HistoricYayVote, b: HistoricYayVote) => a.countryName < b.countryName ? -1 : 1);
+      });
     }
 
     const orderList: CountryOrders[] = [];
