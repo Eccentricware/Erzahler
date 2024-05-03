@@ -34,6 +34,10 @@ export interface CountryOrders {
     };
     units: HistoricOrderDisplay[];
     adjustments: AdjustmentDetails[];
+    buildsBanked: number;
+    buildsStartingNukes: number;
+    buildsIncreasingRange: number;
+    bankedBuildsIncreasingRange: number;
   };
 }
 
@@ -68,6 +72,10 @@ export interface HistoricOrderDisplay {
   secondaryResolution: string;
   success: boolean;
   secondarySuccess: boolean;
+  orderType: OrderDisplay;
+  loc: number[];
+  eventLoc: number[];
+  secondaryLoc: number[];
 }
 
 export interface HistoricBuildTransferOrder {
@@ -77,6 +85,7 @@ export interface HistoricBuildTransferOrder {
 
 interface AdjustmentDetails {
   location: string;
+  loc: number[];
   description: string;
 }
 
