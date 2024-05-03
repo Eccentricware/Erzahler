@@ -121,10 +121,12 @@ export class HistoryService {
       );
 
       techTransferOrders.forEach((transferOrder: TransferTechOrder) => {
-        const country = countryLibrary[transferOrder.countryId];
-        country.orders.trades.tech = transferOrder.hasNukes
-          ? `Offers nuke tech to ${transferOrder.foreignCountryName}`
-          : `Requests nuke tech from ${transferOrder.foreignCountryName}`;
+        if (transferOrder.foreignCountryId) {
+          const country = countryLibrary[transferOrder.countryId];
+          country.orders.trades.tech = transferOrder.hasNukes
+            ? `Offers nuke tech to ${transferOrder.foreignCountryName}`
+            : `Requests nuke tech from ${transferOrder.foreignCountryName}`;
+        }
       });
 
       const buildTransferOrders: TransferBuildOrder[] = await db.ordersRepo.getBuildTransferOrders(
