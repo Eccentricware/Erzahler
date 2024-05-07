@@ -1,6 +1,7 @@
 import { OrderDisplay } from '../enumeration/order-display-enum';
 import { BuildType, UnitType } from '../enumeration/unit-enum';
 import { Order, OrderResult } from './option-context-objects';
+import { SingleTurnOrders } from './order-objects';
 import { UpcomingTurn, UpcomingTurnResult } from './scheduler/upcoming-turns-object';
 
 export interface HistoricTurnResult extends UpcomingTurnResult {
@@ -65,11 +66,8 @@ export interface HistoricCountry {
 }
 export interface TurnHistory {
   orderList: HistoricCountryOrders[];
+  historicOrders: SingleTurnOrders;
   maps: {
-    orders: {
-      nuclear: any;
-      standard: any;
-    };
     renderData: {
       start: any;
       result: any;
@@ -224,6 +222,7 @@ export interface HistoricBuildOrdersResult {
   country_id: number;
   country_name: string;
   banked_builds: number;
+  build_count: number;
   adjustments: number;
   nuke_range: number;
   increase_range: number;
@@ -234,6 +233,7 @@ export interface HistoricBuildOrders {
   countryId: number;
   countryName: string;
   bankedBuilds: number;
+  buildCount: number;
   adjustmentCount: number;
   nukeRange: number | null;
   increaseRange: number;
