@@ -103,6 +103,7 @@ export interface UnitResult {
   unit_name: string;
   unit_type: string;
   loc: number[];
+  node_id: number;
   flag_key: string;
   unit_status: string;
   event_loc: number[];
@@ -111,6 +112,7 @@ export interface Unit {
   name: string;
   type: string;
   loc: number[];
+  nodeId: number;
   countryKey: string;
   status: string;
   eventLoc: number[];
