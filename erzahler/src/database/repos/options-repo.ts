@@ -86,14 +86,16 @@ export class OptionsRepository {
             nodeName: result.node_name,
             provinceId: result.province_id,
             provinceName: result.province_name,
-            adjacencies: result.adjacencies.map((adjacency) => {
-              return {
-                nodeId: adjacency.node_id,
-                provinceId: adjacency.province_id,
-                provinceName: adjacency.province_name,
-                provinceType: adjacency.province_type
-              };
-            }),
+            adjacencies: result.adjacencies
+              ? result.adjacencies.map((adjacency) => {
+                  return {
+                    nodeId: adjacency.node_id,
+                    provinceId: adjacency.province_id,
+                    provinceName: adjacency.province_name,
+                    provinceType: adjacency.province_type
+                  };
+                })
+              : [],
             moveTransported: [],
             holdSupports:
               result.hold_supports &&

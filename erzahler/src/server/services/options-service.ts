@@ -84,7 +84,7 @@ export class OptionsService {
       this.sortAdjacencyInfo(optionsCtx);
       this.processTransportPaths(optionsCtx);
       this.processMoveSupport(optionsCtx);
-      this.processNukeOptions(turn, optionsCtx);
+      await this.processNukeOptions(turn, optionsCtx);
     }
 
     return optionsCtx;
@@ -471,9 +471,7 @@ export class OptionsService {
     }
 
     optionsContext.unitInfo.forEach((unit: UnitOptions) => {
-      if (unit.adjacencies.length > 0) {
         orderOptions.push(this.formatStandardMovement(unit, optionsContext.turnId));
-      }
 
       if (unit.moveTransported.length > 0) {
         orderOptions.push(this.formatTransportedMovement(unit, optionsContext.turnId));
@@ -959,11 +957,11 @@ export class OptionsService {
 
       const unit = unitOptionsLibrary[option.unitId];
 
-      if (option.orderType === OrderDisplay.MOVE) {
+      if (option.orderType === OrderDisplay.MOVE && option.destinations) {
         this.finalizeStandardMovement(option, unit);
       }
 
-      if (option.orderType === OrderDisplay.MOVE_CONVOYED) {
+      if (option.orderType === OrderDisplay.MOVE_CONVOYED && option.destinations) {
         this.finalizeTransportedMovement(option, unit);
       }
 
@@ -983,15 +981,15 @@ export class OptionsService {
         this.finalizeMoveConvoyedSupport(option, unit);
       }
 
-      if (option.orderType === OrderDisplay.CONVOY) {
+      if (option.orderType === OrderDisplay.CONVOY && option.destinations) {
         this.finalizeConvoys(option, unit);
       }
 
-      if (option.orderType === OrderDisplay.AIRLIFT) {
+      if (option.orderType === OrderDisplay.AIRLIFT && option.destinations) {
         this.finalizeAirlifts(option, unit);
       }
 
-      if (option.orderType === OrderDisplay.NUKE) {
+      if (option.orderType === OrderDisplay.NUKE && option.destinations) {
         this.finalizeNukeTargets(option, unit);
       }
     });
