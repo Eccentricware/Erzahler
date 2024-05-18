@@ -171,7 +171,7 @@ export class HistoryService {
     // Nominations
     let nominations;
     if ([TurnType.ADJ_AND_NOM, TurnType.NOMINATIONS].includes(historicTurn.turnType)) {
-      nominations = await db.historyRepo.getNominationResults(historicTurn.turnId);
+      nominations = await db.historyRepo.getNominationResults(historicTurn.gameId, historicTurn.turnNumber + 1);
     }
 
     // Votes

@@ -12,6 +12,7 @@ import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { getHistoricTurnQuery } from '../queries/history/get-historic-turn-query';
 import { NominationRow } from '../../models/objects/database-objects';
 import { CountryVotesResult } from '../../models/objects/option-context-objects';
+import { getHistoricNominationsQuery } from '../queries/history/get-nomination-history-query';
 
 export class HistoryRepository {
   pool = new Pool(envCredentials);
@@ -92,9 +93,9 @@ export class HistoryRepository {
     return orders;
   }
 
-  async getNominationResults(turnId: number): Promise<NominationRow[]> {
+  async getNominationResults(gameId: number, turnNumber: number): Promise<NominationRow[]> {
     return await this.pool
-      .query('SELECT * FROM nominations WHERE turn_id = $1', [turnId])
+      .query(getHistoricNominationsQuery, [gameId, turnNumber])
       .then((result: QueryResult) => result.rows);
   }
 
