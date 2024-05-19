@@ -55,6 +55,14 @@ export class HistoryService {
       };
     }
 
+    const turnHasUnitOrders = [
+      TurnType.SPRING_ORDERS,
+      TurnType.SPRING_RETREATS,
+      TurnType.ORDERS_AND_VOTES,
+      TurnType.FALL_ORDERS,
+      TurnType.FALL_RETREATS
+    ].includes(historicTurn.turnType);
+
     historicTurn.survivingCountries.forEach((country) => {
       countryLibrary[country.countryId] = country;
       country.orders = {
@@ -67,15 +75,7 @@ export class HistoryService {
       };
     });
 
-    if (
-      [
-        TurnType.SPRING_ORDERS,
-        TurnType.SPRING_RETREATS,
-        TurnType.ORDERS_AND_VOTES,
-        TurnType.FALL_ORDERS,
-        TurnType.FALL_RETREATS
-      ].includes(historicTurn.turnType)
-    ) {
+    if (turnHasUnitOrders) {
       const historicUnitOrders = await db.historyRepo.getHistoricUnitOrders(
         gameId,
         historicTurn.turnNumber > 0 ? historicTurn.turnNumber - 1 : 0,
@@ -130,7 +130,8 @@ export class HistoryService {
     }
 
     // Adjustments
-    if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(historicTurn.turnType)) {
+    const turnHasAdjustments = [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(historicTurn.turnType);
+    if (turnHasAdjustments) {
       const buildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
         historicTurn.gameId,
         historicTurn.turnNumber,
@@ -177,25 +178,27 @@ export class HistoryService {
     // Votes
     let votes;
     if ([TurnType.VOTES, TurnType.ORDERS_AND_VOTES].includes(historicTurn.turnType)) {
-      votes = await db.historyRepo.getVoteResults(historicTurn.turnId);
+      votes = await db.historyRepo.getVoteResults(gameId, historicTurn.turnNumber);
     }
 
     const orderList: CountryOrders[] = [];
 
-    for (const country in countryLibrary) {
-      countryLibrary[country].orders.units.sort((a: HistoricOrderDisplay, b: HistoricOrderDisplay) => {
-        return a.originProvince < b.originProvince ? -1 : 1;
-      });
-      orderList.push(countryLibrary[country]);
-    }
+    if (turnHasUnitOrders || turnHasAdjustments) {
+      for (const country in countryLibrary) {
+        countryLibrary[country].orders.units.sort((a: HistoricOrderDisplay, b: HistoricOrderDisplay) => {
+          return a.originProvince < b.originProvince ? -1 : 1;
+        });
+        orderList.push(countryLibrary[country]);
+      }
 
-    orderList.sort((a: CountryOrders, b: CountryOrders) => {
-      return a.countryName < b.countryName ? -1 : 1;
-    });
+      orderList.sort((a: CountryOrders, b: CountryOrders) => {
+        return a.countryName < b.countryName ? -1 : 1;
+      });
+    }
 
     return <TurnHistory>{
       turnType: historicTurn.turnType,
-      orderList: orderList,
+      orderList: turnHasUnitOrders || turnHasAdjustments ? orderList : undefined,
       nominations: nominations,
       votes: votes,
       maps: {
