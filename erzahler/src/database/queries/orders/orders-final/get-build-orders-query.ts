@@ -3,7 +3,7 @@ export const getBuildOrdersQuery = `
     c.country_id,
     c.country_name,
     lch.banked_builds,
-    lch.adjustments builds,
+    lch.adjustments adjustments,
     CASE
       WHEN lch.adjustments > 0 THEN
         json_agg(

@@ -13,6 +13,7 @@ export const getHistoricTurnQuery = `
       'countryId', c.country_id,
       'countryName', c.country_name,
       'rank', c.rank,
+      'username', u.username,
       'cityCount', lch.city_count,
       'voteCount', lch.vote_count,
       'bankedBuilds', lch.banked_builds,
@@ -28,6 +29,11 @@ export const getHistoricTurnQuery = `
   INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = c.country_id
   LEFT JOIN order_sets os ON os.turn_id = t.turn_id AND os.country_id = c.country_id
   LEFT JOIN countries tpc ON tpc.country_id = os.tech_partner_id
+  LEFT JOIN assignments a ON a.country_id = c.country_id AND (
+    a.assignment_start <= t.deadline
+    AND (a.assignment_end IS NULL OR a.assignment_end >= t.deadline)
+  )
+  LEFT JOIN users u ON u.user_id = a.user_id
   WHERE t.game_id = $1
     AND t.turn_number = $2
     AND t.turn_status IN ('Resolved', 'Final')
