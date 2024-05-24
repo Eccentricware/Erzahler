@@ -1,17 +1,70 @@
 import { OrderDisplay } from '../enumeration/order-display-enum';
-import { UnitType } from '../enumeration/unit-enum';
+import { BuildType, UnitType } from '../enumeration/unit-enum';
 import { Order, OrderResult } from './option-context-objects';
 import { UpcomingTurn, UpcomingTurnResult } from './scheduler/upcoming-turns-object';
 
 export interface HistoricTurnResult extends UpcomingTurnResult {
-  surviving_countries: any[];
+  historic_countries: HistoricCountryOrdersResult[];
 }
 
 export interface HistoricTurn extends UpcomingTurn {
-  survivingCountries: any[];
+  historicCountries: HistoricCountryOrders[];
+}
+
+export interface HistoricCountryOrdersResult {
+  country_id: number;
+  country_name: string;
+  rank: string;
+  flag_key: string;
+  username: string;
+  city_count_start: number;
+  city_count_result: number;
+  unit_count_start: number;
+  unit_count_result: number;
+  vote_count_start: number;
+  vote_count_result: number;
+  banked_builds_start: number;
+  banked_builds_result: number;
+  nuke_range_start: number;
+  nuke_range_result: number;
+  adjustments_start: number;
+  adjustments_result: number;
+  tech_partner_name: number;
+  vote_orders: number[];
+  increase_range_orders: number;
+}
+export interface HistoricCountry {
+  countryId: number;
+  countryName: string;
+  rank: string;
+  flagKey: string;
+  username: string;
+  history: {
+    start: {
+      cityCount: number;
+      unitCount: number;
+      adjustments: number;
+      voteCount: number;
+      bankedBuilds: number;
+      nukeRange: number;
+    };
+    result: {
+      cityCount: number;
+      unitCount: number;
+      adjustments: number;
+      voteCount: number;
+      bankedBuilds: number;
+      nukeRange: number;
+    };
+  }
+  orders: {
+    techPartnerName: number;
+    votes: number[];
+    increaseRange: number;
+  };
 }
 export interface TurnHistory {
-  orderList: CountryOrders[];
+  orderList: HistoricCountryOrders[];
   maps: {
     orders: {
       nuclear: any;
@@ -24,9 +77,29 @@ export interface TurnHistory {
   };
 }
 
-export interface CountryOrders {
+export interface HistoricCountryOrders {
+  countryId: number;
   countryName: string;
-  countryFlag: string;
+  rank: string;
+  flagKey: string;
+  history: {
+    start: {
+      cityCount: number;
+      unitCount: number;
+      voteCount: number;
+      bankedBuilds: number;
+      nukeRange: number;
+      adjustments: number;
+    };
+    result: {
+      cityCount: number;
+      unitCount: number;
+      voteCount: number;
+      bankedBuilds: number;
+      nukeRange: number;
+      adjustments: number;
+    };
+  };
   orders: {
     trades: {
       tech: string | undefined;
@@ -145,4 +218,50 @@ export interface HistoricYayVote {
   countryId: number;
   countryName: string;
   votesControlled: number;
+}
+
+export interface HistoricBuildOrdersResult {
+  country_id: number;
+  country_name: string;
+  banked_builds: number;
+  adjustments: number;
+  nuke_range: number;
+  increase_range: number;
+  builds: HistoricBuildResult[];
+}
+
+export interface HistoricBuildOrders {
+  countryId: number;
+  countryName: string;
+  bankedBuilds: number;
+  adjustmentCount: number;
+  nukeRange: number | null;
+  increaseRange: number;
+  builds: HistoricBuild[];
+  nukesReady?: HistoricBuild[];
+}
+
+export interface HistoricBuildResult {
+  build_order_id?: number;
+  order_set_id: number;
+  build_number: number;
+  build_type: BuildType;
+  node_id: number;
+  node_name?: string;
+  node_display?: string;
+  province_name?: string;
+  loc?: number[];
+}
+
+export interface HistoricBuild {
+  buildOrderId?: number;
+  orderSetId: number;
+  buildNumber: number;
+  buildType: BuildType;
+  typeId: number;
+  nodeId: number;
+  nodeName?: string;
+  nodeDisplay?: string;
+  provinceName?: string;
+  loc?: number[];
 }

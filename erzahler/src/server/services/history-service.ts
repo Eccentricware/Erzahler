@@ -4,16 +4,18 @@ import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { BuildType } from '../../models/enumeration/unit-enum';
 import { GameStats } from '../../models/objects/database-objects';
 import {
-  CountryOrders,
+  HistoricCountryOrders,
+  HistoricBuildOrders,
   HistoricNominatedCountry,
   HistoricNominationVote,
   HistoricOrder,
   HistoricOrderDisplay,
   HistoricTurn,
   HistoricYayVote,
-  TurnHistory
+  TurnHistory,
+  HistoricCountry
 } from '../../models/objects/history-objects';
-import { TransferTechOrder, TransferBuildOrder, BuildOrders, Build } from '../../models/objects/order-objects';
+import { TransferTechOrder, TransferBuildOrder, Build } from '../../models/objects/order-objects';
 import { terminalLog } from '../utils/general';
 import { MapService } from './map-service';
 import { OrdersService } from './orders-service';
@@ -39,7 +41,7 @@ export class HistoryService {
     const resultRender = await mapService.getMap(gameId, turnNumber);
     const startingRender = turnNumber > 0 ? await mapService.getMap(gameId, turnNumber - 1) : resultRender;
 
-    const countryLibrary: Record<number, CountryOrders> = {};
+    const countryLibrary: Record<number, HistoricCountryOrders> = {};
     const historicTurn: HistoricTurn | undefined = await db.historyRepo.getHistoricTurn(gameId, turnNumber);
 
     if (!historicTurn) {
@@ -67,7 +69,7 @@ export class HistoryService {
       TurnType.FALL_RETREATS
     ].includes(historicTurn.turnType);
 
-    historicTurn.survivingCountries.forEach((country) => {
+    historicTurn.historicCountries.forEach((country) => {
       countryLibrary[country.countryId] = country;
       country.orders = {
         trades: {
@@ -145,14 +147,14 @@ export class HistoryService {
 
     // Adjustments
     if (historicTurn.adjustments) {
-      const buildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
+      const buildOrders: HistoricBuildOrders[] = await db.historyRepo.getHistoricBuildOrders(
         historicTurn.gameId,
         historicTurn.turnNumber - 1,
         historicTurn.turnId,
         0
       );
 
-      buildOrders.forEach((buildOrder: BuildOrders) => {
+      buildOrders.forEach((buildOrder: HistoricBuildOrders) => {
         const country = countryLibrary[buildOrder.countryId];
         country.orders.buildsStartingNukes = buildOrder.increaseRange;
 
@@ -234,7 +236,7 @@ export class HistoryService {
       });
     }
 
-    const orderList: CountryOrders[] = [];
+    const orderList: HistoricCountryOrders[] = [];
 
     if (turnHasUnitOrders || historicTurn.adjustments) {
       for (const country in countryLibrary) {
@@ -244,7 +246,7 @@ export class HistoryService {
         orderList.push(countryLibrary[country]);
       }
 
-      orderList.sort((a: CountryOrders, b: CountryOrders) => {
+      orderList.sort((a: HistoricCountryOrders, b: HistoricCountryOrders) => {
         return a.countryName < b.countryName ? -1 : 1;
       });
     }

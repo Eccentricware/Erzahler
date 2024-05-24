@@ -2,6 +2,13 @@ import { Pool, QueryResult } from 'pg';
 import { IDatabase, IMain } from 'pg-promise';
 import { envCredentials } from '../../secrets/dbCredentials';
 import {
+  HistoricBuild,
+  HistoricBuildOrders,
+  HistoricBuildOrdersResult,
+  HistoricBuildResult,
+  HistoricCountry,
+  HistoricCountryOrders,
+  HistoricCountryOrdersResult,
   HistoricNominatedCountryResult,
   HistoricNomination,
   HistoricNominationResult,
@@ -20,6 +27,9 @@ import { NominationRow } from '../../models/objects/database-objects';
 import { CountryVotesResult, NominatableCountryResult } from '../../models/objects/option-context-objects';
 import { getHistoricNominationsQuery } from '../queries/history/get-nomination-history-query';
 import { getHistoricVotesQuery } from '../queries/history/get-historic-votes-query';
+import { Build, BuildOrders, BuildOrdersResult, BuildResult } from '../../models/objects/order-objects';
+import { getHistoricBuildOrdersQuery } from '../queries/history/get-historic-build-orders-query';
+import { BuildType } from '../../models/enumeration/unit-enum';
 
 export class HistoryRepository {
   pool = new Pool(envCredentials);
@@ -27,7 +37,7 @@ export class HistoryRepository {
 
   async getHistoricTurn(gameId: number, turnNumber: number): Promise<HistoricTurn | undefined> {
     const detailedTurns: HistoricTurn[] = await this.pool
-      .query(getHistoricTurnQuery, [gameId, turnNumber])
+      .query(getHistoricTurnQuery, [gameId, turnNumber, turnNumber - 1])
       .then((result: QueryResult<HistoricTurnResult>) =>
         result.rows.map((turn: HistoricTurnResult) => {
           return <HistoricTurn>{
@@ -52,7 +62,45 @@ export class HistoryRepository {
             ].includes(turn.turn_type),
             transfers: [TurnType.SPRING_ORDERS, TurnType.ORDERS_AND_VOTES].includes(turn.turn_type),
             adjustments: [TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(turn.turn_type),
-            survivingCountries: turn.surviving_countries
+            historicCountries: turn.historic_countries.map((country: HistoricCountryOrdersResult) =>
+              (<HistoricCountryOrders>{
+                countryId: country.country_id,
+                countryName: country.country_name,
+                rank: country.rank,
+                flagKey: country.flag_key,
+                username: country.username,
+                history: {
+                  start: {
+                    cityCount: country.city_count_start,
+                    unitCount: country.unit_count_start,
+                    voteCount: country.vote_count_start,
+                    bankedBuilds: country.banked_builds_start,
+                    nukeRange: country.nuke_range_start,
+                    adjustments: country.adjustments_start
+                  },
+                  result: {
+                    cityCount: country.city_count_result,
+                    unitCount: country.unit_count_result,
+                    voteCount: country.vote_count_result,
+                    bankedBuilds: country.banked_builds_result,
+                    nukeRange: country.nuke_range_result,
+                    adjustments: country.adjustments_result
+                  }
+                },
+                orders: {
+                  trades: {
+                    tech: undefined,
+                    builds: []
+                  },
+                  units: [],
+                  adjustments: [],
+                  buildsBanked: 0,
+                  buildsStartingNukes: 0,
+                  buildsIncreasingRange: 0,
+                  bankedBuildsIncreasingRange: 0
+                }
+              })
+            )
           };
         })
       );
@@ -100,6 +148,51 @@ export class HistoryRepository {
     return orders;
   }
 
+  async getHistoricBuildOrders(
+    gameId: number,
+    turnNumber: number,
+    orderTurnId: number,
+    countryId: number
+  ): Promise<HistoricBuildOrders[]> {
+    return await this.pool
+      .query(getHistoricBuildOrdersQuery, [gameId, turnNumber, orderTurnId, countryId])
+      .then((result: QueryResult) =>
+        result.rows.map((result: HistoricBuildOrdersResult) => {
+          return <HistoricBuildOrders>{
+            countryId: result.country_id,
+            countryName: result.country_name,
+            bankedBuilds: result.banked_builds,
+            adjustmentCount: result.adjustments,
+            nukeRange: result.nuke_range,
+            increaseRange: result.increase_range,
+            builds: result.builds
+              ? result.builds.map((build: HistoricBuildResult) => {
+                  let locDisplay: string | string[] | undefined;
+                  if (!build.node_display) {
+                    locDisplay = build.node_name?.toUpperCase().split('_');
+                    if (locDisplay) {
+                      locDisplay = locDisplay[2] ? `${locDisplay[0]} ${locDisplay[2]}` : locDisplay[0];
+                    }
+                  }
+
+                  return <HistoricBuild>{
+                    orderSetId: build.order_set_id,
+                    buildNumber: build.build_number,
+                    buildType: build.build_type,
+                    typeId: this.resolveTypeId(build.build_type),
+                    nodeId: build.node_id,
+                    nodeName: build.node_name,
+                    nodeDisplay: build.node_display ? build.node_display : locDisplay,
+                    provinceName: build.province_name,
+                    loc: build.loc
+                  };
+                })
+              : []
+          };
+        })
+      );
+  }
+
   async getNominationResults(gameId: number, turnNumber: number): Promise<HistoricNomination[]> {
     return await this.pool
       .query(getHistoricNominationsQuery, [gameId, turnNumber])
@@ -142,4 +235,56 @@ export class HistoryRepository {
         }))
       );
   }
+
+    //////////////////// Helper Functions ////////////////////
+
+    resolveBuildType(buildTypeId: number): BuildType {
+      switch (buildTypeId) {
+        case -3:
+          return BuildType.NUKE_START;
+        case -2:
+          return BuildType.RANGE;
+        case -1:
+          return BuildType.DISBAND;
+        case 0:
+          return BuildType.BUILD;
+        case 1:
+          return BuildType.ARMY;
+        case 2:
+          return BuildType.FLEET;
+        case 3:
+          return BuildType.WING;
+        case 4:
+          return BuildType.NUKE_RUSH;
+        case 5:
+          return BuildType.NUKE_FINISH;
+        default:
+          return BuildType.BUILD;
+      }
+    }
+
+    resolveTypeId(buildType: BuildType): number {
+      switch (buildType) {
+        case BuildType.NUKE_START:
+          return -3;
+        case BuildType.RANGE:
+          return -2;
+        case BuildType.DISBAND:
+          return -1;
+        case BuildType.BUILD:
+          return 0;
+        case BuildType.ARMY:
+          return 1;
+        case BuildType.FLEET:
+          return 2;
+        case BuildType.WING:
+          return 3;
+        case BuildType.NUKE_RUSH:
+          return 4;
+        case BuildType.NUKE_FINISH:
+          return 5;
+        default:
+          return NaN;
+      }
+    }
 }
