@@ -5,6 +5,7 @@ export const getUnitsQuery = `
       WHEN luh.unit_status = 'Active' THEN n.loc
       ELSE en.loc
     END loc,
+    n.node_id,
     c.flag_key,
     luh.unit_status
   FROM get_last_unit_history($1, $2) luh

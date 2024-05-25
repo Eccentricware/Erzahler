@@ -1,5 +1,6 @@
 import { db } from '../../database/connection';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
+import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { BuildType } from '../../models/enumeration/unit-enum';
 import { GameStats } from '../../models/objects/database-objects';
@@ -15,7 +16,8 @@ import {
   TurnHistory,
   HistoricCountry
 } from '../../models/objects/history-objects';
-import { TransferTechOrder, TransferBuildOrder, Build } from '../../models/objects/order-objects';
+import { Unit } from '../../models/objects/map-objects';
+import { TransferTechOrder, TransferBuildOrder, Build, SingleTurnOrders } from '../../models/objects/order-objects';
 import { terminalLog } from '../utils/general';
 import { MapService } from './map-service';
 import { OrdersService } from './orders-service';
@@ -48,11 +50,10 @@ export class HistoryService {
       terminalLog(`Turn History Not Found: ${gameId} - ${turnNumber}`);
       return <TurnHistory>{
         orderList: [],
+        historicOrders: {
+          turnStatus: TurnStatus.RESOLVED,
+        },
         maps: {
-          orders: {
-            nuclear: [],
-            standard: []
-          },
           renderData: {
             start: startingRender,
             result: resultRender
@@ -60,6 +61,10 @@ export class HistoryService {
         }
       };
     }
+
+    const historicOrders: SingleTurnOrders = {
+      turnStatus: TurnStatus.RESOLVED
+    };
 
     const turnHasUnitOrders = [
       TurnType.SPRING_ORDERS,
@@ -92,6 +97,8 @@ export class HistoryService {
         historicTurn.turnId,
         0
       );
+
+      historicOrders.units = historicUnitOrders;
 
       historicUnitOrders.forEach((unitOrder: HistoricOrder) => {
         const orderDescription = this.setDescription(unitOrder);
@@ -154,7 +161,22 @@ export class HistoryService {
         0
       );
 
+      historicOrders.builds = {
+        countryId: 0,
+        countryName: 'History',
+        bankedBuilds: 0,
+        buildCount: 0,
+        nukeRange: 0,
+        increaseRange: 0,
+        builds: [],
+        nukesReady: []
+      };
+
+      const buildNodeIds: number[] = [];
+
       buildOrders.forEach((buildOrder: HistoricBuildOrders) => {
+        historicOrders.builds?.builds.push(...buildOrder.builds)
+
         const country = countryLibrary[buildOrder.countryId];
         country.orders.buildsStartingNukes = buildOrder.increaseRange;
 
@@ -172,6 +194,8 @@ export class HistoryService {
                 }Build ${build.buildType[0].toUpperCase()} ${build.nodeDisplay}`
             });
 
+            buildNodeIds.push(build.nodeId);
+
           } else if (build.buildType === BuildType.NUKE_START) {
             country.orders.buildsStartingNukes++;
 
@@ -184,12 +208,17 @@ export class HistoryService {
         });
       });
 
+      const newUnitRenders = resultRender.units.filter((unit: Unit) => buildNodeIds.includes(unit.nodeId));
+      startingRender.units.push(...newUnitRenders);
+
       const disbandOrders = await ordersService.prepareDisbandOrders(
         gameId,
         historicTurn.turnNumber > 0 ? historicTurn.turnNumber - 1 : 0,
         historicTurn.turnId,
         0
       );
+
+      historicOrders.disbands = disbandOrders[0];
 
       disbandOrders.forEach((disbandOrder) => {
         const country = countryLibrary[disbandOrder.countryId];
@@ -256,13 +285,8 @@ export class HistoryService {
       orderList: turnHasUnitOrders || historicTurn.adjustments ? orderList : undefined,
       nominations: nominations,
       votes: votes,
+      historicOrders: historicOrders,
       maps: {
-        orders: {
-          nuclear: [],
-          standard: [],
-          nominations: nominations,
-          votes: votes
-        },
         renderData: {
           start: startingRender,
           result: resultRender

@@ -97,6 +97,7 @@ export class MapRepository {
           name: result.unit_name,
           type: result.unit_type,
           loc: result.loc,
+          nodeId: result.node_id,
           countryKey: result.flag_key,
           status: result.unit_status,
           eventLoc: result.event_loc
