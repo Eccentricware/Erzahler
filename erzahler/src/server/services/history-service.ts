@@ -186,12 +186,16 @@ export class HistoryService {
               location: build.nodeDisplay ? build.nodeDisplay : '',
               loc: build.loc ? build.loc : [],
               description: `${
-                build.nodeDisplay === BuildType.NUKE_RUSH
-                  ? 'Rushes '
-                  : build.nodeDisplay === BuildType.NUKE_FINISH
-                    ? 'Finishes '
-                    : ''
-                }Build ${build.buildType[0].toUpperCase()} ${build.nodeDisplay}`
+                build.buildType === BuildType.NUKE_RUSH
+                  ? 'Rush '
+                  : build.buildType === BuildType.NUKE_FINISH
+                    ? 'Finish '
+                    : 'Build '
+                } ${
+                  (build.buildType === BuildType.NUKE_RUSH || build.buildType === BuildType.NUKE_FINISH)
+                  ? 'N'
+                  : build.buildType[0].toUpperCase()
+                } ${build.nodeDisplay}`
             });
 
             buildNodeIds.push(build.nodeId);
@@ -320,7 +324,7 @@ export class HistoryService {
     }
 
     if (order.orderType === OrderDisplay.NUKE) {
-      description += `! ${order.destinationProvinceName}`;
+      description += `!!! ${order.destinationProvinceName}`;
     }
 
     return description;
