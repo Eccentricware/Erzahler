@@ -1,6 +1,7 @@
 import { db } from '../../database/connection';
 import { CityType } from '../../models/enumeration/province-enums';
 import { RenderCategory } from '../../models/enumeration/render-category-enum';
+import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { City, MapDetails, Terrain } from '../../models/objects/map-objects';
 import { terminalLog } from '../utils/general';
 
@@ -28,7 +29,8 @@ export class MapService {
     const labels = await db.mapRepo.getLabels(gameId);
     const labelLines = await db.mapRepo.getLabelLines(gameId);
 
-    const units = await db.mapRepo.getUnits(gameId, turnNumberToUse);
+    const allUnits = await db.mapRepo.getUnits(gameId, turnNumberToUse);
+    const units = allUnits.filter((unit) => ['Active', 'Retreat'].includes(unit.status) || turnNumberToUse < unit.falloutEndTurn);
 
     return {
       terrain: {

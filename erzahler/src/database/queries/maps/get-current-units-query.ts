@@ -7,7 +7,8 @@ export const getUnitsQuery = `
     END loc,
     n.node_id,
     c.flag_key,
-    luh.unit_status
+    luh.unit_status,
+    luh.fallout_end_turn
   FROM get_last_unit_history($1, $2) luh
   INNER JOIN units u ON u.unit_id = luh.unit_id
   INNER JOIN countries c ON c.country_id = u.country_id
@@ -15,5 +16,5 @@ export const getUnitsQuery = `
   INNER JOIN provinces p ON p.province_id = n.province_id
   INNER JOIN games g ON g.game_id = p.game_id
   INNER JOIN nodes en ON en.province_id = p.province_id AND en.node_type = 'event'
-  WHERE luh.unit_status IN ('Active', 'Retreat');
+  WHERE luh.unit_status IN ('Active', 'Retreat', 'Fallout');
 `;

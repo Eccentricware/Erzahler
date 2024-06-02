@@ -4,6 +4,7 @@ export enum UnitStatus {
   DESTROYED_RETREAT = 'Destroyed in Retreat',
   DISBANDED_ADJUSTMENT = 'Disbanded as Adjustment',
   DISBANDED_RETREAT = 'Disbanded in Retreat',
+  FALLOUT = 'Fallout',
   DETONATED = 'Detonated',
   PRODUCTION = 'Production',
   NUKED = 'Nuked',
