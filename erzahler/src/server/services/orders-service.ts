@@ -659,13 +659,21 @@ export class OrdersService {
           const countryDefaultBuilds: Build[] = [];
           let currentOptionIndex = 0;
           while (countryDefaultBuilds.length < country.adjustments) {
-            countryDefaultBuilds.push({
-              orderSetId: newOrderSetLibrary[country.id],
-              buildNumber: countryDefaultBuilds.length + 1,
-              buildType: BuildType.ARMY,
-              nodeId: countryBuildOptions[currentOptionIndex].landNodeId,
-              typeId: 1
-            });
+            if (countryBuildOptions[currentOptionIndex]) {
+              countryDefaultBuilds.push({
+                orderSetId: newOrderSetLibrary[country.id],
+                buildNumber: countryDefaultBuilds.length + 1,
+                buildType: BuildType.ARMY,
+                nodeId: countryBuildOptions[currentOptionIndex].landNodeId,
+                typeId: 1
+              });
+            } else {
+              terminalAddendum(
+                'Warning',
+                `No build option at index (${currentOptionIndex}) for country ${country.name} (${country.id})`
+              );
+              break;
+            }
             currentOptionIndex++;
           }
 

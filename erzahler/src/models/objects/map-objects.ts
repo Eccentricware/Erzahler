@@ -107,6 +107,7 @@ export interface UnitResult {
   flag_key: string;
   unit_status: string;
   event_loc: number[];
+  fallout_end_turn: number;
 }
 export interface Unit {
   name: string;
@@ -116,4 +117,5 @@ export interface Unit {
   countryKey: string;
   status: string;
   eventLoc: number[];
+  falloutEndTurn: number;
 }

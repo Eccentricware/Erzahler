@@ -100,7 +100,8 @@ export class MapRepository {
           nodeId: result.node_id,
           countryKey: result.flag_key,
           status: result.unit_status,
-          eventLoc: result.event_loc
+          eventLoc: result.event_loc,
+          falloutEndTurn: result.fallout_end_turn
         };
       })
     );

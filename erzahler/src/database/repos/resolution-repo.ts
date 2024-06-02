@@ -69,7 +69,7 @@ export class ResolutionRepository {
     this.unitCols = new pgp.helpers.ColumnSet(['country_id', 'unit_name', 'unit_type'], { table: 'units' });
 
     this.unitHistoryCols = new pgp.helpers.ColumnSet(
-      ['unit_id', 'turn_id', 'node_id', 'unit_status', 'displacer_province_id'],
+      ['unit_id', 'turn_id', 'node_id', 'unit_status', 'displacer_province_id', 'fallout_end_turn'],
       { table: 'unit_histories' }
     );
 
@@ -133,7 +133,8 @@ export class ResolutionRepository {
         turn_id: turnId,
         node_id: unitHistory.nodeId,
         unit_status: unitHistory.unitStatus,
-        displacer_province_id: unitHistory.displacerProvinceId
+        displacer_province_id: unitHistory.displacerProvinceId,
+        fallout_end_turn: unitHistory.falloutEndTurn
       };
     });
 
