@@ -13,7 +13,8 @@ RETURNS TABLE(
 	turn_id INTEGER,
 	node_id INTEGER,
 	unit_status VARCHAR(23),
-	displacer_province_id INTEGER
+	displacer_province_id INTEGER,
+	fallout_end_turn INTEGER
 )
 AS $$
 
@@ -31,7 +32,8 @@ AS $$
 		uh.turn_id,
 		uh.node_id,
 		uh.unit_status,
-		uh.displacer_province_id
+		uh.displacer_province_id,
+		uh.fallout_end_turn
 	FROM turns t
 	INNER JOIN last_unit_turn_id lutid
 		ON lutid.turn_number = t.turn_number

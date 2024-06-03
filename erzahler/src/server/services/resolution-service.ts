@@ -102,18 +102,18 @@ export class ResolutionService {
         await this.resolveFallOrders(turn);
         break;
       case TurnType.FALL_RETREATS:
-        await this.resolveFallRetreats(turn); // Needs scheduler followup
+        await this.resolveFallRetreats(turn);
         break;
       case TurnType.ADJUSTMENTS:
       case TurnType.ADJ_AND_NOM:
-        await this.resolveAdjustments(turn); // Needs scheduler followup
+        await this.resolveAdjustments(turn);
         break;
       case TurnType.NOMINATIONS:
         await this.resolveNominations(turn);
         break;
       case TurnType.VOTES:
       case TurnType.ORDERS_AND_VOTES:
-        await this.resolveVotes(turn); // Needs scheduler followup
+        await this.resolveVotes(turn);
         break;
     }
   }
@@ -213,6 +213,12 @@ export class ResolutionService {
     if (!unitsRetreating) {
       this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
     }
+
+    const firedNukes = dbUpdates.unitHistories.filter((unitHistory: UnitHistoryRow) => unitHistory.unitStatus === UnitStatus.FALLOUT);
+
+    firedNukes.forEach((unitHistory: UnitHistoryRow) => {
+      unitHistory.falloutEndTurn = unitsRetreating ? turn.turnNumber + 1 : turn.turnNumber;
+    });
 
     const transferResults = await this.resolveTransfers(gameState, turn);
 
@@ -604,6 +610,14 @@ export class ResolutionService {
     if (!unitsRetreating) {
       this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
     }
+
+    this.dissipateNukes(dbStates.unitHistories, dbUpdates.unitHistories);
+
+    const firedNukes = dbUpdates.unitHistories.filter((unitHistory: UnitHistoryRow) => unitHistory.unitStatus === UnitStatus.FALLOUT);
+    firedNukes.forEach((unitHistory: UnitHistoryRow) => {
+      unitHistory.falloutEndTurn = unitsRetreating ? turn.turnNumber + 1 : turn.turnNumber;
+    });
+
 
     const preStatCheckPromises: Promise<void>[] = [];
     const postStatCheckPromises: Promise<Turn | void>[] = [];
@@ -1101,6 +1115,8 @@ export class ResolutionService {
         success: adjOrder.success
       });
     });
+
+    this.dissipateNukes(dbStates.unitHistories, dbUpdates.unitHistories);
 
     const promises: Promise<void>[] = [];
 
@@ -1693,7 +1709,8 @@ export class ResolutionService {
       order.valid = false;
       order.primaryResolution = `Invalid order: No self nuking`;
     } else {
-      order.unit.status = UnitStatus.DETONATED;
+      order.orderSuccess = true;
+      order.unit.status = UnitStatus.FALLOUT;
     }
 
     if (victim && victim.unit.countryId !== order.unit.countryId) {
@@ -2331,7 +2348,7 @@ export class ResolutionService {
   getFinalPosition(result: UnitOrderResolution): OrderResolutionLocation {
     let finalPosition: OrderResolutionLocation = result.origin;
     if (
-      (result.unit.status === UnitStatus.ACTIVE || result.unit.status === UnitStatus.DETONATED) &&
+      (result.unit.status === UnitStatus.ACTIVE || result.unit.status === UnitStatus.FALLOUT) &&
       (result.orderType === OrderDisplay.MOVE ||
         result.orderType === OrderDisplay.MOVE_CONVOYED ||
         result.orderType === OrderDisplay.NUKE) &&
@@ -2860,6 +2877,27 @@ export class ResolutionService {
 
       spliceIndeces.forEach((index: number) => {
         pendingProvinceHistories.splice(index, 1);
+      });
+    }
+  }
+
+  dissipateNukes(
+    currentUnitHistories: UnitHistoryRow[],
+    pendingUnitHistories: UnitHistoryRow[]
+  ): void {
+    const spliceIndeces: number[] = [];
+
+    // Nukes in state of fallout
+    const nukesInFallout = currentUnitHistories.filter(
+      (currentUnitHistory: UnitHistoryRow) => currentUnitHistory.unitStatus === UnitStatus.FALLOUT
+    );
+
+    if (nukesInFallout.length > 0) {
+      nukesInFallout.forEach((currentUnitHistory: UnitHistoryRow) => {
+        const updatedUnitHistory = this.copyUnitHistory(currentUnitHistory);
+        updatedUnitHistory.unitStatus = UnitStatus.DETONATED;
+
+        pendingUnitHistories.push(updatedUnitHistory);
       });
     }
   }

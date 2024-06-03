@@ -287,6 +287,7 @@ export interface UnitHistoryRowResult {
   node_id: number;
   unit_status: UnitStatus;
   displacer_province_id?: number;
+  fallout_end_turn?: number;
 }
 
 export interface UnitHistoryRow {
@@ -296,6 +297,7 @@ export interface UnitHistoryRow {
   nodeId: number;
   unitStatus: UnitStatus;
   displacerProvinceId?: number;
+  falloutEndTurn?: number;
 }
 
 export interface ProvinceHistoryRowResult {
