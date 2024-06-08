@@ -2,6 +2,7 @@ import { CountryStatus } from '../enumeration/country-enum';
 import { CityType } from '../enumeration/province-enums';
 
 export interface MapDetails {
+  gameName: string;
   terrain: {
     sea: Terrain[];
     land: Terrain[];

@@ -33,6 +33,7 @@ export class MapService {
     const units = allUnits.filter((unit) => ['Active', 'Retreat'].includes(unit.status) || turnNumberToUse < unit.falloutEndTurn);
 
     return {
+      gameName: gameState.gameName,
       terrain: {
         sea: seaTerrain,
         land: landTerrain,
