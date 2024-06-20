@@ -126,17 +126,19 @@ export class ResolutionRepository {
     });
   }
 
-  async insertUnitHistories(unitHistories: UnitHistoryRow[], turnId: number): Promise<void> {
-    const unitHistoryValues = unitHistories.map((unitHistory: UnitHistoryRow) => {
-      return {
+  async insertUnitHistories(unitHistories: Record<number, UnitHistoryRow>, turnId: number): Promise<void> {
+    const unitHistoryValues = [];
+    for (const unitId in unitHistories) {
+      const unitHistory = unitHistories[unitId];
+      unitHistoryValues.push({
         unit_id: unitHistory.unitId,
         turn_id: turnId,
         node_id: unitHistory.nodeId,
         unit_status: unitHistory.unitStatus,
         displacer_province_id: unitHistory.displacerProvinceId,
         fallout_end_turn: unitHistory.falloutEndTurn
-      };
-    });
+      });
+    }
 
     if (unitHistoryValues.length === 0) {
       terminalAddendum('Warning', `Array for bulk inserting unit histories is empty. Turn ${turnId}`);
@@ -149,17 +151,19 @@ export class ResolutionRepository {
     });
   }
 
-  async insertProvinceHistories(provinceHistories: ProvinceHistoryRow[], turnId: number): Promise<void> {
-    const provinceHistoryValues = provinceHistories.map((provinceHistory: ProvinceHistoryRow) => {
-      return {
+  async insertProvinceHistories(provinceHistories: Record<number, ProvinceHistoryRow>, turnId: number): Promise<void> {
+    const provinceHistoryValues = [];
+    for (const provinceHistoryId in provinceHistories) {
+      const provinceHistory = provinceHistories[provinceHistoryId];
+      provinceHistoryValues.push( {
         province_id: provinceHistory.provinceId,
         turn_id: turnId,
         controller_id: provinceHistory.controllerId,
         capital_owner_id: provinceHistory.capitalOwnerId,
         province_status: provinceHistory.provinceStatus,
         valid_retreat: provinceHistory.validRetreat
-      };
-    });
+      });
+    }
 
     if (provinceHistoryValues.length === 0) {
       terminalAddendum('Warning', `Array for bulk inserting province histories is empty. Turn ${turnId}`);
@@ -177,8 +181,10 @@ export class ResolutionRepository {
   }
 
   async insertCountryHistories(countryHistories: Record<string, CountryHistoryRow>, turnId: number): Promise<void> {
-    const countryHistoryValues = Object.values(countryHistories).map((countryHistory: CountryHistoryRow) => {
-      return {
+    const countryHistoryValues = [];
+    for (let countryId in countryHistories) {
+      const countryHistory = countryHistories[countryId];
+      countryHistoryValues.push({
         country_id: countryHistory.countryId,
         turn_id: turnId,
         country_status: countryHistory.countryStatus,
@@ -190,8 +196,8 @@ export class ResolutionRepository {
         in_retreat: countryHistory.inRetreat,
         vote_count: countryHistory.voteCount,
         nukes_in_production: countryHistory.nukesInProduction
-      };
-    });
+      });
+    };
 
     if (countryHistoryValues.length === 0) {
       terminalAddendum('Warning', `Array for bulk inserting country histories is empty. Turn ${turnId}`);

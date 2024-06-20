@@ -147,8 +147,8 @@ export class ResolutionService {
       orders: [],
       adjustmentOrders: [],
       newUnits: [],
-      unitHistories: [],
-      provinceHistories: [],
+      unitHistories: {},
+      provinceHistories: {},
       countryHistories: {}
     };
 
@@ -214,10 +214,10 @@ export class ResolutionService {
       this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
     }
 
-    const firedNukes = dbUpdates.unitHistories.filter((unitHistory: UnitHistoryRow) => unitHistory.unitStatus === UnitStatus.FALLOUT);
-
-    firedNukes.forEach((unitHistory: UnitHistoryRow) => {
-      unitHistory.falloutEndTurn = unitsRetreating ? turn.turnNumber + 1 : turn.turnNumber;
+    Object.values(dbUpdates.unitHistories).forEach((unitHistory: UnitHistoryRow) => {
+      if (unitHistory.unitStatus === UnitStatus.FALLOUT) {
+        unitHistory.falloutEndTurn = unitsRetreating ? turn.turnNumber + 1 : turn.turnNumber;
+      }
     });
 
     const transferResults = await this.resolveTransfers(gameState, turn);
@@ -277,12 +277,12 @@ export class ResolutionService {
       preStatCheckPromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
     }
 
-    if (dbUpdates.unitHistories.length > 0) {
+    if (Object.keys(dbUpdates.unitHistories).length > 0) {
       console.log('DB: Unit History Insert');
       preStatCheckPromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
     }
 
-    if (dbUpdates.provinceHistories.length > 0) {
+    if (Object.keys(dbUpdates.provinceHistories).length > 0) {
       console.log('DB: Province History Insert');
       preStatCheckPromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
     }
@@ -403,8 +403,8 @@ export class ResolutionService {
       orders: [],
       adjustmentOrders: [],
       newUnits: [],
-      unitHistories: [],
-      provinceHistories: [],
+      unitHistories: {},
+      provinceHistories: {},
       countryHistories: {}
     };
 
@@ -442,12 +442,12 @@ export class ResolutionService {
       preStatCheckPromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
     }
 
-    if (dbUpdates.unitHistories.length > 0) {
+    if (Object.keys(dbUpdates.unitHistories).length > 0) {
       console.log('DB: Unit History Insert');
       preStatCheckPromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
     }
 
-    if (dbUpdates.provinceHistories.length > 0) {
+    if (Object.keys(dbUpdates.provinceHistories).length > 0) {
       console.log('DB: Province History Insert');
       preStatCheckPromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
     }
@@ -544,8 +544,8 @@ export class ResolutionService {
       orders: [],
       adjustmentOrders: [],
       newUnits: [],
-      unitHistories: [],
-      provinceHistories: [],
+      unitHistories: {},
+      provinceHistories: {},
       countryHistories: {}
     };
 
@@ -613,11 +613,11 @@ export class ResolutionService {
 
     this.dissipateNukes(dbStates.unitHistories, dbUpdates.unitHistories);
 
-    const firedNukes = dbUpdates.unitHistories.filter((unitHistory: UnitHistoryRow) => unitHistory.unitStatus === UnitStatus.FALLOUT);
-    firedNukes.forEach((unitHistory: UnitHistoryRow) => {
-      unitHistory.falloutEndTurn = unitsRetreating ? turn.turnNumber + 1 : turn.turnNumber;
+    Object.values(dbUpdates.unitHistories).forEach((unitHistory: UnitHistoryRow) => {
+      if (unitHistory.unitStatus === UnitStatus.FALLOUT) {
+        unitHistory.falloutEndTurn = unitsRetreating ? turn.turnNumber + 1 : turn.turnNumber;
+      }
     });
-
 
     const preStatCheckPromises: Promise<void>[] = [];
     const postStatCheckPromises: Promise<Turn | void>[] = [];
@@ -627,12 +627,12 @@ export class ResolutionService {
       preStatCheckPromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
     }
 
-    if (dbUpdates.unitHistories.length > 0) {
+    if (Object.keys(dbUpdates.unitHistories).length > 0) {
       console.log('DB: Unit History Insert');
       preStatCheckPromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
     }
 
-    if (dbUpdates.provinceHistories.length > 0) {
+    if (Object.keys(dbUpdates.provinceHistories).length > 0) {
       console.log('DB: Province History Insert');
       preStatCheckPromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
     }
@@ -759,8 +759,8 @@ export class ResolutionService {
       orders: [],
       adjustmentOrders: [],
       newUnits: [],
-      unitHistories: [],
-      provinceHistories: [],
+      unitHistories: {},
+      provinceHistories: {},
       countryHistories: {}
     };
 
@@ -798,12 +798,12 @@ export class ResolutionService {
       preStatCheckPromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
     }
 
-    if (dbUpdates.unitHistories.length > 0) {
+    if (Object.keys(dbUpdates.unitHistories).length > 0) {
       console.log('DB: Unit History Insert');
       preStatCheckPromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
     }
 
-    if (dbUpdates.provinceHistories.length > 0) {
+    if (Object.keys(dbUpdates.provinceHistories).length > 0) {
       console.log('DB: Province History Insert');
       preStatCheckPromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
     }
@@ -902,8 +902,8 @@ export class ResolutionService {
       orders: [],
       adjustmentOrders: [],
       newUnits: [],
-      unitHistories: [],
-      provinceHistories: [],
+      unitHistories: {},
+      provinceHistories: {},
       countryHistories: {}
     };
 
@@ -927,9 +927,15 @@ export class ResolutionService {
 
     adjResolutionData.forEach((adjOrder: AdjResolutionData) => {
       let historyChanged = false;
-      const countryHistory = this.setNewHistory(dbStates, dbUpdates, 'countries', adjOrder.countryId);
-      const newCountryHistory = countryHistory.details as CountryHistoryRow;
+      const newCountryHistory = dbUpdates.countryHistories[adjOrder.countryId]
+        ? dbUpdates.countryHistories[adjOrder.countryId]
+        : dbStates.countryHistories.find((country: CountryHistoryRow) => country.countryId === adjOrder.countryId);
       const countryResources = remainingResources[adjOrder.countryId];
+
+      if (!newCountryHistory) {
+        terminalAddendum('ALERT', `Country ${adjOrder.countryId} not found in countryHistories`);
+        return;
+      }
 
       // Range Increases
       if (!countryResources.bbriDone) {
@@ -947,14 +953,20 @@ export class ResolutionService {
         adjOrder.unitsDisbanding?.forEach((unit: UnitAndCountryIds) => {
           if (adjOrder.countryId === unit.countryId) {
             if (countryResources.adjRemaining < 0) {
-              const unitHistory = this.setNewHistory(dbStates, dbUpdates, 'units', unit.unitId);
-              const unitHistoryDetails = unitHistory.details as UnitHistoryRow;
+              const unitHistoryDetails = dbUpdates.unitHistories[unit.unitId]
+                ? dbUpdates.unitHistories[unit.unitId]
+                : dbStates.unitHistories.find((unitHistory: UnitHistoryRow) => unitHistory.unitId === unit.unitId);
+
+              if (!unitHistoryDetails) {
+                terminalAddendum('ALERT', `Unit ${unit.unitId} not found in unitHistories`);
+                return;
+              }
 
               unitHistoryDetails.unitStatus = UnitStatus.DISBANDED_ADJUSTMENT;
               countryResources.adjRemaining++;
               newCountryHistory.adjustments++;
 
-              dbUpdates.unitHistories.push(unitHistoryDetails);
+              dbUpdates.unitHistories[unitHistoryDetails.unitId] = unitHistoryDetails;
 
               if (countryResources.adjRemaining === 0) {
                 countryResources.disbandsDone = true;
@@ -1136,7 +1148,7 @@ export class ResolutionService {
       promises.push(db.resolutionRepo.insertNewUnit(dbUpdates.newUnits, turn.turnId));
     }
 
-    if (dbUpdates.unitHistories.length > 0) {
+    if (Object.keys(dbUpdates.unitHistories).length > 0) {
       console.log('DB: Unit History Insert');
       promises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
     }
@@ -2425,79 +2437,79 @@ export class ResolutionService {
     return ProvinceStatus.INERT;
   }
 
-  setNewHistory(
-    dbStates: DbStates,
-    dbUpdates: DbUpdates,
-    table: 'units' | 'provinces' | 'countries',
-    coreId: number
-  ): {
-    details: ProvinceHistoryRow | UnitHistoryRow | CountryHistoryRow | undefined;
-    isNewRow: boolean;
-  } {
-    if (table === 'units') {
-      const rowData = {
-        details: dbUpdates.unitHistories.find((preparedRow: UnitHistoryRow) => preparedRow.unitId === coreId),
-        isNewRow: false
-      };
+  // setNewHistory(
+  //   dbStates: DbStates,
+  //   dbUpdates: DbUpdates,
+  //   table: 'units' | 'provinces' | 'countries',
+  //   coreId: number
+  // ): {
+  //   details: ProvinceHistoryRow | UnitHistoryRow | CountryHistoryRow | undefined;
+  //   isNewRow: boolean;
+  // } {
+  //   if (table === 'units') {
+  //     const rowData = {
+  //       details: dbUpdates.unitHistories.find((preparedRow: UnitHistoryRow) => preparedRow.unitId === coreId),
+  //       isNewRow: false
+  //     };
 
-      if (!rowData.details) {
-        const priorRow = dbStates.unitHistories.find((existingRow: UnitHistoryRow) => existingRow.unitId === coreId);
-        if (!priorRow) {
-          terminalLog(`No pre-existing unit history for unit ${coreId}`);
-          return { details: undefined, isNewRow: false };
-        }
+  //     if (!rowData.details) {
+  //       const priorRow = dbStates.unitHistories.find((existingRow: UnitHistoryRow) => existingRow.unitId === coreId);
+  //       if (!priorRow) {
+  //         terminalLog(`No pre-existing unit history for unit ${coreId}`);
+  //         return { details: undefined, isNewRow: false };
+  //       }
 
-        rowData.details = this.copyUnitHistory(priorRow);
-        rowData.isNewRow = true;
-      }
+  //       rowData.details = this.copyUnitHistory(priorRow);
+  //       rowData.isNewRow = true;
+  //     }
 
-      return rowData;
-    }
+  //     return rowData;
+  //   }
 
-    if (table === 'provinces') {
-      const rowData = {
-        details: dbUpdates.provinceHistories.find(
-          (preparedRow: ProvinceHistoryRow) => preparedRow.provinceId === coreId
-        ),
-        isNewRow: false
-      };
+  //   if (table === 'provinces') {
+  //     const rowData = {
+  //       details: dbUpdates.provinceHistories.find(
+  //         (preparedRow: ProvinceHistoryRow) => preparedRow.provinceId === coreId
+  //       ),
+  //       isNewRow: false
+  //     };
 
-      if (!rowData.details) {
-        const priorRow = dbStates.provinceHistories.find(
-          (existingRow: ProvinceHistoryRow) => existingRow.provinceId === coreId
-        );
-        if (!priorRow) {
-          terminalLog(`No pre-existing unit history for province ${coreId}`);
-          return { details: undefined, isNewRow: false };
-        }
+  //     if (!rowData.details) {
+  //       const priorRow = dbStates.provinceHistories.find(
+  //         (existingRow: ProvinceHistoryRow) => existingRow.provinceId === coreId
+  //       );
+  //       if (!priorRow) {
+  //         terminalLog(`No pre-existing unit history for province ${coreId}`);
+  //         return { details: undefined, isNewRow: false };
+  //       }
 
-        rowData.details = this.copyProvinceHistory(priorRow);
-        rowData.isNewRow = true;
-      }
+  //       rowData.details = this.copyProvinceHistory(priorRow);
+  //       rowData.isNewRow = true;
+  //     }
 
-      return rowData;
-    }
+  //     return rowData;
+  //   }
 
-    const rowData = {
-      details: dbUpdates.countryHistories[coreId],
-      isNewRow: false
-    };
+  //   const rowData = {
+  //     details: dbUpdates.countryHistories[coreId],
+  //     isNewRow: false
+  //   };
 
-    if (!rowData.details) {
-      const priorRow = dbStates.countryHistories.find(
-        (existingRow: CountryHistoryRow) => existingRow.countryId === coreId
-      );
-      if (!priorRow) {
-        terminalLog(`No pre-existing unit history for country ${coreId}`);
-        return { details: undefined, isNewRow: false };
-      }
+  //   if (!rowData.details) {
+  //     const priorRow = dbStates.countryHistories.find(
+  //       (existingRow: CountryHistoryRow) => existingRow.countryId === coreId
+  //     );
+  //     if (!priorRow) {
+  //       terminalLog(`No pre-existing unit history for country ${coreId}`);
+  //       return { details: undefined, isNewRow: false };
+  //     }
 
-      rowData.details = this.copyCountryHistory(priorRow);
-      rowData.isNewRow = true;
-    }
+  //     rowData.details = this.copyCountryHistory(priorRow);
+  //     rowData.isNewRow = true;
+  //   }
 
-    return rowData;
-  }
+  //   return rowData;
+  // }
 
   getOrCreateProvinceHistory(
     provinceHistories: ProvinceHistoryRow[],
@@ -2536,26 +2548,26 @@ export class ResolutionService {
     }
 
     if (currentUnitHistory.nodeId !== finalPosition.nodeId || currentUnitHistory.unitStatus !== result.unit.status) {
-      dbUpdates.unitHistories?.push({
-        unitId: result.unit.id,
-        nodeId: result.destination.nodeId,
-        unitStatus: result.unit.status
-      });
+        dbUpdates.unitHistories[result.unit.id] = {
+          unitId: result.unit.id,
+          nodeId: result.destination.nodeId,
+          unitStatus: result.unit.status
+        };
     }
 
     // Province
     const newProvinceHistory: ProvinceHistoryRow = this.rowifyResultLocation(finalPosition);
     newProvinceHistory.provinceStatus = ProvinceStatus.NUKED;
     newProvinceHistory.validRetreat = false;
-    dbUpdates.provinceHistories?.push(newProvinceHistory);
+    dbUpdates.provinceHistories[newProvinceHistory.provinceId] = newProvinceHistory;
   }
 
   handleNuclearVictim(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbUpdates) {
-    dbUpdates.unitHistories?.push({
+    dbUpdates.unitHistories[result.unit.id] = {
       unitId: result.unit.id,
       nodeId: result.origin.nodeId,
       unitStatus: UnitStatus.NUKED
-    });
+    };
   }
 
   handleSpringMovement(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbUpdates) {
@@ -2575,11 +2587,11 @@ export class ResolutionService {
       const newUnitHistory = this.copyUnitHistory(unitHistory);
       newUnitHistory.unitStatus = result.unit.status;
       newUnitHistory.nodeId = finalPosition.nodeId;
-      if (result.unit.status === UnitStatus.RETREAT) {
-        newUnitHistory.displacerProvinceId = result.displacerProvinceId;
-      }
+      newUnitHistory.displacerProvinceId = result.unit.status === UnitStatus.RETREAT
+        ? result.displacerProvinceId
+        : undefined;
 
-      dbUpdates.unitHistories?.push(newUnitHistory);
+      dbUpdates.unitHistories[newUnitHistory.unitId] = newUnitHistory;
     }
 
     // Setting Province Contested
@@ -2588,13 +2600,13 @@ export class ResolutionService {
       result.orderSuccess === false &&
       result.destination.contested
     ) {
-      const bounceFound = dbUpdates.provinceHistories?.find(
+      const bounceFound = Object.values(dbUpdates.provinceHistories).find(
         (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
       );
       if (!bounceFound) {
         const newBounceProvinceHistory = this.rowifyResultLocation(result.destination);
         newBounceProvinceHistory.validRetreat = false;
-        dbUpdates.provinceHistories?.push(newBounceProvinceHistory);
+        dbUpdates.provinceHistories[newBounceProvinceHistory.provinceId] = newBounceProvinceHistory;
       }
     }
   }
@@ -2606,35 +2618,38 @@ export class ResolutionService {
     isRetreatTurn: boolean,
     isFallTurn: boolean
   ) {
-    const unitHistory = dbStates.unitHistories?.find(
-      (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
-    );
-
-    if (!unitHistory) {
-      terminalLog(
-        `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      const unitHistory = dbStates.unitHistories?.find(
+        (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
       );
-      return;
-    }
 
-    const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
-    if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
-      const newUnitHistory = this.copyUnitHistory(unitHistory);
-      newUnitHistory.unitStatus = result.unit.status;
-      newUnitHistory.nodeId = finalPosition.nodeId;
-      if (result.unit.status === UnitStatus.RETREAT) {
-        newUnitHistory.displacerProvinceId = result.displacerProvinceId;
+      if (!unitHistory) {
+        terminalLog(
+          `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+        );
+        return;
       }
 
-      dbUpdates.unitHistories?.push(newUnitHistory);
+    const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
+      if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
+        const newUnitHistory = this.copyUnitHistory(unitHistory);
+        newUnitHistory.unitStatus = result.unit.status;
+        newUnitHistory.nodeId = finalPosition.nodeId;
+        if (result.unit.status === UnitStatus.RETREAT) {
+          newUnitHistory.displacerProvinceId = result.displacerProvinceId;
+        }
+
+        dbUpdates.unitHistories[newUnitHistory.unitId] = newUnitHistory;
     }
 
     if (isFallTurn) {
-      const newProvinceHistory = this.setNewHistory(dbStates, dbUpdates, 'provinces', finalPosition.provinceId) as {
-        details: ProvinceHistoryRow;
-        isNewRow: boolean;
-      };
-      const provinceDetails = newProvinceHistory.details;
+      const provinceDetails = dbUpdates.provinceHistories[finalPosition.provinceId]
+      ? dbUpdates.provinceHistories[finalPosition.provinceId]
+      : dbStates.provinceHistories.find((province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId);
+
+      if (!provinceDetails) {
+        terminalLog(`No pre-existing province history for ${finalPosition.provinceName} (${finalPosition.provinceId})`);
+        return;
+      }
 
       if (finalPosition.controllerId !== result.unit.countryId && result.unit.canCapture) {
         provinceDetails.controllerId = result.unit.countryId;
@@ -2655,9 +2670,7 @@ export class ResolutionService {
         provinceDetails.provinceStatus = ProvinceStatus.ACTIVE;
       }
 
-      if (newProvinceHistory.isNewRow) {
-        dbUpdates.provinceHistories?.push(provinceDetails);
-      }
+      dbUpdates.provinceHistories[provinceDetails.provinceId] = provinceDetails;
     }
 
     // Setting Province Contested
@@ -2666,13 +2679,13 @@ export class ResolutionService {
       result.orderSuccess === false &&
       result.destination.contested
     ) {
-      const bounceFound = dbUpdates.provinceHistories?.find(
+      const bounceFound = Object.values(dbUpdates.provinceHistories).find(
         (province: ProvinceHistoryRow) => province.provinceId === result.destination.provinceId
       );
       if (!bounceFound) {
         const newBounceProvinceHistory = this.rowifyResultLocation(result.destination);
         newBounceProvinceHistory.validRetreat = false;
-        dbUpdates.provinceHistories?.push(newBounceProvinceHistory);
+        dbUpdates.provinceHistories[newBounceProvinceHistory.provinceId] = newBounceProvinceHistory;
       }
     }
   }
@@ -2691,63 +2704,63 @@ export class ResolutionService {
 
     const newUnitHistory = this.copyUnitHistory(unitHistory);
     newUnitHistory.unitStatus = UnitStatus.DISBANDED_RETREAT;
-    dbUpdates.unitHistories?.push(newUnitHistory);
+    dbUpdates.unitHistories[newUnitHistory.unitId] = newUnitHistory;
   }
 
   prepareBombardRows(result: UnitOrderResolution, dbStates: DbStates, dbUpdates: DbStates, claimingSeason: boolean) {
-    const unitHistory = dbStates.unitHistories?.find(
-      (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
-    );
-
-    if (!unitHistory) {
-      terminalLog(
-        `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+      const unitHistory = dbStates.unitHistories?.find(
+        (unitHistory: UnitHistoryRow) => unitHistory.unitId === result.unit.id
       );
-      return;
-    }
+
+      if (!unitHistory) {
+        terminalLog(
+          `No pre-existing unit history for ${result.unit.countryName} ${result.unit.type} (${result.unit.id})`
+        );
+        return;
+      }
 
     const finalPosition: OrderResolutionLocation = this.getFinalPosition(result);
-    if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
-      const newUnitHistory = this.copyUnitHistory(unitHistory);
-      newUnitHistory.nodeId = finalPosition.nodeId;
-      newUnitHistory.unitStatus = result.unit.status;
-      dbUpdates.unitHistories?.push(newUnitHistory);
+      if (unitHistory.nodeId !== finalPosition.nodeId || unitHistory.unitStatus !== result.unit.status) {
+        const newUnitHistory = this.copyUnitHistory(unitHistory);
+        newUnitHistory.nodeId = finalPosition.nodeId;
+        newUnitHistory.unitStatus = result.unit.status;
+        dbUpdates.unitHistories?.push(newUnitHistory);
     }
 
-    const provinceHistory = dbStates.provinceHistories?.find(
-      (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
-    );
+      const provinceHistory = dbStates.provinceHistories?.find(
+        (province: ProvinceHistoryRow) => province.provinceId === finalPosition.provinceId
+      );
 
-    if (!provinceHistory) {
-      terminalLog(`No pre-existing province history for ${finalPosition.provinceName} (${finalPosition.provinceId})`);
-      return;
-    }
-
-    if ([ProvinceType.COAST, ProvinceType.INLAND, ProvinceType.ISLAND].includes(finalPosition.provinceType)) {
-      let provinceStateChanged = false;
-      const newProvinceHistory = this.rowifyResultLocation(finalPosition);
-
-      // Control
-      if (
-        [ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus) &&
-        finalPosition.controllerId !== result.unit.countryId
-      ) {
-        newProvinceHistory.controllerId = result.unit.countryId;
-        provinceStateChanged = true;
+      if (!provinceHistory) {
+        terminalLog(`No pre-existing province history for ${finalPosition.provinceName} (${finalPosition.provinceId})`);
+        return;
       }
 
-      // Status
-      if (
-        finalPosition.provinceStatus === ProvinceStatus.ACTIVE &&
-        finalPosition.controllerId !== result.unit.countryId &&
-        claimingSeason
-      ) {
-        newProvinceHistory.provinceStatus = ProvinceStatus.BOMBARDED;
-        provinceStateChanged = true;
-      }
+      if ([ProvinceType.COAST, ProvinceType.INLAND, ProvinceType.ISLAND].includes(finalPosition.provinceType)) {
+        let provinceStateChanged = false;
+        const newProvinceHistory = this.rowifyResultLocation(finalPosition);
 
-      if (provinceStateChanged) {
-        dbUpdates.provinceHistories?.push(newProvinceHistory);
+        // Control
+        if (
+          [ProvinceStatus.INERT, ProvinceStatus.NUKED].includes(finalPosition.provinceStatus) &&
+          finalPosition.controllerId !== result.unit.countryId
+        ) {
+          newProvinceHistory.controllerId = result.unit.countryId;
+          provinceStateChanged = true;
+        }
+
+        // Status
+        if (
+          finalPosition.provinceStatus === ProvinceStatus.ACTIVE &&
+          finalPosition.controllerId !== result.unit.countryId &&
+          claimingSeason
+        ) {
+          newProvinceHistory.provinceStatus = ProvinceStatus.BOMBARDED;
+          provinceStateChanged = true;
+        }
+
+        if (provinceStateChanged) {
+          dbUpdates.provinceHistories?.push(newProvinceHistory);
       }
     }
 
@@ -2834,9 +2847,9 @@ export class ResolutionService {
 
   revertContestedProvinces(
     currentProvinceHistories: ProvinceHistoryRow[],
-    pendingProvinceHistories: ProvinceHistoryRow[]
+    pendingProvinceHistories: Record<number, ProvinceHistoryRow>
   ): void {
-    const spliceIndeces: number[] = [];
+    const deletionKeys: number[] = [];
 
     // Existing invalid retreats could never be impacting by retreats
     const currentInvalidRetreats = currentProvinceHistories.filter(
@@ -2848,10 +2861,10 @@ export class ResolutionService {
         const updatedProvinceHistory = this.copyProvinceHistory(currentProvinceHistory);
         updatedProvinceHistory.validRetreat = true;
 
-        pendingProvinceHistories.push(updatedProvinceHistory);
+        pendingProvinceHistories[currentProvinceHistory.provinceId] = (updatedProvinceHistory);
       });
     } else {
-      pendingProvinceHistories.forEach((pendingProvinceHistory: ProvinceHistoryRow, index: number) => {
+      Object.values(pendingProvinceHistories).forEach((pendingProvinceHistory: ProvinceHistoryRow) => {
         const currentProvinceHistory = currentProvinceHistories.find(
           (currentProvinceHistory: ProvinceHistoryRow) =>
             pendingProvinceHistory.provinceId === currentProvinceHistory.provinceId
@@ -2870,23 +2883,21 @@ export class ResolutionService {
           pendingProvinceHistory.capitalOwnerId === currentProvinceHistory.capitalOwnerId &&
           pendingProvinceHistory.provinceStatus === currentProvinceHistory.provinceStatus
         ) {
-          spliceIndeces.unshift(index);
+          deletionKeys.unshift(pendingProvinceHistory.provinceId);
         }
         pendingProvinceHistory.validRetreat = true;
       });
 
-      spliceIndeces.forEach((index: number) => {
-        pendingProvinceHistories.splice(index, 1);
+      deletionKeys.forEach((key: number) => {
+        delete pendingProvinceHistories[key];
       });
     }
   }
 
   dissipateNukes(
     currentUnitHistories: UnitHistoryRow[],
-    pendingUnitHistories: UnitHistoryRow[]
+    pendingUnitHistories: Record<number, UnitHistoryRow>
   ): void {
-    const spliceIndeces: number[] = [];
-
     // Nukes in state of fallout
     const nukesInFallout = currentUnitHistories.filter(
       (currentUnitHistory: UnitHistoryRow) => currentUnitHistory.unitStatus === UnitStatus.FALLOUT
@@ -2897,7 +2908,7 @@ export class ResolutionService {
         const updatedUnitHistory = this.copyUnitHistory(currentUnitHistory);
         updatedUnitHistory.unitStatus = UnitStatus.DETONATED;
 
-        pendingUnitHistories.push(updatedUnitHistory);
+        pendingUnitHistories[updatedUnitHistory.unitId] = updatedUnitHistory;
       });
     }
   }
@@ -2976,7 +2987,7 @@ export class ResolutionService {
     dbUpdates: DbUpdates,
     turnId: number
   ) {
-    const preparedHistoriesToUpdate = dbUpdates.provinceHistories?.filter(
+    const preparedHistoriesToUpdate = Object.values(dbUpdates.provinceHistories).filter(
       (province: ProvinceHistoryRow) => province.controllerId === eliminatedCountryId
     );
 

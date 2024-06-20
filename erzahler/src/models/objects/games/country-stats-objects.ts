@@ -7,6 +7,7 @@ export interface CountryStatsResult {
   nuke_range: number;
   adjustments: number;
   banked_builds: number;
+  country_status: string;
 }
 
 export interface CountryStats {
@@ -18,4 +19,5 @@ export interface CountryStats {
   bankedBuilds: number;
   nuke: number;
   adjustments: number;
+  status: string;
 }
