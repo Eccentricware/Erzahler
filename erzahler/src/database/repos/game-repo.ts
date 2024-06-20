@@ -545,7 +545,8 @@ export class GameRepository {
           votes: country.vote_count,
           bankedBuilds: country.banked_builds,
           nuke: country.nuke_range,
-          adjustments: country.adjustments
+          adjustments: country.adjustments,
+          status: country.country_status
         };
       })
     );
