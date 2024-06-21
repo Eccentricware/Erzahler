@@ -86,9 +86,9 @@ export interface DbUpdates {
   orders: OrderRow[];
   adjustmentOrders: OrderAdjustmentRow[];
   newUnits: InitialUnit[];
-  unitHistories: UnitHistoryRow[];
-  provinceHistories: ProvinceHistoryRow[];
-  countryHistories: Record<string, CountryHistoryRow>;
+  unitHistories: Record<number, UnitHistoryRow>;
+  provinceHistories: Record<number, ProvinceHistoryRow>;
+  countryHistories: Record<number, CountryHistoryRow>;
 }
 
 export interface GameRow {

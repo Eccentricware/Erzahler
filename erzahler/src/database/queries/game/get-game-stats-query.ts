@@ -6,11 +6,14 @@ export const getGameStatsQuery = `
     lch.vote_count,
     lch.banked_builds,
     lch.nuke_range,
-    lch.adjustments
+    lch.adjustments,
+    lch.country_status
   FROM get_last_country_history($1, $2) lch
   INNER JOIN countries c ON c.country_id = lch.country_id
-  WHERE lch.country_status IN ('Active', 'Civil Disorder')
-  ORDER BY c.rank,
+  --WHERE lch.country_status IN ('Active', 'Civil Disorder')
+  where c.rank != 'n'
+  ORDER BY lch.country_status NOT IN ('Active', 'Civil Disorder'),
+    c.rank,
     c.country_name;
 `;
 
