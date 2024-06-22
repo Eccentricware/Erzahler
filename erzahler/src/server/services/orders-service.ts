@@ -198,6 +198,14 @@ export class OrdersService {
               pendingBuildOrders[0].builds = [];
             }
 
+            pendingBuildOrders[0].builds.sort((a: Build, b: Build) => (
+              a.provinceName && b.provinceName)
+              ? a.provinceName < b.provinceName
+                ? -1
+                : 1
+              : a.buildNumber - b.buildNumber
+            );
+
             orders.pending.builds = pendingBuildOrders[0]
               ? pendingBuildOrders[0]
               : {
@@ -218,6 +226,13 @@ export class OrdersService {
               playerCountry.countryId
             );
             orders.pending.disbands = disbandOrders[0];
+            orders.pending.disbands.unitDisbandingDetailed.sort((a: DisbandingUnitDetail, b: DisbandingUnitDetail) =>
+              a.provinceName && b.provinceName
+                ? a.provinceName < b.provinceName
+                  ? -1
+                  : 1
+                : a.unitId - b.unitId
+            );
           }
         }
 
@@ -291,13 +306,22 @@ export class OrdersService {
         // Adjustments
         if ([TurnType.ADJUSTMENTS, TurnType.ADJ_AND_NOM].includes(preliminaryTurn.turnType)) {
           if (playerCountry.adjustments >= 0) {
-            const pendingBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
+            const preliminaryBuildOrders: BuildOrders[] = await db.ordersRepo.getBuildOrders(
               gameState.gameId,
               gameState.turnNumber,
               preliminaryTurn.turnId,
               playerCountry.countryId
             );
-            orders.preliminary.builds = pendingBuildOrders[0];
+            orders.preliminary.builds = preliminaryBuildOrders[0];
+
+            orders.preliminary.builds.builds.sort((a: Build, b: Build) => (
+              a.provinceName && b.provinceName)
+              ? a.provinceName < b.provinceName
+                ? -1
+                : 1
+              : a.buildNumber - b.buildNumber
+            );
+
           } else {
             const disbandOrders = await this.prepareDisbandOrders(
               gameId,
@@ -306,6 +330,13 @@ export class OrdersService {
               playerCountry.countryId
             );
             orders.preliminary.disbands = disbandOrders[0];
+            orders.preliminary.disbands.unitDisbandingDetailed.sort((a: DisbandingUnitDetail, b: DisbandingUnitDetail) =>
+              a.provinceName && b.provinceName
+                ? a.provinceName < b.provinceName
+                  ? -1
+                  : 1
+                : a.unitId - b.unitId
+            );
           }
         }
 
