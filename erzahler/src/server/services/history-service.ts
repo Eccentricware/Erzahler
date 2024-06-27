@@ -175,7 +175,14 @@ export class HistoryService {
       const buildNodeIds: number[] = [];
 
       buildOrders.forEach((buildOrder: HistoricBuildOrders) => {
-        historicOrders.builds?.builds.push(...buildOrder.builds)
+        buildOrder.builds.sort((a: Build, b: Build) =>
+          (a.provinceName && b.provinceName)
+          ? a.provinceName < b.provinceName
+            ? -1
+            : 1
+          : 1
+        );
+        historicOrders.builds?.builds.push(...buildOrder.builds);
 
         const country = countryLibrary[buildOrder.countryId];
         country.orders.buildsStartingNukes = buildOrder.increaseRange;
@@ -225,6 +232,7 @@ export class HistoryService {
       historicOrders.disbands = disbandOrders[0];
 
       disbandOrders.forEach((disbandOrder) => {
+        disbandOrder.unitDisbandingDetailed.sort((a, b) => a.provinceName < b.provinceName ? -1 : 1);
         const country = countryLibrary[disbandOrder.countryId];
         disbandOrder.unitDisbandingDetailed.forEach((disbandedUnit) => {
           country.orders.adjustments.push({
