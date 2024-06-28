@@ -14,6 +14,7 @@ export interface RequestValidationObject {
   assignmentType?: string | string[] | undefined;
   environment?: string | string[] | undefined;
   magicWord?: string | string[] | undefined;
+  gameName?: string | string[] | undefined;
 }
 
 export interface RequestValidationResponse {
@@ -118,6 +119,10 @@ export class ValidationService {
 
     if (request.magicWord) {
       validationResponse.sanitizedVariables.magicWord = String(request.magicWord);
+    }
+
+    if (request.gameName) {
+      validationResponse.sanitizedVariables.gameName = String(request.gameName);
     }
 
     if (!validationResponse.valid) {

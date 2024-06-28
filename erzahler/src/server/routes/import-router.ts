@@ -11,7 +11,8 @@ importRouter.post('/game', (request, response) => {
     route: `import/game`,
     gameId: request.body.gameId,
     environment: request.body.environment,
-    magicWord: request.body.magicWord
+    magicWord: request.body.magicWord,
+    gameName: request.body.gameName
   });
 
   if (!validationResponse.valid) {
