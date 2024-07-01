@@ -37,8 +37,6 @@ importRouter.post('/game', (request, response) => {
     return;
   }
 
-
-
   importService
     .importGame(gameId, environment, magicWord, gameName)
     .then(() => {
