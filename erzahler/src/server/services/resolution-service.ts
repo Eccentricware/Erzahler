@@ -149,7 +149,8 @@ export class ResolutionService {
       newUnits: [],
       unitHistories: {},
       provinceHistories: {},
-      countryHistories: {}
+      countryHistories: {},
+      countryStatChanges: {}
     };
 
     let unitsRetreating = false;
@@ -188,23 +189,13 @@ export class ResolutionService {
 
       if (result.unit.status === UnitStatus.RETREAT) {
         unitsRetreating = true;
-        if (dbUpdates.countryHistories[result.unit.countryId]) {
-          dbUpdates.countryHistories[result.unit.countryId].inRetreat = true;
+        if (dbUpdates.countryStatChanges[result.unit.countryId]) {
+          dbUpdates.countryStatChanges[result.unit.countryId].inRetreat = true;
         } else {
-          const previousCountryHistory = dbStates.countryHistories.find(
-            (countryHistory: CountryHistoryRow) => countryHistory.countryId === result.unit.countryId
-          );
-
-          if (!previousCountryHistory) {
-            terminalAddendum(
-              'Resolution',
-              `Can't find unit ${result.unit.id} country by countryId ${result.unit.countryId}`
-            );
-            return;
+          dbUpdates.countryStatChanges[result.unit.countryId] = {
+            countryId: result.unit.countryId,
+            inRetreat: true
           }
-
-          dbUpdates.countryHistories[result.unit.countryId] = this.copyCountryHistory(previousCountryHistory);
-          dbUpdates.countryHistories[result.unit.countryId].inRetreat = true;
         }
       }
     });
@@ -224,47 +215,38 @@ export class ResolutionService {
 
     transferResults.techTransferResults?.forEach((result: TransferTechOrder) => {
       if (result.success && result.hasNukes) {
-        let partnerHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.foreignCountryId];
+        if (dbUpdates.countryStatChanges[result.foreignCountryId]) {
+          dbUpdates.countryStatChanges[result.foreignCountryId].nukeRange = gameState.defaultNukeRange;
+          dbUpdates.countryStatChanges[result.foreignCountryId].nukesInProduction = 0;
 
-        if (!partnerHistory) {
-          partnerHistory = dbStates.countryHistories?.find(
-            (country: CountryHistoryRow) => country.countryId === result.foreignCountryId
-          );
-        }
-
-        if (partnerHistory) {
-          const newCountryHistory = this.copyCountryHistory(partnerHistory);
-          newCountryHistory.nukeRange = gameState.defaultNukeRange;
-          newCountryHistory.nukesInProduction = 0;
-          dbUpdates.countryHistories[partnerHistory.countryId] = newCountryHistory;
+        } else {
+          dbUpdates.countryStatChanges[result.foreignCountryId] = {
+            countryId: result.foreignCountryId,
+            nukeRange: gameState.defaultNukeRange,
+            nukesInProduction: 0
+          }
         }
       }
     });
 
     transferResults.buildTransferResults?.forEach((result: TransferBuildOrder) => {
       if (result.quantity > 0) {
-        let playerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.countryId];
-        if (!playerCountry) {
-          playerCountry = dbStates.countryHistories?.find(
-            (country: CountryHistoryRow) => country.countryId === result.countryId
-          );
+        if (dbUpdates.countryStatChanges[result.countryId]) {
+          dbUpdates.countryStatChanges[result.countryId].bankedBuildsGifted = result.quantity;
+        } else {
+          dbUpdates.countryStatChanges[result.countryId] = {
+            countryId: result.countryId,
+            bankedBuildsGifted: result.quantity
+          }
         }
 
-        let partnerCountry: CountryHistoryRow | undefined = dbUpdates.countryHistories[result.recipientId];
-        if (!partnerCountry) {
-          partnerCountry = dbStates.countryHistories?.find(
-            (country: CountryHistoryRow) => country.countryId === result.recipientId
-          );
-        }
-
-        if (playerCountry && partnerCountry) {
-          const newPlayerCountryHistory = this.copyCountryHistory(playerCountry);
-          const newPartnerCountryHistory = this.copyCountryHistory(partnerCountry);
-
-          newPlayerCountryHistory.bankedBuilds -= result.quantity;
-          newPartnerCountryHistory.bankedBuilds += result.quantity;
-          dbUpdates.countryHistories[result.countryId] = newPlayerCountryHistory;
-          dbUpdates.countryHistories[result.recipientId] = newPartnerCountryHistory;
+        if (dbUpdates.countryStatChanges[result.recipientId]) {
+          dbUpdates.countryStatChanges[result.recipientId].bankedBuildsReceived = result.quantity;
+        } else {
+          dbUpdates.countryStatChanges[result.recipientId] = {
+            countryId: result.recipientId,
+            bankedBuildsReceived: result.quantity
+          }
         }
       }
     });
@@ -405,7 +387,8 @@ export class ResolutionService {
       newUnits: [],
       unitHistories: {},
       provinceHistories: {},
-      countryHistories: {}
+      countryHistories: {},
+      countryStatChanges: {}
     };
 
     const unitMovementResults: UnitOrderResolution[] = await this.resolveRetreatingUnitOrders(gameState, turn);
@@ -546,7 +529,8 @@ export class ResolutionService {
       newUnits: [],
       unitHistories: {},
       provinceHistories: {},
-      countryHistories: {}
+      countryHistories: {},
+      countryStatChanges: {}
     };
 
     let unitsRetreating = false;
@@ -761,7 +745,8 @@ export class ResolutionService {
       newUnits: [],
       unitHistories: {},
       provinceHistories: {},
-      countryHistories: {}
+      countryHistories: {},
+      countryStatChanges: {}
     };
 
     const unitMovementResults: UnitOrderResolution[] = await this.resolveRetreatingUnitOrders(gameState, turn);
@@ -904,7 +889,8 @@ export class ResolutionService {
       newUnits: [],
       unitHistories: {},
       provinceHistories: {},
-      countryHistories: {}
+      countryHistories: {},
+      countryStatChanges: {}
     };
 
     const remainingResources: Record<number, AdjustmentResolutionResources> = {};
