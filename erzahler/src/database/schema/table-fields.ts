@@ -378,17 +378,18 @@ export interface InitialUnit {
 
 export interface CountryStatChanges {
   countryId: number;
-  cityCount: number;
-  unitCount: number;
-  bankedBuilds: number;
-  nukeRange: number;
-  adjustments: number;
-  voteCount: number;
-  nukesInProduction: number;
-  buildsBeingBanked: number;
-  buildsIncreasingRange: number;
-  buildsStartingNukes: number;
-  bankedBuildsGifted: number;
-  bankedBuildsReceived: number;
-  bankedBuildsIncreasingRange: number;
+  cityCount?: number;
+  unitCount?: number;
+  adjustments?: number;
+  voteCount?: number;
+  nukeRange?: number;
+  bankedBuilds?: number;
+  nukesInProduction?: number;
+  inRetreat?: boolean;
+  buildsBeingBanked?: number;
+  buildsIncreasingRange?: number;
+  bankedBuildsIncreasingRange?: number;
+  buildsStartingNukes?: number;
+  bankedBuildsGifted?: number;
+  bankedBuildsReceived?: number;
 }
