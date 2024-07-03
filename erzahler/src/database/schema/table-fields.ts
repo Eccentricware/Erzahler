@@ -89,6 +89,7 @@ export interface DbUpdates {
   unitHistories: Record<number, UnitHistoryRow>;
   provinceHistories: Record<number, ProvinceHistoryRow>;
   countryHistories: Record<number, CountryHistoryRow>;
+  countryStatChanges: Record<number, CountryStatChanges>;
 }
 
 export interface GameRow {
@@ -373,4 +374,22 @@ export interface InitialUnit {
   turnId: number;
   nodeId: number;
   unitStatus: UnitStatus;
+}
+
+export interface CountryStatChanges {
+  countryId: number;
+  cityCount?: number;
+  unitCount?: number;
+  adjustments?: number;
+  voteCount?: number;
+  nukeRange?: number;
+  bankedBuilds?: number;
+  nukesInProduction?: number;
+  inRetreat?: boolean;
+  buildsBeingBanked?: number;
+  buildsIncreasingRange?: number;
+  bankedBuildsIncreasingRange?: number;
+  buildsStartingNukes?: number;
+  bankedBuildsGifted?: number;
+  bankedBuildsReceived?: number;
 }
