@@ -617,6 +617,7 @@ export class GameRepository {
         return <UnitHistoryRow>{
           unitHistoryId: unitHistory.unit_history_id,
           unitId: unitHistory.unit_id,
+          countryId: unitHistory.country_id,
           turnId: unitHistory.turn_id,
           nodeId: unitHistory.node_id,
           unitStatus: unitHistory.unit_status
@@ -630,6 +631,7 @@ export class GameRepository {
       result.rows.map((provinceHistory: ProvinceHistoryRowResult) => {
         return <ProvinceHistoryRow>{
           provinceId: provinceHistory.province_id,
+          cityType: provinceHistory.city_type,
           turnId: provinceHistory.turn_id,
           controllerId: provinceHistory.controller_id,
           provinceStatus: provinceHistory.province_status,
