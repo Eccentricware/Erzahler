@@ -2963,6 +2963,13 @@ export class ResolutionService {
   }
 
   prepareCountryHistories(dbStates: DbStates, dbUpdates: DbUpdates, turn: Turn): void {
+    const survivingCountryIds: number[] = [];
+    dbStates.countryHistories.forEach((country: CountryHistoryRow) => {
+        if (country.countryStatus !== CountryStatus.ELIMINATED) {
+          survivingCountryIds.push(country.countryId);
+        }
+      }
+    );
     const unitsUpdated: Set<number> = new Set();
     const provincesUpdated: Set<number> = new Set();
 
@@ -3015,7 +3022,7 @@ export class ResolutionService {
       }
 
       if (provinceHistory.controllerId && provinceHistory.cityType &&
-        [CityType.CAPITAL, CityType.VOTE].includes(provinceHistory.cityType) &&
+        provinceHistory.cityType === CityType.VOTE &&
         provinceHistory.provinceStatus !== ProvinceStatus.DORMANT
       ) {
         const countryChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
@@ -3030,40 +3037,30 @@ export class ResolutionService {
         }
 
         provincesUpdated.add(provinceHistory.provinceId);
-      }
-    });
 
-    Object.values(dbStates.provinceHistories).forEach((provinceHistory: ProvinceHistoryRow) => {
-      if (provinceHistory.controllerId &&
-        provinceHistory.provinceStatus === ProvinceStatus.ACTIVE &&
-        !provincesUpdated.has(provinceHistory.provinceId)
+      } else if (provinceHistory.controllerId &&
+        provinceHistory.capitalOwnerId &&
+        provinceHistory.cityType &&
+        provinceHistory.cityType === CityType.CAPITAL
       ) {
         const countryChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
-        if (countryChanges) {
-          countryChanges.cityCount = countryChanges.cityCount ? countryChanges.cityCount + 1 : 1;
+        const capitalCountryChanges = dbUpdates.countryStatChanges[provinceHistory.capitalOwnerId];
 
-        } else { // If countryAsset doesn't exist, that means no unit or province has a history at this point
-          dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
-            countryId: provinceHistory.controllerId,
-            cityCount: 1
-          };
-        }
-      }
+        if (provinceHistory.controllerId === provinceHistory.capitalOwnerId
+          || !survivingCountryIds.includes(provinceHistory.controllerId)
+        ) {
+          if (countryChanges) {
+            countryChanges.voteCount = countryChanges.voteCount ? countryChanges.voteCount + 1 : 1;
 
-      if (provinceHistory.controllerId && provinceHistory.cityType &&
-        [CityType.CAPITAL, CityType.VOTE].includes(provinceHistory.cityType) &&
-        provinceHistory.provinceStatus !== ProvinceStatus.DORMANT &&
-        !provincesUpdated.has(provinceHistory.provinceId)
-      ) {
-        const countryChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
-        if (countryChanges) {
-          countryChanges.voteCount = countryChanges.voteCount ? countryChanges.voteCount + 1 : 1;
+          } else {
+            dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
+              countryId: provinceHistory.controllerId,
+              voteCount: 1
+            };
+          }
 
-        } else {
-          dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
-            countryId: provinceHistory.controllerId,
-            voteCount: 1
-          };
+          provincesUpdated.add(provinceHistory.provinceId);
+          provincesUpdated.add(provinceHistory.capitalOwnerId);
         }
       }
     });
