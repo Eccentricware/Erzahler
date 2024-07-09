@@ -2963,10 +2963,10 @@ export class ResolutionService {
   }
 
   prepareCountryHistories(dbStates: DbStates, dbUpdates: DbUpdates, turn: Turn): void {
-    const survivingCountryIds: number[] = [];
+    const survivingCountryIds: Set<number> = new Set();
     dbStates.countryHistories.forEach((country: CountryHistoryRow) => {
         if (country.countryStatus !== CountryStatus.ELIMINATED) {
-          survivingCountryIds.push(country.countryId);
+          survivingCountryIds.add(country.countryId);
         }
       }
     );
@@ -2974,94 +2974,64 @@ export class ResolutionService {
     const provincesUpdated: Set<number> = new Set();
 
     Object.values(dbUpdates.unitHistories).forEach((unitHistory: UnitHistoryRow) => {
-      if ([UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(unitHistory.unitStatus) && unitHistory.countryId) {
-        const countryChanges = dbUpdates.countryStatChanges[unitHistory.countryId];
-        if (countryChanges) {
-          countryChanges.unitCount = countryChanges.unitCount ? countryChanges.unitCount + 1 : 1;
-
-        } else {
-          dbUpdates.countryStatChanges[unitHistory.countryId] = {
-            countryId: unitHistory.countryId,
-            unitCount: 1
-          };
-        }
+      if ([UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(unitHistory.unitStatus)) {
+        this.creditCountryWithUnit(unitHistory, dbUpdates);
 
         unitsUpdated.add(unitHistory.unitId);
       }
     });
 
     Object.values(dbStates.unitHistories).forEach((unitHistory: UnitHistoryRow) => {
-      if ([UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(unitHistory.unitStatus) && unitHistory.countryId && !unitsUpdated.has(unitHistory.unitId)) {
-        const countryChanges = dbUpdates.countryStatChanges[unitHistory.countryId];
-        if (countryChanges) {
-          countryChanges.unitCount = countryChanges.unitCount ? countryChanges.unitCount + 1 : 1;
-
-        } else {
-          dbUpdates.countryStatChanges[unitHistory.countryId] = {
-            countryId: unitHistory.countryId,
-            unitCount: 1
-          };
-        }
+      if ([UnitStatus.ACTIVE, UnitStatus.RETREAT].includes(unitHistory.unitStatus) && !unitsUpdated.has(unitHistory.unitId)) {
+        this.creditCountryWithUnit(unitHistory, dbUpdates);
       }
     });
 
     Object.values(dbUpdates.provinceHistories).forEach((provinceHistory: ProvinceHistoryRow) => {
       if (provinceHistory.controllerId && provinceHistory.provinceStatus === ProvinceStatus.ACTIVE) {
-        const countryChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
-        if (countryChanges) {
-          countryChanges.cityCount = countryChanges.cityCount ? countryChanges.cityCount + 1 : 1;
-
-        } else { // If countryAsset doesn't exist, that means no unit or province has a history at this point
-          dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
-            countryId: provinceHistory.controllerId,
-            cityCount: 1
-          };
-        }
-
-        provincesUpdated.add(provinceHistory.provinceId);
+        this.creditCountryWithSupplyCenter(provinceHistory, dbUpdates);
       }
 
       if (provinceHistory.controllerId && provinceHistory.cityType &&
         provinceHistory.cityType === CityType.VOTE &&
         provinceHistory.provinceStatus !== ProvinceStatus.DORMANT
       ) {
-        const countryChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
-        if (countryChanges) {
-          countryChanges.voteCount = countryChanges.voteCount ? countryChanges.voteCount + 1 : 1;
+        this.creditCountryWithVote(provinceHistory, dbUpdates);
+      }
 
-        } else {
-          dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
-            countryId: provinceHistory.controllerId,
-            voteCount: 1
-          };
-        }
-
-        provincesUpdated.add(provinceHistory.provinceId);
-
-      } else if (provinceHistory.controllerId &&
+      if (provinceHistory.controllerId &&
         provinceHistory.capitalOwnerId &&
         provinceHistory.cityType &&
         provinceHistory.cityType === CityType.CAPITAL
       ) {
-        const countryChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
-        const capitalCountryChanges = dbUpdates.countryStatChanges[provinceHistory.capitalOwnerId];
+        this.creditCountriesWithCapital(provinceHistory, dbUpdates, survivingCountryIds);
+      }
 
-        if (provinceHistory.controllerId === provinceHistory.capitalOwnerId
-          || !survivingCountryIds.includes(provinceHistory.controllerId)
-        ) {
-          if (countryChanges) {
-            countryChanges.voteCount = countryChanges.voteCount ? countryChanges.voteCount + 1 : 1;
+      provincesUpdated.add(provinceHistory.provinceId);
+    });
 
-          } else {
-            dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
-              countryId: provinceHistory.controllerId,
-              voteCount: 1
-            };
-          }
+    Object.values(dbStates.provinceHistories).forEach((provinceHistory: ProvinceHistoryRow) => {
+      if (provincesUpdated.has(provinceHistory.provinceId)) {
+        return;
+      }
 
-          provincesUpdated.add(provinceHistory.provinceId);
-          provincesUpdated.add(provinceHistory.capitalOwnerId);
-        }
+      if (provinceHistory.controllerId && provinceHistory.provinceStatus === ProvinceStatus.ACTIVE) {
+        this.creditCountryWithSupplyCenter(provinceHistory, dbUpdates);
+      }
+
+      if (provinceHistory.controllerId && provinceHistory.cityType &&
+        provinceHistory.cityType === CityType.VOTE &&
+        provinceHistory.provinceStatus !== ProvinceStatus.DORMANT
+      ) {
+        this.creditCountryWithVote(provinceHistory, dbUpdates);
+      }
+
+      if (provinceHistory.controllerId &&
+        provinceHistory.capitalOwnerId &&
+        provinceHistory.cityType &&
+        provinceHistory.cityType === CityType.CAPITAL
+      ) {
+        this.creditCountriesWithCapital(provinceHistory, dbUpdates, survivingCountryIds);
       }
     });
 
@@ -3131,5 +3101,104 @@ export class ResolutionService {
     // // Find next turn will require an updated gameState first
     // console.log('DB: Turn Update'); // Pending resolution
     // postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
+  }
+
+  creditCountryWithUnit(unitHistory: UnitHistoryRow, dbUpdates: DbUpdates) {
+    if (!unitHistory.countryId) {
+      terminalLog(`Unit ${unitHistory.unitId} has no countryId`);
+      return;
+    }
+
+    const countryChanges = dbUpdates.countryStatChanges[unitHistory.countryId];
+    if (countryChanges) {
+      countryChanges.unitCount = countryChanges.unitCount ? countryChanges.unitCount + 1 : 1;
+
+    } else {
+      dbUpdates.countryStatChanges[unitHistory.countryId] = {
+        countryId: unitHistory.countryId,
+        unitCount: 1
+      };
+    }
+  }
+
+  creditCountryWithSupplyCenter(provinceHistory: ProvinceHistoryRow, dbUpdates: DbUpdates) {
+    if (!provinceHistory.controllerId) {
+      terminalLog(`Province ${provinceHistory.provinceId} has no controllerId`);
+      return;
+    }
+
+    const countryChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
+    if (countryChanges) {
+      countryChanges.cityCount = countryChanges.cityCount ? countryChanges.cityCount + 1 : 1;
+
+    } else { // If countryAsset doesn't exist, that means no unit or province has a history at this point
+      dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
+        countryId: provinceHistory.controllerId,
+        cityCount: 1
+      };
+    }
+  }
+
+  creditCountryWithVote(provinceHistory: ProvinceHistoryRow, dbUpdates: DbUpdates) {
+    if (!provinceHistory.controllerId) {
+      terminalLog(`Province ${provinceHistory.provinceId} has no controllerId`);
+      return;
+    }
+
+    const countryChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
+    if (countryChanges) {
+      countryChanges.voteCount = countryChanges.voteCount ? countryChanges.voteCount + 1 : 1;
+
+    } else {
+      dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
+        countryId: provinceHistory.controllerId,
+        voteCount: 1
+      };
+    }
+  }
+
+  /**
+   * Increments vote count for either the controller or capital owner if not eliminated. Sets controlsCapital flag.
+   *
+   * @param provinceHistory
+   * @param dbUpdates
+   * @param survivingCountryIds
+   * @returns
+   */
+  creditCountriesWithCapital(provinceHistory: ProvinceHistoryRow, dbUpdates: DbUpdates, survivingCountryIds: Set<number>) {
+    if (!provinceHistory.controllerId) {
+      terminalLog(`Province ${provinceHistory.provinceId} has no controllerId`);
+      return;
+    }
+
+    if (!provinceHistory.capitalOwnerId) {
+      terminalLog(`Province ${provinceHistory.provinceId} has no capitalOwnerId`);
+      return;
+    }
+
+    let controllerChanges = dbUpdates.countryStatChanges[provinceHistory.controllerId];
+    let ownerChanges = dbUpdates.countryStatChanges[provinceHistory.capitalOwnerId];
+
+    if (!controllerChanges) {
+      controllerChanges = {
+        countryId: provinceHistory.controllerId,
+        voteCount: 0
+      };
+    }
+
+    if (!ownerChanges) {
+      ownerChanges = {
+        countryId: provinceHistory.capitalOwnerId,
+        voteCount: 0
+      };
+    }
+
+    const countryThatGetsVote =
+      (provinceHistory.controllerId === provinceHistory.capitalOwnerId || survivingCountryIds.has(provinceHistory.capitalOwnerId))
+      ? ownerChanges
+      : controllerChanges;
+
+    countryThatGetsVote.voteCount = countryThatGetsVote.voteCount ? countryThatGetsVote.voteCount + 1 : 1;
+    ownerChanges.controlsCapital = provinceHistory.controllerId === provinceHistory.capitalOwnerId;
   }
 }
