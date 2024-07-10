@@ -3036,17 +3036,22 @@ export class ResolutionService {
     });
 
     Object.values(dbUpdates.countryStatChanges).forEach((countryStats: CountryStatChanges) => {
-      const priorHistory: CountryHistoryRow | undefined = dbStates.countryHistories.find((country: CountryHistoryRow) =>
-        country.countryId === countryStats.countryId
+      const priorHistory: CountryHistoryRow | undefined = dbStates.countryHistories.find(
+        (country: CountryHistoryRow) => country.countryId === countryStats.countryId
       );
 
       if (!priorHistory) {
         terminalLog(`Country History not found for ${countryStats.countryId}`);
+
       } else {
         const countryHistory = this.copyCountryHistory(priorHistory);
-        countryHistory.cityCount = countryStats.cityCount ? countryStats.cityCount : 0;
-        countryHistory.unitCount = countryStats.unitCount ? countryStats.unitCount : 0;
-        countryHistory.voteCount = countryStats.voteCount ? countryStats.voteCount : 0;
+        countryHistory.cityCount = countryStats.cityCount ? countryStats.cityCount : priorHistory.cityCount;
+        countryHistory.unitCount = countryStats.unitCount ? countryStats.unitCount : priorHistory.unitCount;
+        countryHistory.voteCount = countryStats.voteCount ? countryStats.voteCount : priorHistory.voteCount;
+        countryHistory.adjustments = countryHistory.cityCount - countryHistory.unitCount;
+
+        countryHistory.nukeRange = countryStats.nukeRange ? countryStats.nukeRange : priorHistory.nukeRange;
+        countryHistory.bankedBuilds = countryStats.bankedBuilds ? countryStats.bankedBuilds : priorHistory.bankedBuilds;
 
         dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
       }
