@@ -4,7 +4,7 @@ import { DayOfWeek } from '../../models/enumeration/day_of_week-enum';
 import { DeadlineSchedule } from '../../models/enumeration/deadline-schedule-enum';
 import { GameStatus } from '../../models/enumeration/game-status-enum';
 import { OrderDisplay } from '../../models/enumeration/order-display-enum';
-import { ProvinceStatus } from '../../models/enumeration/province-enums';
+import { CityType, ProvinceStatus } from '../../models/enumeration/province-enums';
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { BuildType, UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
@@ -284,6 +284,7 @@ export interface UnitRow {
 export interface UnitHistoryRowResult {
   unit_history_id?: number;
   unit_id: number;
+  country_id?: number;
   turn_id?: number;
   node_id: number;
   unit_status: UnitStatus;
@@ -294,6 +295,7 @@ export interface UnitHistoryRowResult {
 export interface UnitHistoryRow {
   unitHistoryId?: number;
   unitId: number;
+  countryId?: number; // This is passed around for resolution. It is in the Unit object
   turnId?: number;
   nodeId: number;
   unitStatus: UnitStatus;
@@ -303,6 +305,7 @@ export interface UnitHistoryRow {
 
 export interface ProvinceHistoryRowResult {
   province_id: number;
+  city_type?: CityType;
   turn_id?: number;
   controller_id: number | null;
   province_status: ProvinceStatus;
@@ -311,6 +314,7 @@ export interface ProvinceHistoryRowResult {
 
 export interface ProvinceHistoryRow {
   provinceId: number;
+  cityType?: CityType; // This is passed around for resolution. It is in the Province object
   turnId?: number;
   controllerId: number | null;
   capitalOwnerId: number | null;
@@ -378,6 +382,7 @@ export interface InitialUnit {
 
 export interface CountryStatChanges {
   countryId: number;
+  controlsCapital?: boolean;
   cityCount?: number;
   unitCount?: number;
   adjustments?: number;
@@ -392,4 +397,11 @@ export interface CountryStatChanges {
   buildsStartingNukes?: number;
   bankedBuildsGifted?: number;
   bankedBuildsReceived?: number;
+}
+
+export interface CountryAssets {
+  countryId: number;
+  units: UnitHistoryRow[];
+  cities: ProvinceHistoryRow[];
+  votes: ProvinceHistoryRow[];
 }
