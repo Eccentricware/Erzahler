@@ -526,122 +526,80 @@ export class ResolutionService {
       }
     });
 
-    const preStatCheckPromises: Promise<void>[] = [];
-    const postStatCheckPromises: Promise<Turn | void>[] = [];
+    this.prepareCountryHistories(dbStates, dbUpdates, turn);
+
+    const updatePromises: Promise<Turn | void>[] = [];
 
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
-      preStatCheckPromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
+      updatePromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
     }
 
     if (Object.keys(dbUpdates.unitHistories).length > 0) {
       console.log('DB: Unit History Insert');
-      preStatCheckPromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
+      updatePromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
     }
 
     if (Object.keys(dbUpdates.provinceHistories).length > 0) {
       console.log('DB: Province History Insert');
-      preStatCheckPromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
+      updatePromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
     }
 
-    Promise.all(preStatCheckPromises).then(async () => {
-      const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, turn.turnNumber);
+    if (Object.keys(dbUpdates.countryHistories).length > 0) {
+      updatePromises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
+    }
 
-      countryStatCounts.forEach((countryStats: CountryStatCounts) => {
-        let countryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.countryId];
-        if (!countryHistory) {
-          const countryHistoryRow = dbStates.countryHistories.find(
-            (country: CountryHistoryRow) => country.countryId === countryStats.countryId
-          );
+    // Every turn
+    updatePromises.push(db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId));
 
-          if (countryHistoryRow) {
-            countryHistory = this.copyCountryHistory(countryHistoryRow);
+    // Find next turn will require an updated gameState first
+    console.log('DB: Turn Update'); // Pending resolution
+    updatePromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
+
+    Promise.all(updatePromises).then(async () => {
+      // Next turns needs to know retreats after resolution
+      const changedGameState = await db.gameRepo.getGameState(turn.gameId);
+      const nextTurns = this.schedulerService.findNextTurns(turn, changedGameState, unitsRetreating);
+
+      // Ensures pending turn_id < preliminary turn_id for sequential get_last_history functions
+      terminalLog('DB: Pending Turn Insert');
+      db.gameRepo
+        .insertNextTurn([
+          gameState.gameId,
+          nextTurns.pending.turnNumber,
+          nextTurns.pending.turnName,
+          nextTurns.pending.type,
+          nextTurns.pending.yearNumber,
+          TurnStatus.PENDING,
+          nextTurns.pending.deadline
+        ])
+        .then(async (pendingTurn: Turn) => {
+          if (!pendingTurn.turnId) {
+            terminalAddendum('Resolution', `Can't find turnId for ${pendingTurn.turnName}`);
+            return;
           }
-        }
+          this.schedulerService.scheduleTurn(pendingTurn.turnId, pendingTurn.deadline);
 
-        if (!countryHistory) {
-          terminalLog(`Country History not found for ${countryStats.countryId}`);
-        } else if (
-          countryHistory.cityCount !== countryStats.cityCount ||
-          countryHistory.unitCount !== countryStats.unitCount ||
-          countryHistory.voteCount !== countryStats.voteCount
-        ) {
-          countryHistory.cityCount = countryStats.cityCount;
-          countryHistory.unitCount = countryStats.unitCount;
-          countryHistory.adjustments = countryStats.adjustments;
-          countryHistory.voteCount = countryHistory.newCapitals
-            ? countryStats.voteCount + countryHistory.newCapitals
-            : countryStats.voteCount;
+          if (nextTurns.preliminary) {
+            await this.optionsService.saveOptionsForTurn(pendingTurn);
 
-          if (
-            countryStats.cityCount === 0 &&
-            (!countryHistory.inRetreat || !countryStats.canClaimTerritory) &&
-            countryStats.voteCount === 1 &&
-            countryStats.occupyingCountryId !== countryHistory.countryId
-          ) {
-            this.eliminateCountry(countryHistory, countryStats, dbStates, dbUpdates, turn);
+            db.gameRepo
+              .insertNextTurn([
+                gameState.gameId,
+                nextTurns.preliminary.turnNumber,
+                nextTurns.preliminary.turnName,
+                nextTurns.preliminary.type,
+                nextTurns.preliminary.yearNumber,
+                TurnStatus.PRELIMINARY,
+                nextTurns.preliminary.deadline
+              ])
+              .then(async (preliminaryTurn: Turn) => {
+                await this.orderService.createAdjustmentDefaults(preliminaryTurn);
+              });
           } else {
-            dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
+            await this.orderService.createAdjustmentDefaults(pendingTurn);
           }
-        }
-      });
-
-      if (Object.keys(dbUpdates.countryHistories).length > 0) {
-        postStatCheckPromises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
-      }
-
-      // Every turn
-      postStatCheckPromises.push(db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId));
-
-      // Find next turn will require an updated gameState first
-      console.log('DB: Turn Update'); // Pending resolution
-      postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
-
-      Promise.all(postStatCheckPromises).then(async () => {
-        // Next turns needs to know retreats after resolution
-        const changedGameState = await db.gameRepo.getGameState(turn.gameId);
-        const nextTurns = this.schedulerService.findNextTurns(turn, changedGameState, unitsRetreating);
-
-        // Ensures pending turn_id < preliminary turn_id for sequential get_last_history functions
-        terminalLog('DB: Pending Turn Insert');
-        db.gameRepo
-          .insertNextTurn([
-            gameState.gameId,
-            nextTurns.pending.turnNumber,
-            nextTurns.pending.turnName,
-            nextTurns.pending.type,
-            nextTurns.pending.yearNumber,
-            TurnStatus.PENDING,
-            nextTurns.pending.deadline
-          ])
-          .then(async (pendingTurn: Turn) => {
-            if (!pendingTurn.turnId) {
-              terminalAddendum('Resolution', `Can't find turnId for ${pendingTurn.turnName}`);
-              return;
-            }
-            this.schedulerService.scheduleTurn(pendingTurn.turnId, pendingTurn.deadline);
-
-            if (nextTurns.preliminary) {
-              await this.optionsService.saveOptionsForTurn(pendingTurn);
-
-              db.gameRepo
-                .insertNextTurn([
-                  gameState.gameId,
-                  nextTurns.preliminary.turnNumber,
-                  nextTurns.preliminary.turnName,
-                  nextTurns.preliminary.type,
-                  nextTurns.preliminary.yearNumber,
-                  TurnStatus.PRELIMINARY,
-                  nextTurns.preliminary.deadline
-                ])
-                .then(async (preliminaryTurn: Turn) => {
-                  await this.orderService.createAdjustmentDefaults(preliminaryTurn);
-                });
-            } else {
-              await this.orderService.createAdjustmentDefaults(pendingTurn);
-            }
-          });
-      });
+        });
     });
   }
 
