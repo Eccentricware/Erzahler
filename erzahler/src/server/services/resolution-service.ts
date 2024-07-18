@@ -656,94 +656,54 @@ export class ResolutionService {
 
     this.revertContestedProvinces(dbStates.provinceHistories, dbUpdates.provinceHistories);
 
-    const preStatCheckPromises: Promise<void>[] = [];
-    const postStatCheckPromises: Promise<Turn | void>[] = [];
+    this.prepareCountryHistories(dbStates, dbUpdates, turn);
+
+    const updatePromises: Promise<Turn | void>[] = [];
 
     if (dbUpdates.orders.length > 0) {
       console.log('DB: Order Update');
-      preStatCheckPromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
+      updatePromises.push(db.resolutionRepo.updateOrders(dbUpdates.orders));
     }
 
     if (Object.keys(dbUpdates.unitHistories).length > 0) {
       console.log('DB: Unit History Insert');
-      preStatCheckPromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
+      updatePromises.push(db.resolutionRepo.insertUnitHistories(dbUpdates.unitHistories, turn.turnId));
     }
 
     if (Object.keys(dbUpdates.provinceHistories).length > 0) {
       console.log('DB: Province History Insert');
-      preStatCheckPromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
+      updatePromises.push(db.resolutionRepo.insertProvinceHistories(dbUpdates.provinceHistories, turn.turnId));
     }
 
-    Promise.all(preStatCheckPromises).then(async () => {
-      const countryStatCounts = await db.resolutionRepo.getCountryStatCounts(turn.gameId, turn.turnNumber);
+    if (Object.keys(dbUpdates.countryHistories).length > 0) {
+      updatePromises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
+    }
 
-      countryStatCounts.forEach((countryStats: CountryStatCounts) => {
-        let countryHistory: CountryHistoryRow | undefined = dbUpdates.countryHistories[countryStats.countryId];
-        if (!countryHistory) {
-          const countryHistoryRow = dbStates.countryHistories.find(
-            (country: CountryHistoryRow) => country.countryId === countryStats.countryId
-          );
+    // Every turn
+    updatePromises.push(db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId));
 
-          if (countryHistoryRow) {
-            countryHistory = this.copyCountryHistory(countryHistoryRow);
-          }
-        }
+    // Find next turn will require an updated gameState first
+    console.log('DB: Turn Update'); // Pending resolution
+    updatePromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
+    if (!(gameState.preliminaryTurnId && gameState.preliminaryDeadline)) {
+      terminalAddendum('Resolution', `Can't find preliminary turnId or deadline for game ${gameState.gameId}`);
+      return;
+    }
+    const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(
+      gameState.preliminaryTurnId,
+      TurnStatus.PENDING
+    );
+    this.schedulerService.scheduleTurn(gameState.preliminaryTurnId, gameState.preliminaryDeadline);
 
-        if (!countryHistory) {
-          terminalLog(`Country History not found for ${countryStats.countryId}`);
-        } else if (
-          countryHistory.cityCount !== countryStats.cityCount ||
-          countryHistory.unitCount !== countryStats.unitCount ||
-          countryHistory.voteCount !== countryStats.voteCount ||
-          countryHistory.inRetreat
-        ) {
-          countryHistory.cityCount = countryStats.cityCount;
-          countryHistory.unitCount = countryStats.unitCount;
-          countryHistory.adjustments = countryStats.adjustments;
-          countryHistory.voteCount = countryHistory.newCapitals
-            ? countryStats.voteCount + countryHistory.newCapitals
-            : countryStats.voteCount;
+    updatePromises.push(nowPendingTurnPromise);
+    const nowPendingTurn = await nowPendingTurnPromise;
 
-          countryHistory.inRetreat = false;
+    Promise.all(updatePromises).then(async () => {
+      const retreatingCountryIds = dbStates.countryHistories
+        .filter((countryHistory: CountryHistoryRow) => countryHistory.inRetreat)
+        .map((countryHistory: CountryHistoryRow) => countryHistory.countryId);
 
-          if (countryStats.cityCount === 0 && countryStats.voteCount === 1) {
-            this.eliminateCountry(countryHistory, countryStats, dbStates, dbUpdates, turn);
-          } else {
-            dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
-          }
-        }
-      });
-
-      if (Object.keys(dbUpdates.countryHistories).length > 0) {
-        postStatCheckPromises.push(db.resolutionRepo.insertCountryHistories(dbUpdates.countryHistories, turn.turnId));
-      }
-
-      // Every turn
-      postStatCheckPromises.push(db.resolutionRepo.updateOrderSets(dbUpdates.orderSets, turn.turnId));
-
-      // Find next turn will require an updated gameState first
-      console.log('DB: Turn Update'); // Pending resolution
-      postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
-      if (!(gameState.preliminaryTurnId && gameState.preliminaryDeadline)) {
-        terminalAddendum('Resolution', `Can't find preliminary turnId or deadline for game ${gameState.gameId}`);
-        return;
-      }
-      const nowPendingTurnPromise = db.resolutionRepo.updateTurnProgress(
-        gameState.preliminaryTurnId,
-        TurnStatus.PENDING
-      );
-      this.schedulerService.scheduleTurn(gameState.preliminaryTurnId, gameState.preliminaryDeadline);
-
-      postStatCheckPromises.push(nowPendingTurnPromise);
-      const nowPendingTurn = await nowPendingTurnPromise;
-
-      Promise.all(postStatCheckPromises).then(async () => {
-        const retreatingCountryIds = dbStates.countryHistories
-          .filter((countryHistory: CountryHistoryRow) => countryHistory.inRetreat)
-          .map((countryHistory: CountryHistoryRow) => countryHistory.countryId);
-
-        await this.orderService.createAdjustmentDefaults(nowPendingTurn, retreatingCountryIds);
-      });
+      await this.orderService.createAdjustmentDefaults(nowPendingTurn, retreatingCountryIds);
     });
   }
 
