@@ -383,6 +383,7 @@ export interface InitialUnit {
 export interface CountryStatChanges {
   countryId: number;
   controlsCapital?: boolean;
+  capitalControllerId?: number;
   cityCount?: number;
   unitCount?: number;
   adjustments?: number;
