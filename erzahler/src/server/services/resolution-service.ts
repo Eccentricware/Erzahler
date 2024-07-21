@@ -50,6 +50,7 @@ import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
 import { OrdersService } from './orders-service';
 import { CountryStatus } from '../../models/enumeration/country-enum';
+import { CountryStatChangesClass } from '../../models/classes/country-stat-changes';
 
 export class ResolutionService {
   optionsService: OptionsService = new OptionsService();
@@ -194,10 +195,10 @@ export class ResolutionService {
         if (dbUpdates.countryStatChanges[result.unit.countryId]) {
           dbUpdates.countryStatChanges[result.unit.countryId].inRetreat = true;
         } else {
-          dbUpdates.countryStatChanges[result.unit.countryId] = {
+          dbUpdates.countryStatChanges[result.unit.countryId] = new CountryStatChangesClass({
             countryId: result.unit.countryId,
             inRetreat: true
-          }
+          })
         }
       }
     });
@@ -2895,7 +2896,9 @@ export class ResolutionService {
         countryHistory.adjustments = countryHistory.cityCount - countryHistory.unitCount;
 
         countryHistory.nukeRange = countryStats.nukeRange ? countryStats.nukeRange : priorHistory.nukeRange;
-        countryHistory.bankedBuilds = countryStats.bankedBuilds ? countryStats.bankedBuilds : priorHistory.bankedBuilds;
+        countryHistory.bankedBuilds = countryStats.buildsBeingBanked ? countryStats.bankedBuilds : priorHistory.bankedBuilds;
+        countryHistory.nukesInProduction = countryStats.nukesInProduction ? countryStats.nukesInProduction : priorHistory.nukesInProduction;
+        countryHistory.inRetreat = countryStats.inRetreat ? countryStats.inRetreat : priorHistory.inRetreat;
 
         if (
           countryHistory.cityCount === 0 &&
