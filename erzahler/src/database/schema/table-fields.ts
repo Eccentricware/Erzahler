@@ -8,6 +8,7 @@ import { CityType, ProvinceStatus } from '../../models/enumeration/province-enum
 import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { BuildType, UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
+import { CountryHistoryBuilder } from '../../models/classes/county-history-builder';
 
 export interface GameRowResult {
   game_id?: number;
@@ -89,7 +90,7 @@ export interface DbUpdates {
   unitHistories: Record<number, UnitHistoryRow>;
   provinceHistories: Record<number, ProvinceHistoryRow>;
   countryHistories: Record<number, CountryHistoryRow>;
-  countryStatChanges: Record<number, CountryStatChanges>;
+  countryStatChanges: Record<number, CountryHistoryBuilder>;
 }
 
 export interface GameRow {
@@ -382,6 +383,7 @@ export interface InitialUnit {
 
 export interface CountryStatChanges {
   countryId: number;
+  countryStatus?: CountryStatus;
   controlsCapital?: boolean;
   capitalControllerId?: number;
   cityCount?: number;
@@ -396,6 +398,7 @@ export interface CountryStatChanges {
   buildsIncreasingRange?: number;
   bankedBuildsIncreasingRange?: number;
   buildsStartingNukes?: number;
+  nukesFinished?: number;
   bankedBuildsGifted?: number;
   bankedBuildsReceived?: number;
 }
