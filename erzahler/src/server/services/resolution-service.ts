@@ -50,6 +50,7 @@ import { OptionsService } from './options-service';
 import { SchedulerService } from './scheduler-service';
 import { OrdersService } from './orders-service';
 import { CountryStatus } from '../../models/enumeration/country-enum';
+import { CountryHistoryBuilder } from '../../models/classes/county-history-builder';
 
 export class ResolutionService {
   optionsService: OptionsService = new OptionsService();
@@ -194,10 +195,10 @@ export class ResolutionService {
         if (dbUpdates.countryStatChanges[result.unit.countryId]) {
           dbUpdates.countryStatChanges[result.unit.countryId].inRetreat = true;
         } else {
-          dbUpdates.countryStatChanges[result.unit.countryId] = {
+          dbUpdates.countryStatChanges[result.unit.countryId] = new CountryHistoryBuilder({
             countryId: result.unit.countryId,
             inRetreat: true
-          }
+          })
         }
       }
     });
@@ -222,11 +223,11 @@ export class ResolutionService {
           dbUpdates.countryStatChanges[result.foreignCountryId].nukesInProduction = 0;
 
         } else {
-          dbUpdates.countryStatChanges[result.foreignCountryId] = {
+          dbUpdates.countryStatChanges[result.foreignCountryId] = new CountryHistoryBuilder({
             countryId: result.foreignCountryId,
             nukeRange: gameState.defaultNukeRange,
             nukesInProduction: 0
-          }
+          });
         }
       }
     });
@@ -236,19 +237,19 @@ export class ResolutionService {
         if (dbUpdates.countryStatChanges[result.countryId]) {
           dbUpdates.countryStatChanges[result.countryId].bankedBuildsGifted = result.quantity;
         } else {
-          dbUpdates.countryStatChanges[result.countryId] = {
+          dbUpdates.countryStatChanges[result.countryId] = new CountryHistoryBuilder({
             countryId: result.countryId,
             bankedBuildsGifted: result.quantity
-          }
+          });
         }
 
         if (dbUpdates.countryStatChanges[result.recipientId]) {
           dbUpdates.countryStatChanges[result.recipientId].bankedBuildsReceived = result.quantity;
         } else {
-          dbUpdates.countryStatChanges[result.recipientId] = {
+          dbUpdates.countryStatChanges[result.recipientId] = new CountryHistoryBuilder({
             countryId: result.recipientId,
             bankedBuildsReceived: result.quantity
-          }
+          })
         }
       }
     });
@@ -2879,41 +2880,30 @@ export class ResolutionService {
 
     const conqueringCountryIds: number[] = [];
 
-    Object.values(dbUpdates.countryStatChanges).forEach((countryStats: CountryStatChanges) => {
+    Object.values(dbUpdates.countryStatChanges).forEach((countryHistoryBuilder: CountryHistoryBuilder) => {
       const priorHistory: CountryHistoryRow | undefined = dbStates.countryHistories.find(
-        (country: CountryHistoryRow) => country.countryId === countryStats.countryId
+        (country: CountryHistoryRow) => country.countryId === countryHistoryBuilder.countryId
       );
 
       if (!priorHistory) {
-        terminalLog(`Country History not found for ${countryStats.countryId}`);
+        terminalLog(`Country History not found for ${countryHistoryBuilder.countryId}`);
 
       } else {
-        const countryHistory = this.copyCountryHistory(priorHistory);
-        countryHistory.cityCount = countryStats.cityCount ? countryStats.cityCount : priorHistory.cityCount;
-        countryHistory.unitCount = countryStats.unitCount ? countryStats.unitCount : priorHistory.unitCount;
-        countryHistory.voteCount = countryStats.voteCount ? countryStats.voteCount : priorHistory.voteCount;
-        countryHistory.adjustments = countryHistory.cityCount - countryHistory.unitCount;
-
-        countryHistory.nukeRange = countryStats.nukeRange ? countryStats.nukeRange : priorHistory.nukeRange;
-        countryHistory.bankedBuilds = countryStats.bankedBuilds ? countryStats.bankedBuilds : priorHistory.bankedBuilds;
-
-        if (
-          countryHistory.cityCount === 0 &&
-          countryHistory.unitCount === 0 &&
-          countryHistory.voteCount === 1 &&
-          countryStats.capitalControllerId
-        ) {
-          countryHistory.countryStatus = CountryStatus.ELIMINATED;
-          conqueringCountryIds.push(countryStats.capitalControllerId);
+        countryHistoryBuilder.copyCountryHistory(priorHistory);
+        countryHistoryBuilder.processChanges();
+        if (countryHistoryBuilder.countryStatus === CountryStatus.ELIMINATED) {
+          conqueringCountryIds.push(countryHistoryBuilder.capitalControllerId);
           this.transferRemainingProvinces(
-            countryHistory.countryId,
-            countryStats.capitalControllerId,
+            countryHistoryBuilder.countryId,
+            countryHistoryBuilder.capitalControllerId,
             dbStates,
             dbUpdates
           );
         }
 
-        dbUpdates.countryHistories[countryStats.countryId] = countryHistory;
+        const countryHistory: CountryHistoryRow = countryHistoryBuilder.build();
+
+        dbUpdates.countryHistories[countryHistoryBuilder.countryId] = countryHistory;
       }
     });
 
@@ -2985,10 +2975,10 @@ export class ResolutionService {
       countryChanges.unitCount = countryChanges.unitCount ? countryChanges.unitCount + 1 : 1;
 
     } else {
-      dbUpdates.countryStatChanges[unitHistory.countryId] = {
+      dbUpdates.countryStatChanges[unitHistory.countryId] = new CountryHistoryBuilder({
         countryId: unitHistory.countryId,
         unitCount: 1
-      };
+      });
     }
   }
 
@@ -3024,10 +3014,10 @@ export class ResolutionService {
       countryChanges.cityCount = countryChanges.cityCount ? countryChanges.cityCount + 1 : 1;
 
     } else { // If countryAsset doesn't exist, that means no unit or province has a history at this point
-      dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
+      dbUpdates.countryStatChanges[provinceHistory.controllerId] = new CountryHistoryBuilder({
         countryId: provinceHistory.controllerId,
         cityCount: 1
-      };
+      });
     }
   }
 
@@ -3042,10 +3032,10 @@ export class ResolutionService {
       countryChanges.voteCount = countryChanges.voteCount ? countryChanges.voteCount + 1 : 1;
 
     } else {
-      dbUpdates.countryStatChanges[provinceHistory.controllerId] = {
+      dbUpdates.countryStatChanges[provinceHistory.controllerId] = new CountryHistoryBuilder({
         countryId: provinceHistory.controllerId,
         voteCount: 1
-      };
+      });
     }
   }
 
@@ -3072,17 +3062,17 @@ export class ResolutionService {
     let ownerChanges = dbUpdates.countryStatChanges[provinceHistory.capitalOwnerId];
 
     if (!controllerChanges) {
-      controllerChanges = {
+      controllerChanges = new CountryHistoryBuilder({
         countryId: provinceHistory.controllerId,
         voteCount: 0
-      };
+      });
     }
 
     if (!ownerChanges) {
-      ownerChanges = {
+      ownerChanges = new CountryHistoryBuilder({
         countryId: provinceHistory.capitalOwnerId,
         voteCount: 0
-      };
+      });
     }
 
     const countryThatGetsVote =
