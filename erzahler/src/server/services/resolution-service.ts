@@ -6,6 +6,7 @@ import {
   CountryStatCounts,
   DbStates,
   DbUpdates,
+  InitialUnit,
   ProvinceHistoryRow,
   UnitHistoryRow
 } from '../../database/schema/table-fields';
@@ -754,25 +755,20 @@ export class ResolutionService {
     const adjResolutionData = await db.resolutionRepo.getAdjResolutionData(turn.gameId, turn.turnNumber, turn.turnId);
 
     adjResolutionData.forEach((adjOrder: AdjResolutionData) => {
-      let historyChanged = false;
-      const newCountryHistory = dbUpdates.countryHistories[adjOrder.countryId]
-        ? dbUpdates.countryHistories[adjOrder.countryId]
-        : dbStates.countryHistories.find((country: CountryHistoryRow) => country.countryId === adjOrder.countryId);
+      // const newCountryHistory = dbUpdates.countryHistories[adjOrder.countryId]
+      //   ? dbUpdates.countryHistories[adjOrder.countryId]
+      //   : dbStates.countryHistories.find((country: CountryHistoryRow) => country.countryId === adjOrder.countryId);
       const countryResources = remainingResources[adjOrder.countryId];
-
-      if (!newCountryHistory) {
-        terminalAddendum('ALERT', `Country ${adjOrder.countryId} not found in countryHistories`);
-        return;
-      }
 
       // Range Increases
       if (!countryResources.bbriDone) {
         if (adjOrder.increaseRange > 0 && adjOrder.increaseRange < countryResources.bbRemaining) {
           adjOrder.increaseRangeSuccess = true;
-          newCountryHistory.nukeRange += adjOrder.increaseRange;
+          if (dbUpdates.countryStatChanges[adjOrder.countryId]) {
+            dbUpdates.countryStatChanges[adjOrder.countryId].buildsIncreasingRange = adjOrder.increaseRange;
+          }
           countryResources.bbRemaining -= adjOrder.increaseRange;
           countryResources.bbriDone = true;
-          historyChanged = true;
         }
       }
 
@@ -781,6 +777,8 @@ export class ResolutionService {
         adjOrder.unitsDisbanding?.forEach((unit: UnitAndCountryIds) => {
           if (adjOrder.countryId === unit.countryId) {
             if (countryResources.adjRemaining < 0) {
+              // It should be impossible for a unit to be updated at this point, but checking anyways.
+              // Perhaps slow nukes on completion will complicate things
               const unitHistoryDetails = dbUpdates.unitHistories[unit.unitId]
                 ? dbUpdates.unitHistories[unit.unitId]
                 : dbStates.unitHistories.find((unitHistory: UnitHistoryRow) => unitHistory.unitId === unit.unitId);
@@ -792,15 +790,12 @@ export class ResolutionService {
 
               unitHistoryDetails.unitStatus = UnitStatus.DISBANDED_ADJUSTMENT;
               countryResources.adjRemaining++;
-              newCountryHistory.adjustments++;
 
               dbUpdates.unitHistories[unitHistoryDetails.unitId] = unitHistoryDetails;
 
               if (countryResources.adjRemaining === 0) {
                 countryResources.disbandsDone = true;
               }
-
-              historyChanged = true;
             } else {
               terminalAddendum('Warning', `Too many units disbanding!`);
             }
@@ -843,9 +838,6 @@ export class ResolutionService {
                 countryResources.adjRemaining--;
                 newProvincesUsed.add(adjOrder.provinceName);
                 adjOrder.success = true;
-                newCountryHistory.unitCount++;
-                newCountryHistory.adjustments--;
-                historyChanged = true;
 
                 dbUpdates.newUnits.push({
                   unitType: adjOrder.buildType,
@@ -855,15 +847,13 @@ export class ResolutionService {
                   nodeId: adjOrder.nodeId,
                   unitStatus: UnitStatus.ACTIVE
                 });
+
               } else if (adjOrder.buildType === BuildType.NUKE_RUSH) {
                 if (countryResources.bbRemaining > 0) {
                   countryResources.adjRemaining--;
                   countryResources.bbRemaining--;
                   newProvincesUsed.add(adjOrder.provinceName);
-                  newCountryHistory.unitCount++;
-                  newCountryHistory.adjustments--;
                   adjOrder.success = true;
-                  historyChanged = true;
 
                   dbUpdates.newUnits.push({
                     unitType: UnitType.NUKE,
@@ -886,18 +876,14 @@ export class ResolutionService {
           if (adjOrder.buildType === BuildType.BUILD) {
             countryResources.adjRemaining--;
             adjOrder.success = true;
-            newCountryHistory.bankedBuilds++;
-            historyChanged = true;
+            dbUpdates.countryStatChanges[adjOrder.countryId].buildsBeingBanked++;
 
-            newCountryHistory.bankedBuilds++;
           } else if (adjOrder.buildType === BuildType.RANGE) {
             if (Number.isInteger(adjOrder.nukeRange)) {
               countryResources.adjRemaining--;
               adjOrder.success = true;
-              newCountryHistory.nukeRange++;
-              historyChanged = true;
+              dbUpdates.countryStatChanges[adjOrder.countryId].buildsIncreasingRange++;
 
-              newCountryHistory.nukeRange++;
             } else {
               terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting increase nuke range without tech!`);
             }
@@ -905,11 +891,8 @@ export class ResolutionService {
             if (Number.isInteger(adjOrder.nukeRange)) {
               countryResources.adjRemaining--;
               adjOrder.success = true;
-              newCountryHistory.unitCount++;
-              newCountryHistory.adjustments--;
-              historyChanged = true;
+              dbUpdates.countryStatChanges[adjOrder.countryId].buildsStartingNukes++;
 
-              newCountryHistory.nukesInProduction++;
             } else {
               terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting build a nuke without tech!`);
             }
@@ -921,7 +904,6 @@ export class ResolutionService {
           if (countryResources.nipRemaining > 0) {
             if (Number.isInteger(adjOrder.nukeRange)) {
               countryResources.nipRemaining--;
-              newCountryHistory.nukesInProduction--;
               adjOrder.success = true;
 
               dbUpdates.newUnits.push({
@@ -943,10 +925,6 @@ export class ResolutionService {
         }
       }
 
-      if (historyChanged) {
-        dbUpdates.countryHistories[adjOrder.countryId] = newCountryHistory;
-      }
-
       dbUpdates.adjustmentOrders.push({
         buildOrderId: adjOrder.buildOrderId,
         orderSetId: adjOrder.orderSetId,
@@ -957,6 +935,8 @@ export class ResolutionService {
     });
 
     this.dissipateNukes(dbStates.unitHistories, dbUpdates.unitHistories);
+
+    this.prepareCountryHistories(dbStates, dbUpdates);
 
     const promises: Promise<void>[] = [];
 
@@ -2864,6 +2844,10 @@ export class ResolutionService {
       unitsUpdated.add(unitHistory.unitId);
     });
 
+    Object.values(dbUpdates.newUnits).forEach((unitHistory: InitialUnit) => {
+      this.creditCountryWithUnit(unitHistory, dbUpdates);
+    });
+
     // Checks provinces that have been updated and credits countries with cities, votes and checks capital state
     Object.values(dbUpdates.provinceHistories).forEach((provinceHistory: ProvinceHistoryRow) => {
       this.creditCountryWithProvince(provinceHistory, dbUpdates, survivingCountryIds);
@@ -2964,9 +2948,9 @@ export class ResolutionService {
     // postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
   }
 
-  creditCountryWithUnit(unitHistory: UnitHistoryRow, dbUpdates: DbUpdates) {
+  creditCountryWithUnit(unitHistory: UnitHistoryRow | InitialUnit, dbUpdates: DbUpdates) {
     if (!unitHistory.countryId) {
-      terminalLog(`Unit ${unitHistory.unitId} has no countryId`);
+      terminalLog(`Unit at node ${unitHistory.nodeId} has no countryId`);
       return;
     }
 
