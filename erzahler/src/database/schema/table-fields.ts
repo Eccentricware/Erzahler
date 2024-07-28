@@ -386,9 +386,13 @@ export interface CountryStatChanges {
   countryStatus?: CountryStatus;
   controlsCapital?: boolean;
   capitalControllerId?: number;
+  cities?: ProvinceHistoryRow[];
   cityCount?: number;
+  units?: (UnitHistoryRow | InitialUnit)[];
   unitCount?: number;
   adjustments?: number;
+  votes?: ProvinceHistoryRow[];
+  capitals?: ProvinceHistoryRow[];
   voteCount?: number;
   nukeRange?: number;
   bankedBuilds?: number;
