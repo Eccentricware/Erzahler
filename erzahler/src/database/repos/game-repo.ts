@@ -632,6 +632,8 @@ export class GameRepository {
         return <ProvinceHistoryRow>{
           provinceId: provinceHistory.province_id,
           cityType: provinceHistory.city_type,
+          capitalOwnerId: provinceHistory.capital_owner_id,
+          capitalOwnerStatus: provinceHistory.capital_owner_status,
           turnId: provinceHistory.turn_id,
           controllerId: provinceHistory.controller_id,
           provinceStatus: provinceHistory.province_status,

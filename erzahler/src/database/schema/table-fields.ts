@@ -307,6 +307,8 @@ export interface UnitHistoryRow {
 export interface ProvinceHistoryRowResult {
   province_id: number;
   city_type?: CityType;
+  capital_owner_id?: number;
+  capital_owner_status?: CountryStatus
   turn_id?: number;
   controller_id: number | null;
   province_status: ProvinceStatus;
@@ -319,6 +321,7 @@ export interface ProvinceHistoryRow {
   turnId?: number;
   controllerId: number | null;
   capitalOwnerId: number | null;
+  capitalOwnerStatus?: CountryStatus | null;
   provinceStatus: ProvinceStatus;
   validRetreat: boolean;
 }
