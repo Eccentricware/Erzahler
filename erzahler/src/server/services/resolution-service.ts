@@ -876,22 +876,56 @@ export class ResolutionService {
           if (adjOrder.buildType === BuildType.BUILD) {
             countryResources.adjRemaining--;
             adjOrder.success = true;
-            dbUpdates.countryStatChanges[adjOrder.countryId].buildsBeingBanked++;
+            if (dbUpdates.countryStatChanges[adjOrder.countryId]) {
+              if (dbUpdates.countryStatChanges[adjOrder.countryId].buildsBeingBanked) {
+                dbUpdates.countryStatChanges[adjOrder.countryId].buildsBeingBanked++;
+              } else {
+                dbUpdates.countryStatChanges[adjOrder.countryId].buildsBeingBanked = 1;
+              }
+            } else {
+              dbUpdates.countryStatChanges[adjOrder.countryId] = new CountryHistoryBuilder({
+                countryId: adjOrder.countryId,
+                buildsBeingBanked: 1
+              });
+            }
 
           } else if (adjOrder.buildType === BuildType.RANGE) {
             if (Number.isInteger(adjOrder.nukeRange)) {
               countryResources.adjRemaining--;
               adjOrder.success = true;
-              dbUpdates.countryStatChanges[adjOrder.countryId].buildsIncreasingRange++;
+              if (dbUpdates.countryStatChanges[adjOrder.countryId]) {
+                if (dbUpdates.countryStatChanges[adjOrder.countryId].buildsIncreasingRange) {
+                  dbUpdates.countryStatChanges[adjOrder.countryId].buildsIncreasingRange++;
+                } else {
+                  dbUpdates.countryStatChanges[adjOrder.countryId].buildsIncreasingRange = 1;
+                }
+              } else {
+                dbUpdates.countryStatChanges[adjOrder.countryId] = new CountryHistoryBuilder({
+                  countryId: adjOrder.countryId,
+                  buildsIncreasingRange: 1
+                });
+              }
 
             } else {
               terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting increase nuke range without tech!`);
             }
+
           } else if (adjOrder.buildType === BuildType.NUKE_START) {
             if (Number.isInteger(adjOrder.nukeRange)) {
               countryResources.adjRemaining--;
               adjOrder.success = true;
-              dbUpdates.countryStatChanges[adjOrder.countryId].buildsStartingNukes++;
+              if (dbUpdates.countryStatChanges[adjOrder.countryId]) {
+                if (dbUpdates.countryStatChanges[adjOrder.countryId].buildsStartingNukes) {
+                  dbUpdates.countryStatChanges[adjOrder.countryId].buildsStartingNukes++;
+                } else {
+                  dbUpdates.countryStatChanges[adjOrder.countryId].buildsStartingNukes = 1;
+                }
+              } else {
+                dbUpdates.countryStatChanges[adjOrder.countryId] = new CountryHistoryBuilder({
+                  countryId: adjOrder.countryId,
+                  buildsStartingNukes: 1
+                });
+              }
 
             } else {
               terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting build a nuke without tech!`);
@@ -919,7 +953,7 @@ export class ResolutionService {
               adjOrder.success = false;
             }
           } else {
-            terminalAddendum('ALERT', `Country ${adjOrder.countryId} finish a nuke not in production!`);
+            terminalAddendum('ALERT', `Country ${adjOrder.countryId} attempting to finish a nuke not in production!`);
             adjOrder.success = false;
           }
         }
