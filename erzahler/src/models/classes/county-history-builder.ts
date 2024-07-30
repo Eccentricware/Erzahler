@@ -76,7 +76,8 @@ export class CountryHistoryBuilder {
     this.bankedBuilds += this.buildsBeingBanked + this.bankedBuildsReceived - this.bankedBuildsGifted;
 
     this.nukeRange += this.buildsIncreasingRange + this.bankedBuildsIncreasingRange;
-    this.nukesInProduction += this.buildsStartingNukes - this.nukesFinished;
+    // Nukes that were in production are forced to be placed or disbanded
+    this.nukesInProduction = 0 + this.buildsStartingNukes;
 
     if (this.cityCount === 0 && this.unitCount === 0 && this.voteCount === 1) {
       this.countryStatus = CountryStatus.ELIMINATED;
