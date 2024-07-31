@@ -3017,18 +3017,11 @@ export class ResolutionService {
       this.creditCountryWithSupplyCenter(provinceHistory, dbUpdates);
     }
 
-    if ((provinceHistory.cityType === CityType.VOTE ||
-      (provinceHistory.cityType === CityType.CAPITAL && provinceHistory.capitalOwnerStatus === CountryStatus.ELIMINATED) ||
-      (provinceHistory.cityType === CityType.CAPITAL && provinceHistory.capitalOwnerId === provinceHistory.controllerId))
-      && provinceHistory.provinceStatus !== ProvinceStatus.DORMANT
-    ) {
+    if (provinceHistory.cityType === CityType.VOTE && provinceHistory.provinceStatus !== ProvinceStatus.DORMANT) {
       this.creditCountryWithVote(provinceHistory, dbUpdates);
     }
 
-    if (provinceHistory.cityType === CityType.CAPITAL &&
-      provinceHistory.capitalOwnerStatus !== CountryStatus.ELIMINATED &&
-      provinceHistory.capitalOwnerId !== provinceHistory.controllerId
-    ) {
+    if (provinceHistory.cityType === CityType.CAPITAL) {
       this.creditCountriesWithCapital(provinceHistory, dbUpdates, survivingCountryIds);
     }
   }
@@ -3119,15 +3112,19 @@ export class ResolutionService {
       });
     }
 
-    const countryThatGetsVote =
-      (provinceHistory.controllerId === provinceHistory.capitalOwnerId || survivingCountryIds.has(provinceHistory.capitalOwnerId))
-      ? ownerChanges
-      : controllerChanges;
-
-    const countryCapitalCounted = countryThatGetsVote.capitals.find((capital: ProvinceHistoryRow) => capital.provinceId === provinceHistory.provinceId);
-    if (!countryCapitalCounted) {
-      countryThatGetsVote.capitals.push(provinceHistory);
+    // Capital array is preparatory
+    if (provinceHistory.controllerId === provinceHistory.capitalOwnerId || provinceHistory.capitalOwnerStatus !== CountryStatus.ELIMINATED) {
+      ownerChanges.votes.push(provinceHistory);
     }
+
+    if (provinceHistory.capitalOwnerStatus === CountryStatus.ELIMINATED) {
+      controllerChanges.votes.push(provinceHistory);
+    }
+
+    if (provinceHistory.controllerId !== provinceHistory.capitalOwnerId && provinceHistory.capitalOwnerStatus !== CountryStatus.ELIMINATED) {
+      controllerChanges.capitals.push(provinceHistory);
+    }
+
     ownerChanges.controlsCapital = provinceHistory.controllerId === provinceHistory.capitalOwnerId;
     ownerChanges.capitalControllerId = ownerChanges.controlsCapital ? provinceHistory.capitalOwnerId : provinceHistory.controllerId;
   }
