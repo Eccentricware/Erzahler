@@ -347,7 +347,7 @@ export interface CountryHistoryRow {
   cityCount: number;
   unitCount: number;
   bankedBuilds: number;
-  nukeRange: number;
+  nukeRange: number | null;
   adjustments: number;
   inRetreat: boolean;
   voteCount: number;
@@ -397,7 +397,7 @@ export interface CountryStatChanges {
   votes?: ProvinceHistoryRow[];
   capitals?: ProvinceHistoryRow[];
   voteCount?: number;
-  nukeRange?: number;
+  nukeRange?: number | null;
   bankedBuilds?: number;
   nukesInProduction?: number;
   inRetreat?: boolean;
