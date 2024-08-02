@@ -1,5 +1,6 @@
-import { CountryHistoryRow, CountryStatChanges } from "../../database/schema/table-fields";
+import { CountryHistoryRow, CountryStatChanges, InitialUnit, ProvinceHistoryRow, UnitHistoryRow } from "../../database/schema/table-fields";
 import { CountryStatus } from "../enumeration/country-enum";
+import { Unit } from "../objects/map-objects";
 
 /**
  * Handles defaults and changes for country stat changes
@@ -9,7 +10,11 @@ export class CountryHistoryBuilder {
   countryStatus: CountryStatus;
   controlsCapital: boolean;
   capitalControllerId: number;
+  cities: ProvinceHistoryRow[];
+  votes: ProvinceHistoryRow[];
+  capitals: ProvinceHistoryRow[];
   cityCount: number;
+  units: (UnitHistoryRow | InitialUnit)[];
   unitCount: number;
   adjustments: number;
   voteCount: number;
@@ -30,9 +35,13 @@ export class CountryHistoryBuilder {
     this.countryStatus = countryStats.countryStatus ? countryStats.countryStatus : CountryStatus.ACTIVE;
     this.controlsCapital = countryStats.controlsCapital ? countryStats.controlsCapital : true;
     this.capitalControllerId = countryStats.capitalControllerId ? countryStats.capitalControllerId : 0;
+    this.cities = countryStats.cities ? countryStats.cities : [];
     this.cityCount = countryStats.cityCount ? countryStats.cityCount : 0;
+    this.units = countryStats.units ? countryStats.units : [];
     this.unitCount = countryStats.unitCount ? countryStats.unitCount : 0;
     this.adjustments = countryStats.adjustments ? countryStats.adjustments : 0;
+    this.votes = countryStats.votes ? countryStats.votes : [];
+    this.capitals = countryStats.capitals ? countryStats.capitals : [];
     this.voteCount = countryStats.voteCount ? countryStats.voteCount : 0;
     this.nukeRange = countryStats.nukeRange ? countryStats.nukeRange : 0;
     this.bankedBuilds = countryStats.bankedBuilds ? countryStats.bankedBuilds : 0;
@@ -60,6 +69,9 @@ export class CountryHistoryBuilder {
   }
 
   processChanges() {
+    this.cityCount = this.cities.length;
+    this.unitCount = this.units.length;
+    this.voteCount = this.votes.length;
     this.adjustments = this.cityCount - this.unitCount;
     this.bankedBuilds += this.buildsBeingBanked + this.bankedBuildsReceived - this.bankedBuildsGifted;
 
