@@ -203,21 +203,14 @@ export interface AdjResolutionDataResult {
   country_name: string;
   adjustments: number;
   banked_builds: number;
-  nuke_range: number | null;
   nukes_in_production: number;
-  units_disbanding: UnitAndCountryIdsResult[] | null;
+  nuke_range: number;
+  builds: BuildDetailsResult[];
+  disbands: UnitAndCountryIdsResult[];
   increase_range: number;
-  nomination: number[];
   increase_range_success: boolean;
+  nomination: number;
   nomination_success: boolean;
-  build_order_id: number;
-  node_id: number;
-  build_type: BuildType;
-  success: boolean;
-  province_name: string;
-  controller_id: number;
-  province_status: ProvinceStatus;
-  unit_id: number | null;
 }
 
 export interface AdjResolutionData {
@@ -226,29 +219,44 @@ export interface AdjResolutionData {
   countryName: string;
   adjustments: number;
   bankedBuilds: number;
-  nukeRange: number | null;
   nukesInProduction: number;
-  unitsDisbanding: UnitAndCountryIds[] | null;
+  nukeRange: number;
+  builds: BuildDetails[];
+  disbands: UnitAndCountryIds[];
   increaseRange: number;
-  nomination: number[];
   increaseRangeSuccess: boolean;
+  nomination: number;
   nominationSuccess: boolean;
-  buildOrderId: number;
-  nodeId: number;
-  buildType: BuildType;
-  success: boolean;
-  provinceName: string;
-  controllerId: number;
-  provinceStatus: ProvinceStatus;
-  unitId: number | null;
 }
 
 export interface AdjustmentResolutionResources {
   adjRemaining: number;
-  bbriDone: boolean;
   bbRemaining: number;
-  disbandsDone: boolean;
   nipRemaining: number;
+}
+
+export interface BuildDetailsResult {
+  country_id: number;
+  build_order_id: number;
+  order_set_id: number;
+  build_type: BuildType;
+  build_node: number | null;
+  destination_controller_id: number;
+  province_name: string;
+  existing_unit_id: number | null;
+  success: boolean;
+}
+
+export interface BuildDetails {
+  countryId: number;
+  buildOrderId: number;
+  orderSetId: number;
+  buildType: BuildType;
+  buildNode: number | null;
+  destinationControllerId: number;
+  provinceName: string;
+  existingUnitId: number | null;
+  success: boolean;
 }
 
 export interface UnitAndCountryIdsResult {
