@@ -1001,7 +1001,7 @@ export class ResolutionService {
 
     this.dissipateNukes(dbStates.unitHistories, dbUpdates.unitHistories);
     this.prepareCountryHistories(dbStates, dbUpdates);
-    this.confirmAdjustments(dbStates, dbUpdates);
+    this.confirmAdjustments(dbUpdates);
 
     const updatePromises: Promise<void>[] = [];
 
@@ -3011,25 +3011,29 @@ export class ResolutionService {
     // postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
   }
 
-  confirmAdjustments(dbStates: DbStates, dbUpdates: DbUpdates): void {
+  confirmAdjustments(dbUpdates: DbUpdates): void {
     Object.values(dbUpdates.countryStatChanges).forEach((countryStats: CountryStatChanges) => {
-      if (countryStats.cities && countryStats.units &&
-        countryStats.cities.length - countryStats.units.length < 0) {
-        this.useDefaultDisbands(dbStates, dbUpdates);
+      const cityCount = countryStats.cities ? countryStats.cities.length : 0;
+      const unitCount = countryStats.units ? countryStats.units.length : 0;
+      const adjustments = cityCount - unitCount;
+      const buildsBeingBanked = countryStats.buildsBeingBanked ? countryStats.buildsBeingBanked : 0;
+      const buildsIncreasingRange = countryStats.buildsIncreasingRange ? countryStats.buildsIncreasingRange : 0;
+
+      if (adjustments < 0) {
+        this.useDefaultDisbands(dbUpdates);
       }
 
-      if (countryStats.cities && countryStats.units && countryStats.buildsBeingBanked !== undefined && countryStats.buildsIncreasingRange !== undefined
-        && countryStats.buildsBeingBanked + countryStats.buildsIncreasingRange !== countryStats.cities.length - countryStats.units.length) {
-        this.useDefaultBuilds(dbStates, dbUpdates);
+      if (adjustments > 0 && adjustments !== buildsBeingBanked + buildsIncreasingRange) {
+        this.useDefaultBuilds(dbUpdates);
       }
     });
   }
 
-  useDefaultBuilds(dbStates: DbStates, dbUpdates: DbUpdates): void {
+  useDefaultBuilds(dbUpdates: DbUpdates): void {
     // To do
   }
 
-  useDefaultDisbands(dbStates: DbStates, dbUpdates: DbUpdates): void {
+  useDefaultDisbands(dbUpdates: DbUpdates): void {
     // To do
   }
 
@@ -3039,15 +3043,9 @@ export class ResolutionService {
       return;
     }
 
-    const countryChanges = dbUpdates.countryStatChanges[unitHistory.countryId];
-    if (countryChanges) {
-      if (countryChanges.units) {
-        countryChanges.units.push(unitHistory);
-      } else {
-        countryChanges.units = [unitHistory];
-      }
+    let countryChanges = dbUpdates.countryStatChanges[unitHistory.countryId];
 
-    } else {
+    if (!countryChanges) {
       dbUpdates.countryStatChanges[unitHistory.countryId] = new CountryHistoryBuilder(
         {
           countryId: unitHistory.countryId,
@@ -3055,6 +3053,19 @@ export class ResolutionService {
         },
         dbStates.countryHistories.find((country: CountryHistoryRow) => country.countryId === unitHistory.countryId)
       );
+      countryChanges = dbUpdates.countryStatChanges[unitHistory.countryId];
+    }
+
+    const unitCounted = countryChanges?.units?.find((unit: UnitHistoryRow | InitialUnit) => unit.nodeId === unitHistory.nodeId);
+
+    if (unitCounted) {
+      return;
+    }
+
+    if (countryChanges.units) {
+      countryChanges.units.push(unitHistory);
+    } else {
+      countryChanges.units = [unitHistory];
     }
   }
 
