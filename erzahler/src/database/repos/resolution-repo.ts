@@ -13,10 +13,14 @@ import {
 import {
   AdjResolutionData,
   AdjResolutionDataResult,
+  BuildDetails,
+  BuildDetailsResult,
   CountryTransferResources,
   TransferResourcesResults,
   TransportNetworkUnit,
   TransportNetworkUnitResult,
+  UnitAndCountryIds,
+  UnitAndCountryIdsResult,
   UnitOrderResolution,
   UnitOrderResolutionResult
 } from '../../models/objects/resolution/order-resolution-objects';
@@ -536,24 +540,33 @@ export class ResolutionRepository {
               countryName: adjOrder.country_name,
               adjustments: adjOrder.adjustments,
               bankedBuilds: adjOrder.banked_builds,
-              nukeRange: adjOrder.nuke_range,
               nukesInProduction: adjOrder.nukes_in_production,
-              unitsDisbanding: adjOrder.units_disbanding?.map((unit: { unit_id: number; country_id: number }) => ({
-                unitId: unit.unit_id,
-                countryId: unit.country_id
-              })),
+              nukeRange: adjOrder.nuke_range,
+              builds: adjOrder.builds?.map(
+                (build: BuildDetailsResult) =>
+                  <BuildDetails>{
+                    buildOrderId: build.build_order_id,
+                    orderSetId: build.order_set_id,
+                    countryId: build.country_id,
+                    buildType: build.build_type,
+                    buildNode: build.build_node,
+                    destinationControllerId: build.destination_controller_id,
+                    existingUnitId: build.existing_unit_id,
+                    provinceName: build.province_name,
+                    success: true
+                  }
+              ),
+              disbands: adjOrder.disbands?.map(
+                (disband: UnitAndCountryIdsResult) =>
+                  <UnitAndCountryIds>{
+                    unitId: disband.unit_id,
+                    countryId: disband.country_id
+                  }
+              ),
               increaseRange: adjOrder.increase_range,
-              nomination: adjOrder.nomination,
               increaseRangeSuccess: adjOrder.increase_range_success,
-              nominationSuccess: adjOrder.nomination_success,
-              buildOrderId: adjOrder.build_order_id,
-              nodeId: adjOrder.node_id,
-              buildType: adjOrder.build_type,
-              success: adjOrder.success,
-              provinceName: adjOrder.province_name,
-              controllerId: adjOrder.controller_id,
-              provinceStatus: adjOrder.province_status,
-              unitId: adjOrder.unit_id
+              nomination: adjOrder.nomination,
+              nominationSuccess: adjOrder.nomination_success
             }
         )
       );
