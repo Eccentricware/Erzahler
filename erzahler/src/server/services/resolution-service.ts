@@ -1001,6 +1001,7 @@ export class ResolutionService {
 
     this.dissipateNukes(dbStates.unitHistories, dbUpdates.unitHistories);
     this.prepareCountryHistories(dbStates, dbUpdates);
+    this.confirmAdjustments(dbStates, dbUpdates);
 
     const updatePromises: Promise<void>[] = [];
 
@@ -3008,6 +3009,28 @@ export class ResolutionService {
     // // Find next turn will require an updated gameState first
     // console.log('DB: Turn Update'); // Pending resolution
     // postStatCheckPromises.push(db.resolutionRepo.updateTurnProgress(turn.turnId, TurnStatus.RESOLVED));
+  }
+
+  confirmAdjustments(dbStates: DbStates, dbUpdates: DbUpdates): void {
+    Object.values(dbUpdates.countryStatChanges).forEach((countryStats: CountryStatChanges) => {
+      if (countryStats.cities && countryStats.units &&
+        countryStats.cities.length - countryStats.units.length < 0) {
+        this.useDefaultDisbands(dbStates, dbUpdates);
+      }
+
+      if (countryStats.cities && countryStats.units && countryStats.buildsBeingBanked !== undefined && countryStats.buildsIncreasingRange !== undefined
+        && countryStats.buildsBeingBanked + countryStats.buildsIncreasingRange !== countryStats.cities.length - countryStats.units.length) {
+        this.useDefaultBuilds(dbStates, dbUpdates);
+      }
+    });
+  }
+
+  useDefaultBuilds(dbStates: DbStates, dbUpdates: DbUpdates): void {
+    // To do
+  }
+
+  useDefaultDisbands(dbStates: DbStates, dbUpdates: DbUpdates): void {
+    // To do
   }
 
   creditCountryWithUnit(unitHistory: UnitHistoryRow | InitialUnit, dbUpdates: DbUpdates, dbStates: DbStates) {
