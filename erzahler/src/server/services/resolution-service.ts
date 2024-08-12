@@ -771,15 +771,17 @@ export class ResolutionService {
     const adjResolutionData = await db.resolutionRepo.getAdjResolutionData(turn.gameId, turn.turnNumber, turn.turnId);
 
     adjResolutionData.forEach((countryAdjOrders: AdjResolutionData) => {
-      const countryResources: AdjustmentResolutionResources = {
-        adjRemaining: countryAdjOrders.adjustments,
-        bbRemaining: countryAdjOrders.bankedBuilds,
-        nipRemaining: countryAdjOrders.nukesInProduction
+      const countryStats: CountryHistoryBuilder = dbUpdates.countryStatChanges[countryAdjOrders.countryId];
+
+      countryStats.resources = {
+        adjustments: countryAdjOrders.adjustments,
+        bankedBuilds: countryAdjOrders.bankedBuilds,
+        nukesInProduction: countryAdjOrders.nukesInProduction
       };
 
       countryAdjOrders.builds?.forEach((build: BuildDetails) => {
         // Requires Adjustment (Anything not finishing a slow build nuke)
-        if (countryResources.adjRemaining > 0) {
+        if (countryStats.resources.adjustments > 0) {
           // Requires Placement
           if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING, BuildType.NUKE_RUSH].includes(build.buildType)) {
             if (build.countryId !== build.destinationControllerId) {
@@ -802,7 +804,7 @@ export class ResolutionService {
 
             } else {
               if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING].includes(build.buildType) && build.buildNode) {
-                countryResources.adjRemaining--;
+                countryStats.resources.adjustments--;
                 newProvincesUsed.add(build.provinceName);
                 build.success = true;
 
@@ -818,9 +820,9 @@ export class ResolutionService {
                 this.creditCountryWithUnit(newUnit, dbUpdates, dbStates);
 
               } else if (build.buildType === BuildType.NUKE_RUSH && build.buildNode) {
-                if (countryResources.bbRemaining > 0) {
-                  countryResources.adjRemaining--;
-                  countryResources.bbRemaining--;
+                if (countryStats.resources.bankedBuilds > 0) {
+                  countryStats.resources.adjustments--;
+                  countryStats.resources.bankedBuilds--;
                   newProvincesUsed.add(build.provinceName);
                   build.success = true;
 
@@ -846,7 +848,7 @@ export class ResolutionService {
           }
 
           if (build.buildType === BuildType.BUILD) {
-            countryResources.adjRemaining--;
+            countryStats.resources.adjustments--;
             if (dbUpdates.countryStatChanges[build.countryId]) {
               if (dbUpdates.countryStatChanges[build.countryId].buildsBeingBanked) {
                 dbUpdates.countryStatChanges[build.countryId].buildsBeingBanked++;
@@ -865,7 +867,7 @@ export class ResolutionService {
 
           } else if (build.buildType === BuildType.RANGE) {
             if (Number.isInteger(countryAdjOrders.nukeRange)) {
-              countryResources.adjRemaining--;
+              countryStats.resources.adjustments--;
               if (dbUpdates.countryStatChanges[build.countryId]) {
                 if (dbUpdates.countryStatChanges[build.countryId].buildsIncreasingRange) {
                   dbUpdates.countryStatChanges[build.countryId].buildsIncreasingRange++;
@@ -888,7 +890,7 @@ export class ResolutionService {
 
           } else if (build.buildType === BuildType.NUKE_START) {
             if (Number.isInteger(countryAdjOrders.nukeRange)) {
-              countryResources.adjRemaining--;
+              countryStats.resources.adjustments--;
               if (dbUpdates.countryStatChanges[build.countryId]) {
                 if (dbUpdates.countryStatChanges[build.countryId].buildsStartingNukes) {
                   dbUpdates.countryStatChanges[build.countryId].buildsStartingNukes++;
@@ -917,9 +919,9 @@ export class ResolutionService {
 
         // Nukes finishing
         if (build.buildType === BuildType.NUKE_FINISH) {
-          if (countryResources.nipRemaining > 0) {
+          if (countryStats.resources.nukesInProduction > 0) {
             if (Number.isInteger(countryAdjOrders.nukeRange)) {
-              countryResources.nipRemaining--;
+              countryStats.resources.nukesInProduction--;
               build.success = true;
 
               const newUnit: InitialUnit = {
@@ -953,12 +955,12 @@ export class ResolutionService {
       });
 
       // Country Level: Banked Builds => Range
-      if (countryAdjOrders.increaseRange > 0 && countryAdjOrders.increaseRange < countryResources.bbRemaining) {
+      if (countryAdjOrders.increaseRange > 0 && countryAdjOrders.increaseRange < countryStats.resources.bankedBuilds) {
         countryAdjOrders.increaseRangeSuccess = true;
         if (dbUpdates.countryStatChanges[countryAdjOrders.countryId]) {
           dbUpdates.countryStatChanges[countryAdjOrders.countryId].buildsIncreasingRange = countryAdjOrders.increaseRange;
         }
-        countryResources.bbRemaining -= countryAdjOrders.increaseRange;
+        countryStats.resources.bankedBuilds -= countryAdjOrders.increaseRange;
       }
 
       countryAdjOrders.disbands?.forEach((unit: UnitAndCountryIds) => {
@@ -971,7 +973,7 @@ export class ResolutionService {
           return;
         }
 
-        if (countryResources.adjRemaining >= 0) {
+        if (countryStats.resources.adjustments >= 0) {
           terminalAddendum('Warning', `Too many units disbanding!`);
           return;
         }
@@ -993,15 +995,15 @@ export class ResolutionService {
         }
 
         unitHistoryDetails.unitStatus = UnitStatus.DISBANDED_ADJUSTMENT;
-        countryResources.adjRemaining++;
+        countryStats.resources.adjustments++;
 
         dbUpdates.unitHistories[unitHistoryDetails.unitId] = unitHistoryDetails;
       });
     });
 
     this.dissipateNukes(dbStates.unitHistories, dbUpdates.unitHistories);
-    this.prepareCountryHistories(dbStates, dbUpdates);
     this.confirmAdjustments(dbUpdates);
+    this.prepareCountryHistories(dbStates, dbUpdates);
 
     const updatePromises: Promise<void>[] = [];
 
@@ -3019,21 +3021,32 @@ export class ResolutionService {
       const buildsBeingBanked = countryStats.buildsBeingBanked ? countryStats.buildsBeingBanked : 0;
       const buildsIncreasingRange = countryStats.buildsIncreasingRange ? countryStats.buildsIncreasingRange : 0;
 
+      // Deficiet adjustment
       if (adjustments < 0) {
-        this.useDefaultDisbands(dbUpdates);
+        this.forceDisbands(countryStats, dbUpdates);
       }
 
-      if (adjustments > 0 && adjustments !== buildsBeingBanked + buildsIncreasingRange) {
-        this.useDefaultBuilds(dbUpdates);
+      // Can build but overdid it
+      if (adjustments > 0 && adjustments < buildsBeingBanked + buildsIncreasingRange) {
+        this.rescindBuilds(countryStats, dbUpdates);
+      }
+
+      // Surplus builds
+      if (adjustments > 0 && adjustments > buildsBeingBanked + buildsIncreasingRange) {
+        this.forceBuilds(countryStats, dbUpdates);
       }
     });
   }
 
-  useDefaultBuilds(dbUpdates: DbUpdates): void {
+  forceDisbands(countryStats: CountryStatChanges, bUpdates: DbUpdates): void {
+    console.log(countryStats);
+  }
+
+  rescindBuilds(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
     // To do
   }
 
-  useDefaultDisbands(dbUpdates: DbUpdates): void {
+  forceBuilds(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
     // To do
   }
 

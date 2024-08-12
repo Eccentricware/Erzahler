@@ -30,7 +30,11 @@ export class CountryHistoryBuilder {
   nukesFinished: number;
   bankedBuildsGifted: number;
   bankedBuildsReceived: number;
-
+  resources: {
+    adjustments: number;
+    bankedBuilds: number;
+    nukesInProduction: number;
+  }
   constructor(countryStats: CountryStatChanges, countryHistory: CountryHistoryRow | undefined) {
     if (!countryStats) {
       terminalAddendum('CountryHistoryBuilder ERROR:', 'No country stats provided');
@@ -60,19 +64,12 @@ export class CountryHistoryBuilder {
     this.nukesFinished = countryStats.nukesFinished ? countryStats.nukesFinished : 0;
     this.bankedBuildsGifted = countryStats.bankedBuildsGifted ? countryStats.bankedBuildsGifted : 0;
     this.bankedBuildsReceived = countryStats.bankedBuildsReceived ? countryStats.bankedBuildsReceived : 0;
+    this.resources = countryStats.resources ? countryStats.resources : {
+      adjustments: 0,
+      bankedBuilds: 0,
+      nukesInProduction: 0
+    }
   }
-
-  // copyCountryHistory(countryHistory: CountryHistoryRow) {
-  //   this.countryStatus = countryHistory.countryStatus;
-  //   this.unitCount = countryHistory.unitCount;
-  //   this.cityCount = countryHistory.cityCount;
-  //   this.voteCount = countryHistory.voteCount;
-  //   this.adjustments = countryHistory.adjustments;
-  //   this.bankedBuilds = countryHistory.bankedBuilds;
-  //   this.nukeRange = countryHistory.nukeRange;
-  //   this.nukesInProduction = countryHistory.nukesInProduction;
-  //   this.inRetreat = countryHistory.inRetreat;
-  // }
 
   processChanges() {
     this.cityCount = this.cities.length;
