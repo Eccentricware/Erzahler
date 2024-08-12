@@ -408,6 +408,11 @@ export interface CountryStatChanges {
   nukesFinished?: number;
   bankedBuildsGifted?: number;
   bankedBuildsReceived?: number;
+  resources?: {
+    adjustments: number;
+    bankedBuilds: number;
+    nukesInProduction: number;
+  }
 }
 
 export interface CountryAssets {
