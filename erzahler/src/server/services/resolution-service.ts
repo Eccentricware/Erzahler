@@ -774,7 +774,7 @@ export class ResolutionService {
       const countryStats: CountryHistoryBuilder = dbUpdates.countryStatChanges[countryAdjOrders.countryId];
 
       countryStats.resources = {
-        adjustments: countryAdjOrders.adjustments,
+        adjustments: countryStats.cities.length - countryStats.units.length,
         bankedBuilds: countryAdjOrders.bankedBuilds,
         nukesInProduction: countryAdjOrders.nukesInProduction
       };
