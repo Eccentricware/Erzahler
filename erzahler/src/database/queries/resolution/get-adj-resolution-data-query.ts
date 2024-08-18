@@ -18,6 +18,7 @@ export const getAdjResolutionDataQuery = `
     INNER JOIN nodes n ON n.node_id = oa.node_id
     INNER JOIN provinces p ON p.province_id = n.province_id
     INNER JOIN get_last_province_history($1, $2) lph ON lph.province_id = p.province_id
+    INNER JOIN nodes pn ON pn.province_id = p.province_id
     LEFT JOIN get_last_unit_history($1, $2) luh ON luh.node_id = n.node_id
       AND luh.unit_status = 'Active'
     WHERE os.turn_id = $3
@@ -27,12 +28,17 @@ export const getAdjResolutionDataQuery = `
       json_agg(
         json_build_object(
           'unit_id', ud.unit_id,
-          'country_id', ud.country_id
+          'country_id', ud.country_id,
+          'province_name', p.province_name,
+          'node_id', udh.node_id
         )
       ) AS disbands
     FROM order_sets os
     INNER JOIN countries c ON c.country_id = os.country_id
     INNER JOIN units ud ON ud.unit_id = any(os.units_disbanding)
+    INNER JOIN get_last_unit_history($1, $2) udh ON udh.unit_id = ud.unit_id
+    INNER JOIN nodes n ON n.node_id = udh.node_id
+    INNER JOIN provinces p ON p.province_id = n.province_id
     WHERE c.game_id = $1
       AND os.turn_id = $3
     GROUP BY c.country_id

@@ -16,6 +16,8 @@ import {
   BuildDetails,
   BuildDetailsResult,
   CountryTransferResources,
+  DisbandDetails,
+  DisbandDetailsResult,
   TransferResourcesResults,
   TransportNetworkUnit,
   TransportNetworkUnitResult,
@@ -557,10 +559,12 @@ export class ResolutionRepository {
                   }
               ),
               disbands: adjOrder.disbands?.map(
-                (disband: UnitAndCountryIdsResult) =>
-                  <UnitAndCountryIds>{
+                (disband: DisbandDetailsResult) =>
+                  <DisbandDetails>{
                     unitId: disband.unit_id,
-                    countryId: disband.country_id
+                    countryId: disband.country_id,
+                    provinceName: disband.province_name,
+                    nodeId: disband.node_id
                   }
               ),
               increaseRange: adjOrder.increase_range,
