@@ -13,6 +13,8 @@ import {
 import {
   AdjResolutionData,
   AdjResolutionDataResult,
+  AvailableProvince,
+  AvailableProvinceResult,
   BuildDetails,
   BuildDetailsResult,
   CountryTransferResources,
@@ -566,6 +568,14 @@ export class ResolutionRepository {
                     provinceName: disband.province_name,
                     nodeId: disband.node_id
                   }
+              ),
+              availableProvinces: adjOrder.available_province_result?.map((availableProvince: AvailableProvinceResult) =>
+                <AvailableProvince>{
+                  provinceId: availableProvince.province_id,
+                  provinceName: availableProvince.province_name,
+                  nodeId: availableProvince.node_id,
+                  nodeName: availableProvince.node_name
+                }
               ),
               increaseRange: adjOrder.increase_range,
               increaseRangeSuccess: adjOrder.increase_range_success,

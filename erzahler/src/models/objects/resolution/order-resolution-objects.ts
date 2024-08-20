@@ -207,6 +207,7 @@ export interface AdjResolutionDataResult {
   nuke_range: number;
   builds: BuildDetailsResult[];
   disbands: DisbandDetailsResult[];
+  available_province_result: AvailableProvinceResult[];
   increase_range: number;
   increase_range_success: boolean;
   nomination: number;
@@ -223,6 +224,7 @@ export interface AdjResolutionData {
   nukeRange: number;
   builds: BuildDetails[];
   disbands: DisbandDetails[];
+  availableProvinces: AvailableProvince[];
   increaseRange: number;
   increaseRangeSuccess: boolean;
   nomination: number;
@@ -270,6 +272,20 @@ export interface DisbandDetails {
   countryId: number;
   provinceName: string;
   nodeId: number;
+}
+
+export interface AvailableProvinceResult {
+  province_id: number;
+  province_name: string;
+  node_id: number;
+  node_name: string;
+}
+
+export interface AvailableProvince {
+  provinceId: number;
+  provinceName: string;
+  nodeId: number;
+  nodeName: string;
 }
 
 export interface UnitAndCountryIdsResult {

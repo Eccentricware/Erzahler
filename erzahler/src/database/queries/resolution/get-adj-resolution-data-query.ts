@@ -49,19 +49,24 @@ export const getAdjResolutionDataQuery = `
     WHERE c.game_id = $1
       AND os.turn_id = $3
     GROUP BY c.country_id
-  ), available_provinces AS (
+  ), available_nodes AS (
     SELECT lph.controller_id,
       json_agg(
         json_build_object(
           'province_id', p.province_id,
-          'province_name', p.province_name
+          'province_name', p.province_name,
+          'node_id', bn.node_id,
+          'node_name', bn.node_name
         )
       ) AS valid_provinces
     FROM get_last_province_history($1, $2) lph
+    INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = lph.controller_id
     INNER JOIN provinces p ON p.province_id = lph.province_id
+    INNER JOIN nodes bn ON bn.province_id = p.province_id
     LEFT JOIN unit_presence up ON up.province_id = p.province_id
     WHERE lph.province_status = 'active'
       AND up.unit_id IS NULL
+      AND bn.node_type = 'land'
     GROUP BY lph.controller_id
   )
   SELECT os.order_set_id,
@@ -83,7 +88,7 @@ export const getAdjResolutionDataQuery = `
   INNER JOIN countries c ON c.country_id = os.country_id
 	LEFT JOIN country_builds cb ON cb.country_id = os.country_id
   LEFT JOIN country_disbands cd ON cd.country_id = os.country_id
-  LEFT JOIN available_provinces ap ON ap.controller_id = os.country_id
+  LEFT JOIN available_nodes ap ON ap.controller_id = os.country_id
   WHERE os.turn_id = $3
     AND order_set_type = 'Orders';
 `;
