@@ -3015,24 +3015,16 @@ export class ResolutionService {
 
   confirmAdjustments(dbUpdates: DbUpdates): void {
     Object.values(dbUpdates.countryStatChanges).forEach((countryStats: CountryStatChanges) => {
-      const cityCount = countryStats.cities ? countryStats.cities.length : 0;
-      const unitCount = countryStats.units ? countryStats.units.length : 0;
-      const adjustments = cityCount - unitCount;
-      const buildsBeingBanked = countryStats.buildsBeingBanked ? countryStats.buildsBeingBanked : 0;
-      const buildsIncreasingRange = countryStats.buildsIncreasingRange ? countryStats.buildsIncreasingRange : 0;
+      if (!countryStats.resources) {
+        terminalAddendum('Resolution', `Country ${countryStats.countryId} has no resources. How did this happen?`);
+        return;
+      }
 
-      // Deficiet adjustment
-      if (adjustments < 0) {
+      if (countryStats.resources.adjustments < 0) {
         this.forceDisbands(countryStats, dbUpdates);
       }
 
-      // Can build but overdid it
-      if (adjustments > 0 && adjustments < buildsBeingBanked + buildsIncreasingRange) {
-        this.rescindBuilds(countryStats, dbUpdates);
-      }
-
-      // Surplus builds
-      if (adjustments > 0 && adjustments > buildsBeingBanked + buildsIncreasingRange) {
+      if (countryStats.resources.adjustments > 0) {
         this.forceBuilds(countryStats, dbUpdates);
       }
     });
@@ -3040,10 +3032,6 @@ export class ResolutionService {
 
   forceDisbands(countryStats: CountryStatChanges, bUpdates: DbUpdates): void {
     console.log(countryStats);
-  }
-
-  rescindBuilds(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
-    // To do
   }
 
   forceBuilds(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
