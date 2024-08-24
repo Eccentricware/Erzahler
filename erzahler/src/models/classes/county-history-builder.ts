@@ -69,7 +69,8 @@ export class CountryHistoryBuilder {
     this.resources = countryStats.resources ? countryStats.resources : {
       adjustments: 0,
       bankedBuilds: 0,
-      nukesInProduction: 0
+      nukesInProduction: 0,
+      availableProvinces: []
     }
   }
 

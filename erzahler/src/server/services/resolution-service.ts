@@ -32,7 +32,7 @@ import {
 import { TransferBuildOrder, TransferTechOrder } from '../../models/objects/order-objects';
 import {
   AdjResolutionData,
-  AdjustmentResolutionResources,
+  AvailableProvince,
   BuildDetails,
   CountryTransferResources,
   OrderDependencies,
@@ -784,35 +784,45 @@ export class ResolutionService {
         // Requires Adjustment (Anything not finishing a slow build nuke)
         if (countryStats.resources.adjustments > 0) {
           // Requires Placement
-          if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING, BuildType.NUKE_RUSH].includes(build.buildType)) {
-            if (build.countryId !== build.destinationControllerId) {
-              build.success = false;
+          if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING, BuildType.NUKE_RUSH].includes(build.buildType) ) {
+            const availProvinceId = this.getAvailableProvinceIndex(countryStats.resources.availableProvinces, build.provinceName);
+            if (availProvinceId === -1) {
               terminalAddendum(
                 'ALERT',
-                `Country ${build.countryId} is attempting to build at uncontrolled province ${build.provinceName}`
+                `Build ${build.buildOrderId} failure: Country ${build.countryId} attempting build in unavailable province ${build.provinceName}!`
               );
-
-            } else if (build.provinceName && newProvincesUsed.has(build.provinceName)) {
-              build.success = false;
-              terminalAddendum(
-                'ALERT',
-                `Country ${build.countryId} has already built at ${build.provinceName} this turn!`
-              );
-
-            } else if (build.existingUnitId !== null) {
-              build.success = false;
-              terminalAddendum('ALERT', `Country ${build.countryId} attempting build at ${build.provinceName} where unit ${build.existingUnitId} already exists!`);
-
+              return;
             } else {
-              if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING].includes(build.buildType) && build.buildNode) {
+              countryStats.resources.availableProvinces.splice(availProvinceId, 1);
+            }
+
+            if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING].includes(build.buildType) && build.buildNode) {
+              countryStats.resources.adjustments--;
+              newProvincesUsed.add(build.provinceName);
+              build.success = true;
+
+              const newUnit: InitialUnit = {
+                unitType: build.buildType,
+                countryId: build.countryId,
+                unitName: `${countryAdjOrders.countryName} ${build.buildType} ${Math.ceil(Math.random() * 100000)}`, // To-Do
+                turnId: turn.turnId,
+                nodeId: build.buildNode,
+                unitStatus: UnitStatus.ACTIVE
+              };
+              dbUpdates.newUnits.push(newUnit);
+              this.creditCountryWithUnit(newUnit, dbUpdates, dbStates);
+
+            } else if (build.buildType === BuildType.NUKE_RUSH && build.buildNode) {
+              if (countryStats.resources.bankedBuilds > 0) {
                 countryStats.resources.adjustments--;
+                countryStats.resources.bankedBuilds--;
                 newProvincesUsed.add(build.provinceName);
                 build.success = true;
 
                 const newUnit: InitialUnit = {
-                  unitType: build.buildType,
+                  unitType: UnitType.NUKE,
                   countryId: build.countryId,
-                  unitName: `${countryAdjOrders.countryName} ${build.buildType} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
+                  unitName: `${countryAdjOrders.countryName} ${UnitType.NUKE} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
                   turnId: turn.turnId,
                   nodeId: build.buildNode,
                   unitStatus: UnitStatus.ACTIVE
@@ -820,30 +830,11 @@ export class ResolutionService {
                 dbUpdates.newUnits.push(newUnit);
                 this.creditCountryWithUnit(newUnit, dbUpdates, dbStates);
 
-              } else if (build.buildType === BuildType.NUKE_RUSH && build.buildNode) {
-                if (countryStats.resources.bankedBuilds > 0) {
-                  countryStats.resources.adjustments--;
-                  countryStats.resources.bankedBuilds--;
-                  newProvincesUsed.add(build.provinceName);
-                  build.success = true;
-
-                  const newUnit: InitialUnit = {
-                    unitType: UnitType.NUKE,
-                    countryId: build.countryId,
-                    unitName: `${countryAdjOrders.countryName} ${UnitType.NUKE} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
-                    turnId: turn.turnId,
-                    nodeId: build.buildNode,
-                    unitStatus: UnitStatus.ACTIVE
-                  };
-                  dbUpdates.newUnits.push(newUnit);
-                  this.creditCountryWithUnit(newUnit, dbUpdates, dbStates);
-
-                } else {
-                  terminalAddendum(
-                    'ALERT',
-                    `BO ${build.buildOrderId} failure: Country ${build.countryId} attempting rush nuke with insufficient builds!`
-                  );
-                }
+              } else {
+                terminalAddendum(
+                  'ALERT',
+                  `BO ${build.buildOrderId} failure: Country ${build.countryId} attempting rush nuke with insufficient builds!`
+                );
               }
             }
           }
@@ -3022,10 +3013,12 @@ export class ResolutionService {
       }
 
       if (countryStats.resources.adjustments < 0) {
+        terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a deficiet of ${countryStats.resources.adjustments * -1}!`);
         this.forceDisbands(countryStats, dbUpdates);
       }
 
       if (countryStats.resources.adjustments > 0) {
+        terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a surplus of ${countryStats.resources.adjustments}!`);
         this.forceBuilds(countryStats, dbUpdates);
       }
     });
@@ -3198,5 +3191,9 @@ export class ResolutionService {
 
     ownerChanges.controlsCapital = provinceHistory.controllerId === provinceHistory.capitalOwnerId;
     ownerChanges.capitalControllerId = ownerChanges.controlsCapital ? provinceHistory.capitalOwnerId : provinceHistory.controllerId;
+  }
+
+  getAvailableProvinceIndex(availableProvinces: AvailableProvince[], provinceName: string): number {
+    return availableProvinces.findIndex((availableProvince: AvailableProvince) => availableProvince.provinceName === provinceName);
   }
 }
