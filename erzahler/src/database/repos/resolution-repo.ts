@@ -554,8 +554,8 @@ export class ResolutionRepository {
                     countryId: build.country_id,
                     buildType: build.build_type,
                     buildNode: build.build_node,
-                    destinationControllerId: build.destination_controller_id,
-                    existingUnitId: build.existing_unit_id,
+                    destinationControllerId: build.destination_controller_id, // To be removed
+                    existingUnitId: build.existing_unit_id, // To be removed
                     provinceName: build.province_name,
                     success: true
                   }
@@ -569,7 +569,7 @@ export class ResolutionRepository {
                     nodeId: disband.node_id
                   }
               ),
-              availableProvinces: adjOrder.available_province_result?.map((availableProvince: AvailableProvinceResult) =>
+              availableProvinces: adjOrder.available_provinces?.map((availableProvince: AvailableProvinceResult) =>
                 <AvailableProvince>{
                   provinceId: availableProvince.province_id,
                   provinceName: availableProvince.province_name,

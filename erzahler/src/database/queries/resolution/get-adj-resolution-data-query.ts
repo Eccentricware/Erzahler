@@ -58,7 +58,7 @@ export const getAdjResolutionDataQuery = `
           'node_id', bn.node_id,
           'node_name', bn.node_name
         )
-      ) AS valid_provinces
+      ) AS available_provinces
     FROM get_last_province_history($1, $2) lph
     INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = lph.controller_id
     INNER JOIN provinces p ON p.province_id = lph.province_id
@@ -78,7 +78,7 @@ export const getAdjResolutionDataQuery = `
     lch.nuke_range,
 	  cb.builds,
     cd.disbands,
-    ap.valid_provinces,
+    ap.available_provinces,
     os.increase_range,
     os.nomination,
     os.increase_range_success,

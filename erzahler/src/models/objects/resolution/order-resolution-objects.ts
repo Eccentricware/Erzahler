@@ -207,7 +207,7 @@ export interface AdjResolutionDataResult {
   nuke_range: number;
   builds: BuildDetailsResult[];
   disbands: DisbandDetailsResult[];
-  available_province_result: AvailableProvinceResult[];
+  available_provinces: AvailableProvinceResult[];
   increase_range: number;
   increase_range_success: boolean;
   nomination: number;
