@@ -2,6 +2,7 @@ import { CountryHistoryRow, CountryStatChanges, InitialUnit, ProvinceHistoryRow,
 import { terminalAddendum } from "../../server/utils/general";
 import { CountryStatus } from "../enumeration/country-enum";
 import { Unit } from "../objects/map-objects";
+import { AvailableProvince } from "../objects/resolution/order-resolution-objects";
 
 /**
  * Handles defaults and changes for country stat changes
@@ -34,6 +35,7 @@ export class CountryHistoryBuilder {
     adjustments: number;
     bankedBuilds: number;
     nukesInProduction: number;
+    availableProvinces: AvailableProvince[];
   }
   constructor(countryStats: CountryStatChanges, countryHistory: CountryHistoryRow | undefined) {
     if (!countryStats) {

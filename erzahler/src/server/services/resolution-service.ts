@@ -776,7 +776,8 @@ export class ResolutionService {
       countryStats.resources = {
         adjustments: countryStats.cities.length - countryStats.units.length,
         bankedBuilds: countryAdjOrders.bankedBuilds,
-        nukesInProduction: countryAdjOrders.nukesInProduction
+        nukesInProduction: countryAdjOrders.nukesInProduction,
+        availableProvinces: countryAdjOrders.availableProvinces
       };
 
       countryAdjOrders.builds?.forEach((build: BuildDetails) => {
