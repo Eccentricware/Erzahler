@@ -9,6 +9,7 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { BuildType, UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 import { CountryHistoryBuilder } from '../../models/classes/county-history-builder';
+import { AvailableProvince } from '../../models/objects/resolution/order-resolution-objects';
 
 export interface GameRowResult {
   game_id?: number;
@@ -412,6 +413,7 @@ export interface CountryStatChanges {
     adjustments: number;
     bankedBuilds: number;
     nukesInProduction: number;
+    availableProvinces: AvailableProvince[];
   }
 }
 
