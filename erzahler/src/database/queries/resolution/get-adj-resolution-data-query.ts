@@ -61,12 +61,17 @@ export const getAdjResolutionDataQuery = `
       ) AS available_provinces
     FROM get_last_province_history($1, $2) lph
     INNER JOIN get_last_country_history($1, $2) lch ON lch.country_id = lph.controller_id
+    INNER JOIN countries c ON c.country_id = lph.controller_id
     INNER JOIN provinces p ON p.province_id = lph.province_id
     INNER JOIN nodes bn ON bn.province_id = p.province_id
     LEFT JOIN unit_presence up ON up.province_id = p.province_id
     WHERE lph.province_status = 'active'
       AND up.unit_id IS NULL
-      AND bn.node_type = 'land'
+      AND bn.node_type = CASE
+        WHEN c.default_build = 'Fleet' THEN 'sea'
+        WHEN c.default_build = 'Wing' THEN 'air'
+        ELSE 'land'
+      END
     GROUP BY lph.controller_id
   )
   SELECT os.order_set_id,
