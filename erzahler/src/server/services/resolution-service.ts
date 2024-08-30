@@ -3014,22 +3014,30 @@ export class ResolutionService {
 
       if (countryStats.resources.adjustments < 0) {
         terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a deficiet of ${countryStats.resources.adjustments * -1}!`);
-        this.forceDisbands(countryStats, dbUpdates);
+        this.forceDisbands(countryStats, countryStats.resources.adjustments, dbUpdates);
       }
 
       if (countryStats.resources.adjustments > 0) {
         terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a surplus of ${countryStats.resources.adjustments}!`);
-        this.forceBuilds(countryStats, dbUpdates);
+        this.forceBuilds(countryStats, countryStats.resources.adjustments, dbUpdates);
       }
     });
   }
 
-  forceDisbands(countryStats: CountryStatChanges, bUpdates: DbUpdates): void {
-    console.log(countryStats);
+  forceDisbands(countryStats: CountryStatChanges, count: number, bUpdates: DbUpdates): void {
+    let leftToAdjust = count * -1;
+    countryStats.units?.sort((a: UnitHistoryRow | InitialUnit, b: UnitHistoryRow | InitialUnit) =>
+      (a.nodeName && b.nodeName)
+        ? a.nodeName < b.nodeName
+          ? -1
+          : 1
+        : -1
+    );
+    console.log('disbandings', countryStats);
   }
 
-  forceBuilds(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
-    // To do
+  forceBuilds(countryStats: CountryStatChanges, count: number, dbUpdates: DbUpdates): void {
+    console.log('building', countryStats);
   }
 
   creditCountryWithUnit(unitHistory: UnitHistoryRow | InitialUnit, dbUpdates: DbUpdates, dbStates: DbStates) {
