@@ -3014,7 +3014,7 @@ export class ResolutionService {
 
       if (countryStats.resources.adjustments < 0) {
         terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a deficiet of ${countryStats.resources.adjustments * -1}!`);
-        this.forceDisbands(countryStats, countryStats.resources.adjustments, dbUpdates);
+        this.forceDisbands(countryStats, Math.abs(countryStats.resources.adjustments), dbUpdates);
       }
 
       if (countryStats.resources.adjustments > 0) {
@@ -3024,8 +3024,8 @@ export class ResolutionService {
     });
   }
 
-  forceDisbands(countryStats: CountryStatChanges, count: number, bUpdates: DbUpdates): void {
-    let leftToAdjust = count * -1;
+  forceDisbands(countryStats: CountryStatChanges, disboundCount: number, dbUpdates: DbUpdates): void {
+    const disbands: (UnitHistoryRow | InitialUnit)[] = [];
     countryStats.units?.sort((a: UnitHistoryRow | InitialUnit, b: UnitHistoryRow | InitialUnit) =>
       (a.nodeName && b.nodeName)
         ? a.nodeName < b.nodeName
@@ -3033,7 +3033,22 @@ export class ResolutionService {
           : 1
         : -1
     );
-    console.log('disbandings', countryStats);
+
+    while (disbands.length < disboundCount) {
+      const disbandingUnit = countryStats.units?.shift();
+
+      if (!disbandingUnit) {
+        terminalAddendum('Resolution', `Country ${countryStats.countryId} has no validunits to disband!`);
+        return;
+      }
+
+      disbandingUnit.unitStatus = UnitStatus.DISBANDED_ADJUSTMENT;
+      if ('unitId' in disbandingUnit) {
+        dbUpdates.unitHistories[disbandingUnit.unitId] = disbandingUnit;
+      }
+
+      disbands.push(disbandingUnit);
+    }
   }
 
   forceBuilds(countryStats: CountryStatChanges, count: number, dbUpdates: DbUpdates): void {
