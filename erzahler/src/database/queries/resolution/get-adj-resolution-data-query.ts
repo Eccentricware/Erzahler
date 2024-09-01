@@ -85,6 +85,7 @@ export const getAdjResolutionDataQuery = `
 	  cb.builds,
     cd.disbands,
     ap.available_provinces,
+    c.default_build,
     os.increase_range,
     os.nomination,
     os.increase_range_success,

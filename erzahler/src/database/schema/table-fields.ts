@@ -390,6 +390,7 @@ export interface InitialUnit {
 
 export interface CountryStatChanges {
   countryId: number;
+  countryName?: string;
   countryStatus?: CountryStatus;
   controlsCapital?: boolean;
   capitalControllerId?: number;
