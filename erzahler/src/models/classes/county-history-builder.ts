@@ -9,6 +9,7 @@ import { AvailableProvince } from "../objects/resolution/order-resolution-object
  */
 export class CountryHistoryBuilder {
   countryId: number;
+  countryName: string;
   countryStatus: CountryStatus;
   controlsCapital: boolean;
   capitalControllerId: number;
@@ -43,6 +44,7 @@ export class CountryHistoryBuilder {
     }
 
     this.countryId = countryHistory ? countryHistory.countryId : -1;
+    this.countryName = countryStats.countryName;
     this.countryStatus = countryHistory ? countryHistory.countryStatus : CountryStatus.NPC;
     this.cityCount = countryHistory ? countryHistory.cityCount : -1;
     this.unitCount = countryHistory ? countryHistory.unitCount : -1;

@@ -739,7 +739,7 @@ export class ResolutionService {
     // DB Update
     const dbUpdates: DbUpdates = {
       game: {},
-      turn: {},
+      turn: turn,
       orderSets: [],
       adjOrderSets: {},
       orders: [],
@@ -772,7 +772,7 @@ export class ResolutionService {
 
     adjResolutionData.forEach((countryAdjOrders: AdjResolutionData) => {
       const countryStats: CountryHistoryBuilder = dbUpdates.countryStatChanges[countryAdjOrders.countryId];
-
+      countryStats.countryName = countryAdjOrders.countryName;
       countryStats.resources = {
         adjustments: countryStats.cities.length - countryStats.units.length,
         bankedBuilds: countryAdjOrders.bankedBuilds,
@@ -3014,17 +3014,19 @@ export class ResolutionService {
 
       if (countryStats.resources.adjustments < 0) {
         terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a deficiet of ${countryStats.resources.adjustments * -1}!`);
-        this.forceDisbands(countryStats, Math.abs(countryStats.resources.adjustments), dbUpdates);
+        this.forceDisbands(countryStats, dbUpdates);
       }
 
       if (countryStats.resources.adjustments > 0) {
         terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a surplus of ${countryStats.resources.adjustments}!`);
-        this.forceBuilds(countryStats, countryStats.resources.adjustments, dbUpdates);
+        this.forceBuilds(countryStats, dbUpdates);
       }
     });
   }
 
-  forceDisbands(countryStats: CountryStatChanges, disboundCount: number, dbUpdates: DbUpdates): void {
+  forceDisbands(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
+    const disbandCount = countryStats.resources!.adjustments * -1;
+
     const disbands: (UnitHistoryRow | InitialUnit)[] = [];
     countryStats.units?.sort((a: UnitHistoryRow | InitialUnit, b: UnitHistoryRow | InitialUnit) =>
       (a.nodeName && b.nodeName)
@@ -3034,7 +3036,7 @@ export class ResolutionService {
         : -1
     );
 
-    while (disbands.length < disboundCount) {
+    while (disbands.length < disbandCount) {
       const disbandingUnit = countryStats.units?.shift();
 
       if (!disbandingUnit) {
@@ -3046,13 +3048,49 @@ export class ResolutionService {
       if ('unitId' in disbandingUnit) {
         dbUpdates.unitHistories[disbandingUnit.unitId] = disbandingUnit;
       }
+      countryStats.resources!.adjustments++;
 
       disbands.push(disbandingUnit);
     }
   }
 
-  forceBuilds(countryStats: CountryStatChanges, count: number, dbUpdates: DbUpdates): void {
-    console.log('building', countryStats);
+  forceBuilds(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
+    const buildCount = countryStats.resources!.adjustments;
+    const forcedBuilds: InitialUnit[] = [];
+
+    countryStats.resources?.availableProvinces?.sort((a: AvailableProvince, b: AvailableProvince) =>
+      a.provinceName && b.provinceName
+        ? a.provinceName < b.provinceName
+          ? -1
+          : 1
+        : -1
+    );
+
+    while (forcedBuilds.length < buildCount) {
+      const buildProvince = countryStats.resources?.availableProvinces?.shift();
+
+
+      if (!buildProvince) {
+        terminalAddendum('Resolution', `Country ${countryStats.countryId} has no valid provinces to build in!`);
+        return;
+      }
+
+      const buildType = UnitType.ARMY;
+      const buildNodeId = buildProvince.nodeId;
+
+      const newUnit: InitialUnit = {
+        unitName: `${countryStats.countryName} ${buildType} ${Math.floor(Math.random() * 100000)}`,
+        countryId: countryStats.countryId,
+        unitType: buildType,
+        unitStatus: UnitStatus.ACTIVE,
+        nodeId: buildNodeId,
+        turnId: dbUpdates.turn.turnId ? dbUpdates.turn.turnId : 0
+      };
+
+      dbUpdates.newUnits.push(newUnit);
+      countryStats.resources!.adjustments--;
+      forcedBuilds.push(newUnit);
+    }
   }
 
   creditCountryWithUnit(unitHistory: UnitHistoryRow | InitialUnit, dbUpdates: DbUpdates, dbStates: DbStates) {
