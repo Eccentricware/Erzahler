@@ -773,6 +773,7 @@ export class ResolutionService {
     adjResolutionData.forEach((countryAdjOrders: AdjResolutionData) => {
       const countryStats: CountryHistoryBuilder = dbUpdates.countryStatChanges[countryAdjOrders.countryId];
       countryStats.countryName = countryAdjOrders.countryName;
+      countryStats.defaultBuild = countryAdjOrders.defaultBuild;
       countryStats.resources = {
         adjustments: countryStats.cities.length - countryStats.units.length,
         bankedBuilds: countryAdjOrders.bankedBuilds,

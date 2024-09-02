@@ -413,6 +413,7 @@ export interface CountryStatChanges {
   nukesFinished?: number;
   bankedBuildsGifted?: number;
   bankedBuildsReceived?: number;
+  defaultBuild?: string;
   resources?: {
     adjustments: number;
     bankedBuilds: number;
