@@ -208,6 +208,7 @@ export interface AdjResolutionDataResult {
   builds: BuildDetailsResult[];
   disbands: DisbandDetailsResult[];
   available_provinces: AvailableProvinceResult[];
+  default_build: string;
   increase_range: number;
   increase_range_success: boolean;
   nomination: number;
@@ -225,6 +226,7 @@ export interface AdjResolutionData {
   builds: BuildDetails[];
   disbands: DisbandDetails[];
   availableProvinces: AvailableProvince[];
+  defaultBuild: string;
   increaseRange: number;
   increaseRangeSuccess: boolean;
   nomination: number;

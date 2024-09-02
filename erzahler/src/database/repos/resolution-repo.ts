@@ -577,6 +577,7 @@ export class ResolutionRepository {
                   nodeName: availableProvince.node_name
                 }
               ),
+              defaultBuild: adjOrder.default_build,
               increaseRange: adjOrder.increase_range,
               increaseRangeSuccess: adjOrder.increase_range_success,
               nomination: adjOrder.nomination,
