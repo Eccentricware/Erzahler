@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS countries(
   rank VARCHAR(1) NOT NULL,
   color VARCHAR(7) NOT NULL,
   flag_key VARCHAR(20) NOT NULL,
+  default_build VARCHAR(100) DEFAULT 'Army',
   region VARCHAR(15),
   PRIMARY KEY(country_id),
   FOREIGN KEY(game_id)

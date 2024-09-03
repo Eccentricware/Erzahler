@@ -13,9 +13,13 @@ import {
 import {
   AdjResolutionData,
   AdjResolutionDataResult,
+  AvailableProvince,
+  AvailableProvinceResult,
   BuildDetails,
   BuildDetailsResult,
   CountryTransferResources,
+  DisbandDetails,
+  DisbandDetailsResult,
   TransferResourcesResults,
   TransportNetworkUnit,
   TransportNetworkUnitResult,
@@ -550,19 +554,30 @@ export class ResolutionRepository {
                     countryId: build.country_id,
                     buildType: build.build_type,
                     buildNode: build.build_node,
-                    destinationControllerId: build.destination_controller_id,
-                    existingUnitId: build.existing_unit_id,
+                    destinationControllerId: build.destination_controller_id, // To be removed
+                    existingUnitId: build.existing_unit_id, // To be removed
                     provinceName: build.province_name,
                     success: true
                   }
               ),
               disbands: adjOrder.disbands?.map(
-                (disband: UnitAndCountryIdsResult) =>
-                  <UnitAndCountryIds>{
+                (disband: DisbandDetailsResult) =>
+                  <DisbandDetails>{
                     unitId: disband.unit_id,
-                    countryId: disband.country_id
+                    countryId: disband.country_id,
+                    provinceName: disband.province_name,
+                    nodeId: disband.node_id
                   }
               ),
+              availableProvinces: adjOrder.available_provinces?.map((availableProvince: AvailableProvinceResult) =>
+                <AvailableProvince>{
+                  provinceId: availableProvince.province_id,
+                  provinceName: availableProvince.province_name,
+                  nodeId: availableProvince.node_id,
+                  nodeName: availableProvince.node_name
+                }
+              ),
+              defaultBuild: adjOrder.default_build,
               increaseRange: adjOrder.increase_range,
               increaseRangeSuccess: adjOrder.increase_range_success,
               nomination: adjOrder.nomination,

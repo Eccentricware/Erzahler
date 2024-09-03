@@ -9,6 +9,7 @@ import { TurnStatus } from '../../models/enumeration/turn-status-enum';
 import { TurnType } from '../../models/enumeration/turn-type-enum';
 import { BuildType, UnitStatus, UnitType } from '../../models/enumeration/unit-enum';
 import { CountryHistoryBuilder } from '../../models/classes/county-history-builder';
+import { AvailableProvince } from '../../models/objects/resolution/order-resolution-objects';
 
 export interface GameRowResult {
   game_id?: number;
@@ -291,6 +292,7 @@ export interface UnitHistoryRowResult {
   unit_status: UnitStatus;
   displacer_province_id?: number;
   fallout_end_turn?: number;
+  node_name?: string;
 }
 
 export interface UnitHistoryRow {
@@ -302,6 +304,7 @@ export interface UnitHistoryRow {
   unitStatus: UnitStatus;
   displacerProvinceId?: number;
   falloutEndTurn?: number;
+  nodeName?: string;
 }
 
 export interface ProvinceHistoryRowResult {
@@ -382,10 +385,12 @@ export interface InitialUnit {
   turnId: number;
   nodeId: number;
   unitStatus: UnitStatus;
+  nodeName?: string;
 }
 
 export interface CountryStatChanges {
   countryId: number;
+  countryName?: string;
   countryStatus?: CountryStatus;
   controlsCapital?: boolean;
   capitalControllerId?: number;
@@ -408,10 +413,12 @@ export interface CountryStatChanges {
   nukesFinished?: number;
   bankedBuildsGifted?: number;
   bankedBuildsReceived?: number;
+  defaultBuild?: string;
   resources?: {
     adjustments: number;
     bankedBuilds: number;
     nukesInProduction: number;
+    availableProvinces: AvailableProvince[];
   }
 }
 

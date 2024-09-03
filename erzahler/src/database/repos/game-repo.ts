@@ -620,7 +620,8 @@ export class GameRepository {
           countryId: unitHistory.country_id,
           turnId: unitHistory.turn_id,
           nodeId: unitHistory.node_id,
-          unitStatus: unitHistory.unit_status
+          unitStatus: unitHistory.unit_status,
+          nodeName: unitHistory.node_name
         };
       })
     );

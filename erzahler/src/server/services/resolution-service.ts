@@ -32,7 +32,7 @@ import {
 import { TransferBuildOrder, TransferTechOrder } from '../../models/objects/order-objects';
 import {
   AdjResolutionData,
-  AdjustmentResolutionResources,
+  AvailableProvince,
   BuildDetails,
   CountryTransferResources,
   OrderDependencies,
@@ -739,7 +739,7 @@ export class ResolutionService {
     // DB Update
     const dbUpdates: DbUpdates = {
       game: {},
-      turn: {},
+      turn: turn,
       orderSets: [],
       adjOrderSets: {},
       orders: [],
@@ -772,46 +772,58 @@ export class ResolutionService {
 
     adjResolutionData.forEach((countryAdjOrders: AdjResolutionData) => {
       const countryStats: CountryHistoryBuilder = dbUpdates.countryStatChanges[countryAdjOrders.countryId];
-
+      countryStats.countryName = countryAdjOrders.countryName;
+      countryStats.defaultBuild = countryAdjOrders.defaultBuild;
       countryStats.resources = {
         adjustments: countryStats.cities.length - countryStats.units.length,
         bankedBuilds: countryAdjOrders.bankedBuilds,
-        nukesInProduction: countryAdjOrders.nukesInProduction
+        nukesInProduction: countryAdjOrders.nukesInProduction,
+        availableProvinces: countryAdjOrders.availableProvinces
       };
 
       countryAdjOrders.builds?.forEach((build: BuildDetails) => {
         // Requires Adjustment (Anything not finishing a slow build nuke)
         if (countryStats.resources.adjustments > 0) {
           // Requires Placement
-          if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING, BuildType.NUKE_RUSH].includes(build.buildType)) {
-            if (build.countryId !== build.destinationControllerId) {
-              build.success = false;
+          if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING, BuildType.NUKE_RUSH].includes(build.buildType) ) {
+            const availProvinceId = this.getAvailableProvinceIndex(countryStats.resources.availableProvinces, build.provinceName);
+            if (availProvinceId === -1) {
               terminalAddendum(
                 'ALERT',
-                `Country ${build.countryId} is attempting to build at uncontrolled province ${build.provinceName}`
+                `Build ${build.buildOrderId} failure: Country ${build.countryId} attempting build in unavailable province ${build.provinceName}!`
               );
-
-            } else if (build.provinceName && newProvincesUsed.has(build.provinceName)) {
-              build.success = false;
-              terminalAddendum(
-                'ALERT',
-                `Country ${build.countryId} has already built at ${build.provinceName} this turn!`
-              );
-
-            } else if (build.existingUnitId !== null) {
-              build.success = false;
-              terminalAddendum('ALERT', `Country ${build.countryId} attempting build at ${build.provinceName} where unit ${build.existingUnitId} already exists!`);
-
+              return;
             } else {
-              if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING].includes(build.buildType) && build.buildNode) {
+              countryStats.resources.availableProvinces.splice(availProvinceId, 1);
+            }
+
+            if ([BuildType.ARMY, BuildType.FLEET, BuildType.WING].includes(build.buildType) && build.buildNode) {
+              countryStats.resources.adjustments--;
+              newProvincesUsed.add(build.provinceName);
+              build.success = true;
+
+              const newUnit: InitialUnit = {
+                unitType: build.buildType,
+                countryId: build.countryId,
+                unitName: `${countryAdjOrders.countryName} ${build.buildType} ${Math.ceil(Math.random() * 100000)}`, // To-Do
+                turnId: turn.turnId,
+                nodeId: build.buildNode,
+                unitStatus: UnitStatus.ACTIVE
+              };
+              dbUpdates.newUnits.push(newUnit);
+              this.creditCountryWithUnit(newUnit, dbUpdates, dbStates);
+
+            } else if (build.buildType === BuildType.NUKE_RUSH && build.buildNode) {
+              if (countryStats.resources.bankedBuilds > 0) {
                 countryStats.resources.adjustments--;
+                countryStats.resources.bankedBuilds--;
                 newProvincesUsed.add(build.provinceName);
                 build.success = true;
 
                 const newUnit: InitialUnit = {
-                  unitType: build.buildType,
+                  unitType: UnitType.NUKE,
                   countryId: build.countryId,
-                  unitName: `${countryAdjOrders.countryName} ${build.buildType} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
+                  unitName: `${countryAdjOrders.countryName} ${UnitType.NUKE} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
                   turnId: turn.turnId,
                   nodeId: build.buildNode,
                   unitStatus: UnitStatus.ACTIVE
@@ -819,30 +831,11 @@ export class ResolutionService {
                 dbUpdates.newUnits.push(newUnit);
                 this.creditCountryWithUnit(newUnit, dbUpdates, dbStates);
 
-              } else if (build.buildType === BuildType.NUKE_RUSH && build.buildNode) {
-                if (countryStats.resources.bankedBuilds > 0) {
-                  countryStats.resources.adjustments--;
-                  countryStats.resources.bankedBuilds--;
-                  newProvincesUsed.add(build.provinceName);
-                  build.success = true;
-
-                  const newUnit: InitialUnit = {
-                    unitType: UnitType.NUKE,
-                    countryId: build.countryId,
-                    unitName: `${countryAdjOrders.countryName} ${UnitType.NUKE} ${Math.ceil(Math.random() * 100000)}`, // To-Do?
-                    turnId: turn.turnId,
-                    nodeId: build.buildNode,
-                    unitStatus: UnitStatus.ACTIVE
-                  };
-                  dbUpdates.newUnits.push(newUnit);
-                  this.creditCountryWithUnit(newUnit, dbUpdates, dbStates);
-
-                } else {
-                  terminalAddendum(
-                    'ALERT',
-                    `BO ${build.buildOrderId} failure: Country ${build.countryId} attempting rush nuke with insufficient builds!`
-                  );
-                }
+              } else {
+                terminalAddendum(
+                  'ALERT',
+                  `BO ${build.buildOrderId} failure: Country ${build.countryId} attempting rush nuke with insufficient builds!`
+                );
               }
             }
           }
@@ -3015,39 +3008,90 @@ export class ResolutionService {
 
   confirmAdjustments(dbUpdates: DbUpdates): void {
     Object.values(dbUpdates.countryStatChanges).forEach((countryStats: CountryStatChanges) => {
-      const cityCount = countryStats.cities ? countryStats.cities.length : 0;
-      const unitCount = countryStats.units ? countryStats.units.length : 0;
-      const adjustments = cityCount - unitCount;
-      const buildsBeingBanked = countryStats.buildsBeingBanked ? countryStats.buildsBeingBanked : 0;
-      const buildsIncreasingRange = countryStats.buildsIncreasingRange ? countryStats.buildsIncreasingRange : 0;
+      if (!countryStats.resources) {
+        terminalAddendum('Resolution', `Country ${countryStats.countryId} has no resources. How did this happen?`);
+        return;
+      }
 
-      // Deficiet adjustment
-      if (adjustments < 0) {
+      if (countryStats.resources.adjustments < 0) {
+        terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a deficiet of ${countryStats.resources.adjustments * -1}!`);
         this.forceDisbands(countryStats, dbUpdates);
       }
 
-      // Can build but overdid it
-      if (adjustments > 0 && adjustments < buildsBeingBanked + buildsIncreasingRange) {
-        this.rescindBuilds(countryStats, dbUpdates);
-      }
-
-      // Surplus builds
-      if (adjustments > 0 && adjustments > buildsBeingBanked + buildsIncreasingRange) {
+      if (countryStats.resources.adjustments > 0) {
+        terminalAddendum(`Adjustments`, `Country ${countryStats.countryId} has a surplus of ${countryStats.resources.adjustments}!`);
         this.forceBuilds(countryStats, dbUpdates);
       }
     });
   }
 
-  forceDisbands(countryStats: CountryStatChanges, bUpdates: DbUpdates): void {
-    console.log(countryStats);
-  }
+  forceDisbands(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
+    const disbandCount = countryStats.resources!.adjustments * -1;
 
-  rescindBuilds(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
-    // To do
+    const disbands: (UnitHistoryRow | InitialUnit)[] = [];
+    countryStats.units?.sort((a: UnitHistoryRow | InitialUnit, b: UnitHistoryRow | InitialUnit) =>
+      (a.nodeName && b.nodeName)
+        ? a.nodeName < b.nodeName
+          ? -1
+          : 1
+        : -1
+    );
+
+    while (disbands.length < disbandCount) {
+      const disbandingUnit = countryStats.units?.shift();
+
+      if (!disbandingUnit) {
+        terminalAddendum('Resolution', `Country ${countryStats.countryId} has no validunits to disband!`);
+        return;
+      }
+
+      disbandingUnit.unitStatus = UnitStatus.DISBANDED_ADJUSTMENT;
+      if ('unitId' in disbandingUnit) {
+        dbUpdates.unitHistories[disbandingUnit.unitId] = disbandingUnit;
+      }
+      countryStats.resources!.adjustments++;
+
+      disbands.push(disbandingUnit);
+    }
   }
 
   forceBuilds(countryStats: CountryStatChanges, dbUpdates: DbUpdates): void {
-    // To do
+    const buildCount = countryStats.resources!.adjustments;
+    const forcedBuilds: InitialUnit[] = [];
+
+    countryStats.resources?.availableProvinces?.sort((a: AvailableProvince, b: AvailableProvince) =>
+      a.provinceName && b.provinceName
+        ? a.provinceName < b.provinceName
+          ? -1
+          : 1
+        : -1
+    );
+
+    while (forcedBuilds.length < buildCount) {
+      const buildProvince = countryStats.resources?.availableProvinces?.shift();
+
+
+      if (!buildProvince) {
+        terminalAddendum('Resolution', `Country ${countryStats.countryId} has no valid provinces to build in!`);
+        return;
+      }
+
+      const buildType = UnitType.ARMY;
+      const buildNodeId = buildProvince.nodeId;
+
+      const newUnit: InitialUnit = {
+        unitName: `${countryStats.countryName} ${buildType} ${Math.floor(Math.random() * 100000)}`,
+        countryId: countryStats.countryId,
+        unitType: buildType,
+        unitStatus: UnitStatus.ACTIVE,
+        nodeId: buildNodeId,
+        turnId: dbUpdates.turn.turnId ? dbUpdates.turn.turnId : 0
+      };
+
+      dbUpdates.newUnits.push(newUnit);
+      countryStats.resources!.adjustments--;
+      forcedBuilds.push(newUnit);
+    }
   }
 
   creditCountryWithUnit(unitHistory: UnitHistoryRow | InitialUnit, dbUpdates: DbUpdates, dbStates: DbStates) {
@@ -3209,5 +3253,9 @@ export class ResolutionService {
 
     ownerChanges.controlsCapital = provinceHistory.controllerId === provinceHistory.capitalOwnerId;
     ownerChanges.capitalControllerId = ownerChanges.controlsCapital ? provinceHistory.capitalOwnerId : provinceHistory.controllerId;
+  }
+
+  getAvailableProvinceIndex(availableProvinces: AvailableProvince[], provinceName: string): number {
+    return availableProvinces.findIndex((availableProvince: AvailableProvince) => availableProvince.provinceName === provinceName);
   }
 }

@@ -1,13 +1,16 @@
 import { CountryHistoryRow, CountryStatChanges, InitialUnit, ProvinceHistoryRow, UnitHistoryRow } from "../../database/schema/table-fields";
 import { terminalAddendum } from "../../server/utils/general";
 import { CountryStatus } from "../enumeration/country-enum";
+import { UnitType } from "../enumeration/unit-enum";
 import { Unit } from "../objects/map-objects";
+import { AvailableProvince } from "../objects/resolution/order-resolution-objects";
 
 /**
  * Handles defaults and changes for country stat changes
  */
 export class CountryHistoryBuilder {
   countryId: number;
+  countryName: string;
   countryStatus: CountryStatus;
   controlsCapital: boolean;
   capitalControllerId: number;
@@ -30,10 +33,12 @@ export class CountryHistoryBuilder {
   nukesFinished: number;
   bankedBuildsGifted: number;
   bankedBuildsReceived: number;
+  defaultBuild: string;
   resources: {
     adjustments: number;
     bankedBuilds: number;
     nukesInProduction: number;
+    availableProvinces: AvailableProvince[];
   }
   constructor(countryStats: CountryStatChanges, countryHistory: CountryHistoryRow | undefined) {
     if (!countryStats) {
@@ -51,6 +56,7 @@ export class CountryHistoryBuilder {
     this.nukesInProduction = countryHistory ? countryHistory.nukesInProduction : -1;
     this.inRetreat = countryHistory ? countryHistory.inRetreat : false;
 
+    this.countryName = countryStats.countryName ? countryStats.countryName : '';
     this.controlsCapital = countryStats.controlsCapital ? countryStats.controlsCapital : true;
     this.capitalControllerId = countryStats.capitalControllerId ? countryStats.capitalControllerId : 0;
     this.cities = countryStats.cities ? countryStats.cities : [];
@@ -64,10 +70,12 @@ export class CountryHistoryBuilder {
     this.nukesFinished = countryStats.nukesFinished ? countryStats.nukesFinished : 0;
     this.bankedBuildsGifted = countryStats.bankedBuildsGifted ? countryStats.bankedBuildsGifted : 0;
     this.bankedBuildsReceived = countryStats.bankedBuildsReceived ? countryStats.bankedBuildsReceived : 0;
+    this.defaultBuild = countryStats.defaultBuild ? countryStats.defaultBuild : UnitType.ARMY;
     this.resources = countryStats.resources ? countryStats.resources : {
       adjustments: 0,
       bankedBuilds: 0,
-      nukesInProduction: 0
+      nukesInProduction: 0,
+      availableProvinces: []
     }
   }
 
