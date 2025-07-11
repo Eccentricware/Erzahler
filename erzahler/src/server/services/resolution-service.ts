@@ -3256,6 +3256,8 @@ export class ResolutionService {
   }
 
   getAvailableProvinceIndex(availableProvinces: AvailableProvince[], provinceName: string): number {
-    return availableProvinces.findIndex((availableProvince: AvailableProvince) => availableProvince.provinceName === provinceName);
+    return availableProvinces?.length > 0
+      ? availableProvinces.findIndex((availableProvince: AvailableProvince) => availableProvince.provinceName === provinceName)
+      : -1;
   }
 }
