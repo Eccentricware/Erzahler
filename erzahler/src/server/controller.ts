@@ -48,6 +48,6 @@ erzahler.listen(port, () => {
   console.log(`Erzahler (${process.env.npm_package_version}) is running on port ${port}`);
 });
 
-schedulerService.checkIn(15);
+schedulerService.checkIn(process.env.LOGGING_INTERVAL ? parseInt(process.env.LOGGING_INTERVAL) : 60);
 
 schedulerService.syncDeadlines();
