@@ -41,16 +41,16 @@ export interface UnitOptions {
   nodeName: string;
   provinceId: number;
   provinceName: string;
-  adjacencies: AdjacenctMovement[];
-  moveTransported: number[];
-  holdSupports: HoldSupport[];
+  adjacencies: Set<AdjacenctMovement>;
+  moveTransported: Set<number>;
+  holdSupports: Set<HoldSupport>;
   moveSupports: any;
   transportSupports: any;
-  nukeTargets: number[];
+  nukeTargets: Set<number>;
   allTransports: any;
-  adjacentTransports: AdjacentTransport[] | undefined;
-  adjacentTransportables: AdjacentTransportable[] | undefined;
-  transportDestinations: TransportDestination[] | undefined;
+  adjacentTransports: Set<AdjacentTransport> | undefined;
+  adjacentTransportables: Set<AdjacentTransportable> | undefined;
+  transportDestinations: Set<TransportDestination> | undefined;
   nukeRange: number;
 }
 
@@ -125,8 +125,8 @@ export interface RetreatingUnitAdjacyInfo {
   provinceId: number;
   provinceName: string;
   displacerProvinceId: number;
-  adjacencies: AdjacenctMovement[];
-  unitPresence: HoldSupport[] | undefined;
+  adjacencies: Set<AdjacenctMovement>;
+  unitPresence: Set<HoldSupport> | undefined;
 }
 
 export interface AdjacenctMovementResult {
