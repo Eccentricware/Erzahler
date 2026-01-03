@@ -1,4 +1,3 @@
-import { Serializer } from 'v8';
 import { CountryStatus } from '../../models/enumeration/country-enum';
 import { DayOfWeek } from '../../models/enumeration/day_of_week-enum';
 import { DeadlineSchedule } from '../../models/enumeration/deadline-schedule-enum';
