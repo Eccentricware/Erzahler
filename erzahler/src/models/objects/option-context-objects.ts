@@ -1,7 +1,6 @@
 import { CountryRank, CountryStatus } from '../enumeration/country-enum';
 import { OrderDisplay, OrderSetType } from '../enumeration/order-display-enum';
 import { ProvinceType } from '../enumeration/province-enums';
-import { TurnStatus } from '../enumeration/turn-status-enum';
 import { DisbandingUnitDetail } from './order-objects';
 
 export interface OrderOption {
@@ -41,16 +40,16 @@ export interface UnitOptions {
   nodeName: string;
   provinceId: number;
   provinceName: string;
-  adjacencies: Set<AdjacenctMovement>;
-  moveTransported: Set<number>;
-  holdSupports: Set<HoldSupport>;
+  adjacencies: AdjacenctMovement[];
+  moveTransported: number[];
+  holdSupports: HoldSupport[];
   moveSupports: any;
   transportSupports: any;
-  nukeTargets: Set<number>;
+  nukeTargets: number[];
   allTransports: any;
-  adjacentTransports: Set<AdjacentTransport> | undefined;
-  adjacentTransportables: Set<AdjacentTransportable> | undefined;
-  transportDestinations: Set<TransportDestination> | undefined;
+  adjacentTransports: AdjacentTransport[] | undefined;
+  adjacentTransportables: AdjacentTransportable[] | undefined;
+  transportDestinations: TransportDestination[] | undefined;
   nukeRange: number;
 }
 
@@ -125,8 +124,8 @@ export interface RetreatingUnitAdjacyInfo {
   provinceId: number;
   provinceName: string;
   displacerProvinceId: number;
-  adjacencies: Set<AdjacenctMovement>;
-  unitPresence: Set<HoldSupport> | undefined;
+  adjacencies: AdjacenctMovement[];
+  unitPresence: HoldSupport[] | undefined;
 }
 
 export interface AdjacenctMovementResult {
