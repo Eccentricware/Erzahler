@@ -86,46 +86,47 @@ export class OptionsRepository {
             nodeName: result.node_name,
             provinceId: result.province_id,
             provinceName: result.province_name,
-            adjacencies: result.adjacencies
-              ? new Set(result.adjacencies.map((adjacency) => {
+            adjacencies:
+              result.adjacencies
+              ? result.adjacencies.map((adjacency) => {
                   return {
                     nodeId: adjacency.node_id,
                     provinceId: adjacency.province_id,
                     provinceName: adjacency.province_name,
                     provinceType: adjacency.province_type
                   };
-                }))
+                })
               : [],
-            moveTransported: new Set(),
+            moveTransported: [],
             holdSupports:
               result.hold_supports &&
-              new Set(result.hold_supports.map((unit) => {
+              result.hold_supports.map((unit) => {
                 return { unitId: unit.unit_id, unitName: unit.unit_name, provinceId: unit.province_id };
-              })),
+              }),
             moveSupports: {},
             transportSupports: {},
-            nukeTargets: new Set(),
+            nukeTargets: [],
             adjacentTransports:
               result.adjacent_transports &&
-              new Set(result.adjacent_transports.map((unit) => {
+              result.adjacent_transports.map((unit) => {
                 return { unitId: unit.unit_id, unitName: unit.unit_name };
-              })),
+              }),
             allTransports: {},
             nukeRange: result.nuke_range,
             adjacentTransportables:
               result.adjacent_transportables &&
-              new Set(result.adjacent_transportables.map((unit) => {
+              result.adjacent_transportables.map((unit) => {
                 return { unitId: unit.unit_id, unitName: unit.unit_name };
-              })),
+              }),
             transportDestinations:
               result.transport_destinations &&
-              new Set(result.transport_destinations.map((destination) => {
+              result.transport_destinations.map((destination) => {
                 return {
                   nodeId: destination.node_id,
                   nodeName: destination.node_name,
                   provinceId: destination.province_id
                 };
-              }))
+              })
           };
         });
       })
@@ -161,19 +162,19 @@ export class OptionsRepository {
             provinceId: result.province_id,
             provinceName: result.province_name,
             displacerProvinceId: result.displacer_province_id,
-            adjacencies: new Set(result.adjacencies.map((adjacency) => ({
+            adjacencies: result.adjacencies.map((adjacency) => ({
               nodeId: adjacency.node_id,
               provinceId: adjacency.province_id,
               provinceName: adjacency.province_name,
               provinceType: adjacency.province_type
-            }))),
+            })),
             unitPresence:
               result.unit_presence &&
-              new Set(result.unit_presence.map((unit) => ({
+              result.unit_presence.map((unit) => ({
                 unitId: unit.unit_id,
                 unitName: unit.unit_name,
                 provinceId: unit.province_id
-              })))
+              }))
           };
         });
       })
