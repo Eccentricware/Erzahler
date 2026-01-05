@@ -66,7 +66,6 @@ export class OptionsRepository {
   /**
    * Gives nodes and their provinces adjacent to movement nodes.
    *
-   *
    * @param gameId
    * @param turnNumber
    * @param isFallTurn
