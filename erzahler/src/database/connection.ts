@@ -10,10 +10,8 @@ import { ResolutionRepository } from './repos/resolution-repo';
 import { SchedulerRepository } from './repos/scheduler-repo';
 import { HistoryRepository } from './repos/history-repo';
 import { ImportRepository } from './repos/import-repo';
-import { MasterRepoository } from './repos/master-repo';
 
 interface IExtensions {
-  masterRepo: MasterRepoository
   accountsRepo: AccountsRepository;
   assignmentRepo: AssignmentRepository;
   gameRepo: GameRepository;
@@ -29,7 +27,6 @@ interface IExtensions {
 const initOptions: IInitOptions<IExtensions> = {
   extend(obj: IDatabase<IExtensions> & IExtensions) {
     // , dc: any
-    obj.masterRepo = new MasterRepoository(obj, pgp);
     obj.accountsRepo = new AccountsRepository(obj, pgp);
     obj.assignmentRepo = new AssignmentRepository(obj, pgp);
     obj.gameRepo = new GameRepository(obj, pgp);
